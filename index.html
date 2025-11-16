@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Login FTI-HUB</title>
-  <!-- SDK Firebase -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
@@ -16,7 +16,6 @@
     <input type="password" id="password" placeholder="Password" required><br>
     <button onclick="login()">Login</button>
     <br><br>
-    <!-- Reset Password Section -->
     <input type="email" id="email_reset" placeholder="Email per reset password">
     <button onclick="resetPassword()">Reimposta Password</button>
     <div id="reset-message" style="color: green"></div>
@@ -31,7 +30,7 @@
         const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
         // Recupera il documento utente da Firestore tramite UID
-        const docRef = firebase.firestore().collection('utenze').doc(user.uid);
+        const docRef = firebase.firestore().collection('PersonaleDealers').doc(user.uid);
         const doc = await docRef.get();
         if (!doc.exists) {
           document.getElementById('login-error').innerText = "Impossibile trovare i dati utente nel database.";
@@ -47,7 +46,7 @@
         if (dati.ruolo === "admin") {
           window.location.href = "main.html";
         } else {
-          // Se user: mostra pagina in costruzione 
+          // Se user: pagina in costruzione
           document.body.innerHTML = '<h2>In costruzione</h2>';
         }
       } catch (e) {
@@ -55,7 +54,6 @@
       }
     }
 
-    // Funzione per il reset della password
     function resetPassword() {
       const email = document.getElementById('email_reset').value;
       if (!email) {
