@@ -15,6 +15,11 @@
     <input type="email" id="email" placeholder="Email" required><br>
     <input type="password" id="password" placeholder="Password" required><br>
     <button onclick="login()">Login</button>
+    <br><br>
+    <!-- Reset Password Section -->
+    <input type="email" id="email_reset" placeholder="Email per reset password">
+    <button onclick="resetPassword()">Reimposta Password</button>
+    <div id="reset-message" style="color: green"></div>
   </div>
   <div id="login-error" style="color: red"></div>
   <script>
@@ -42,12 +47,28 @@
         if (dati.ruolo === "admin") {
           window.location.href = "main.html";
         } else {
-          // Se user: mostra pagina in costruzione (o puoi cambiare comportamento)
+          // Se user: mostra pagina in costruzione 
           document.body.innerHTML = '<h2>In costruzione</h2>';
         }
       } catch (e) {
         document.getElementById('login-error').innerText = "Login fallito: " + e.message;
       }
+    }
+
+    // Funzione per il reset della password
+    function resetPassword() {
+      const email = document.getElementById('email_reset').value;
+      if (!email) {
+        document.getElementById('reset-message').innerText = "Inserisci la tua email!";
+        return;
+      }
+      firebase.auth().sendPasswordResetEmail(email)
+        .then(() => {
+          document.getElementById('reset-message').innerText = "Email inviata! Controlla la tua casella per reimpostare la password.";
+        })
+        .catch(e => {
+          document.getElementById('reset-message').innerText = "Errore: " + e.message;
+        });
     }
   </script>
 </body>
