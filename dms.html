@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Gestione Utenze (DMS)</title>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <h1>Gestione Utenze</h1>
+  <div id="user-list"></div>
+  <h2>Aggiungi/Modifica utente</h2>
+  <input type="text" id="uid" placeholder="UID"><br>
+  <input type="text" id="ruolo" placeholder="Ruolo ('user' o 'admin')"><br>
+  <button onclick="aggiornaUtente()">Aggiungi/Modifica</button>
+  <script src="utenti.js"></script>
+</body>
+</html>
