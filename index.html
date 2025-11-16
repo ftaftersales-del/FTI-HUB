@@ -2,33 +2,51 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Login</title>
+  <title>Login FTI-HUB</title>
+  <!-- SDK Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
 </head>
 <body>
-  <h1>Login</h1>
-  <input type="email" id="email" placeholder="Email"><br>
-  <input type="password" id="password" placeholder="Password"><br>
-  <button onclick="login()">Login</button>
+  <h1>Accesso FTI-HUB</h1>
+  <div>
+    <input type="email" id="email" placeholder="Email" required><br>
+    <input type="password" id="password" placeholder="Password" required><br>
+    <button onclick="login()">Login</button>
+  </div>
+  <div id="login-error" style="color: red"></div>
   <script>
     async function login() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       try {
+        // Login con Firebase Authentication
         const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
         const user = userCredential.user;
-        const userDoc = await firebase.firestore().collection('utenti').doc(user.uid).get();
-        const ruolo = userDoc.exists ? userDoc.data().ruolo : 'user';
-        if (ruolo === 'admin') {
-          window.location.href = 'main.html';
+        // Recupera il documento utente da Firestore tramite UID
+        const docRef = firebase.firestore().collection('utenze').doc(user.uid);
+        const doc = await docRef.get();
+        if (!doc.exists) {
+          document.getElementById('login-error').innerText = "Impossibile trovare i dati utente nel database.";
+          return;
+        }
+        const dati = doc.data();
+        // Se l'utente non è attivo
+        if (dati.attivo === false) {
+          document.getElementById('login-error').innerText = "Utente non attivo.";
+          return;
+        }
+        // Se admin: vai a main.html
+        if (dati.ruolo === "admin") {
+          window.location.href = "main.html";
         } else {
+          // Se user: mostra pagina in costruzione (o puoi cambiare comportamento)
           document.body.innerHTML = '<h2>In costruzione</h2>';
         }
       } catch (e) {
-        alert(e.message);
+        document.getElementById('login-error').innerText = "Login fallito: " + e.message;
       }
     }
   </script>
