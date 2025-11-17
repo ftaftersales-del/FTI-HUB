@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>FTI-HUB: Dealer Management</title>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; }
+    #header {
+      background: #15334f;
+      color: white;
+      padding: 28px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #main { padding: 40px; }
+    table { border-collapse: collapse; margin-top: 28px; }
+    th, td { padding: 8px 14px; border: 1px solid #bbb; }
+    tr:nth-child(even) { background: #f5f5fa; }
+    .btn { background:#245ea0; color:#fff; border:none; border-radius:6px; padding:6px 13px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <div id="user-info"></div>
+    <div>
+      <button onclick="logout()">Logout</button>
+      <button onclick="back()">Torna all'HUB</button>
+    </div>
+  </div>
+  <div id="main">
+    <h2>Dealer Management System</h2>
+    <div id="dealers-content">Caricamento dealer...</div>
+  </div>
+  <script>
+    let dealerID, userRoles;
+
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) window.location.href = "index.html";
+      const docRef = firebase.firestore().collection('PersonaleDealers').doc(user.uid);
+      const doc = await docRef.get();
+      if (!doc.exists || !doc.data().Status!==true) {
+        alert("Utente non trovato o non attivo."); window.location.href="index.html"; return;
+      }
+      const dati = doc.data();
+      dealerID = dati.DealerID || dati.Title;
+      userRoles = Array.isArray(dati.Type) ? dati.Type : [dati.Type];
+
+      // Mostra user/barra
+      document.getElementById('user-info').innerText =
+        `${dati.Nome || ""} ${dati.Cognome || ""} [${userRoles.join(', ')}]`;
+
+      // Permesso dms
+      const dmsAllowed = userRoles.includes("Admin") || userRoles.includes("Network Manager");
+      if (!dmsAllowed) {
+        alert("Accesso negato! Solo admin o network manager possono accedere a questa pagina.");
+        window.location.href = "FTHUBAS.html";
+        return;
+      }
+
+      // Carica dealers secondo permessi
+      loadDealers(dealerID, userRoles);
+    });
+
+    function logout() {
+      firebase.auth().signOut().then(() => window.location.href = "index.html");
+    }
+    function back() {
+      window.location.href = "FTHUBAS.html";
+    }
+
+    async function loadDealers(dealerID, userRoles) {
+      const content = document.getElementById('dealers-content');
+      let dealerQuery;
+      // Se utente dealer FT001, può vedere TUTTI i dealer, altrimenti solo il proprio
+      if (dealerID === "FT001") {
+        dealerQuery = await firebase.firestore().collection('Utenze').get();
+      } else {
+        dealerQuery = await firebase.firestore().collection('Utenze')
+          .where("Title", "==", dealerID).get();
+      }
+      if (dealerQuery.empty) {
+        content.innerHTML = "<p>Nessun dealer trovato.</p>";
+        return;
+      }
+      // Visualizza i dealer e, per ciascuno, mostra dipendenti
+      let html = "<table><tr><th>Dealer</th><th>Email</th><th>Città</th><th>Dipendenti</th></tr>";
+      for (let doc of dealerQuery.docs) {
+        const d = doc.data();
+        html += `<tr>
+          <td>${d.Title}</td>
+          <td>${d.Dealer_EmailMain || ""}</td>
+          <td>${d.City || ""}</td>
+          <td><button class="btn" onclick="showUsers('${d.Title}')">Visualizza dipendenti</button></td>
+        </tr>`;
+      }
+      html += "</table><div id='users-content'></div>";
+      content.innerHTML = html;
+    }
+
+    async function showUsers(dealerId) {
+      const usersQuery = await firebase.firestore().collection('PersonaleDealers')
+        .where("DealerID", "==", dealerId).get();
+      let html = `<h4>Personale Dealer ${dealerId}:</h4>`;
+      if(usersQuery.empty) html += "<p>Nessun dipendente registrato.</p>";
+      else {
+        html += "<ul>";
+        for(let doc of usersQuery.docs){
+          const u = doc.data();
+          html += `<li>${u.Nome} ${u.Cognome} [${u.email}] - ruolo/i: ${Array.isArray(u.Type)?u.Type.join(', '):u.Type}</li>`;
+        }
+        html += "</ul>";
+      }
+      document.getElementById('users-content').innerHTML = html;
+    }
+  </script>
+</body>
+</html>
