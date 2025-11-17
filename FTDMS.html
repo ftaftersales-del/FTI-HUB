@@ -58,7 +58,6 @@
       try {
         console.log("[DMS] onAuthStateChanged → user =", user);
 
-        // 1. Nessun utente loggato
         if (!user) {
           console.log("[DMS] Nessun utente autenticato, redirect a index.html");
           alert("[DMS] Nessun utente autenticato, torna al login.");
@@ -68,7 +67,6 @@
 
         console.log("[DMS] Utente autenticato UID:", user.uid, "email:", user.email);
 
-        // 2. Recupera il documento PersonaleDealers/<UID>
         const docRef = firebase.firestore()
           .collection('PersonaleDealers')
           .doc(user.uid);
@@ -77,7 +75,6 @@
         const doc = await docRef.get();
         console.log("[DMS] doc.exists =", doc.exists);
 
-        // 3. Documento non esistente
         if (!doc.exists) {
           alert("[DMS] Utente non trovato nel database (UID: " + user.uid + ").");
           console.error("[DMS] ERRORE: nessun documento PersonaleDealers per UID:", user.uid);
@@ -89,7 +86,6 @@
         console.log("[DMS] Dati utente:", dati);
         console.log("[DMS] dati.Status =", dati.Status, " tipo:", typeof dati.Status);
 
-        // 4. Utente non attivo
         if (dati.Status !== true) {
           alert("[DMS] Utente non attivo. Status = " + dati.Status);
           console.error("[DMS] ERRORE: utente non attivo, Status =", dati.Status);
@@ -97,18 +93,15 @@
           return;
         }
 
-        // 5. Utente attivo → prosegui
         dealerID = dati.DealerID || dati.Title || "(DealerID non impostato)";
         userRoles = Array.isArray(dati.Type) ? dati.Type : (dati.Type ? [dati.Type] : []);
 
         console.log("[DMS] dealerID =", dealerID);
         console.log("[DMS] userRoles =", userRoles);
 
-        // Mostra info utente
         document.getElementById('user-info').innerText =
           `${dati.Nome || ""} ${dati.Cognome || ""} [${userRoles.join(', ')}]`;
 
-        // 6. Solo Admin o Network Manager possono accedere
         const dmsAllowed =
           userRoles.includes("Admin") ||
           userRoles.includes("Network Manager");
@@ -121,7 +114,6 @@
           return;
         }
 
-        // 7. Carica i dealer
         loadDealers(dealerID, userRoles);
 
       } catch (err) {
@@ -203,6 +195,8 @@
           .where("DealerID", "==", dealerId)
           .get();
 
+        console.log("[DMS] showUsers → numero documenti =", usersQuery.size);
+
         let html = `<h4>Personale Dealer ${dealerId}:</h4>`;
 
         if (usersQuery.empty) {
@@ -211,6 +205,7 @@
           html += "<ul>";
           for (let uDoc of usersQuery.docs) {
             const u = uDoc.data();
+            console.log("[DMS] Dipendente:", u);
             const ruoli = Array.isArray(u.Type) ? u.Type.join(', ') : (u.Type || '');
             html += `<li>${u.Nome || ""} ${u.Cognome || ""} [${u.email || ""}] - ruolo/i: ${ruoli}</li>`;
           }
@@ -221,7 +216,10 @@
 
       } catch (err) {
         console.error("[DMS] Errore in showUsers:", err);
-        usersContent.innerHTML = "<p>Errore nel caricamento dei dipendenti.</p>";
+        usersContent.innerHTML =
+          "<p>Errore nel caricamento dei dipendenti: " +
+          (err && err.message ? err.message : String(err)) +
+          "</p>";
       }
     }
   </script>
