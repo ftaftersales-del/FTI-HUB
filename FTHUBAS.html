@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>FTI-HUB AfterSales</title>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; }
+    #header {
+      background: #15334f;
+      color: white;
+      padding: 28px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #user-info { font-size: 18px; }
+    #main { padding: 40px; }
+    button { margin-left: 10px; padding: 8px 14px; border:none; border-radius:6px; background:#245ea0; color:#fff; cursor:pointer;}
+    button:disabled { background: #4a5c6e; color: #ddd; }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <div id="user-info"></div>
+    <div>
+      <button onclick="logout()">Logout</button>
+      <button id="dms-btn" style="display:none" onclick="goToDMS()">Dealer Management</button>
+    </div>
+  </div>
+  <div id="main">
+    <h2>Benvenuto nell'hub FTI AfterSales!</h2>
+    <div id="welcome"></div>
+    <div id="hub-content"></div>
+  </div>
+  <script>
+    let dealerID, userRoles;
+
+    firebase.auth().onAuthStateChanged(async (user) => {
+      if (!user) window.location.href = "index.html";
+      const docRef = firebase.firestore().collection('PersonaleDealers').doc(user.uid);
+      const doc = await docRef.get();
+      if (!doc.exists || !doc.data().Status!==true) {
+        alert("Utente non trovato o non attivo."); window.location.href="index.html"; return;
+      }
+      const dati = doc.data();
+      dealerID = dati.DealerID || dati.Title; // Per compatibilità: DealerID campo di riferimento al dealer
+      userRoles = Array.isArray(dati.Type) ? dati.Type : [dati.Type];
+      // Mostra barra header
+      document.getElementById('user-info').innerText =
+        `${dati.Nome || ""} ${dati.Cognome || ""} [${userRoles.join(', ')}]`;
+      // Benvenuto
+      document.getElementById('welcome').innerHTML =
+        `<strong>Dealer associato:</strong> ${dealerID}`;
+      // Ruoli abilitanti (Admin o Network Manager)
+      const dmsAllowed = userRoles.includes("Admin") || userRoles.includes("Network Manager");
+      document.getElementById('dms-btn').style.display = dmsAllowed ? "inline-block" : "none";
+    });
+
+    function logout() {
+      firebase.auth().signOut().then(() => window.location.href = "index.html");
+    }
+    function goToDMS() {
+      window.location.href = "FTDMS.html";
+    }
+  </script>
+</body>
+</html>
