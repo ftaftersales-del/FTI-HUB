@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>FTI-HUB AfterSales</title>
 
-  <!-- Firebase -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
@@ -54,72 +54,102 @@
   </div>
 
   <script>
-
     let dealerID, userRoles;
 
+    // IMPORTANTE: Apri la console (F12 → "Console") per vedere i log
+    console.log("FTHUBAS caricato, in attesa di onAuthStateChanged...");
+
     firebase.auth().onAuthStateChanged(async (user) => {
+      try {
+        console.log("onAuthStateChanged chiamato. user =", user);
 
-      // Se non è loggato → torna al login
-      if (!user) {
+        // Utente non loggato → torna al login
+        if (!user) {
+          console.log("Nessun utente autenticato, redirect a index.html");
+          window.location.href = "index.html";
+          return;
+        }
+
+        console.log("Utente autenticato:");
+        console.log("  UID:", user.uid);
+        console.log("  Email:", user.email);
+
+        // Recupera documento Firestore legato all'UID
+        const docRef = firebase.firestore()
+          .collection('PersonaleDealers')
+          .doc(user.uid);
+
+        console.log("Leggo documento Firestore PersonaleDealers/" + user.uid);
+        const doc = await docRef.get();
+        console.log("doc.exists =", doc.exists);
+
+        // Se documento NON esiste
+        if (!doc.exists) {
+          alert("Utente non trovato nel database (UID: " + user.uid + ").");
+          console.error("ERRORE: Nessun documento trovato in PersonaleDealers per UID:", user.uid);
+          window.location.href = "index.html";
+          return;
+        }
+
+        const dati = doc.data();
+        console.log("Dati utente da Firestore:", dati);
+
+        // Controllo Status: deve essere esattamente true (boolean)
+        console.log("Valore dati.Status =", dati.Status, " (tipo:", typeof dati.Status + ")");
+
+        if (dati.Status !== true) {
+          alert("Utente non attivo. Valore Status: " + dati.Status);
+          console.error("ERRORE: Utente non attivo. Status =", dati.Status);
+          window.location.href = "index.html";
+          return;
+        }
+
+        // Se arrivi qui: utente esiste ed è attivo ✅
+        dealerID = dati.DealerID || dati.Title || "(DealerID non impostato)";
+        userRoles = Array.isArray(dati.Type) ? dati.Type : (dati.Type ? [dati.Type] : []);
+
+        console.log("dealerID =", dealerID);
+        console.log("userRoles =", userRoles);
+
+        // Header utente
+        document.getElementById('user-info').innerText =
+          `${dati.Nome || ""} ${dati.Cognome || ""} [${userRoles.join(', ')}]`;
+
+        // Benvenuto + dealer
+        document.getElementById('welcome').innerHTML =
+          `<strong>Dealer associato:</strong> ${dealerID}`;
+
+        // Abilita pulsante DMS solo se Admin o Network Manager
+        const dmsAllowed =
+          userRoles.includes("Admin") ||
+          userRoles.includes("Network Manager");
+
+        console.log("dmsAllowed =", dmsAllowed);
+        document.getElementById('dms-btn').style.display =
+          dmsAllowed ? "inline-block" : "none";
+
+      } catch (err) {
+        console.error("Errore in onAuthStateChanged:", err);
+        alert("Si è verificato un errore nel caricamento dell'utente.");
         window.location.href = "index.html";
-        return;
       }
-
-      // Recupera dati utente da Firestore
-      const docRef = firebase.firestore()
-        .collection('PersonaleDealers')
-        .doc(user.uid);
-
-      const doc = await docRef.get();
-
-      // Se documento NON esiste
-      if (!doc.exists) {
-        alert("Utente non trovato nel database.");
-        window.location.href = "index.html";
-        return;
-      }
-
-      const dati = doc.data();
-
-      // Se utente NON attivo
-      if (dati.Status !== true) {
-        alert("Utente non attivo.");
-        window.location.href = "index.html";
-        return;
-      }
-
-      // Dati utente validi → continua
-      dealerID = dati.DealerID || dati.Title;
-      userRoles = Array.isArray(dati.Type) ? dati.Type : [dati.Type];
-
-      // Header: dati utente
-      document.getElementById('user-info').innerText =
-        `${dati.Nome || ""} ${dati.Cognome || ""} [${userRoles.join(', ')}]`;
-
-      // Mostra il dealer
-      document.getElementById('welcome').innerHTML =
-        `<strong>Dealer associato:</strong> ${dealerID}`;
-
-      // Abilita tasto DMS solo a Admin o Network Manager
-      const dmsAllowed =
-        userRoles.includes("Admin") ||
-        userRoles.includes("Network Manager");
-
-      document.getElementById('dms-btn').style.display =
-        dmsAllowed ? "inline-block" : "none";
-
     });
 
     // Logout
     function logout() {
       firebase.auth().signOut()
-        .then(() => window.location.href = "index.html");
+        .then(() => {
+          console.log("Logout effettuato, redirect a index.html");
+          window.location.href = "index.html";
+        })
+        .catch(err => {
+          console.error("Errore nel logout:", err);
+        });
     }
 
     function goToDMS() {
       window.location.href = "FTDMS.html";
     }
-
   </script>
 
 </body>
