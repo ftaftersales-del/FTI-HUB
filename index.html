@@ -8,28 +8,33 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 30px; }
+    .box { background: #eee; padding: 22px; max-width: 360px; margin: auto; border-radius: 8px; }
+    #reset-message { color: green; }
+    #login-error { color: red; }
+  </style>
 </head>
 <body>
-  <h1>Accesso FTI-HUB</h1>
-  <div>
-    <input type="email" id="email" placeholder="Email" required><br>
-    <input type="password" id="password" placeholder="Password" required><br>
+  <div class="box">
+    <h2>Login FTI-HUB</h2>
+    <input type="email" id="email" placeholder="Email" required><br><br>
+    <input type="password" id="password" placeholder="Password" required><br><br>
     <button onclick="login()">Login</button>
-    <br><br>
+    <hr>
     <input type="email" id="email_reset" placeholder="Email per reset password">
     <button onclick="resetPassword()">Reimposta Password</button>
-    <div id="reset-message" style="color: green"></div>
+    <div id="reset-message"></div>
+    <div id="login-error"></div>
   </div>
-  <div id="login-error" style="color: red"></div>
   <script>
     async function login() {
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
+      document.getElementById('login-error').innerText = "";
       try {
-        // Login con Firebase Authentication
-        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-        // Recupera il documento utente da Firestore tramite UID
+        const cred = await firebase.auth().signInWithEmailAndPassword(email, password);
+        const user = cred.user;
         const docRef = firebase.firestore().collection('PersonaleDealers').doc(user.uid);
         const doc = await docRef.get();
         if (!doc.exists) {
@@ -37,23 +42,16 @@
           return;
         }
         const dati = doc.data();
-        // Se l'utente non è attivo
-        if (dati.attivo === false) {
+        if (!dati.Status) {
           document.getElementById('login-error').innerText = "Utente non attivo.";
           return;
         }
-        // Se admin: vai a main.html
-        if (dati.ruolo === "admin") {
-          window.location.href = "main.html";
-        } else {
-          // Se user: pagina in costruzione
-          document.body.innerHTML = '<h2>In costruzione</h2>';
-        }
-      } catch (e) {
+        // Prosegui: Vai a hub principale
+        window.location.href = "FTHUBAS.html";
+      } catch(e) {
         document.getElementById('login-error').innerText = "Login fallito: " + e.message;
       }
     }
-
     function resetPassword() {
       const email = document.getElementById('email_reset').value;
       if (!email) {
