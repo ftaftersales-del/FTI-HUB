@@ -4,17 +4,18 @@
   <meta charset="UTF-8">
   <title>FTI-HUB - Main</title>
 
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
 
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
+    body {
+      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px; 
-      background: #f5f5f5; 
+      padding: 20px;
+      background: #f5f5f5;
     }
     .card {
       background: #fff;
@@ -61,8 +62,6 @@
     </div>
   </div>
 
-  <!-- Qui sotto potrai aggiungere altre card/aree per le funzioni del tuo HUB -->
-
   <script>
     let currentUserData = null;
 
@@ -74,9 +73,11 @@
       }
 
       try {
-        const doc = await db.collection('users').doc(user.uid).get();
+        const doc = await db.collection('Users').doc(user.uid).get();
+
         if (!doc.exists) {
-          document.getElementById('user-info').innerText = "Profilo utente non trovato nel database.";
+          document.getElementById('user-info').innerText =
+            "Profilo utente non trovato nel database.";
           return;
         }
 
@@ -89,17 +90,19 @@
           <p><strong>Email:</strong> ${user.email}</p>
           <p><strong>Dealer ID:</strong> ${dati.dealerId || '-'}</p>
           <p><strong>Ruolo:</strong> ${dati.role || '-'}</p>
-          <p><strong>Stato:</strong> ${dati.status || '-'}</p>
+          <p><strong>Stato:</strong> ${dati.Status || '-'}</p>
           <p><strong>Utente Distributore:</strong> ${dati.isDistributorUser ? 'Sì' : 'No'}</p>
         `;
 
-        // Mostra se admin
+        // Mostra area admin se isAdmin = true
         if (dati.isAdmin === true) {
           document.getElementById('admin-section').style.display = 'block';
         }
 
       } catch (e) {
-        document.getElementById('user-info').innerText = "Errore nel recupero dati utente: " + e.message;
+        console.error("Errore nel recupero dati utente:", e);
+        document.getElementById('user-info').innerText =
+          "Errore nel recupero dati utente: " + e.message;
       }
     });
 
