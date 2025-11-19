@@ -11,25 +11,23 @@
   <script src="firebase-config.js"></script>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-    body { 
-      font-family: Arial, sans-serif; 
-      margin: 0; 
-      padding: 0; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      height: 100vh; 
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
       background: #f5f5f5;
     }
-    .box { 
-      background: #ffffff; 
-      padding: 24px; 
-      max-width: 360px; 
+    .box {
+      background: #ffffff;
+      padding: 24px;
+      max-width: 360px;
       width: 100%;
-      border-radius: 10px; 
+      border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     .box h2 {
@@ -50,21 +48,22 @@
     hr {
       margin: 16px 0;
     }
-    #reset-message { 
-      color: green; 
-      margin-top: 8px; 
-      min-height: 18px; 
+    #reset-message {
+      color: green;
+      margin-top: 8px;
+      min-height: 18px;
       font-size: 0.9em;
     }
-    #login-error { 
-      color: red; 
-      margin-top: 8px; 
-      min-height: 18px; 
+    #login-error {
+      color: red;
+      margin-top: 8px;
+      min-height: 18px;
       font-size: 0.9em;
     }
   </style>
 </head>
 <body>
+
   <div class="box">
     <h2>Login FTI-HUB</h2>
 
@@ -94,29 +93,41 @@
       }
 
       try {
+        // 1) Login Firebase Auth
         const cred = await auth.signInWithEmailAndPassword(email, password);
         const user = cred.user;
+        console.log("Login OK, uid:", user.uid);
 
+        // 2) Lettura profilo utente in /users/{uid}
         const docRef = db.collection('users').doc(user.uid);
         const doc = await docRef.get();
 
         if (!doc.exists) {
+          console.error("Documento utente non trovato in /users/", user.uid);
           loginErrorEl.innerText = "Impossibile trovare i dati utente nel database.";
           return;
         }
 
         const dati = doc.data();
+        console.log("Dati utente letti:", dati);
 
+        // 3) Controllo stato
         if (!dati.status || dati.status !== "active") {
           loginErrorEl.innerText = "Utente non attivo (" + (dati.status || "sconosciuto") + ").";
           return;
         }
 
-        // Tutto ok → vai alla main
+        // 4) Tutto ok → vai al main
         window.location.href = "FTHUBAS.html";
 
       } catch (e) {
-        loginErrorEl.innerText = "Login fallito: " + e.message;
+        console.error("Errore durante login o lettura Firestore:", e);
+        // Se è un errore di permessi Firestore, messaggio più chiaro
+        if (e.code === "permission-denied") {
+          loginErrorEl.innerText = "Errore permessi Firebase (Firestore). Controlla regole e documento utente.";
+        } else {
+          loginErrorEl.innerText = "Login fallito: " + e.message;
+        }
       }
     }
 
@@ -136,6 +147,7 @@
           resetMessageEl.innerText = "Email inviata! Controlla la tua casella per reimpostare la password.";
         })
         .catch(e => {
+          console.error("Errore reset password:", e);
           resetMessageEl.innerText = "Errore: " + e.message;
         });
     }
