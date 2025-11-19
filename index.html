@@ -44,6 +44,7 @@
       margin-top: 8px;
       padding: 8px 12px;
       cursor: pointer;
+      width: 100%;
     }
     hr {
       margin: 16px 0;
@@ -93,38 +94,40 @@
       }
 
       try {
-        // 1) Login Firebase Auth
+        // 1️⃣ LOGIN FIREBASE AUTH
         const cred = await auth.signInWithEmailAndPassword(email, password);
         const user = cred.user;
-        console.log("Login OK, uid:", user.uid);
+        console.log("Login OK, UID:", user.uid);
 
-        // 2) Lettura profilo utente in /users/{uid}
-        const docRef = db.collection('users').doc(user.uid);
+        // 2️⃣ LETTURA DOCUMENTO IN Users/{uid}
+        const docRef = db.collection('Users').doc(user.uid);
         const doc = await docRef.get();
 
         if (!doc.exists) {
-          console.error("Documento utente non trovato in /users/", user.uid);
-          loginErrorEl.innerText = "Impossibile trovare i dati utente nel database.";
+          console.error("Documento mancante in /Users/" + user.uid);
+          loginErrorEl.innerText = "Profilo utente non trovato nel database.";
           return;
         }
 
         const dati = doc.data();
-        console.log("Dati utente letti:", dati);
+        console.log("Dati utente:", dati);
 
-        // 3) Controllo stato
-        if (!dati.status || dati.status !== "active") {
-          loginErrorEl.innerText = "Utente non attivo (" + (dati.status || "sconosciuto") + ").";
+        // 3️⃣ CHECK STATUS (deve essere "active")
+        if (!dati.Status || dati.Status !== "active") {
+          loginErrorEl.innerText =
+            "Utente non attivo (stato: " + dati.Status + ").";
           return;
         }
 
-        // 4) Tutto ok → vai al main
+        // 4️⃣ TUTTO OK → VAI AL MAIN
         window.location.href = "FTHUBAS.html";
 
       } catch (e) {
-        console.error("Errore durante login o lettura Firestore:", e);
-        // Se è un errore di permessi Firestore, messaggio più chiaro
+        console.error("ERRORE LOGIN:", e);
+
         if (e.code === "permission-denied") {
-          loginErrorEl.innerText = "Errore permessi Firebase (Firestore). Controlla regole e documento utente.";
+          loginErrorEl.innerText =
+            "Errore permessi Firebase (Firestore). Controlla regole e documento utente.";
         } else {
           loginErrorEl.innerText = "Login fallito: " + e.message;
         }
@@ -144,7 +147,8 @@
 
       auth.sendPasswordResetEmail(email)
         .then(() => {
-          resetMessageEl.innerText = "Email inviata! Controlla la tua casella per reimpostare la password.";
+          resetMessageEl.innerText =
+            "Email inviata! Controlla la tua casella per reimpostare la password.";
         })
         .catch(e => {
           console.error("Errore reset password:", e);
@@ -152,5 +156,6 @@
         });
     }
   </script>
+
 </body>
 </html>
