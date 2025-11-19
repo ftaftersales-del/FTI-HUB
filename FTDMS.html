@@ -2,227 +2,186 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>FTI-HUB: Dealer Management</title>
+  <title>FTI-HUB - DMS</title>
 
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
 
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; }
-    #header {
-      background: #15334f;
-      color: white;
-      padding: 28px 32px;
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0;
+      padding: 20px; 
+      background: #f5f5f5; 
+    }
+    .card {
+      background: #fff;
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      max-width: 1100px;
+      margin: 0 auto 16px auto;
+    }
+    .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 16px;
     }
-    #main { padding: 40px; }
-    table { border-collapse: collapse; margin-top: 28px; }
-    th, td { padding: 8px 14px; border: 1px solid #bbb; }
-    tr:nth-child(even) { background: #f5f5fa; }
-    .btn {
-      background:#245ea0;
-      color:#fff;
-      border:none;
-      border-radius:6px;
-      padding:6px 13px;
-      cursor:pointer;
+    button {
+      padding: 6px 10px;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      font-size: 0.9em;
+    }
+    th {
+      background: #f0f0f0;
+    }
+    #status {
+      margin-bottom: 8px;
+      font-size: 0.95em;
     }
   </style>
 </head>
 <body>
+  <div class="card">
+    <div class="header">
+      <h2>DMS - Gestione Utenze</h2>
+      <div>
+        <button onclick="goBack()">Torna al Main</button>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </div>
 
-  <div id="header">
-    <div id="user-info"></div>
-    <div>
-      <button onclick="logout()">Logout</button>
-      <button onclick="back()">Torna all'HUB</button>
+    <div id="status">Verifica permessi...</div>
+
+    <div id="content" style="display:none;">
+      <button onclick="reloadUsers()">Ricarica elenco utenti</button>
+      <div id="users-table-container" style="margin-top:12px;"></div>
     </div>
   </div>
 
-  <div id="main">
-    <h2>Dealer Management System</h2>
-    <div id="dealers-content">Caricamento dealer...</div>
-  </div>
-
   <script>
-    let dealerID, userRoles;
+    let currentUser = null;
+    let currentUserData = null;
 
-    console.log("[DMS] FTDMS caricato, in attesa di onAuthStateChanged...");
-
-    firebase.auth().onAuthStateChanged(async (user) => {
-      try {
-        console.log("[DMS] onAuthStateChanged → user =", user);
-
-        if (!user) {
-          console.log("[DMS] Nessun utente autenticato, redirect a index.html");
-          alert("[DMS] Nessun utente autenticato, torna al login.");
-          window.location.href = "index.html";
-          return;
-        }
-
-        console.log("[DMS] Utente autenticato UID:", user.uid, "email:", user.email);
-
-        const docRef = firebase.firestore()
-          .collection('PersonaleDealers')
-          .doc(user.uid);
-
-        console.log("[DMS] Leggo documento PersonaleDealers/" + user.uid);
-        const doc = await docRef.get();
-        console.log("[DMS] doc.exists =", doc.exists);
-
-        if (!doc.exists) {
-          alert("[DMS] Utente non trovato nel database (UID: " + user.uid + ").");
-          console.error("[DMS] ERRORE: nessun documento PersonaleDealers per UID:", user.uid);
-          window.location.href = "index.html";
-          return;
-        }
-
-        const dati = doc.data();
-        console.log("[DMS] Dati utente:", dati);
-        console.log("[DMS] dati.Status =", dati.Status, " tipo:", typeof dati.Status);
-
-        if (dati.Status !== true) {
-          alert("[DMS] Utente non attivo. Status = " + dati.Status);
-          console.error("[DMS] ERRORE: utente non attivo, Status =", dati.Status);
-          window.location.href = "index.html";
-          return;
-        }
-
-        dealerID = dati.DealerID || dati.Title || "(DealerID non impostato)";
-        userRoles = Array.isArray(dati.Type) ? dati.Type : (dati.Type ? [dati.Type] : []);
-
-        console.log("[DMS] dealerID =", dealerID);
-        console.log("[DMS] userRoles =", userRoles);
-
-        document.getElementById('user-info').innerText =
-          `${dati.Nome || ""} ${dati.Cognome || ""} [${userRoles.join(', ')}]`;
-
-        const dmsAllowed =
-          userRoles.includes("Admin") ||
-          userRoles.includes("Network Manager");
-
-        console.log("[DMS] dmsAllowed =", dmsAllowed);
-
-        if (!dmsAllowed) {
-          alert("[DMS] Accesso negato: solo Admin o Network Manager possono accedere.");
-          window.location.href = "FTHUBAS.html";
-          return;
-        }
-
-        loadDealers(dealerID, userRoles);
-
-      } catch (err) {
-        console.error("[DMS] Errore in onAuthStateChanged:", err);
-        alert("[DMS] Errore durante il controllo dell'utente.");
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
         window.location.href = "index.html";
+        return;
+      }
+
+      currentUser = user;
+
+      try {
+        const doc = await db.collection('users').doc(user.uid).get();
+        if (!doc.exists) {
+          document.getElementById('status').innerText = "Profilo admin non trovato.";
+          return;
+        }
+
+        const data = doc.data();
+        currentUserData = data;
+
+        if (data.isAdmin !== true) {
+          document.getElementById('status').innerText = "Non hai i permessi per accedere al DMS.";
+          setTimeout(() => {
+            window.location.href = "FTHUBAS.html";
+          }, 1500);
+          return;
+        }
+
+        document.getElementById('status').innerText = "Sei loggato come admin.";
+        document.getElementById('content').style.display = 'block';
+        reloadUsers();
+
+      } catch (e) {
+        document.getElementById('status').innerText = "Errore nel controllo permessi: " + e.message;
       }
     });
 
-    function logout() {
-      firebase.auth().signOut()
-        .then(() => {
-          console.log("[DMS] Logout effettuato, redirect a index.html");
-          window.location.href = "index.html";
-        })
-        .catch(err => {
-          console.error("[DMS] Errore nel logout:", err);
-        });
-    }
-
-    function back() {
-      window.location.href = "FTHUBAS.html";
-    }
-
-    async function loadDealers(dealerID, userRoles) {
-      const content = document.getElementById('dealers-content');
+    async function reloadUsers() {
+      const container = document.getElementById('users-table-container');
+      container.innerHTML = "Caricamento utenti...";
 
       try {
-        let dealerQuery;
+        let query = db.collection('users');
 
-        if (dealerID === "FT001") {
-          console.log("[DMS] dealerID = FT001 → carico TUTTI i dealer");
-          dealerQuery = await firebase.firestore().collection('Utenze').get();
-        } else {
-          console.log("[DMS] dealerID =", dealerID, "→ carico solo questo dealer");
-          dealerQuery = await firebase.firestore().collection('Utenze')
-            .where("Title", "==", dealerID)
-            .get();
+        // Se NON è utente del distributore, filtra solo utenti del suo dealer
+        if (!currentUserData.isDistributorUser && currentUserData.dealerId) {
+          query = query.where('dealerId', '==', currentUserData.dealerId);
         }
 
-        if (dealerQuery.empty) {
-          console.log("[DMS] Nessun dealer trovato per dealerID:", dealerID);
-          content.innerHTML = "<p>Nessun dealer trovato.</p>";
+        const snap = await query.get();
+        if (snap.empty) {
+          container.innerHTML = "<p>Nessun utente trovato.</p>";
           return;
         }
 
-        let html = "<table><tr><th>Dealer</th><th>Email</th><th>Città</th><th>Dipendenti</th></tr>";
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Dealer</th>
+                <th>Ruolo</th>
+                <th>Stato</th>
+                <th>Admin</th>
+                <th>Distributore</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
 
-        for (let dDoc of dealerQuery.docs) {
-          const d = dDoc.data();
+        snap.forEach(doc => {
+          const u = doc.data();
           html += `
             <tr>
-              <td>${d.Title}</td>
-              <td>${d.Dealer_EmailMain || ""}</td>
-              <td>${d.City || ""}</td>
+              <td>${u.displayName || '-'}</td>
+              <td>${u.email || '-'}</td>
+              <td>${u.dealerId || '-'}</td>
+              <td>${u.role || '-'}</td>
+              <td>${u.status || '-'}</td>
+              <td>${u.isAdmin ? 'Sì' : 'No'}</td>
+              <td>${u.isDistributorUser ? 'Sì' : 'No'}</td>
               <td>
-                <button class="btn" onclick="showUsers('${d.Title.replace(/'/g, "\\'")}')">
-                  Visualizza dipendenti
-                </button>
+                <!-- Qui in futuro: sospendi/blocca ecc. -->
+                <button onclick="alert('Qui aggiungeremo azioni per ${doc.id}')">Azioni</button>
               </td>
-            </tr>`;
-        }
+            </tr>
+          `;
+        });
 
-        html += "</table><div id='users-content'></div>";
-        content.innerHTML = html;
+        html += `</tbody></table>`;
+        container.innerHTML = html;
 
-      } catch (err) {
-        console.error("[DMS] Errore in loadDealers:", err);
-        content.innerHTML = "<p>Errore nel caricamento dei dealer.</p>";
+      } catch (e) {
+        container.innerHTML = "Errore nel caricamento utenti: " + e.message;
       }
     }
 
-    async function showUsers(dealerId) {
-      console.log("[DMS] showUsers per dealerId =", dealerId);
-      const usersContent = document.getElementById('users-content');
+    function goBack() {
+      window.location.href = "FTHUBAS.html";
+    }
 
-      try {
-        const usersQuery = await firebase.firestore().collection('PersonaleDealers')
-          .where("DealerID", "==", dealerId)
-          .get();
-
-        console.log("[DMS] showUsers → numero documenti =", usersQuery.size);
-
-        let html = `<h4>Personale Dealer ${dealerId}:</h4>`;
-
-        if (usersQuery.empty) {
-          html += "<p>Nessun dipendente registrato.</p>";
-        } else {
-          html += "<ul>";
-          for (let uDoc of usersQuery.docs) {
-            const u = uDoc.data();
-            console.log("[DMS] Dipendente:", u);
-            const ruoli = Array.isArray(u.Type) ? u.Type.join(', ') : (u.Type || '');
-            html += `<li>${u.Nome || ""} ${u.Cognome || ""} [${u.email || ""}] - ruolo/i: ${ruoli}</li>`;
-          }
-          html += "</ul>";
-        }
-
-        usersContent.innerHTML = html;
-
-      } catch (err) {
-        console.error("[DMS] Errore in showUsers:", err);
-        usersContent.innerHTML =
-          "<p>Errore nel caricamento dei dipendenti: " +
-          (err && err.message ? err.message : String(err)) +
-          "</p>";
-      }
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = "index.html";
+      });
     }
   </script>
-
 </body>
 </html>
