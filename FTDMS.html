@@ -1,20 +1,21 @@
-<!DOCTYPE html>
+v<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <title>FTI-HUB - DMS</title>
 
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
 
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
+    body {
+      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px; 
-      background: #f5f5f5; 
+      padding: 20px;
+      background: #f5f5f5;
     }
     .card {
       background: #fff;
@@ -85,9 +86,11 @@
       currentUser = user;
 
       try {
-        const doc = await db.collection('users').doc(user.uid).get();
+        const doc = await db.collection('Users').doc(user.uid).get();
+
         if (!doc.exists) {
-          document.getElementById('status').innerText = "Profilo admin non trovato.";
+          document.getElementById('status').innerText =
+            "Profilo admin non trovato.";
           return;
         }
 
@@ -95,19 +98,25 @@
         currentUserData = data;
 
         if (data.isAdmin !== true) {
-          document.getElementById('status').innerText = "Non hai i permessi per accedere al DMS.";
+          document.getElementById('status').innerText =
+            "Non hai i permessi per accedere al DMS.";
           setTimeout(() => {
             window.location.href = "FTHUBAS.html";
           }, 1500);
           return;
         }
 
-        document.getElementById('status').innerText = "Sei loggato come admin.";
+        document.getElementById('status').innerText =
+          "Sei loggato come admin.";
         document.getElementById('content').style.display = 'block';
+
+        // Carica l'elenco utenti (potrà dare errori permessi se le rules non lo consentono)
         reloadUsers();
 
       } catch (e) {
-        document.getElementById('status').innerText = "Errore nel controllo permessi: " + e.message;
+        console.error("Errore nel controllo permessi admin:", e);
+        document.getElementById('status').innerText =
+          "Errore nel controllo permessi: " + e.message;
       }
     });
 
@@ -116,14 +125,8 @@
       container.innerHTML = "Caricamento utenti...";
 
       try {
-        let query = db.collection('users');
+        const snap = await db.collection('Users').get();
 
-        // Se NON è utente del distributore, filtra solo utenti del suo dealer
-        if (!currentUserData.isDistributorUser && currentUserData.dealerId) {
-          query = query.where('dealerId', '==', currentUserData.dealerId);
-        }
-
-        const snap = await query.get();
         if (snap.empty) {
           container.innerHTML = "<p>Nessun utente trovato.</p>";
           return;
@@ -140,7 +143,6 @@
                 <th>Stato</th>
                 <th>Admin</th>
                 <th>Distributore</th>
-                <th>Azioni</th>
               </tr>
             </thead>
             <tbody>
@@ -151,16 +153,12 @@
           html += `
             <tr>
               <td>${u.displayName || '-'}</td>
-              <td>${u.email || '-'}</td>
+              <td>${u.Email || '-'}</td>
               <td>${u.dealerId || '-'}</td>
               <td>${u.role || '-'}</td>
-              <td>${u.status || '-'}</td>
+              <td>${u.Status || '-'}</td>
               <td>${u.isAdmin ? 'Sì' : 'No'}</td>
               <td>${u.isDistributorUser ? 'Sì' : 'No'}</td>
-              <td>
-                <!-- Qui in futuro: sospendi/blocca ecc. -->
-                <button onclick="alert('Qui aggiungeremo azioni per ${doc.id}')">Azioni</button>
-              </td>
             </tr>
           `;
         });
@@ -169,7 +167,17 @@
         container.innerHTML = html;
 
       } catch (e) {
-        container.innerHTML = "Errore nel caricamento utenti: " + e.message;
+        console.error("Errore nel caricamento utenti dal DMS:", e);
+
+        if (e.code === "permission-denied") {
+          container.innerHTML =
+            "<p><strong>Errore permessi Firestore.</strong><br>" +
+            "Le regole attuali non permettono la lettura di tutti gli utenti. " +
+            "Quando avremo stabilito le regole per gli admin, qui comparirà l'elenco.</p>";
+        } else {
+          container.innerHTML =
+            "Errore nel caricamento utenti: " + e.message;
+        }
       }
     }
 
