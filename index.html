@@ -3,67 +3,140 @@
 <head>
   <meta charset="UTF-8">
   <title>Login FTI-HUB</title>
+
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
+
   <style>
-    body { font-family: Arial, sans-serif; margin: 30px; }
-    .box { background: #eee; padding: 22px; max-width: 360px; margin: auto; border-radius: 8px; }
-    #reset-message { color: green; }
-    #login-error { color: red; }
+    * {
+      box-sizing: border-box;
+    }
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 0; 
+      padding: 0; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      height: 100vh; 
+      background: #f5f5f5;
+    }
+    .box { 
+      background: #ffffff; 
+      padding: 24px; 
+      max-width: 360px; 
+      width: 100%;
+      border-radius: 10px; 
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .box h2 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 4px 0;
+    }
+    button {
+      margin-top: 8px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    hr {
+      margin: 16px 0;
+    }
+    #reset-message { 
+      color: green; 
+      margin-top: 8px; 
+      min-height: 18px; 
+      font-size: 0.9em;
+    }
+    #login-error { 
+      color: red; 
+      margin-top: 8px; 
+      min-height: 18px; 
+      font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
   <div class="box">
     <h2>Login FTI-HUB</h2>
-    <input type="email" id="email" placeholder="Email" required><br><br>
-    <input type="password" id="password" placeholder="Password" required><br><br>
+
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Password" required>
     <button onclick="login()">Login</button>
+
     <hr>
+
     <input type="email" id="email_reset" placeholder="Email per reset password">
     <button onclick="resetPassword()">Reimposta Password</button>
+
     <div id="reset-message"></div>
     <div id="login-error"></div>
   </div>
+
   <script>
     async function login() {
-      const email = document.getElementById('email').value;
+      const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      document.getElementById('login-error').innerText = "";
-      try {
-        const cred = await firebase.auth().signInWithEmailAndPassword(email, password);
-        const user = cred.user;
-        const docRef = firebase.firestore().collection('PersonaleDealers').doc(user.uid);
-        const doc = await docRef.get();
-        if (!doc.exists) {
-          document.getElementById('login-error').innerText = "Impossibile trovare i dati utente nel database.";
-          return;
-        }
-        const dati = doc.data();
-        if (!dati.Status) {
-          document.getElementById('login-error').innerText = "Utente non attivo.";
-          return;
-        }
-        // Prosegui: Vai a hub principale
-        window.location.href = "FTHUBAS.html";
-      } catch(e) {
-        document.getElementById('login-error').innerText = "Login fallito: " + e.message;
-      }
-    }
-    function resetPassword() {
-      const email = document.getElementById('email_reset').value;
-      if (!email) {
-        document.getElementById('reset-message').innerText = "Inserisci la tua email!";
+      const loginErrorEl = document.getElementById('login-error');
+      loginErrorEl.innerText = "";
+
+      if (!email || !password) {
+        loginErrorEl.innerText = "Inserisci email e password.";
         return;
       }
-      firebase.auth().sendPasswordResetEmail(email)
+
+      try {
+        const cred = await auth.signInWithEmailAndPassword(email, password);
+        const user = cred.user;
+
+        const docRef = db.collection('users').doc(user.uid);
+        const doc = await docRef.get();
+
+        if (!doc.exists) {
+          loginErrorEl.innerText = "Impossibile trovare i dati utente nel database.";
+          return;
+        }
+
+        const dati = doc.data();
+
+        if (!dati.status || dati.status !== "active") {
+          loginErrorEl.innerText = "Utente non attivo (" + (dati.status || "sconosciuto") + ").";
+          return;
+        }
+
+        // Tutto ok → vai alla main
+        window.location.href = "FTHUBAS.html";
+
+      } catch (e) {
+        loginErrorEl.innerText = "Login fallito: " + e.message;
+      }
+    }
+
+    function resetPassword() {
+      const email = document.getElementById('email_reset').value.trim();
+      const resetMessageEl = document.getElementById('reset-message');
+
+      resetMessageEl.innerText = "";
+
+      if (!email) {
+        resetMessageEl.innerText = "Inserisci la tua email!";
+        return;
+      }
+
+      auth.sendPasswordResetEmail(email)
         .then(() => {
-          document.getElementById('reset-message').innerText = "Email inviata! Controlla la tua casella per reimpostare la password.";
+          resetMessageEl.innerText = "Email inviata! Controlla la tua casella per reimpostare la password.";
         })
         .catch(e => {
-          document.getElementById('reset-message').innerText = "Errore: " + e.message;
+          resetMessageEl.innerText = "Errore: " + e.message;
         });
     }
   </script>
