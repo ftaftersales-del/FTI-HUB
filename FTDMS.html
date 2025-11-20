@@ -385,13 +385,6 @@
     </div>
   </div>
 
-  <div class="field">
-    <label>
-      <input id="userIsDistributorCheckbox" type="checkbox">
-      Utente Distributore (vede tutti i dealer)
-    </label>
-  </div>
-
   <div class="field" id="userPasswordField">
     <label>Password iniziale (solo in creazione)</label>
     <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri">
@@ -748,14 +741,14 @@
   }
 
   // ======= FORM UTENTE =======
-  function resetUserFormFields() {
-    document.getElementById("userEmailInput").value = "";
-    document.getElementById("userDisplayNameInput").value = "";
-    document.getElementById("userStatusSelect").value = "active";
-    document.getElementById("userRoleSelect").value = "user";
-    document.getElementById("userIsDistributorCheckbox").checked = false;
-    document.getElementById("userPasswordInput").value = "";
-  }
+function resetUserFormFields() {
+  document.getElementById("userEmailInput").value = "";
+  document.getElementById("userDisplayNameInput").value = "";
+  document.getElementById("userStatusSelect").value = "active";
+  document.getElementById("userRoleSelect").value = "user";
+  document.getElementById("userPasswordInput").value = "";
+}
+
 
   function openUserFormNew() {
     if (!selectedDealer) {
@@ -798,8 +791,6 @@
       document.getElementById("userStatusSelect").value = u.Status || "active";
       const role = u.role || (u.isAdmin ? "admin" : "user");
       document.getElementById("userRoleSelect").value = role;
-      document.getElementById("userIsDistributorCheckbox").checked =
-        !!u.isDistributorUser;
 
       document.getElementById("userPasswordField").style.display = "none";
       document.getElementById("user-form-panel").style.display = "block";
@@ -815,72 +806,83 @@
   }
 
   async function saveUser() {
-    if (!selectedDealer) {
-      alert("Seleziona prima un dealer.");
-      return;
+  if (!selectedDealer) {
+    alert("Seleziona prima un dealer.");
+    return;
+  }
+
+  const email = document.getElementById("userEmailInput").value.trim();
+  const displayName = document.getElementById("userDisplayNameInput").value.trim();
+  const status = document.getElementById("userStatusSelect").value;
+  const role = document.getElementById("userRoleSelect").value;
+  const password = document.getElementById("userPasswordInput").value;
+
+  if (!email) {
+    alert("L'email è obbligatoria.");
+    return;
+  }
+
+  try {
+    // 1) scopriamo se il dealer selezionato è un distributore
+    let isDistUser = false;
+    const dealerDoc = await db.collection("dealers").doc(selectedDealer).get();
+    if (dealerDoc.exists && dealerDoc.data().isDistributor === true) {
+      isDistUser = true;
     }
 
-    const email = document.getElementById("userEmailInput").value.trim();
-    const displayName = document.getElementById("userDisplayNameInput").value.trim();
-    const status = document.getElementById("userStatusSelect").value;
-    const role = document.getElementById("userRoleSelect").value;
-    const isDistUser = document.getElementById("userIsDistributorCheckbox").checked;
-    const password = document.getElementById("userPasswordInput").value;
-
-    if (!email) {
-      alert("L'email è obbligatoria.");
-      return;
-    }
-
+    // 2) documento utente da salvare
     const userDoc = {
       Email: email,
       displayName: displayName || "",
-      Status: status,
+      Status: status,             // "active" | "suspended" | "blocked"
       dealerId: selectedDealer,
-      role: role,
+      role: role,                 // "admin" | "user"
       isAdmin: (role === "admin"),
       isDistributorUser: isDistUser
     };
 
-    try {
-      if (userFormMode === "new") {
-        if (!password || password.length < 6) {
-          alert("Per creare un utente devi inserire una password iniziale (min. 6 caratteri).");
-          return;
-        }
-
-        if (!secondaryApp) {
-          secondaryApp =
-            firebase.apps.find(a => a.name === "Secondary") ||
-            firebase.initializeApp(firebaseConfig, "Secondary");
-        }
-        const secondaryAuth = secondaryApp.auth();
-        const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
-        const uid = cred.user.uid;
-        await db.collection("Users").doc(uid).set(userDoc);
-        await secondaryAuth.signOut();
-
-        alert("Utente creato con successo.");
-        closeUserForm();
-        loadUsersForDealer();
+    // -------- CREAZIONE NUOVO UTENTE --------
+    if (userFormMode === "new") {
+      if (!password || password.length < 6) {
+        alert("Per creare un utente devi inserire una password iniziale (min. 6 caratteri).");
         return;
       }
 
-      if (userFormMode === "edit" && selectedUserId) {
-        await db.collection("Users").doc(selectedUserId).update(userDoc);
-        alert("Utente aggiornato.");
-        closeUserForm();
-        loadUsersForDealer();
-        return;
+      if (!secondaryApp) {
+        secondaryApp =
+          firebase.apps.find(a => a.name === "Secondary") ||
+          firebase.initializeApp(firebaseConfig, "Secondary");
       }
+      const secondaryAuth = secondaryApp.auth();
+      const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+      const uid = cred.user.uid;
 
-      alert("Nessuna operazione da eseguire.");
+      await db.collection("Users").doc(uid).set(userDoc);
+      await secondaryAuth.signOut();
 
-    } catch (e) {
-      console.error("Errore salvataggio utente:", e);
-      alert("Errore salvataggio utente: " + e.message);
+      alert("Utente creato con successo.");
+      closeUserForm();
+      loadUsersForDealer();
+      return;
     }
+
+    // -------- MODIFICA UTENTE ESISTENTE --------
+    if (userFormMode === "edit" && selectedUserId) {
+      await db.collection("Users").doc(selectedUserId).update(userDoc);
+      alert("Utente aggiornato.");
+      closeUserForm();
+      loadUsersForDealer();
+      return;
+    }
+
+    alert("Nessuna operazione da eseguire.");
+
+  } catch (e) {
+    console.error("Errore salvataggio utente:", e);
+    alert("Errore salvataggio utente: " + e.message);
   }
+}
+
 
   // ======= LISTA DEALERS & UTENTI =======
   async function loadDealers() {
