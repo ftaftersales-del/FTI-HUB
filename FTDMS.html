@@ -1,4 +1,4 @@
-v<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
@@ -58,7 +58,7 @@ v<!DOCTYPE html>
 <body>
   <div class="card">
     <div class="header">
-      <h2>DMS - Gestione Utenze</h2>
+      <h2>DMS - Gestione Utenze e Dealers</h2>
       <div>
         <button onclick="goBack()">Torna al Main</button>
         <button onclick="logout()">Logout</button>
@@ -68,15 +68,40 @@ v<!DOCTYPE html>
     <div id="status">Verifica permessi...</div>
 
     <div id="content" style="display:none;">
-      <button onclick="reloadUsers()">Ricarica elenco utenti</button>
-      <div id="users-table-container" style="margin-top:12px;"></div>
+
+      <!-- LISTA DEALERS -->
+      <div class="card" style="margin-top:20px;">
+        <h3>Elenco Dealers</h3>
+        <div id="dealers-table-container">Caricamento dealers...</div>
+      </div>
+
+      <!-- DEALER SELEZIONATO -->
+      <div class="card" style="margin-top:20px;">
+        <h3>Dealer Selezionato</h3>
+        <div id="selected-dealer">Nessun dealer selezionato.</div>
+      </div>
+
+      <!-- LISTA UTENTI -->
+      <div class="card" style="margin-top:20px;">
+        <h3>Utenti</h3>
+        <p style="margin-top:0;">
+          Seleziona un dealer dalla tabella sopra per filtrare gli utenti di quel dealer.
+        </p>
+        <button onclick="reloadUsers()">Ricarica elenco utenti</button>
+        <div id="users-table-container" style="margin-top:12px;"></div>
+      </div>
+
     </div>
   </div>
 
   <script>
     let currentUser = null;
     let currentUserData = null;
+    window.selectedDealer = null;
 
+    // =========================
+    //   CONTROLLO LOGIN E ADMIN
+    // =========================
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
         window.location.href = "index.html";
@@ -86,17 +111,19 @@ v<!DOCTYPE html>
       currentUser = user;
 
       try {
+        // Leggo il profilo dell'utente corrente da Users/{uid}
         const doc = await db.collection('Users').doc(user.uid).get();
 
         if (!doc.exists) {
           document.getElementById('status').innerText =
-            "Profilo admin non trovato.";
+            "Profilo admin non trovato in Users.";
           return;
         }
 
         const data = doc.data();
         currentUserData = data;
 
+        // Verifico se è admin
         if (data.isAdmin !== true) {
           document.getElementById('status').innerText =
             "Non hai i permessi per accedere al DMS.";
@@ -110,7 +137,8 @@ v<!DOCTYPE html>
           "Sei loggato come admin.";
         document.getElementById('content').style.display = 'block';
 
-        // Carica l'elenco utenti (potrà dare errori permessi se le rules non lo consentono)
+        // Carico dealers e utenti
+        loadDealers();
         reloadUsers();
 
       } catch (e) {
@@ -120,15 +148,106 @@ v<!DOCTYPE html>
       }
     });
 
+    // =========================
+    //   CARICAMENTO DEALERS
+    // =========================
+    async function loadDealers() {
+      const container = document.getElementById("dealers-table-container");
+      container.innerHTML = "Caricamento dealers...";
+
+      try {
+        const snap = await db.collection("dealers").get();
+
+        if (snap.empty) {
+          container.innerHTML = "<p>Nessun dealer trovato.</p>";
+          return;
+        }
+
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Codice</th>
+                <th>Nome</th>
+                <th>Città</th>
+                <th>Provincia</th>
+                <th>Regione</th>
+                <th>Dealer</th>
+                <th>Workshop</th>
+                <th>RSA</th>
+                <th>Attivo</th>
+              </tr>
+            </thead>
+            <tbody>
+        ";
+
+        snap.forEach(doc => {
+          const d = doc.data();
+
+          html += `
+            <tr onclick="selectDealer('${doc.id}')" style="cursor:pointer;">
+              <td>${d.dealerID || doc.id}</td>
+              <td>${d["Sub-Dealer Name"] || "-"}</td>
+              <td>${d.City || "-"}</td>
+              <td>${d.Province || "-"}</td>
+              <td>${d.Region || "-"}</td>
+              <td>${d.Dealer ? "✔️" : "❌"}</td>
+              <td>${d.Workshop ? "✔️" : "❌"}</td>
+              <td>${d.RSA ? "✔️" : "❌"}</td>
+              <td>${d.active === false ? "❌" : "✔️"}</td>
+            </tr>
+          `;
+        });
+
+        html += "</tbody></table>";
+        container.innerHTML = html;
+
+      } catch (err) {
+        console.error("Errore nel caricamento dealer:", err);
+        container.innerHTML =
+          "<p>Errore caricamento dealer: " + err.message + "</p>";
+      }
+    }
+
+    // =========================
+    //   SELEZIONE DEALER
+    // =========================
+    function selectDealer(dealerId) {
+      window.selectedDealer = dealerId;
+
+      document.getElementById("selected-dealer").innerHTML =
+        `<strong>Dealer selezionato:</strong> ${dealerId}`;
+
+      // quando seleziono un dealer ricarico utenti filtrati
+      reloadUsers();
+    }
+
+    // =========================
+    //   CARICAMENTO UTENTI
+    // =========================
     async function reloadUsers() {
       const container = document.getElementById('users-table-container');
       container.innerHTML = "Caricamento utenti...";
 
       try {
-        const snap = await db.collection('Users').get();
+        let query = db.collection('Users');
+
+        // Se ho un dealer selezionato → filtro per quel dealer
+        if (window.selectedDealer) {
+          query = query.where('dealerId', '==', window.selectedDealer);
+        } else {
+          // Se non è selezionato nulla:
+          // - se utente admin del distributore → può vedere tutti
+          // - altrimenti filtriamo sul suo dealer
+          if (!currentUserData.isDistributorUser && currentUserData.dealerId) {
+            query = query.where('dealerId', '==', currentUserData.dealerId);
+          }
+        }
+
+        const snap = await query.get();
 
         if (snap.empty) {
-          container.innerHTML = "<p>Nessun utente trovato.</p>";
+          container.innerHTML = "<p>Nessun utente trovato per questo filtro.</p>";
           return;
         }
 
@@ -153,7 +272,7 @@ v<!DOCTYPE html>
           html += `
             <tr>
               <td>${u.displayName || '-'}</td>
-              <td>${u.Email || '-'}</td>
+              <td>${u.Email || u.email || '-'}</td>
               <td>${u.dealerId || '-'}</td>
               <td>${u.role || '-'}</td>
               <td>${u.Status || '-'}</td>
@@ -172,8 +291,8 @@ v<!DOCTYPE html>
         if (e.code === "permission-denied") {
           container.innerHTML =
             "<p><strong>Errore permessi Firestore.</strong><br>" +
-            "Le regole attuali non permettono la lettura di tutti gli utenti. " +
-            "Quando avremo stabilito le regole per gli admin, qui comparirà l'elenco.</p>";
+            "Le regole attuali non permettono la lettura dell'elenco utenti. " +
+            "Quando abiliterai gli admin a leggere più utenti, qui comparirà la tabella.</p>";
         } else {
           container.innerHTML =
             "Errore nel caricamento utenti: " + e.message;
@@ -181,6 +300,9 @@ v<!DOCTYPE html>
       }
     }
 
+    // =========================
+    //   NAVIGAZIONE
+    // =========================
     function goBack() {
       window.location.href = "FTHUBAS.html";
     }
