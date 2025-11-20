@@ -25,6 +25,7 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     h2 { margin-top: 0; }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -36,6 +37,7 @@
       text-align: left;
     }
     tr:hover { background: #f0f8ff; cursor: pointer; }
+
     .toolbar button { margin-right: 8px; }
     .section {
       margin-top: 25px;
@@ -44,7 +46,6 @@
       border-radius: 8px;
     }
 
-    /* Checkbox allineati */
     .checkbox-row {
       display: flex;
       flex-wrap: wrap;
@@ -57,7 +58,7 @@
       gap: 4px;
     }
 
-    /* Pannello laterale dealer */
+    /* pannello dealer */
     #dealer-form-panel {
       display: none;
       position: fixed;
@@ -70,12 +71,12 @@
       box-shadow: -3px 0 10px rgba(0,0,0,0.15);
       padding: 20px 20px 60px;
       overflow-y: auto;
-      z-index: 999;
+      z-index: 900;
       box-sizing: border-box;
     }
     #dealer-form-panel h3 { margin-top: 0; }
 
-    /* Pannello laterale utente */
+    /* pannello utente */
     #user-form-panel {
       display: none;
       position: fixed;
@@ -88,7 +89,7 @@
       box-shadow: -3px 0 10px rgba(0,0,0,0.15);
       padding: 20px 20px 60px;
       overflow-y: auto;
-      z-index: 1000;
+      z-index: 950;
       box-sizing: border-box;
     }
     #user-form-panel h3 { margin-top: 0; }
@@ -156,7 +157,7 @@
     <p id="selected-dealer">Seleziona un dealer dalla tabella.</p>
   </div>
 
-  <!-- ====================== UTENTI DEL DEALER ====================== -->
+  <!-- ====================== UTENTI DEALER ====================== -->
   <div class="section">
     <div class="toolbar">
       <strong>Utenti del dealer</strong>
@@ -168,8 +169,6 @@
   </div>
 
 </div> <!-- /container -->
-
-
 
 <!-- ====================== PANNELLO DEALER ====================== -->
 <div id="dealer-form-panel">
@@ -353,8 +352,6 @@
   <br><br>
 </div>
 
-
-
 <!-- ====================== PANNELLO UTENTE ====================== -->
 <div id="user-form-panel">
   <button class="close-btn" onclick="closeUserForm()">Chiudi</button>
@@ -403,426 +400,22 @@
   <button onclick="saveUser()">Salva utente</button>
   <br><br>
 </div>
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>DMS - Gestione Dealers e Utenze</title>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
-  <script src="firebase-config.js"></script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 20px;
-    }
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h2 { margin-top: 0; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-    }
-    tr:hover { background: #f0f8ff; cursor: pointer; }
-    .toolbar button { margin-right: 8px; }
-    .section {
-      margin-top: 25px;
-      padding: 15px;
-      background: #fafafa;
-      border-radius: 8px;
-    }
-
-    /* Checkbox allineati */
-    .checkbox-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin: 8px 0;
-    }
-    .checkbox-row label {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    /* Pannello laterale dealer */
-    #dealer-form-panel {
-      display: none;
-      position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 450px;
-      max-height: 100vh;
-      background: white;
-      box-shadow: -3px 0 10px rgba(0,0,0,0.15);
-      padding: 20px 20px 60px;
-      overflow-y: auto;
-      z-index: 999;
-      box-sizing: border-box;
-    }
-    #dealer-form-panel h3 { margin-top: 0; }
-
-    /* Pannello laterale utente */
-    #user-form-panel {
-      display: none;
-      position: fixed;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: 400px;
-      max-height: 100vh;
-      background: white;
-      box-shadow: -3px 0 10px rgba(0,0,0,0.15);
-      padding: 20px 20px 60px;
-      overflow-y: auto;
-      z-index: 1000;
-      box-sizing: border-box;
-    }
-    #user-form-panel h3 { margin-top: 0; }
-
-    .field { margin-bottom: 12px; }
-    .field label { font-weight: bold; display: block; margin-bottom: 3px; }
-    input, select, textarea {
-      width: 100%;
-      padding: 6px;
-      box-sizing: border-box;
-    }
-
-    .two-columns {
-      display: flex;
-      gap: 12px;
-    }
-    .two-columns .field { flex: 1; }
-
-    .close-btn {
-      float: right;
-      background: #ccc;
-      padding: 4px 10px;
-      border: none;
-      cursor: pointer;
-    }
-  </style>
-</head>
-
-<body>
-<div class="container">
-
-  <h2>DMS - Gestione Dealers e Utenze</h2>
-  <p id="welcomeMsg"></p>
-
-  <!-- ====================== DEALERS ====================== -->
-  <div class="section">
-    <div class="toolbar">
-      <strong>Dealers</strong>
-      <button onclick="openDealerFormNew()">Nuovo dealer</button>
-      <button onclick="openDealerFormEditWrapped()">Modifica dealer selezionato</button>
-      <button onclick="openDealerFormView()">Visualizza dealer</button>
-    </div>
-
-    <table id="dealersTable">
-      <thead>
-        <tr>
-          <th>Codice</th>
-          <th>Nome</th>
-          <th>Città</th>
-          <th>Provincia</th>
-          <th>Regione</th>
-          <th>Dealer</th>
-          <th>Workshop</th>
-          <th>RSA</th>
-          <th>Stato</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- ====================== DEALER SELEZIONATO ====================== -->
-  <div class="section">
-    <h3>Dealer selezionato</h3>
-    <p id="selected-dealer">Seleziona un dealer dalla tabella.</p>
-  </div>
-
-  <!-- ====================== UTENTI DEL DEALER ====================== -->
-  <div class="section">
-    <div class="toolbar">
-      <strong>Utenti del dealer</strong>
-      <button onclick="openUserFormNew()">Nuovo utente</button>
-      <button onclick="openUserFormEdit()">Modifica utente selezionato</button>
-    </div>
-
-    <div id="users-container">Seleziona un dealer per vedere gli utenti.</div>
-  </div>
-
-</div> <!-- /container -->
-
-
-
-<!-- ====================== PANNELLO DEALER ====================== -->
-<div id="dealer-form-panel">
-  <button class="close-btn" onclick="closeDealerForm()">Chiudi</button>
-  <h3 id="dealer-form-title">Dealer</h3>
-
-  <div class="field">
-    <label>Stato dealer</label>
-    <select id="dealerStatusSelect">
-      <option value="attivo">Attivo</option>
-      <option value="sospeso">Sospeso</option>
-      <option value="dismesso">Dismesso</option>
-    </select>
-  </div>
-
-  <h4>Main data</h4>
-
-  <div class="field">
-    <label>Codice Dealer (dealerID)</label>
-    <div style="display:flex; gap:6px;">
-      <input id="dealerIDInput" type="text" placeholder="Es. FT001">
-      <button type="button" onclick="generateDealerCode()">Genera</button>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Sub-Dealer Name</label>
-    <input id="subDealerNameInput" type="text">
-  </div>
-
-  <div class="field">
-    <label>Address1</label>
-    <input id="address1Input" type="text">
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>City</label>
-      <input id="cityInput" type="text">
-    </div>
-    <div class="field">
-      <label>Province</label>
-      <input id="provinceInput" type="text">
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Region</label>
-    <select id="regionInput">
-      <option value="">-- seleziona --</option>
-      <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
-      <option>Campania</option><option>Emilia-Romagna</option>
-      <option>Friuli Venezia Giulia</option><option>Lazio</option><option>Liguria</option>
-      <option>Lombardia</option><option>Marche</option><option>Molise</option>
-      <option>Piemonte</option><option>Puglia</option><option>Sardegna</option>
-      <option>Sicilia</option><option>Toscana</option><option>Trentino-Alto Adige</option>
-      <option>Umbria</option><option>Valle d'Aosta</option><option>Veneto</option>
-    </select>
-  </div>
-
-  <div class="field">
-    <label>IBAN</label>
-    <input id="ibanInput" type="text" maxlength="27">
-  </div>
-
-  <div class="field">
-    <label>Vat Number</label>
-    <input id="vatNumberInput" type="text" maxlength="11">
-  </div>
-
-  <div class="field">
-    <label>LaborRateStd</label>
-    <input id="laborStdInput" type="number">
-  </div>
-
-  <div class="field" id="laborWarrantyField">
-    <label>LaborRateWarranty (solo distributore)</label>
-    <input id="laborWarrantyInput" type="number">
-  </div>
-
-  <div class="checkbox-row">
-    <label><input type="checkbox" id="dealerFlag"> Dealer</label>
-    <label><input type="checkbox" id="workshopFlag"> Workshop</label>
-    <label><input type="checkbox" id="rsaFlag"> RSA</label>
-    <label><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()"> Distributore</label>
-  </div>
-
-  <h4>Sezione Dealer</h4>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Dealer Contact</label>
-      <input id="dealerContactInput" type="text">
-    </div>
-    <div class="field">
-      <label>Dealer Email</label>
-      <input id="dealerEmailInput" type="text">
-    </div>
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Dealer Phone</label>
-      <input id="dealerPhoneInput" type="text">
-    </div>
-    <div class="field">
-      <label>Dealer CloseTime</label>
-      <input id="dealerCloseInput" type="text">
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Dealer OpenTime</label>
-    <input id="dealerOpenInput" type="text">
-  </div>
-
-  <h4>Sezione Workshop</h4>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Workshop Contact</label>
-      <input id="wsContactInput" type="text">
-    </div>
-    <div class="field">
-      <label>Workshop Email</label>
-      <input id="wsEmailInput" type="text">
-    </div>
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Workshop Phone</label>
-      <input id="wsPhoneInput" type="text">
-    </div>
-    <div class="field">
-      <label>Workshop CloseTime</label>
-      <input id="wsCloseInput" type="text">
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Workshop OpenTime</label>
-    <input id="wsOpenInput" type="text">
-  </div>
-
-  <h4>Sezione RSA</h4>
-
-  <div class="field">
-    <label>Coverage Radius (km)</label>
-    <input id="coverageRadiusInput" type="text">
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>RSA Contact Name</label>
-      <input id="rsaContactInput" type="text">
-    </div>
-    <div class="field">
-      <label>RSA Email</label>
-      <input id="rsaEmailInput" type="text">
-    </div>
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>RSA Phone</label>
-      <input id="rsaPhoneInput" type="text">
-    </div>
-    <div class="field">
-      <label>RSA CloseTime</label>
-      <input id="rsaCloseInput" type="text">
-    </div>
-  </div>
-
-  <div class="field">
-    <label>RSA OpenTime</label>
-    <input id="rsaOpenInput" type="text">
-  </div>
-
-  <button id="dealerSaveBtn" onclick="saveDealer()">Salva dealer</button>
-  <br><br>
-</div>
-
-
-
-<!-- ====================== PANNELLO UTENTE ====================== -->
-<div id="user-form-panel">
-  <button class="close-btn" onclick="closeUserForm()">Chiudi</button>
-  <h3 id="user-form-title">Utente</h3>
-
-  <div class="field">
-    <label>Email</label>
-    <input id="userEmailInput" type="email" placeholder="nome.cognome@dealer.it">
-  </div>
-
-  <div class="field">
-    <label>Nome visualizzato</label>
-    <input id="userDisplayNameInput" type="text" placeholder="Nome Cognome">
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Stato</label>
-      <select id="userStatusSelect">
-        <option value="active">Attivo</option>
-        <option value="suspended">Sospeso</option>
-        <option value="blocked">Bloccato</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Ruolo</label>
-      <select id="userRoleSelect">
-        <option value="user">User</option>
-        <option value="admin">Admin</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>
-      <input id="userIsDistributorCheckbox" type="checkbox">
-      Utente Distributore (vede tutti i dealer)
-    </label>
-  </div>
-
-  <div class="field" id="userPasswordField">
-    <label>Password iniziale (solo in creazione)</label>
-    <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri">
-  </div>
-
-  <button onclick="saveUser()">Salva utente</button>
-  <br><br>
-</div>
 <script>
-  // ================= VARIABILI GLOBALI =================
+  // ======= VARIABILI GLOBALI =======
   let currentUser = null;
   let currentUserData = null;
 
   let selectedDealer = null;
-  let dealerFormMode = "new";      // "new" | "edit" | "view"
+  let dealerFormMode = "new";
   let dealerFormEditingId = null;
   let knownDealerIds = [];
 
   let selectedUserId = null;
-  let userFormMode = "view";       // "new" | "edit"
-  let secondaryApp = null;         // per creare utenti Auth senza sloggare l'admin
+  let userFormMode = "view";   // "new" | "edit"
+  let secondaryApp = null;
 
-  // ================= LOGIN & PERMESSI =================
+  // ======= LOGIN & PERMESSI =======
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
       window.location.href = "index.html";
@@ -860,7 +453,7 @@
     }
   });
 
-  // ================= FORM DEALER =================
+  // ======= FORM DEALER =======
   function resetDealerForm() {
     dealerFormMode = "new";
     dealerFormEditingId = null;
@@ -1154,7 +747,7 @@
     }
   }
 
-  // ================= FORM UTENTE =================
+  // ======= FORM UTENTE =======
   function resetUserFormFields() {
     document.getElementById("userEmailInput").value = "";
     document.getElementById("userDisplayNameInput").value = "";
@@ -1198,8 +791,7 @@
 
       userFormMode = "edit";
       resetUserFormFields();
-      document.getElementById("user-form-title").innerText =
-        "Modifica utente";
+      document.getElementById("user-form-title").innerText = "Modifica utente";
 
       document.getElementById("userEmailInput").value = u.Email || u.email || "";
       document.getElementById("userDisplayNameInput").value = u.displayName || "";
@@ -1289,7 +881,8 @@
       alert("Errore salvataggio utente: " + e.message);
     }
   }
-  // ================= CARICA LISTA DEALERS =================
+
+  // ======= LISTA DEALERS & UTENTI =======
   async function loadDealers() {
     const tbody = document.querySelector("#dealersTable tbody");
     tbody.innerHTML = "<tr><td colspan='9'>Caricamento...</td></tr>";
@@ -1318,7 +911,7 @@
             <td>${d.City || "-"}</td>
             <td>${d.Province || "-"}</td>
             <td>${d.Region || "-"}</td>
-            <td>${d.Dealer ? ✔️" : ""}</td>
+            <td>${d.Dealer ? "✔️" : ""}</td>
             <td>${d.Workshop ? "✔️" : ""}</td>
             <td>${d.RSA ? "✔️" : ""}</td>
             <td>${stato}</td>
@@ -1343,7 +936,6 @@
     loadUsersForDealer();
   }
 
-  // ================= CARICA UTENTI DEL DEALER =================
   async function loadUsersForDealer() {
     const container = document.getElementById("users-container");
 
@@ -1413,10 +1005,9 @@
 
   function selectUserRow(userId) {
     selectedUserId = userId;
-    loadUsersForDealer(); // per evidenziare la riga selezionata
+    loadUsersForDealer(); // solo per evidenziare riga selezionata
   }
 
-  // ================= AGGIORNA STATO UTENTE =================
   async function updateUserStatus(userId, newStatus) {
     const conferma = confirm("Impostare lo stato utente su: " + newStatus + "?");
     if (!conferma) return;
@@ -1430,15 +1021,6 @@
       alert("Errore aggiornando lo stato: " + e.message);
     }
   }
-
-  // ================= NAVIGAZIONE (se vuoi usarla) =================
-  function goBack() {
-    window.location.href = "FTHUBAS.html";
-  }
-  function logout() {
-    auth.signOut().then(() => window.location.href = "index.html");
-  }
 </script>
-
 </body>
 </html>
