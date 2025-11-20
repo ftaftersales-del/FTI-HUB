@@ -24,75 +24,65 @@
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-    h2 {
-      margin-top: 0;
-    }
+    h2 { margin-top: 0; }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
     }
     th, td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
+      padding: 8px; border-bottom: 1px solid #ddd; text-align: left;
     }
-    tr:hover {
-      background: #f0f8ff;
-      cursor: pointer;
-    }
-    .toolbar button {
-      margin-right: 8px;
-    }
+    tr:hover { background: #f0f8ff; cursor: pointer; }
+    .toolbar button { margin-right: 8px; }
     .section {
-      margin-top: 25px;
-      padding: 15px;
-      background: #fafafa;
-      border-radius: 8px;
+      margin-top: 25px; padding: 15px;
+      background: #fafafa; border-radius: 8px;
     }
-    /* PANNELLO FORM */
+
+    /* Checkbox corretti */
+    .checkbox-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin: 8px 0;
+    }
+    .checkbox-row label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Pannello laterale */
     #dealer-form-panel {
       display: none;
       position: fixed;
       top: 0;
       right: 0;
+      bottom: 0;
       width: 450px;
-      height: 100%;
+      max-height: 100vh;
       background: white;
       box-shadow: -3px 0 10px rgba(0,0,0,0.15);
-      padding: 20px;
+      padding: 20px 20px 60px;
       overflow-y: auto;
       z-index: 999;
-    }
-    #dealer-form-panel h3 {
-      margin-top: 0;
-    }
-    .field {
-      margin-bottom: 12px;
-    }
-    .field label {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 3px;
-    }
-    input, select, textarea {
-      width: 100%;
-      padding: 6px;
       box-sizing: border-box;
     }
+    #dealer-form-panel h3 { margin-top: 0; }
+
+    .field { margin-bottom: 12px; }
+    .field label { font-weight: bold; display: block; margin-bottom: 3px; }
+    input, select, textarea { width: 100%; padding: 6px; box-sizing: border-box; }
+
     .two-columns {
       display: flex;
       gap: 12px;
     }
-    .two-columns .field {
-      flex: 1;
-    }
+    .two-columns .field { flex: 1; }
+
     .close-btn {
-      float: right;
-      background: #ccc;
-    }
-    .checkbox-row label {
-      margin-right: 20px;
+      float: right; background: #ccc; padding: 4px 10px; border: none; cursor: pointer;
     }
   </style>
 </head>
@@ -103,10 +93,9 @@
   <h2>DMS - Gestione Dealers e Utenze</h2>
   <p id="welcomeMsg"></p>
 
-  <!-- ========================= -->
-  <!--         DEALERS LIST      -->
-  <!-- ========================= -->
-
+  <!-- =================================== -->
+  <!--        SEZIONE DEALERS LIST         -->
+  <!-- =================================== -->
   <div class="section">
     <div class="toolbar">
       <strong>Dealers</strong>
@@ -133,35 +122,44 @@
     </table>
   </div>
 
-  <!-- ========================= -->
-  <!--       DEALER SELECTED     -->
-  <!-- ========================= -->
-
+  <!-- =================================== -->
+  <!--       SEZIONE DEALER SELECTED       -->
+  <!-- =================================== -->
   <div class="section">
     <h3>Dealer selezionato</h3>
     <p id="selected-dealer">Seleziona un dealer dalla tabella.</p>
   </div>
 
-  <!-- ========================= -->
-  <!--      USERS OF DEALER      -->
-  <!-- ========================= -->
-
+  <!-- =================================== -->
+  <!--       SEZIONE UTENTI DEALER         -->
+  <!-- =================================== -->
   <div class="section">
     <h3>Utenti del dealer</h3>
     <div id="users-container">Seleziona un dealer per vedere gli utenti.</div>
   </div>
 
-</div> <!-- /container -->
+</div> <!-- end container -->
 
-<!-- ========================================== -->
-<!--             DEALER FORM PANEL              -->
-<!-- ========================================== -->
 
+
+<!-- ===================================================== -->
+<!--                    PANNELLO FORM                      -->
+<!-- ===================================================== -->
 <div id="dealer-form-panel">
   <button class="close-btn" onclick="closeDealerForm()">Chiudi</button>
   <h3 id="dealer-form-title">Dealer</h3>
 
-  <!-- ====== FORM FIELDS ====== -->
+  <!-- ====== STATO PRIMA DI TUTTO ====== -->
+  <div class="field">
+    <label>Stato dealer</label>
+    <select id="dealerStatusSelect">
+      <option value="attivo">Attivo</option>
+      <option value="sospeso">Sospeso</option>
+      <option value="dismesso">Dismesso</option>
+    </select>
+  </div>
+
+  <h4>Main data</h4>
 
   <div class="field">
     <label>Codice Dealer (dealerID)</label>
@@ -174,6 +172,11 @@
   <div class="field">
     <label>Sub-Dealer Name</label>
     <input id="subDealerNameInput" type="text">
+  </div>
+
+  <div class="field">
+    <label>Address1</label>
+    <input id="address1Input" type="text">
   </div>
 
   <div class="two-columns">
@@ -193,33 +196,11 @@
       <option value="">-- seleziona --</option>
       <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
       <option>Campania</option><option>Emilia-Romagna</option>
-      <option>Friuli Venezia Giulia</option><option>Lazio</option>
-      <option>Liguria</option><option>Lombardia</option><option>Marche</option>
-      <option>Molise</option><option>Piemonte</option><option>Puglia</option>
-      <option>Sardegna</option><option>Sicilia</option><option>Toscana</option>
-      <option>Trentino-Alto Adige</option><option>Umbria</option>
-      <option>Valle d'Aosta</option><option>Veneto</option>
-    </select>
-  </div>
-
-  <div class="field">
-    <label>Address1</label>
-    <input id="address1Input" type="text">
-  </div>
-
-  <div class="checkbox-row">
-    <label><input type="checkbox" id="dealerFlag"> Dealer</label>
-    <label><input type="checkbox" id="workshopFlag"> Workshop</label>
-    <label><input type="checkbox" id="rsaFlag"> RSA</label>
-    <label><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()"> Distributore</label>
-  </div>
-
-  <div class="field">
-    <label>Stato dealer</label>
-    <select id="dealerStatusSelect">
-      <option value="attivo">Attivo</option>
-      <option value="sospeso">Sospeso</option>
-      <option value="dismesso">Dismesso</option>
+      <option>Friuli Venezia Giulia</option><option>Lazio</option><option>Liguria</option>
+      <option>Lombardia</option><option>Marche</option><option>Molise</option>
+      <option>Piemonte</option><option>Puglia</option><option>Sardegna</option>
+      <option>Sicilia</option><option>Toscana</option><option>Trentino-Alto Adige</option>
+      <option>Umbria</option><option>Valle d'Aosta</option><option>Veneto</option>
     </select>
   </div>
 
@@ -238,13 +219,85 @@
     <input id="laborStdInput" type="number">
   </div>
 
-  <div class="field">
+  <div class="field" id="laborWarrantyField">
     <label>LaborRateWarranty (solo distributore)</label>
     <input id="laborWarrantyInput" type="number">
   </div>
 
+  <div class="checkbox-row">
+    <label><input type="checkbox" id="dealerFlag"> Dealer</label>
+    <label><input type="checkbox" id="workshopFlag"> Workshop</label>
+    <label><input type="checkbox" id="rsaFlag"> RSA</label>
+    <label><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()"> Distributore</label>
+  </div>
   <!-- ============================ -->
-  <!--        RSA SECTION           -->
+  <!--       SEZIONE DEALER         -->
+  <!-- ============================ -->
+
+  <h4>Sezione Dealer</h4>
+
+  <div class="two-columns">
+    <div class="field">
+      <label>Dealer Contact</label>
+      <input id="dealerContactInput" type="text">
+    </div>
+    <div class="field">
+      <label>Dealer Email</label>
+      <input id="dealerEmailInput" type="text">
+    </div>
+  </div>
+
+  <div class="two-columns">
+    <div class="field">
+      <label>Dealer Phone</label>
+      <input id="dealerPhoneInput" type="text">
+    </div>
+    <div class="field">
+      <label>Dealer CloseTime</label>
+      <input id="dealerCloseInput" type="text">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Dealer OpenTime</label>
+    <input id="dealerOpenInput" type="text">
+  </div>
+
+  <!-- ============================ -->
+  <!--     SEZIONE WORKSHOP         -->
+  <!-- ============================ -->
+
+  <h4>Sezione Workshop</h4>
+
+  <div class="two-columns">
+    <div class="field">
+      <label>Workshop Contact</label>
+      <input id="wsContactInput" type="text">
+    </div>
+    <div class="field">
+      <label>Workshop Email</label>
+      <input id="wsEmailInput" type="text">
+    </div>
+  </div>
+
+  <div class="two-columns">
+    <div class="field">
+      <label>Workshop Phone</label>
+      <input id="wsPhoneInput" type="text">
+    </div>
+    <div class="field">
+      <label>Workshop CloseTime</label>
+      <input id="wsCloseInput" type="text">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Workshop OpenTime</label>
+    <input id="wsOpenInput" type="text">
+  </div>
+
+  <!-- ============================ -->
+  <!--        SEZIONE RSA           -->
   <!-- ============================ -->
 
   <h4>Sezione RSA</h4>
@@ -281,89 +334,25 @@
     <input id="rsaOpenInput" type="text">
   </div>
 
-  <!-- ============================ -->
-  <!--       Dealer Section         -->
-  <!-- ============================ -->
-
-  <h4>Sezione Dealer</h4>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Dealer Contact</label>
-      <input id="dealerContactInput" type="text">
-    </div>
-    <div class="field">
-      <label>Dealer Email</label>
-      <input id="dealerEmailInput" type="text">
-    </div>
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Dealer Phone</label>
-      <input id="dealerPhoneInput" type="text">
-    </div>
-    <div class="field">
-      <label>Dealer CloseTime</label>
-      <input id="dealerCloseInput" type="text">
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Dealer OpenTime</label>
-    <input id="dealerOpenInput" type="text">
-  </div>
-
-  <!-- ============================ -->
-  <!--       Workshop Section       -->
-  <!-- ============================ -->
-
-  <h4>Sezione Workshop</h4>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Workshop Contact</label>
-      <input id="wsContactInput" type="text">
-    </div>
-    <div class="field">
-      <label>Workshop Email</label>
-      <input id="wsEmailInput" type="text">
-    </div>
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Workshop Phone</label>
-      <input id="wsPhoneInput" type="text">
-    </div>
-    <div class="field">
-      <label>Workshop CloseTime</label>
-      <input id="wsCloseInput" type="text">
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Workshop OpenTime</label>
-    <input id="wsOpenInput" type="text">
-  </div>
-
   <button id="dealerSaveBtn" onclick="saveDealer()">Salva dealer</button>
   <br><br>
-</div>
+</div> <!-- fine pannello dealer-form-panel -->
+
+
 <script>
-  // ============= VARIABILI GLOBALI =============
+  // ================= VARIABILI GLOBALI =================
   let currentUser = null;
   let currentUserData = null;
   let selectedDealer = null;
-  let dealerFormMode = "new";      // "new", "edit", "view"
-  let dealerFormEditingId = null;  // id in modifica
-  let knownDealerIds = [];         // lista ID dealers per generatore codice
+  let dealerFormMode = "new";      // "new" | "edit" | "view"
+  let dealerFormEditingId = null;  // id originale in modifica
+  let knownDealerIds = [];         // usato per generare codici univoci
 
   // auth e db arrivano da firebase-config.js
   // const auth = firebase.auth();
   // const db   = firebase.firestore();
 
-  // ============= LOGIN & PERMESSI =============
+  // ================= LOGIN & PERMESSI =================
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
       window.location.href = "index.html";
@@ -392,7 +381,7 @@
       document.getElementById("welcomeMsg").innerText =
         "Sei loggato come admin.";
 
-      // Carica elenco dealers
+      // carica elenco dealers
       loadDealers();
 
     } catch (e) {
@@ -402,33 +391,38 @@
     }
   });
 
-  // ============= UTILS FORM DEALER =============
+  // ================= UTILS FORM DEALER =================
   function resetDealerForm() {
     dealerFormMode = "new";
     dealerFormEditingId = null;
 
+    document.getElementById("dealerStatusSelect").value = "attivo";
+
     document.getElementById("dealerIDInput").value = "";
     document.getElementById("dealerIDInput").disabled = false;
     document.getElementById("subDealerNameInput").value = "";
+    document.getElementById("address1Input").value = "";
     document.getElementById("cityInput").value = "";
     document.getElementById("provinceInput").value = "";
     document.getElementById("regionInput").value = "";
-    document.getElementById("address1Input").value = "";
     document.getElementById("ibanInput").value = "";
     document.getElementById("vatNumberInput").value = "";
     document.getElementById("laborStdInput").value = "";
     document.getElementById("laborWarrantyInput").value = "";
     document.getElementById("coverageRadiusInput").value = "";
+
     document.getElementById("rsaContactInput").value = "";
     document.getElementById("rsaEmailInput").value = "";
     document.getElementById("rsaPhoneInput").value = "";
     document.getElementById("rsaCloseInput").value = "";
     document.getElementById("rsaOpenInput").value = "";
+
     document.getElementById("dealerContactInput").value = "";
     document.getElementById("dealerEmailInput").value = "";
     document.getElementById("dealerPhoneInput").value = "";
     document.getElementById("dealerCloseInput").value = "";
     document.getElementById("dealerOpenInput").value = "";
+
     document.getElementById("wsContactInput").value = "";
     document.getElementById("wsEmailInput").value = "";
     document.getElementById("wsPhoneInput").value = "";
@@ -439,8 +433,6 @@
     document.getElementById("workshopFlag").checked = false;
     document.getElementById("rsaFlag").checked = false;
     document.getElementById("isDistributorCheckbox").checked = false;
-
-    document.getElementById("dealerStatusSelect").value = "attivo";
 
     updateLaborWarrantyState();
     setDealerFormEnabled(true);
@@ -470,6 +462,7 @@
       alert("Seleziona prima un dealer dalla tabella.");
       return;
     }
+
     resetDealerForm();
     dealerFormMode = "edit";
     dealerFormEditingId = selectedDealer;
@@ -487,25 +480,28 @@
       document.getElementById("dealerIDInput").value = d.dealerID || doc.id;
       document.getElementById("dealerIDInput").disabled = true;
       document.getElementById("subDealerNameInput").value = d["Sub-Dealer Name"] || "";
+      document.getElementById("address1Input").value = d.Address1 || "";
       document.getElementById("cityInput").value = d.City || "";
       document.getElementById("provinceInput").value = d.Province || "";
       document.getElementById("regionInput").value = d.Region || "";
-      document.getElementById("address1Input").value = d.Address1 || "";
       document.getElementById("ibanInput").value = d.IBAN || "";
       document.getElementById("vatNumberInput").value = d["Vat Number"] || "";
       document.getElementById("laborStdInput").value = d.LaborRateStd || "";
       document.getElementById("laborWarrantyInput").value = d.LaborRateWarranty || "";
       document.getElementById("coverageRadiusInput").value = d["Coverage Radius (km)"] || "";
+
       document.getElementById("rsaContactInput").value = d.RSA_ContactName || "";
       document.getElementById("rsaEmailInput").value = d.RSA_EmailMain || "";
       document.getElementById("rsaPhoneInput").value = d.RSA_PhoneMain || "";
       document.getElementById("rsaCloseInput").value = d.RSA_CloseTime || "";
       document.getElementById("rsaOpenInput").value = d.RSA_OpenTime || "";
+
       document.getElementById("dealerContactInput").value = d.Dealer_ContactName || "";
       document.getElementById("dealerEmailInput").value = d.Dealer_EmailMain || "";
       document.getElementById("dealerPhoneInput").value = d.Dealer_PhoneMain || "";
       document.getElementById("dealerCloseInput").value = d.Dealer_CloseTime || "";
       document.getElementById("dealerOpenInput").value = d.Dealer_OpenTime || "";
+
       document.getElementById("wsContactInput").value = d.Workshop_ContactName || "";
       document.getElementById("wsEmailInput").value = d.Workshop_EmailMain || "";
       document.getElementById("wsPhoneInput").value = d.Workshop_PhoneMain || "";
@@ -516,12 +512,14 @@
       document.getElementById("workshopFlag").checked = !!d.Workshop;
       document.getElementById("rsaFlag").checked = !!d.RSA;
       document.getElementById("isDistributorCheckbox").checked = !!d.isDistributor;
+
       const statoDealer = d.DealerStatus || (d.active === false ? "dismesso" : "attivo");
       document.getElementById("dealerStatusSelect").value = statoDealer;
 
       updateLaborWarrantyState();
 
       document.getElementById("dealer-form-panel").style.display = "block";
+
     } catch (e) {
       console.error("Errore caricando dealer:", e);
       alert("Errore caricando il dealer: " + e.message);
@@ -554,16 +552,21 @@
 
   function updateLaborWarrantyState() {
     const isDist = document.getElementById("isDistributorCheckbox").checked;
+    const fieldDiv = document.getElementById("laborWarrantyField");
     const input = document.getElementById("laborWarrantyInput");
-    input.disabled = !isDist;
-    if (!isDist) {
+
+    if (isDist) {
+      fieldDiv.style.display = "block";
+      input.disabled = false;
+    } else {
+      fieldDiv.style.display = "none";
+      input.disabled = true;
       input.value = "";
     }
   }
 
-  // ============= GENERA CODICE DEALER =============
+  // ================= GENERA CODICE DEALER =================
   function generateDealerCode() {
-    // genera FT + 3 cifre casuali univoche
     for (let i = 0; i < 1000; i++) {
       const n = Math.floor(Math.random() * 1000);
       const code = "FT" + String(n).padStart(3, "0");
@@ -575,7 +578,7 @@
     alert("Impossibile generare un codice univoco.");
   }
 
-  // ============= SALVA DEALER =============
+  // ================= SALVA DEALER =================
   async function saveDealer() {
     const dealerID = document.getElementById("dealerIDInput").value.trim();
     if (!dealerID) {
@@ -583,26 +586,30 @@
       return;
     }
 
+    const dealerStatus = document.getElementById("dealerStatusSelect").value;
     const subName = document.getElementById("subDealerNameInput").value.trim();
+    const address1 = document.getElementById("address1Input").value.trim();
     const city = document.getElementById("cityInput").value.trim();
     const province = document.getElementById("provinceInput").value.trim();
     const region = document.getElementById("regionInput").value;
-    const address1 = document.getElementById("address1Input").value.trim();
     const iban = document.getElementById("ibanInput").value.trim();
     const vat = document.getElementById("vatNumberInput").value.trim();
     const laborStd = document.getElementById("laborStdInput").value.trim();
     const laborWar = document.getElementById("laborWarrantyInput").value.trim();
     const coverage = document.getElementById("coverageRadiusInput").value.trim();
+
     const rsaContact = document.getElementById("rsaContactInput").value.trim();
     const rsaEmail = document.getElementById("rsaEmailInput").value.trim();
     const rsaPhone = document.getElementById("rsaPhoneInput").value.trim();
     const rsaClose = document.getElementById("rsaCloseInput").value.trim();
     const rsaOpen = document.getElementById("rsaOpenInput").value.trim();
+
     const dealerContact = document.getElementById("dealerContactInput").value.trim();
     const dealerEmail = document.getElementById("dealerEmailInput").value.trim();
     const dealerPhone = document.getElementById("dealerPhoneInput").value.trim();
     const dealerClose = document.getElementById("dealerCloseInput").value.trim();
     const dealerOpen = document.getElementById("dealerOpenInput").value.trim();
+
     const wsContact = document.getElementById("wsContactInput").value.trim();
     const wsEmail = document.getElementById("wsEmailInput").value.trim();
     const wsPhone = document.getElementById("wsPhoneInput").value.trim();
@@ -613,9 +620,8 @@
     const workshopFlag = document.getElementById("workshopFlag").checked;
     const rsaFlag = document.getElementById("rsaFlag").checked;
     const isDist = document.getElementById("isDistributorCheckbox").checked;
-    const dealerStatus = document.getElementById("dealerStatusSelect").value;
 
-    // Validazioni IBAN / VAT
+    // Validazione IBAN / VAT
     if (iban && iban.length !== 27) {
       alert("IBAN deve avere esattamente 27 caratteri.");
       return;
@@ -630,41 +636,46 @@
 
     const docData = {
       dealerID: dealerID,
+      DealerStatus: dealerStatus,
+      active: dealerStatus === "attivo",
+
       "Sub-Dealer Name": subName || "",
+      Address1: address1 || "",
       City: city || "",
       Province: province || "",
       Region: region || "",
-      Address1: address1 || "",
       IBAN: iban ? iban.toUpperCase() : "",
       "Vat Number": vat || "",
       LaborRateStd: laborStd || "",
       LaborRateWarranty: isDist ? (laborWar || "") : "",
       "Coverage Radius (km)": coverage || "",
+
       RSA_ContactName: rsaContact || "",
       RSA_EmailMain: rsaEmail || "",
       RSA_PhoneMain: rsaPhone || "",
       RSA_CloseTime: rsaClose || "",
       RSA_OpenTime: rsaOpen || "",
+
       Dealer_ContactName: dealerContact || "",
       Dealer_EmailMain: dealerEmail || "",
       Dealer_PhoneMain: dealerPhone || "",
       Dealer_CloseTime: dealerClose || "",
       Dealer_OpenTime: dealerOpen || "",
+
       Workshop_ContactName: wsContact || "",
       Workshop_EmailMain: wsEmail || "",
       Workshop_PhoneMain: wsPhone || "",
       Workshop_CloseTime: wsClose || "",
       Workshop_OpenTime: wsOpen || "",
+
       Dealer: dealerFlag,
       Workshop: workshopFlag,
       RSA: rsaFlag,
-      isDistributor: isDist,
-      DealerStatus: dealerStatus,
-      active: dealerStatus === "attivo"
+      isDistributor: isDist
     };
 
     try {
-      const docId = dealerFormMode === "edit" && dealerFormEditingId
+      const docId = (dealerFormMode === "edit" && dealerFormEditingId)
         ? dealerFormEditingId
         : dealerID;
 
@@ -677,7 +688,7 @@
       alert("Errore salvando il dealer: " + e.message);
     }
   }
-  // ============= CARICA LISTA DEALERS =============
+  // ================= CARICA LISTA DEALERS =================
   async function loadDealers() {
     const tbody = document.querySelector("#dealersTable tbody");
     tbody.innerHTML = "<tr><td colspan='9'>Caricamento...</td></tr>";
@@ -697,10 +708,10 @@
         knownDealerIds.push(id);
 
         const stato = d.DealerStatus || (d.active === false ? "dismesso" : "attivo");
-        const selClass = (selectedDealer === id) ? " style='background:#e3f2fd;'" : "";
+        const sel = (selectedDealer === id) ? " style='background:#e3f2fd;'" : "";
 
         html += `
-          <tr${selClass} onclick="selectDealer('${id}')">
+          <tr${sel} onclick="selectDealer('${id}')">
             <td>${d.dealerID || id}</td>
             <td>${d["Sub-Dealer Name"] || "-"}</td>
             <td>${d.City || "-"}</td>
@@ -717,7 +728,8 @@
       tbody.innerHTML = html;
     } catch (e) {
       console.error("Errore caricando dealers:", e);
-      tbody.innerHTML = "<tr><td colspan='9'>Errore: " + e.message + "</td></tr>";
+      tbody.innerHTML =
+        "<tr><td colspan='9'>Errore caricamento dealers: " + e.message + "</td></tr>";
     }
   }
 
@@ -725,11 +737,11 @@
     selectedDealer = dealerId;
     document.getElementById("selected-dealer").innerText =
       "Dealer selezionato: " + dealerId;
-    loadDealers();  // per evidenziare la riga selezionata
-    loadUsersForDealer();
+    loadDealers();        // per evidenziare la riga
+    loadUsersForDealer(); // per mostrare gli utenti
   }
 
-  // ============= CARICA UTENTI DEL DEALER =============
+  // ================= CARICA UTENTI DEL DEALER =================
   async function loadUsersForDealer() {
     const container = document.getElementById("users-container");
 
@@ -788,30 +800,29 @@
 
       html += "</tbody></table>";
       container.innerHTML = html;
+
     } catch (e) {
       console.error("Errore caricando utenti:", e);
       container.innerHTML = "Errore nel caricamento utenti: " + e.message;
     }
   }
 
-  // ============= AGGIORNA STATO UTENTE =============
+  // ================= AGGIORNA STATO UTENTE =================
   async function updateUserStatus(userId, newStatus) {
     const conferma = confirm("Impostare lo stato utente su: " + newStatus + "?");
     if (!conferma) return;
 
     try {
-      await db.collection("Users").doc(userId).update({
-        Status: newStatus
-      });
+      await db.collection("Users").doc(userId).update({ Status: newStatus });
       alert("Stato aggiornato.");
       loadUsersForDealer();
     } catch (e) {
-      console.error("Errore aggiornando stato:", e);
+      console.error("Errore aggiornando stato utente:", e);
       alert("Errore aggiornando lo stato: " + e.message);
     }
   }
 
-  // ============= NAVIGAZIONE (OPZIONALE) =============
+  // ================= NAVIGAZIONE (SE SERVE) =================
   function goBack() {
     window.location.href = "FTHUBAS.html";
   }
@@ -819,5 +830,6 @@
     auth.signOut().then(() => window.location.href = "index.html");
   }
 </script>
+
 </body>
 </html>
