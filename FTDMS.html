@@ -22,7 +22,7 @@
       padding: 16px;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto 16px auto;
     }
     .header {
@@ -53,6 +53,34 @@
       margin-bottom: 8px;
       font-size: 0.95em;
     }
+    .field-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .field {
+      flex: 1 1 180px;
+    }
+    .field label {
+      font-size: 0.8em;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .field input,
+    .field textarea {
+      width: 100%;
+      padding: 4px 6px;
+      font-size: 0.9em;
+      box-sizing: border-box;
+    }
+    .checkbox-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 8px;
+      font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
@@ -68,6 +96,208 @@
     <div id="status">Verifica permessi...</div>
 
     <div id="content" style="display:none;">
+
+      <!-- CREAZIONE NUOVO DEALER -->
+      <div class="card" style="margin-top:20px;">
+        <h3>Crea nuovo Dealer</h3>
+        <p style="margin-top:0;">Compila i campi e clicca "Crea Dealer".</p>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="dealerIDInput">Codice Dealer (dealerID) *</label>
+            <input id="dealerIDInput" type="text" placeholder="Es. FT001">
+          </div>
+          <div class="field">
+            <label for="subDealerNameInput">Sub-Dealer Name</label>
+            <input id="subDealerNameInput" type="text" placeholder="Es. F-Trucks Italia SpA">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="accountTypeInput">Account_Type</label>
+            <input id="accountTypeInput" type="text" placeholder="Es. Admin">
+          </div>
+          <div class="field">
+            <label for="tipoElementoInput">Tipo di elemento</label>
+            <input id="tipoElementoInput" type="text" placeholder="Es. Elemento">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="address1Input">Address1</label>
+            <input id="address1Input" type="text" placeholder="Via / Viale...">
+          </div>
+          <div class="field">
+            <label for="cityInput">City</label>
+            <input id="cityInput" type="text" placeholder="Città">
+          </div>
+          <div class="field">
+            <label for="provinceInput">Province</label>
+            <input id="provinceInput" type="text" placeholder="Es. MI">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="regionInput">Region</label>
+            <input id="regionInput" type="text" placeholder="Es. Lombardia">
+          </div>
+          <div class="field">
+            <label for="zipCodeInput">Zip Code</label>
+            <input id="zipCodeInput" type="number" placeholder="CAP">
+          </div>
+          <div class="field">
+            <label for="countryInput">Country</label>
+            <input id="countryInput" type="text" placeholder="Es. Italy">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="coverageRadiusInput">Coverage Radius (km)</label>
+            <input id="coverageRadiusInput" type="text" placeholder="km o 'nan'">
+          </div>
+          <div class="field">
+            <label for="laborStdInput">LaborRateStd</label>
+            <input id="laborStdInput" type="text" placeholder="Es. 47">
+          </div>
+          <div class="field">
+            <label for="laborWarrantyInput">LaborRateWarranty</label>
+            <input id="laborWarrantyInput" type="text" placeholder="Es. 59">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="ibanInput">IBAN</label>
+            <input id="ibanInput" type="text" placeholder="IBAN">
+          </div>
+          <div class="field">
+            <label for="vatNumberInput">Vat Number</label>
+            <input id="vatNumberInput" type="text" placeholder="P.IVA">
+          </div>
+          <div class="field">
+            <label for="languageInput">Language</label>
+            <input id="languageInput" type="text" placeholder="Es. Italian">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="percorsoInput">Percorso</label>
+            <input id="percorsoInput" type="text" placeholder="Percorso logico / lista">
+          </div>
+          <div class="field">
+            <label for="dealerNotesInput">Notes</label>
+            <textarea id="dealerNotesInput" rows="2" placeholder="Note"></textarea>
+          </div>
+        </div>
+
+        <div class="checkbox-row">
+          <label><input id="dealerCheckbox" type="checkbox" checked> Dealer</label>
+          <label><input id="workshopCheckbox" type="checkbox" checked> Workshop</label>
+          <label><input id="rsaCheckbox" type="checkbox" checked> RSA</label>
+          <label><input id="isDistributorCheckbox" type="checkbox"> Distributore</label>
+          <label><input id="activeCheckbox" type="checkbox" checked> Attivo</label>
+        </div>
+
+        <hr>
+
+        <h4>Dati Dealer</h4>
+        <div class="field-row">
+          <div class="field">
+            <label for="dealerContactNameInput">Dealer_ContactName</label>
+            <input id="dealerContactNameInput" type="text">
+          </div>
+          <div class="field">
+            <label for="dealerEmailInput">Dealer_EmailMain</label>
+            <input id="dealerEmailInput" type="email">
+          </div>
+          <div class="field">
+            <label for="dealerPhoneInput">Dealer_PhoneMain</label>
+            <input id="dealerPhoneInput" type="text">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="dealerFaxInput">Dealer Fax Number</label>
+            <input id="dealerFaxInput" type="text">
+          </div>
+          <div class="field">
+            <label for="dealerOpenTimeInput">Dealer_OpenTime</label>
+            <input id="dealerOpenTimeInput" type="text" placeholder="Es. 08:00">
+          </div>
+          <div class="field">
+            <label for="dealerCloseTimeInput">Dealer_CloseTime</label>
+            <input id="dealerCloseTimeInput" type="text" placeholder="Es. 18:00">
+          </div>
+        </div>
+
+        <hr>
+
+        <h4>Dati Workshop</h4>
+        <div class="field-row">
+          <div class="field">
+            <label for="workshopContactNameInput">Workshop_ContactName</label>
+            <input id="workshopContactNameInput" type="text">
+          </div>
+          <div class="field">
+            <label for="workshopEmailInput">Workshop_EmailMain</label>
+            <input id="workshopEmailInput" type="email">
+          </div>
+          <div class="field">
+            <label for="workshopPhoneInput">Workshop_PhoneMain</label>
+            <input id="workshopPhoneInput" type="text">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="workshopOpenTimeInput">Workshop_OpenTime</label>
+            <input id="workshopOpenTimeInput" type="text">
+          </div>
+          <div class="field">
+            <label for="workshopCloseTimeInput">Workshop_CloseTime</label>
+            <input id="workshopCloseTimeInput" type="text">
+          </div>
+        </div>
+
+        <hr>
+
+        <h4>Dati RSA</h4>
+        <div class="field-row">
+          <div class="field">
+            <label for="rsaContactNameInput">RSA_ContactName</label>
+            <input id="rsaContactNameInput" type="text">
+          </div>
+          <div class="field">
+            <label for="rsaEmailInput">RSA_EmailMain</label>
+            <input id="rsaEmailInput" type="email">
+          </div>
+          <div class="field">
+            <label for="rsaPhoneInput">RSA_PhoneMain</label>
+            <input id="rsaPhoneInput" type="text">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="rsaOpenTimeInput">RSA_OpenTime</label>
+            <input id="rsaOpenTimeInput" type="text">
+          </div>
+          <div class="field">
+            <label for="rsaCloseTimeInput">RSA_CloseTime</label>
+            <input id="rsaCloseTimeInput" type="text">
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <button onclick="createDealer()">Crea Dealer</button>
+        </div>
+      </div>
 
       <!-- LISTA DEALERS -->
       <div class="card" style="margin-top:20px;">
@@ -147,6 +377,120 @@
           "Errore nel controllo permessi: " + e.message;
       }
     });
+
+    // =========================
+    //   CREAZIONE DEALER
+    // =========================
+    async function createDealer() {
+      const dealerID = document.getElementById("dealerIDInput").value.trim();
+      if (!dealerID) {
+        alert("Il campo 'Codice Dealer (dealerID)' è obbligatorio.");
+        return;
+      }
+
+      const conferma = confirm(
+        "Creare/aggiornare il dealer con codice: " + dealerID + "?"
+      );
+      if (!conferma) return;
+
+      const subDealerName = document.getElementById("subDealerNameInput").value.trim();
+      const accountType = document.getElementById("accountTypeInput").value.trim();
+      const tipoElemento = document.getElementById("tipoElementoInput").value.trim();
+
+      const address1 = document.getElementById("address1Input").value.trim();
+      const city = document.getElementById("cityInput").value.trim();
+      const province = document.getElementById("provinceInput").value.trim();
+      const region = document.getElementById("regionInput").value.trim();
+      const zipCode = document.getElementById("zipCodeInput").value.trim();
+      const country = document.getElementById("countryInput").value.trim();
+
+      const coverageRadius = document.getElementById("coverageRadiusInput").value.trim();
+      const laborStd = document.getElementById("laborStdInput").value.trim();
+      const laborWarranty = document.getElementById("laborWarrantyInput").value.trim();
+      const iban = document.getElementById("ibanInput").value.trim();
+      const vatNumber = document.getElementById("vatNumberInput").value.trim();
+      const language = document.getElementById("languageInput").value.trim();
+      const percorso = document.getElementById("percorsoInput").value.trim();
+      const notes = document.getElementById("dealerNotesInput").value.trim();
+
+      const dealerFlag = document.getElementById("dealerCheckbox").checked;
+      const workshopFlag = document.getElementById("workshopCheckbox").checked;
+      const rsaFlag = document.getElementById("rsaCheckbox").checked;
+      const isDistributorFlag = document.getElementById("isDistributorCheckbox").checked;
+      const activeFlag = document.getElementById("activeCheckbox").checked;
+
+      const dealerContactName = document.getElementById("dealerContactNameInput").value.trim();
+      const dealerEmail = document.getElementById("dealerEmailInput").value.trim();
+      const dealerPhone = document.getElementById("dealerPhoneInput").value.trim();
+      const dealerFax = document.getElementById("dealerFaxInput").value.trim();
+      const dealerOpenTime = document.getElementById("dealerOpenTimeInput").value.trim();
+      const dealerCloseTime = document.getElementById("dealerCloseTimeInput").value.trim();
+
+      const workshopContactName = document.getElementById("workshopContactNameInput").value.trim();
+      const workshopEmail = document.getElementById("workshopEmailInput").value.trim();
+      const workshopPhone = document.getElementById("workshopPhoneInput").value.trim();
+      const workshopOpenTime = document.getElementById("workshopOpenTimeInput").value.trim();
+      const workshopCloseTime = document.getElementById("workshopCloseTimeInput").value.trim();
+
+      const rsaContactName = document.getElementById("rsaContactNameInput").value.trim();
+      const rsaEmail = document.getElementById("rsaEmailInput").value.trim();
+      const rsaPhone = document.getElementById("rsaPhoneInput").value.trim();
+      const rsaOpenTime = document.getElementById("rsaOpenTimeInput").value.trim();
+      const rsaCloseTime = document.getElementById("rsaCloseTimeInput").value.trim();
+
+      const dealerDoc = {
+        dealerID: dealerID,
+        "Sub-Dealer Name": subDealerName || "",
+        Account_Type: accountType || "",
+        "Tipo di elemento": tipoElemento || "",
+        Address1: address1 || "",
+        City: city || "",
+        Province: province || "",
+        Region: region || "",
+        "Zip Code": zipCode ? Number(zipCode) : null,
+        Country: country || "",
+        "Coverage Radius (km)": coverageRadius || "nan",
+        LaborRateStd: laborStd || "",
+        LaborRateWarranty: laborWarranty || "",
+        IBAN: iban || "",
+        "Vat Number": vatNumber || "",
+        Language: language || "",
+        Percorso: percorso || "",
+        Notes: notes || "",
+        Dealer: dealerFlag,
+        Workshop: workshopFlag,
+        RSA: rsaFlag,
+        isDistributor: isDistributorFlag,
+        active: activeFlag,
+        Dealer_ContactName: dealerContactName || "",
+        Dealer_EmailMain: dealerEmail || "",
+        Dealer_PhoneMain: dealerPhone || "",
+        "Dealer Fax Number": dealerFax || "",
+        Dealer_OpenTime: dealerOpenTime || "nan",
+        Dealer_CloseTime: dealerCloseTime || "nan",
+        Workshop_ContactName: workshopContactName || "",
+        Workshop_EmailMain: workshopEmail || "",
+        Workshop_PhoneMain: workshopPhone || "",
+        Workshop_OpenTime: workshopOpenTime || "nan",
+        Workshop_CloseTime: workshopCloseTime || "nan",
+        RSA_ContactName: rsaContactName || "",
+        RSA_EmailMain: rsaEmail || "",
+        RSA_PhoneMain: rsaPhone || "",
+        RSA_OpenTime: rsaOpenTime || "nan",
+        RSA_CloseTime: rsaCloseTime || "nan"
+      };
+
+      try {
+        await db.collection("dealers").doc(dealerID).set(dealerDoc);
+        alert("Dealer creato/aggiornato con successo.");
+
+        // Ricarico la lista dealers
+        loadDealers();
+      } catch (e) {
+        console.error("Errore creazione dealer:", e);
+        alert("Errore creando il dealer: " + e.message);
+      }
+    }
 
     // =========================
     //   CARICAMENTO DEALERS
@@ -297,7 +641,6 @@
         if (e.code === "permission-denied") {
           container.innerHTML =
             "<p><strong>Errore permessi Firestore.</strong><br>" +
-            "Le regole attuali non permettono la lettura dell'elenco utenti. " +
             "Per sviluppo puoi aprire le regole su Users, poi le restringiamo.</p>";
         } else {
           container.innerHTML =
