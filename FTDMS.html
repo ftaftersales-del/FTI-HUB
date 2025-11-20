@@ -75,6 +75,24 @@
     }
     #dealer-form-panel h3 { margin-top: 0; }
 
+    /* Pannello laterale utente */
+    #user-form-panel {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 400px;
+      max-height: 100vh;
+      background: white;
+      box-shadow: -3px 0 10px rgba(0,0,0,0.15);
+      padding: 20px 20px 60px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-sizing: border-box;
+    }
+    #user-form-panel h3 { margin-top: 0; }
+
     .field { margin-bottom: 12px; }
     .field label { font-weight: bold; display: block; margin-bottom: 3px; }
     input, select, textarea {
@@ -105,9 +123,7 @@
   <h2>DMS - Gestione Dealers e Utenze</h2>
   <p id="welcomeMsg"></p>
 
-  <!-- =================================== -->
-  <!--        SEZIONE DEALERS LIST         -->
-  <!-- =================================== -->
+  <!-- ====================== DEALERS ====================== -->
   <div class="section">
     <div class="toolbar">
       <strong>Dealers</strong>
@@ -134,90 +150,32 @@
     </table>
   </div>
 
-  <!-- =================================== -->
-  <!--       SEZIONE DEALER SELECTED       -->
-  <!-- =================================== -->
+  <!-- ====================== DEALER SELEZIONATO ====================== -->
   <div class="section">
     <h3>Dealer selezionato</h3>
     <p id="selected-dealer">Seleziona un dealer dalla tabella.</p>
   </div>
 
-  <!-- =================================== -->
-  <!--       SEZIONE UTENTI DEALER         -->
-  <!-- =================================== -->
+  <!-- ====================== UTENTI DEL DEALER ====================== -->
   <div class="section">
-    <h3>Utenti del dealer</h3>
-
     <div class="toolbar">
-      <button onclick="startNewUser()">Nuovo utente</button>
+      <strong>Utenti del dealer</strong>
+      <button onclick="openUserFormNew()">Nuovo utente</button>
+      <button onclick="openUserFormEdit()">Modifica utente selezionato</button>
     </div>
 
     <div id="users-container">Seleziona un dealer per vedere gli utenti.</div>
-
-    <hr>
-
-    <h4>Dettaglio utente</h4>
-    <p id="user-form-info">
-      Seleziona un utente dalla tabella oppure clicca "Nuovo utente".
-    </p>
-
-    <div id="user-form">
-      <div class="field">
-        <label>Email</label>
-        <input id="userEmailInput" type="email" placeholder="nome.cognome@dealer.it">
-      </div>
-
-      <div class="field">
-        <label>Nome visualizzato</label>
-        <input id="userDisplayNameInput" type="text" placeholder="Nome Cognome">
-      </div>
-
-      <div class="two-columns">
-        <div class="field">
-          <label>Stato</label>
-          <select id="userStatusSelect">
-            <option value="active">Attivo</option>
-            <option value="suspended">Sospeso</option>
-            <option value="blocked">Bloccato</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Ruolo</label>
-          <select id="userRoleSelect">
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>
-          <input id="userIsDistributorCheckbox" type="checkbox">
-          Utente Distributore (vede tutti i dealer)
-        </label>
-      </div>
-
-      <div class="field">
-        <label>Password iniziale (solo in creazione)</label>
-        <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri">
-      </div>
-
-      <button onclick="saveUser()">Salva utente</button>
-    </div>
   </div>
 
-</div> <!-- end container -->
+</div> <!-- /container -->
 
 
 
-<!-- ===================================================== -->
-<!--                    PANNELLO FORM DEALER               -->
-<!-- ===================================================== -->
+<!-- ====================== PANNELLO DEALER ====================== -->
 <div id="dealer-form-panel">
   <button class="close-btn" onclick="closeDealerForm()">Chiudi</button>
   <h3 id="dealer-form-title">Dealer</h3>
 
-  <!-- STATO -->
   <div class="field">
     <label>Stato dealer</label>
     <select id="dealerStatusSelect">
@@ -299,7 +257,6 @@
     <label><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()"> Distributore</label>
   </div>
 
-  <!-- SEZIONE DEALER -->
   <h4>Sezione Dealer</h4>
 
   <div class="two-columns">
@@ -329,7 +286,6 @@
     <input id="dealerOpenInput" type="text">
   </div>
 
-  <!-- SEZIONE WORKSHOP -->
   <h4>Sezione Workshop</h4>
 
   <div class="two-columns">
@@ -359,7 +315,6 @@
     <input id="wsOpenInput" type="text">
   </div>
 
-  <!-- SEZIONE RSA -->
   <h4>Sezione RSA</h4>
 
   <div class="field">
@@ -395,6 +350,57 @@
   </div>
 
   <button id="dealerSaveBtn" onclick="saveDealer()">Salva dealer</button>
+  <br><br>
+</div>
+
+
+
+<!-- ====================== PANNELLO UTENTE ====================== -->
+<div id="user-form-panel">
+  <button class="close-btn" onclick="closeUserForm()">Chiudi</button>
+  <h3 id="user-form-title">Utente</h3>
+
+  <div class="field">
+    <label>Email</label>
+    <input id="userEmailInput" type="email" placeholder="nome.cognome@dealer.it">
+  </div>
+
+  <div class="field">
+    <label>Nome visualizzato</label>
+    <input id="userDisplayNameInput" type="text" placeholder="Nome Cognome">
+  </div>
+
+  <div class="two-columns">
+    <div class="field">
+      <label>Stato</label>
+      <select id="userStatusSelect">
+        <option value="active">Attivo</option>
+        <option value="suspended">Sospeso</option>
+        <option value="blocked">Bloccato</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Ruolo</label>
+      <select id="userRoleSelect">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>
+      <input id="userIsDistributorCheckbox" type="checkbox">
+      Utente Distributore (vede tutti i dealer)
+    </label>
+  </div>
+
+  <div class="field" id="userPasswordField">
+    <label>Password iniziale (solo in creazione)</label>
+    <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri">
+  </div>
+
+  <button onclick="saveUser()">Salva utente</button>
   <br><br>
 </div>
 <!DOCTYPE html>
@@ -474,6 +480,24 @@
     }
     #dealer-form-panel h3 { margin-top: 0; }
 
+    /* Pannello laterale utente */
+    #user-form-panel {
+      display: none;
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 400px;
+      max-height: 100vh;
+      background: white;
+      box-shadow: -3px 0 10px rgba(0,0,0,0.15);
+      padding: 20px 20px 60px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-sizing: border-box;
+    }
+    #user-form-panel h3 { margin-top: 0; }
+
     .field { margin-bottom: 12px; }
     .field label { font-weight: bold; display: block; margin-bottom: 3px; }
     input, select, textarea {
@@ -504,9 +528,7 @@
   <h2>DMS - Gestione Dealers e Utenze</h2>
   <p id="welcomeMsg"></p>
 
-  <!-- =================================== -->
-  <!--        SEZIONE DEALERS LIST         -->
-  <!-- =================================== -->
+  <!-- ====================== DEALERS ====================== -->
   <div class="section">
     <div class="toolbar">
       <strong>Dealers</strong>
@@ -533,90 +555,32 @@
     </table>
   </div>
 
-  <!-- =================================== -->
-  <!--       SEZIONE DEALER SELECTED       -->
-  <!-- =================================== -->
+  <!-- ====================== DEALER SELEZIONATO ====================== -->
   <div class="section">
     <h3>Dealer selezionato</h3>
     <p id="selected-dealer">Seleziona un dealer dalla tabella.</p>
   </div>
 
-  <!-- =================================== -->
-  <!--       SEZIONE UTENTI DEALER         -->
-  <!-- =================================== -->
+  <!-- ====================== UTENTI DEL DEALER ====================== -->
   <div class="section">
-    <h3>Utenti del dealer</h3>
-
     <div class="toolbar">
-      <button onclick="startNewUser()">Nuovo utente</button>
+      <strong>Utenti del dealer</strong>
+      <button onclick="openUserFormNew()">Nuovo utente</button>
+      <button onclick="openUserFormEdit()">Modifica utente selezionato</button>
     </div>
 
     <div id="users-container">Seleziona un dealer per vedere gli utenti.</div>
-
-    <hr>
-
-    <h4>Dettaglio utente</h4>
-    <p id="user-form-info">
-      Seleziona un utente dalla tabella oppure clicca "Nuovo utente".
-    </p>
-
-    <div id="user-form">
-      <div class="field">
-        <label>Email</label>
-        <input id="userEmailInput" type="email" placeholder="nome.cognome@dealer.it">
-      </div>
-
-      <div class="field">
-        <label>Nome visualizzato</label>
-        <input id="userDisplayNameInput" type="text" placeholder="Nome Cognome">
-      </div>
-
-      <div class="two-columns">
-        <div class="field">
-          <label>Stato</label>
-          <select id="userStatusSelect">
-            <option value="active">Attivo</option>
-            <option value="suspended">Sospeso</option>
-            <option value="blocked">Bloccato</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Ruolo</label>
-          <select id="userRoleSelect">
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="field">
-        <label>
-          <input id="userIsDistributorCheckbox" type="checkbox">
-          Utente Distributore (vede tutti i dealer)
-        </label>
-      </div>
-
-      <div class="field">
-        <label>Password iniziale (solo in creazione)</label>
-        <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri">
-      </div>
-
-      <button onclick="saveUser()">Salva utente</button>
-    </div>
   </div>
 
-</div> <!-- end container -->
+</div> <!-- /container -->
 
 
 
-<!-- ===================================================== -->
-<!--                    PANNELLO FORM DEALER               -->
-<!-- ===================================================== -->
+<!-- ====================== PANNELLO DEALER ====================== -->
 <div id="dealer-form-panel">
   <button class="close-btn" onclick="closeDealerForm()">Chiudi</button>
   <h3 id="dealer-form-title">Dealer</h3>
 
-  <!-- STATO -->
   <div class="field">
     <label>Stato dealer</label>
     <select id="dealerStatusSelect">
@@ -698,7 +662,6 @@
     <label><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()"> Distributore</label>
   </div>
 
-  <!-- SEZIONE DEALER -->
   <h4>Sezione Dealer</h4>
 
   <div class="two-columns">
@@ -728,7 +691,6 @@
     <input id="dealerOpenInput" type="text">
   </div>
 
-  <!-- SEZIONE WORKSHOP -->
   <h4>Sezione Workshop</h4>
 
   <div class="two-columns">
@@ -758,7 +720,6 @@
     <input id="wsOpenInput" type="text">
   </div>
 
-  <!-- SEZIONE RSA -->
   <h4>Sezione RSA</h4>
 
   <div class="field">
@@ -796,18 +757,69 @@
   <button id="dealerSaveBtn" onclick="saveDealer()">Salva dealer</button>
   <br><br>
 </div>
+
+
+
+<!-- ====================== PANNELLO UTENTE ====================== -->
+<div id="user-form-panel">
+  <button class="close-btn" onclick="closeUserForm()">Chiudi</button>
+  <h3 id="user-form-title">Utente</h3>
+
+  <div class="field">
+    <label>Email</label>
+    <input id="userEmailInput" type="email" placeholder="nome.cognome@dealer.it">
+  </div>
+
+  <div class="field">
+    <label>Nome visualizzato</label>
+    <input id="userDisplayNameInput" type="text" placeholder="Nome Cognome">
+  </div>
+
+  <div class="two-columns">
+    <div class="field">
+      <label>Stato</label>
+      <select id="userStatusSelect">
+        <option value="active">Attivo</option>
+        <option value="suspended">Sospeso</option>
+        <option value="blocked">Bloccato</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Ruolo</label>
+      <select id="userRoleSelect">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>
+      <input id="userIsDistributorCheckbox" type="checkbox">
+      Utente Distributore (vede tutti i dealer)
+    </label>
+  </div>
+
+  <div class="field" id="userPasswordField">
+    <label>Password iniziale (solo in creazione)</label>
+    <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri">
+  </div>
+
+  <button onclick="saveUser()">Salva utente</button>
+  <br><br>
+</div>
 <script>
   // ================= VARIABILI GLOBALI =================
   let currentUser = null;
   let currentUserData = null;
+
   let selectedDealer = null;
   let dealerFormMode = "new";      // "new" | "edit" | "view"
   let dealerFormEditingId = null;
-  let knownDealerIds = [];         // per generare codici univoci
+  let knownDealerIds = [];
 
-  // gestione utenti
   let selectedUserId = null;
-  let userFormMode = "view";       // "new" | "edit" | "view"
+  let userFormMode = "view";       // "new" | "edit"
   let secondaryApp = null;         // per creare utenti Auth senza sloggare l'admin
 
   // ================= LOGIN & PERMESSI =================
@@ -839,7 +851,7 @@
       document.getElementById("welcomeMsg").innerText =
         "Sei loggato come admin.";
 
-      loadDealers();    // carica dealer all'avvio
+      loadDealers();
 
     } catch (e) {
       console.error("Errore controllo permessi:", e);
@@ -1021,7 +1033,6 @@
     }
   }
 
-  // Genera FT + 3 cifre univoche
   function generateDealerCode() {
     for (let i = 0; i < 1000; i++) {
       const n = Math.floor(Math.random() * 1000);
@@ -1034,7 +1045,6 @@
     alert("Impossibile generare un codice univoco.");
   }
 
-  // ================= SALVA DEALER =================
   async function saveDealer() {
     const dealerID = document.getElementById("dealerIDInput").value.trim();
     if (!dealerID) {
@@ -1077,7 +1087,6 @@
     const rsaFlag = document.getElementById("rsaFlag").checked;
     const isDist = document.getElementById("isDistributorCheckbox").checked;
 
-    // Validazione IBAN / VAT
     if (iban && iban.length !== 27) {
       alert("IBAN deve avere esattamente 27 caratteri.");
       return;
@@ -1145,59 +1154,63 @@
     }
   }
 
-  // =============== GESTIONE FORM UTENTE ===============
-  function resetUserForm() {
-    selectedUserId = null;
-    userFormMode = "view";
+  // ================= FORM UTENTE =================
+  function resetUserFormFields() {
     document.getElementById("userEmailInput").value = "";
     document.getElementById("userDisplayNameInput").value = "";
     document.getElementById("userStatusSelect").value = "active";
     document.getElementById("userRoleSelect").value = "user";
     document.getElementById("userIsDistributorCheckbox").checked = false;
     document.getElementById("userPasswordInput").value = "";
-    document.getElementById("user-form-info").innerText =
-      'Seleziona un utente dalla tabella oppure clicca "Nuovo utente".';
   }
 
-  function startNewUser() {
+  function openUserFormNew() {
     if (!selectedDealer) {
       alert("Seleziona prima un dealer.");
       return;
     }
-    resetUserForm();
     userFormMode = "new";
-    document.getElementById("user-form-info").innerText =
-      "Creazione nuova utenza per dealer " + selectedDealer;
+    selectedUserId = null;
+    resetUserFormFields();
+    document.getElementById("user-form-title").innerText =
+      "Nuovo utente per dealer " + selectedDealer;
+    document.getElementById("userPasswordField").style.display = "block";
+    document.getElementById("user-form-panel").style.display = "block";
   }
 
-  async function selectUser(userId) {
-    selectedUserId = userId;
-    userFormMode = "edit";
-    document.getElementById("userPasswordInput").value = "";
+  async function openUserFormEdit() {
+    if (!selectedDealer) {
+      alert("Seleziona prima un dealer.");
+      return;
+    }
+    if (!selectedUserId) {
+      alert("Seleziona prima un utente dalla tabella.");
+      return;
+    }
 
     try {
-      const doc = await db.collection("Users").doc(userId).get();
+      const doc = await db.collection("Users").doc(selectedUserId).get();
       if (!doc.exists) {
-        alert("Utente non trovato in Firestore.");
-        resetUserForm();
+        alert("Utente non trovato.");
         return;
       }
-
       const u = doc.data();
-      document.getElementById("userEmailInput").value =
-        u.Email || u.email || "";
-      document.getElementById("userDisplayNameInput").value =
-        u.displayName || "";
-      document.getElementById("userStatusSelect").value =
-        u.Status || "active";
 
+      userFormMode = "edit";
+      resetUserFormFields();
+      document.getElementById("user-form-title").innerText =
+        "Modifica utente";
+
+      document.getElementById("userEmailInput").value = u.Email || u.email || "";
+      document.getElementById("userDisplayNameInput").value = u.displayName || "";
+      document.getElementById("userStatusSelect").value = u.Status || "active";
       const role = u.role || (u.isAdmin ? "admin" : "user");
       document.getElementById("userRoleSelect").value = role;
       document.getElementById("userIsDistributorCheckbox").checked =
         !!u.isDistributorUser;
 
-      document.getElementById("user-form-info").innerText =
-        "Modifica utente: " + (u.displayName || u.Email || "");
+      document.getElementById("userPasswordField").style.display = "none";
+      document.getElementById("user-form-panel").style.display = "block";
 
     } catch (e) {
       console.error("Errore caricando utente:", e);
@@ -1205,7 +1218,10 @@
     }
   }
 
-  // CREA / MODIFICA UTENTE
+  function closeUserForm() {
+    document.getElementById("user-form-panel").style.display = "none";
+  }
+
   async function saveUser() {
     if (!selectedDealer) {
       alert("Seleziona prima un dealer.");
@@ -1214,8 +1230,8 @@
 
     const email = document.getElementById("userEmailInput").value.trim();
     const displayName = document.getElementById("userDisplayNameInput").value.trim();
-    const status = document.getElementById("userStatusSelect").value;   // active/suspended/blocked
-    const role = document.getElementById("userRoleSelect").value;       // admin/user
+    const status = document.getElementById("userStatusSelect").value;
+    const role = document.getElementById("userRoleSelect").value;
     const isDistUser = document.getElementById("userIsDistributorCheckbox").checked;
     const password = document.getElementById("userPasswordInput").value;
 
@@ -1235,7 +1251,6 @@
     };
 
     try {
-      // NUOVO UTENTE
       if (userFormMode === "new") {
         if (!password || password.length < 6) {
           alert("Per creare un utente devi inserire una password iniziale (min. 6 caratteri).");
@@ -1250,26 +1265,24 @@
         const secondaryAuth = secondaryApp.auth();
         const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
         const uid = cred.user.uid;
-
         await db.collection("Users").doc(uid).set(userDoc);
-
-        alert("Utente creato con successo. Ricorda di comunicare la password iniziale all'utente.");
         await secondaryAuth.signOut();
-        resetUserForm();
+
+        alert("Utente creato con successo.");
+        closeUserForm();
         loadUsersForDealer();
         return;
       }
 
-      // MODIFICA UTENTE ESISTENTE
       if (userFormMode === "edit" && selectedUserId) {
         await db.collection("Users").doc(selectedUserId).update(userDoc);
         alert("Utente aggiornato.");
-        resetUserForm();
+        closeUserForm();
         loadUsersForDealer();
         return;
       }
 
-      alert("Nessuna operazione da eseguire (seleziona un utente o clicca Nuovo).");
+      alert("Nessuna operazione da eseguire.");
 
     } catch (e) {
       console.error("Errore salvataggio utente:", e);
@@ -1323,11 +1336,11 @@
 
   function selectDealer(dealerId) {
     selectedDealer = dealerId;
+    selectedUserId = null;
     document.getElementById("selected-dealer").innerText =
       "Dealer selezionato: " + dealerId;
-    resetUserForm();
-    loadDealers();        // evidenzia la riga
-    loadUsersForDealer(); // mostra gli utenti
+    loadDealers();
+    loadUsersForDealer();
   }
 
   // ================= CARICA UTENTI DEL DEALER =================
@@ -1369,8 +1382,10 @@
 
       snap.forEach(doc => {
         const u = doc.data();
+        const id = doc.id;
+        const sel = (selectedUserId === id) ? " style='background:#e3f2fd;'" : "";
         html += `
-          <tr onclick="selectUser('${doc.id}')">
+          <tr${sel} onclick="selectUserRow('${id}')">
             <td>${u.displayName || "-"}</td>
             <td>${u.Email || u.email || "-"}</td>
             <td>${u.dealerId || "-"}</td>
@@ -1379,9 +1394,9 @@
             <td>${u.isAdmin ? "Sì" : "No"}</td>
             <td>${u.isDistributorUser ? "Sì" : "No"}</td>
             <td>
-              <button onclick="event.stopPropagation(); updateUserStatus('${doc.id}','active')">Attiva</button>
-              <button onclick="event.stopPropagation(); updateUserStatus('${doc.id}','suspended')">Sospendi</button>
-              <button onclick="event.stopPropagation(); updateUserStatus('${doc.id}','blocked')">Blocca</button>
+              <button onclick="event.stopPropagation(); updateUserStatus('${id}','active')">Attiva</button>
+              <button onclick="event.stopPropagation(); updateUserStatus('${id}','suspended')">Sospendi</button>
+              <button onclick="event.stopPropagation(); updateUserStatus('${id}','blocked')">Blocca</button>
             </td>
           </tr>
         `;
@@ -1394,6 +1409,11 @@
       console.error("Errore caricando utenti:", e);
       container.innerHTML = "Errore nel caricamento utenti: " + e.message;
     }
+  }
+
+  function selectUserRow(userId) {
+    selectedUserId = userId;
+    loadUsersForDealer(); // per evidenziare la riga selezionata
   }
 
   // ================= AGGIORNA STATO UTENTE =================
