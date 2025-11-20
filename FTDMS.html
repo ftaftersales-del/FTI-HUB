@@ -58,7 +58,7 @@
 <body>
   <div class="card">
     <div class="header">
-      <h2>DMS - Gestione Utenze e Dealers</h2>
+      <h2>DMS - Gestione Dealers e Utenze</h2>
       <div>
         <button onclick="goBack()">Torna al Main</button>
         <button onclick="logout()">Logout</button>
@@ -179,7 +179,7 @@
               </tr>
             </thead>
             <tbody>
-        ";
+        `;
 
         snap.forEach(doc => {
           const d = doc.data();
@@ -251,45 +251,42 @@
           return;
         }
 
-let html = `
-  <table>
-    <thead>
-      <tr>
-        <th>Nome</th>
-        <th>Email</th>
-        <th>Dealer</th>
-        <th>Ruolo</th>
-        <th>Stato</th>
-        <th>Admin</th>
-        <th>Distributore</th>
-        <th>Azioni</th>
-      </tr>
-    </thead>
-    <tbody>
-`;
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Dealer</th>
+                <th>Ruolo</th>
+                <th>Stato</th>
+                <th>Admin</th>
+                <th>Distributore</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
 
-
-snap.forEach(doc => {
-  const u = doc.data();
-  html += `
-    <tr>
-      <td>${u.displayName || '-'}</td>
-      <td>${u.Email || u.email || '-'}</td>
-      <td>${u.dealerId || '-'}</td>
-      <td>${u.role || '-'}</td>
-      <td>${u.Status || '-'}</td>
-      <td>${u.isAdmin ? 'Sì' : 'No'}</td>
-      <td>${u.isDistributorUser ? 'Sì' : 'No'}</td>
-      <td>
-        <button onclick="updateUserStatus('${doc.id}', 'active')">Attiva</button>
-        <button onclick="updateUserStatus('${doc.id}', 'suspended')">Sospendi</button>
-        <button onclick="updateUserStatus('${doc.id}', 'blocked')">Blocca</button>
-      </td>
-    </tr>
-  `;
-});
-
-
+        snap.forEach(doc => {
+          const u = doc.data();
+          html += `
+            <tr>
+              <td>${u.displayName || '-'}</td>
+              <td>${u.Email || u.email || '-'}</td>
+              <td>${u.dealerId || '-'}</td>
+              <td>${u.role || '-'}</td>
+              <td>${u.Status || '-'}</td>
+              <td>${u.isAdmin ? 'Sì' : 'No'}</td>
+              <td>${u.isDistributorUser ? 'Sì' : 'No'}</td>
+              <td>
+                <button onclick="updateUserStatus('${doc.id}', 'active')">Attiva</button>
+                <button onclick="updateUserStatus('${doc.id}', 'suspended')">Sospendi</button>
+                <button onclick="updateUserStatus('${doc.id}', 'blocked')">Blocca</button>
+              </td>
+            </tr>
+          `;
+        });
 
         html += `</tbody></table>`;
         container.innerHTML = html;
@@ -301,33 +298,34 @@ snap.forEach(doc => {
           container.innerHTML =
             "<p><strong>Errore permessi Firestore.</strong><br>" +
             "Le regole attuali non permettono la lettura dell'elenco utenti. " +
-            "Quando abiliterai gli admin a leggere più utenti, qui comparirà la tabella.</p>";
+            "Per sviluppo puoi aprire le regole su Users, poi le restringiamo.</p>";
         } else {
           container.innerHTML =
             "Errore nel caricamento utenti: " + e.message;
         }
       }
     }
-// =========================
-//   AGGIORNA STATO UTENTE
-// =========================
-async function updateUserStatus(userId, newStatus) {
-  const conferma = confirm(
-    "Vuoi impostare lo stato dell'utente su: " + newStatus + "?"
-  );
-  if (!conferma) return;
 
-  try {
-    await db.collection('Users').doc(userId).update({
-      Status: newStatus
-    });
-    alert("Stato utente aggiornato a: " + newStatus);
-    reloadUsers();
-  } catch (e) {
-    console.error("Errore aggiornamento stato utente:", e);
-    alert("Errore aggiornando lo stato utente: " + e.message);
-  }
-}
+    // =========================
+    //   AGGIORNA STATO UTENTE
+    // =========================
+    async function updateUserStatus(userId, newStatus) {
+      const conferma = confirm(
+        "Vuoi impostare lo stato dell'utente su: " + newStatus + "?"
+      );
+      if (!conferma) return;
+
+      try {
+        await db.collection('Users').doc(userId).update({
+          Status: newStatus
+        });
+        alert("Stato utente aggiornato a: " + newStatus);
+        reloadUsers();
+      } catch (e) {
+        console.error("Errore aggiornamento stato utente:", e);
+        alert("Errore aggiornando lo stato utente: " + e.message);
+      }
+    }
 
     // =========================
     //   NAVIGAZIONE
