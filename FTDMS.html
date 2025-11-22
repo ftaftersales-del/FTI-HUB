@@ -115,17 +115,7 @@
       border: none;
       cursor: pointer;
     }
-  </style>
-</head>
 
-<body>
- <!-- 🔵 PULSANTE HOME -->
- <div class="top-bar">
-   <button onclick="window.location.href='FTHUBAS.html'">🏠 Home</button>
- </div>
-
- <!-- 🔵 STILE DELLA TOP BAR -->
- <style>
     .top-bar {
       width: 100%;
       text-align: right;
@@ -138,912 +128,1016 @@
       cursor: pointer;
     }
   </style>
+</head>
 
-  <!-- 🔵 CONTENUTO DELLA PAGINA (qui va il tuo DMS) -->
-<div class="container">
-
-  <h2>DMS - Gestione Dealers e Utenze</h2>
-  <p id="welcomeMsg"></p>
-
-  <!-- ====================== DEALERS ====================== -->
-  <div class="section">
-    <div class="toolbar">
-      <strong>Dealers</strong>
-      <button onclick="openDealerFormNew()">Nuovo dealer</button>
-      <button onclick="openDealerFormEditWrapped()">Modifica dealer selezionato</button>
-      <button onclick="openDealerFormView()">Visualizza dealer</button>
-    </div>
-
-    <table id="dealersTable">
-      <thead>
-        <tr>
-          <th>Codice</th>
-          <th>Nome</th>
-          <th>Città</th>
-          <th>Provincia</th>
-          <th>Regione</th>
-          <th>Dealer</th>
-          <th>Workshop</th>
-          <th>RSA</th>
-          <th>Stato</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+<body>
+  <!-- 🔵 PULSANTE HOME -->
+  <div class="top-bar">
+    <button onclick="window.location.href='FTHUBAS.html'">🏠 Home</button>
   </div>
 
-  <!-- ====================== DEALER SELEZIONATO ====================== -->
-  <div class="section">
-    <h3>Dealer selezionato</h3>
-    <p id="selected-dealer">Seleziona un dealer dalla tabella.</p>
-  </div>
-
-  <!-- ====================== UTENTI DEALER ====================== -->
-  <div class="section">
-    <div class="toolbar">
-      <strong>Utenti del dealer</strong>
-      <button onclick="openUserFormNew()">Nuovo utente</button>
-      <button onclick="openUserFormEdit()">Modifica utente selezionato</button>
-    </div>
-
-    <div id="users-container">Seleziona un dealer per vedere gli utenti.</div>
-  </div>
-
-</div> <!-- /container -->
-
-<!-- ====================== PANNELLO DEALER ====================== -->
-<div id="dealer-form-panel">
-  <button class="close-btn" onclick="closeDealerForm()">Chiudi</button>
-  <h3 id="dealer-form-title">Dealer</h3>
-
-  <div class="field">
-    <label>Stato dealer</label>
-    <select id="dealerStatusSelect">
-      <option value="attivo">Attivo</option>
-      <option value="sospeso">Sospeso</option>
-      <option value="dismesso">Dismesso</option>
-    </select>
-  </div>
-
-  <h4>Main data</h4>
-
-  <div class="field">
-    <label>Codice Dealer (dealerID)</label>
-    <div style="display:flex; gap:6px;">
-      <input id="dealerIDInput" type="text" placeholder="Es. FT001">
-      <button type="button" onclick="generateDealerCode()">Genera</button>
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Sub-Dealer Name</label>
-    <input id="subDealerNameInput" type="text">
-  </div>
-
-  <div class="field">
-    <label>Address1</label>
-    <input id="address1Input" type="text">
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>City</label>
-      <input id="cityInput" type="text">
-    </div>
-    <div class="field">
-      <label>Province</label>
-      <input id="provinceInput" type="text">
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Region</label>
-    <select id="regionInput">
-      <option value="">-- seleziona --</option>
-      <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
-      <option>Campania</option><option>Emilia-Romagna</option>
-      <option>Friuli Venezia Giulia</option><option>Lazio</option><option>Liguria</option>
-      <option>Lombardia</option><option>Marche</option><option>Molise</option>
-      <option>Piemonte</option><option>Puglia</option><option>Sardegna</option>
-      <option>Sicilia</option><option>Toscana</option><option>Trentino-Alto Adige</option>
-      <option>Umbria</option><option>Valle d'Aosta</option><option>Veneto</option>
-    </select>
-  </div>
-
-  <div class="field">
-    <label>IBAN</label>
-    <input id="ibanInput" type="text" maxlength="27">
-  </div>
-
-  <div class="field">
-    <label>Vat Number</label>
-    <input id="vatNumberInput" type="text" maxlength="11">
-  </div>
-
-  <div class="field">
-    <label>LaborRateStd</label>
-    <input id="laborStdInput" type="number">
-  </div>
-
-  <div class="field" id="laborWarrantyField">
-    <label>LaborRateWarranty (solo distributore)</label>
-    <input id="laborWarrantyInput" type="number">
-  </div>
-
-  <div class="checkbox-row">
-    <label><input type="checkbox" id="dealerFlag"> Dealer</label>
-    <label><input type="checkbox" id="workshopFlag"> Workshop</label>
-    <label><input type="checkbox" id="rsaFlag"> RSA</label>
-    <label><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()"> Distributore</label>
-  </div>
-
-  <h4>Sezione Dealer</h4>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Dealer Contact</label>
-      <input id="dealerContactInput" type="text">
-    </div>
-    <div class="field">
-      <label>Dealer Email</label>
-      <input id="dealerEmailInput" type="text">
-    </div>
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Dealer Phone</label>
-      <input id="dealerPhoneInput" type="text">
-    </div>
-    <div class="field">
-      <label>Dealer CloseTime</label>
-      <input id="dealerCloseInput" type="text">
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Dealer OpenTime</label>
-    <input id="dealerOpenInput" type="text">
-  </div>
-
-  <h4>Sezione Workshop</h4>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Workshop Contact</label>
-      <input id="wsContactInput" type="text">
-    </div>
-    <div class="field">
-      <label>Workshop Email</label>
-      <input id="wsEmailInput" type="text">
-    </div>
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Workshop Phone</label>
-      <input id="wsPhoneInput" type="text">
-    </div>
-    <div class="field">
-      <label>Workshop CloseTime</label>
-      <input id="wsCloseInput" type="text">
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Workshop OpenTime</label>
-    <input id="wsOpenInput" type="text">
-  </div>
-
-  <h4>Sezione RSA</h4>
-
-  <div class="field">
-    <label>Coverage Radius (km)</label>
-    <input id="coverageRadiusInput" type="text">
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>RSA Contact Name</label>
-      <input id="rsaContactInput" type="text">
-    </div>
-    <div class="field">
-      <label>RSA Email</label>
-      <input id="rsaEmailInput" type="text">
-    </div>
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>RSA Phone</label>
-      <input id="rsaPhoneInput" type="text">
-    </div>
-    <div class="field">
-      <label>RSA CloseTime</label>
-      <input id="rsaCloseInput" type="text">
-    </div>
-  </div>
-
-  <div class="field">
-    <label>RSA OpenTime</label>
-    <input id="rsaOpenInput" type="text">
-  </div>
-
-  <button id="dealerSaveBtn" onclick="saveDealer()">Salva dealer</button>
-  <br><br>
-</div>
-
-<!-- ====================== PANNELLO UTENTE ====================== -->
-<div id="user-form-panel">
-  <button class="close-btn" onclick="closeUserForm()">Chiudi</button>
-  <h3 id="user-form-title">Utente</h3>
-
-  <div class="field">
-    <label>Email</label>
-    <input id="userEmailInput" type="email" placeholder="nome.cognome@dealer.it">
-  </div>
-
-  <div class="field">
-    <label>Nome visualizzato</label>
-    <input id="userDisplayNameInput" type="text" placeholder="Nome Cognome">
-  </div>
-
-  <div class="two-columns">
-    <div class="field">
-      <label>Stato</label>
-      <select id="userStatusSelect">
-        <option value="active">Attivo</option>
-        <option value="suspended">Sospeso</option>
-        <option value="blocked">Bloccato</option>
-      </select>
-    </div>
-    <div class="field">
-      <label>Ruolo</label>
-      <select id="userRoleSelect">
-        <option value="user">User</option>
-        <option value="admin">Admin</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="field" id="userPasswordField">
-    <label>Password iniziale (solo in creazione)</label>
-    <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri">
-  </div>
-
-  <button onclick="saveUser()">Salva utente</button>
-  <br><br>
-</div>
-
-<script>
-  // ======= VARIABILI GLOBALI =======
-  let currentUser = null;
-  let currentUserData = null;
-
-  let selectedDealer = null;
-  let dealerFormMode = "new";
-  let dealerFormEditingId = null;
-  let knownDealerIds = [];
-
-  let selectedUserId = null;
-  let userFormMode = "view";   // "new" | "edit"
-  let secondaryApp = null;
-
-  // ======= LOGIN & PERMESSI =======
-  auth.onAuthStateChanged(async (user) => {
-    if (!user) {
-      window.location.href = "index.html";
-      return;
-    }
-    currentUser = user;
-
-    try {
-      const doc = await db.collection("Users").doc(user.uid).get();
-      if (!doc.exists) {
-        document.getElementById("welcomeMsg").innerText =
-          "Profilo utente non trovato in Firestore.";
-        return;
-      }
-
-      const data = doc.data();
-      currentUserData = data;
-
-      if (data.isAdmin !== true) {
-        document.getElementById("welcomeMsg").innerText =
-          "Non hai i permessi per accedere al DMS.";
-        setTimeout(() => window.location.href = "FTHUBAS.html", 1500);
-        return;
-      }
-
-      document.getElementById("welcomeMsg").innerText =
-        "Sei loggato come admin.";
-
-      loadDealers();
-
-    } catch (e) {
-      console.error("Errore controllo permessi:", e);
-      document.getElementById("welcomeMsg").innerText =
-        "Errore nel controllo permessi: " + e.message;
-    }
-  });
-
-  // ======= FORM DEALER =======
-  function resetDealerForm() {
-    dealerFormMode = "new";
-    dealerFormEditingId = null;
-
-    document.getElementById("dealerStatusSelect").value = "attivo";
-
-    document.getElementById("dealerIDInput").value = "";
-    document.getElementById("dealerIDInput").disabled = false;
-    document.getElementById("subDealerNameInput").value = "";
-    document.getElementById("address1Input").value = "";
-    document.getElementById("cityInput").value = "";
-    document.getElementById("provinceInput").value = "";
-    document.getElementById("regionInput").value = "";
-    document.getElementById("ibanInput").value = "";
-    document.getElementById("vatNumberInput").value = "";
-    document.getElementById("laborStdInput").value = "";
-    document.getElementById("laborWarrantyInput").value = "";
-    document.getElementById("coverageRadiusInput").value = "";
-
-    document.getElementById("rsaContactInput").value = "";
-    document.getElementById("rsaEmailInput").value = "";
-    document.getElementById("rsaPhoneInput").value = "";
-    document.getElementById("rsaCloseInput").value = "";
-    document.getElementById("rsaOpenInput").value = "";
-
-    document.getElementById("dealerContactInput").value = "";
-    document.getElementById("dealerEmailInput").value = "";
-    document.getElementById("dealerPhoneInput").value = "";
-    document.getElementById("dealerCloseInput").value = "";
-    document.getElementById("dealerOpenInput").value = "";
-
-    document.getElementById("wsContactInput").value = "";
-    document.getElementById("wsEmailInput").value = "";
-    document.getElementById("wsPhoneInput").value = "";
-    document.getElementById("wsCloseInput").value = "";
-    document.getElementById("wsOpenInput").value = "";
-
-    document.getElementById("dealerFlag").checked = false;
-    document.getElementById("workshopFlag").checked = false;
-    document.getElementById("rsaFlag").checked = false;
-    document.getElementById("isDistributorCheckbox").checked = false;
-
-    updateLaborWarrantyState();
-    setDealerFormEnabled(true);
-    document.getElementById("dealerSaveBtn").style.display = "inline-block";
-  }
-
-  function setDealerFormEnabled(enabled) {
-    const panel = document.getElementById("dealer-form-panel");
-    const controls = panel.querySelectorAll("input, select, textarea");
-    controls.forEach(ctrl => {
-      if (ctrl.id === "dealerSaveBtn") return;
-      if (ctrl.type === "button") return;
-      ctrl.disabled = !enabled;
-    });
-  }
-
-  function openDealerFormNew() {
-    resetDealerForm();
-    dealerFormMode = "new";
-    dealerFormEditingId = null;
-    document.getElementById("dealer-form-title").innerText = "Nuovo dealer";
-    document.getElementById("dealer-form-panel").style.display = "block";
-  }
-
-  async function openDealerFormEdit() {
-    if (!selectedDealer) {
-      alert("Seleziona prima un dealer dalla tabella.");
-      return;
-    }
-
-    resetDealerForm();
-    dealerFormMode = "edit";
-    dealerFormEditingId = selectedDealer;
-    document.getElementById("dealer-form-title").innerText =
-      "Modifica dealer " + selectedDealer;
-
-    try {
-      const doc = await db.collection("dealers").doc(selectedDealer).get();
-      if (!doc.exists) {
-        alert("Dealer non trovato in Firestore.");
-        return;
-      }
-      const d = doc.data();
-
-      document.getElementById("dealerIDInput").value = d.dealerID || doc.id;
-      document.getElementById("dealerIDInput").disabled = true;
-      document.getElementById("subDealerNameInput").value = d["Sub-Dealer Name"] || "";
-      document.getElementById("address1Input").value = d.Address1 || "";
-      document.getElementById("cityInput").value = d.City || "";
-      document.getElementById("provinceInput").value = d.Province || "";
-      document.getElementById("regionInput").value = d.Region || "";
-      document.getElementById("ibanInput").value = d.IBAN || "";
-      document.getElementById("vatNumberInput").value = d["Vat Number"] || "";
-      document.getElementById("laborStdInput").value = d.LaborRateStd || "";
-      document.getElementById("laborWarrantyInput").value = d.LaborRateWarranty || "";
-      document.getElementById("coverageRadiusInput").value = d["Coverage Radius (km)"] || "";
-
-      document.getElementById("rsaContactInput").value = d.RSA_ContactName || "";
-      document.getElementById("rsaEmailInput").value = d.RSA_EmailMain || "";
-      document.getElementById("rsaPhoneInput").value = d.RSA_PhoneMain || "";
-      document.getElementById("rsaCloseInput").value = d.RSA_CloseTime || "";
-      document.getElementById("rsaOpenInput").value = d.RSA_OpenTime || "";
-
-      document.getElementById("dealerContactInput").value = d.Dealer_ContactName || "";
-      document.getElementById("dealerEmailInput").value = d.Dealer_EmailMain || "";
-      document.getElementById("dealerPhoneInput").value = d.Dealer_PhoneMain || "";
-      document.getElementById("dealerCloseInput").value = d.Dealer_CloseTime || "";
-      document.getElementById("dealerOpenInput").value = d.Dealer_OpenTime || "";
-
-      document.getElementById("wsContactInput").value = d.Workshop_ContactName || "";
-      document.getElementById("wsEmailInput").value = d.Workshop_EmailMain || "";
-      document.getElementById("wsPhoneInput").value = d.Workshop_PhoneMain || "";
-      document.getElementById("wsCloseInput").value = d.Workshop_CloseTime || "";
-      document.getElementById("wsOpenInput").value = d.Workshop_OpenTime || "";
-
-      document.getElementById("dealerFlag").checked = !!d.Dealer;
-      document.getElementById("workshopFlag").checked = !!d.Workshop;
-      document.getElementById("rsaFlag").checked = !!d.RSA;
-      document.getElementById("isDistributorCheckbox").checked = !!d.isDistributor;
-
-      const statoDealer = d.DealerStatus || (d.active === false ? "dismesso" : "attivo");
-      document.getElementById("dealerStatusSelect").value = statoDealer;
-
-      updateLaborWarrantyState();
-      document.getElementById("dealer-form-panel").style.display = "block";
-
-    } catch (e) {
-      console.error("Errore caricando dealer:", e);
-      alert("Errore caricando il dealer: " + e.message);
-    }
-  }
-
-  function openDealerFormEditWrapped() {
-    openDealerFormEdit();
-    dealerFormMode = "edit";
-    document.getElementById("dealerSaveBtn").style.display = "inline-block";
-    setDealerFormEnabled(true);
-  }
-
-  async function openDealerFormView() {
-    if (!selectedDealer) {
-      alert("Seleziona prima un dealer.");
-      return;
-    }
-    await openDealerFormEdit();
-    dealerFormMode = "view";
-    document.getElementById("dealer-form-title").innerText =
-      "Visualizza dealer " + selectedDealer;
-    setDealerFormEnabled(false);
-    document.getElementById("dealerSaveBtn").style.display = "none";
-  }
-
-  function closeDealerForm() {
-    document.getElementById("dealer-form-panel").style.display = "none";
-  }
-
-  function updateLaborWarrantyState() {
-    const isDist = document.getElementById("isDistributorCheckbox").checked;
-    const fieldDiv = document.getElementById("laborWarrantyField");
-    const input = document.getElementById("laborWarrantyInput");
-
-    if (isDist) {
-      fieldDiv.style.display = "block";
-      input.disabled = false;
-    } else {
-      fieldDiv.style.display = "none";
-      input.disabled = true;
-      input.value = "";
-    }
-  }
-
-  function generateDealerCode() {
-    for (let i = 0; i < 1000; i++) {
-      const n = Math.floor(Math.random() * 1000);
-      const code = "FT" + String(n).padStart(3, "0");
-      if (!knownDealerIds.includes(code)) {
-        document.getElementById("dealerIDInput").value = code;
-        return;
-      }
-    }
-    alert("Impossibile generare un codice univoco.");
-  }
-
-  async function saveDealer() {
-    const dealerID = document.getElementById("dealerIDInput").value.trim();
-    if (!dealerID) {
-      alert("Il codice dealer è obbligatorio.");
-      return;
-    }
-
-    const dealerStatus = document.getElementById("dealerStatusSelect").value;
-    const subName = document.getElementById("subDealerNameInput").value.trim();
-    const address1 = document.getElementById("address1Input").value.trim();
-    const city = document.getElementById("cityInput").value.trim();
-    const province = document.getElementById("provinceInput").value.trim();
-    const region = document.getElementById("regionInput").value;
-    const iban = document.getElementById("ibanInput").value.trim();
-    const vat = document.getElementById("vatNumberInput").value.trim();
-    const laborStd = document.getElementById("laborStdInput").value.trim();
-    const laborWar = document.getElementById("laborWarrantyInput").value.trim();
-    const coverage = document.getElementById("coverageRadiusInput").value.trim();
-
-    const rsaContact = document.getElementById("rsaContactInput").value.trim();
-    const rsaEmail = document.getElementById("rsaEmailInput").value.trim();
-    const rsaPhone = document.getElementById("rsaPhoneInput").value.trim();
-    const rsaClose = document.getElementById("rsaCloseInput").value.trim();
-    const rsaOpen = document.getElementById("rsaOpenInput").value.trim();
-
-    const dealerContact = document.getElementById("dealerContactInput").value.trim();
-    const dealerEmail = document.getElementById("dealerEmailInput").value.trim();
-    const dealerPhone = document.getElementById("dealerPhoneInput").value.trim();
-    const dealerClose = document.getElementById("dealerCloseInput").value.trim();
-    const dealerOpen = document.getElementById("dealerOpenInput").value.trim();
-
-    const wsContact = document.getElementById("wsContactInput").value.trim();
-    const wsEmail = document.getElementById("wsEmailInput").value.trim();
-    const wsPhone = document.getElementById("wsPhoneInput").value.trim();
-    const wsClose = document.getElementById("wsCloseInput").value.trim();
-    const wsOpen = document.getElementById("wsOpenInput").value.trim();
-
-    const dealerFlag = document.getElementById("dealerFlag").checked;
-    const workshopFlag = document.getElementById("workshopFlag").checked;
-    const rsaFlag = document.getElementById("rsaFlag").checked;
-    const isDist = document.getElementById("isDistributorCheckbox").checked;
-
-    if (iban && iban.length !== 27) {
-      alert("IBAN deve avere esattamente 27 caratteri.");
-      return;
-    }
-    if (vat && vat.length !== 11) {
-      alert("VAT Number deve avere esattamente 11 caratteri.");
-      return;
-    }
-
-    const conferma = confirm("Salvare il dealer " + dealerID + "?");
-    if (!conferma) return;
-
-    const docData = {
-      dealerID: dealerID,
-      DealerStatus: dealerStatus,
-      active: dealerStatus === "attivo",
-
-      "Sub-Dealer Name": subName || "",
-      Address1: address1 || "",
-      City: city || "",
-      Province: province || "",
-      Region: region || "",
-      IBAN: iban ? iban.toUpperCase() : "",
-      "Vat Number": vat || "",
-      LaborRateStd: laborStd || "",
-      LaborRateWarranty: isDist ? (laborWar || "") : "",
-      "Coverage Radius (km)": coverage || "",
-
-      RSA_ContactName: rsaContact || "",
-      RSA_EmailMain: rsaEmail || "",
-      RSA_PhoneMain: rsaPhone || "",
-      RSA_CloseTime: rsaClose || "",
-      RSA_OpenTime: rsaOpen || "",
-
-      Dealer_ContactName: dealerContact || "",
-      Dealer_EmailMain: dealerEmail || "",
-      Dealer_PhoneMain: dealerPhone || "",
-      Dealer_CloseTime: dealerClose || "",
-      Dealer_OpenTime: dealerOpen || "",
-
-      Workshop_ContactName: wsContact || "",
-      Workshop_EmailMain: wsEmail || "",
-      Workshop_PhoneMain: wsPhone || "",
-      Workshop_CloseTime: wsClose || "",
-      Workshop_OpenTime: wsOpen || "",
-
-      Dealer: dealerFlag,
-      Workshop: workshopFlag,
-      RSA: rsaFlag,
-      isDistributor: isDist
-    };
-
-    try {
-      const docId = (dealerFormMode === "edit" && dealerFormEditingId)
-        ? dealerFormEditingId
-        : dealerID;
-
-      await db.collection("dealers").doc(docId).set(docData);
-      alert("Dealer salvato correttamente.");
-      closeDealerForm();
-      loadDealers();
-    } catch (e) {
-      console.error("Errore salvataggio dealer:", e);
-      alert("Errore salvando il dealer: " + e.message);
-    }
-  }
-
-  // ======= FORM UTENTE =======
-function resetUserFormFields() {
-  document.getElementById("userEmailInput").value = "";
-  document.getElementById("userDisplayNameInput").value = "";
-  document.getElementById("userStatusSelect").value = "active";
-  document.getElementById("userRoleSelect").value = "user";
-  document.getElementById("userPasswordInput").value = "";
-}
-
-
-  function openUserFormNew() {
-    if (!selectedDealer) {
-      alert("Seleziona prima un dealer.");
-      return;
-    }
-    userFormMode = "new";
-    selectedUserId = null;
-    resetUserFormFields();
-    document.getElementById("user-form-title").innerText =
-      "Nuovo utente per dealer " + selectedDealer;
-    document.getElementById("userPasswordField").style.display = "block";
-    document.getElementById("user-form-panel").style.display = "block";
-  }
-
-  async function openUserFormEdit() {
-    if (!selectedDealer) {
-      alert("Seleziona prima un dealer.");
-      return;
-    }
-    if (!selectedUserId) {
-      alert("Seleziona prima un utente dalla tabella.");
-      return;
-    }
-
-    try {
-      const doc = await db.collection("Users").doc(selectedUserId).get();
-      if (!doc.exists) {
-        alert("Utente non trovato.");
-        return;
-      }
-      const u = doc.data();
-
-      userFormMode = "edit";
-      resetUserFormFields();
-      document.getElementById("user-form-title").innerText = "Modifica utente";
-
-      document.getElementById("userEmailInput").value = u.Email || u.email || "";
-      document.getElementById("userDisplayNameInput").value = u.displayName || "";
-      document.getElementById("userStatusSelect").value = u.Status || "active";
-      const role = u.role || (u.isAdmin ? "admin" : "user");
-      document.getElementById("userRoleSelect").value = role;
-
-      document.getElementById("userPasswordField").style.display = "none";
-      document.getElementById("user-form-panel").style.display = "block";
-
-    } catch (e) {
-      console.error("Errore caricando utente:", e);
-      alert("Errore caricando utente: " + e.message);
-    }
-  }
-
-  function closeUserForm() {
-    document.getElementById("user-form-panel").style.display = "none";
-  }
-
-  async function saveUser() {
-  if (!selectedDealer) {
-    alert("Seleziona prima un dealer.");
-    return;
-  }
-
-  const email = document.getElementById("userEmailInput").value.trim();
-  const displayName = document.getElementById("userDisplayNameInput").value.trim();
-  const status = document.getElementById("userStatusSelect").value;
-  const role = document.getElementById("userRoleSelect").value;
-  const password = document.getElementById("userPasswordInput").value;
-
-  if (!email) {
-    alert("L'email è obbligatoria.");
-    return;
-  }
-
-  try {
-    // 1) scopriamo se il dealer selezionato è un distributore
-    let isDistUser = false;
-    const dealerDoc = await db.collection("dealers").doc(selectedDealer).get();
-    if (dealerDoc.exists && dealerDoc.data().isDistributor === true) {
-      isDistUser = true;
-    }
-
-    // 2) documento utente da salvare
-    const userDoc = {
-      Email: email,
-      displayName: displayName || "",
-      Status: status,             // "active" | "suspended" | "blocked"
-      dealerId: selectedDealer,
-      role: role,                 // "admin" | "user"
-      isAdmin: (role === "admin"),
-      isDistributorUser: isDistUser
-    };
-
-    // -------- CREAZIONE NUOVO UTENTE --------
-    if (userFormMode === "new") {
-      if (!password || password.length < 6) {
-        alert("Per creare un utente devi inserire una password iniziale (min. 6 caratteri).");
-        return;
-      }
-
-      if (!secondaryApp) {
-        secondaryApp =
-          firebase.apps.find(a => a.name === "Secondary") ||
-          firebase.initializeApp(firebaseConfig, "Secondary");
-      }
-      const secondaryAuth = secondaryApp.auth();
-      const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
-      const uid = cred.user.uid;
-
-      await db.collection("Users").doc(uid).set(userDoc);
-      await secondaryAuth.signOut();
-
-      alert("Utente creato con successo.");
-      closeUserForm();
-      loadUsersForDealer();
-      return;
-    }
-
-    // -------- MODIFICA UTENTE ESISTENTE --------
-    if (userFormMode === "edit" && selectedUserId) {
-      await db.collection("Users").doc(selectedUserId).update(userDoc);
-      alert("Utente aggiornato.");
-      closeUserForm();
-      loadUsersForDealer();
-      return;
-    }
-
-    alert("Nessuna operazione da eseguire.");
-
-  } catch (e) {
-    console.error("Errore salvataggio utente:", e);
-    alert("Errore salvataggio utente: " + e.message);
-  }
-}
-
-
-  // ======= LISTA DEALERS & UTENTI =======
-  async function loadDealers() {
-    const tbody = document.querySelector("#dealersTable tbody");
-    tbody.innerHTML = "<tr><td colspan='9'>Caricamento...</td></tr>";
-    knownDealerIds = [];
-
-    try {
-      const snap = await db.collection("dealers").get();
-      if (snap.empty) {
-        tbody.innerHTML = "<tr><td colspan='9'>Nessun dealer trovato.</td></tr>";
-        return;
-      }
-
-      let html = "";
-      snap.forEach(doc => {
-        const d = doc.data();
-        const id = doc.id;
-        knownDealerIds.push(id);
-
-        const stato = d.DealerStatus || (d.active === false ? "dismesso" : "attivo");
-        const sel = (selectedDealer === id) ? " style='background:#e3f2fd;'" : "";
-
-        html += `
-          <tr${sel} onclick="selectDealer('${id}')">
-            <td>${d.dealerID || id}</td>
-            <td>${d["Sub-Dealer Name"] || "-"}</td>
-            <td>${d.City || "-"}</td>
-            <td>${d.Province || "-"}</td>
-            <td>${d.Region || "-"}</td>
-            <td>${d.Dealer ? "✔️" : ""}</td>
-            <td>${d.Workshop ? "✔️" : ""}</td>
-            <td>${d.RSA ? "✔️" : ""}</td>
-            <td>${stato}</td>
+  <!-- 🔵 CONTENUTO DELLA PAGINA (DMS) -->
+  <div class="container">
+
+    <h2>DMS - Gestione Dealers e Utenze</h2>
+    <p id="welcomeMsg"></p>
+
+    <!-- ====================== DEALERS ====================== -->
+    <div class="section">
+      <div class="toolbar">
+        <strong>Dealers</strong>
+        <button id="btn-new-dealer" onclick="openDealerFormNew()">Nuovo dealer</button>
+        <button id="btn-edit-dealer" onclick="openDealerFormEditWrapped()">Modifica dealer selezionato</button>
+        <button onclick="openDealerFormView()">Visualizza dealer</button>
+      </div>
+
+      <table id="dealersTable">
+        <thead>
+          <tr>
+            <th>Codice</th>
+            <th>Nome</th>
+            <th>Città</th>
+            <th>Provincia</th>
+            <th>Regione</th>
+            <th>Dealer</th>
+            <th>Workshop</th>
+            <th>RSA</th>
+            <th>Stato</th>
           </tr>
-        `;
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- ====================== DEALER SELEZIONATO ====================== -->
+    <div class="section">
+      <h3>Dealer selezionato</h3>
+      <p id="selected-dealer">Seleziona un dealer dalla tabella.</p>
+    </div>
+
+    <!-- ====================== UTENTI DEALER ====================== -->
+    <div class="section">
+      <div class="toolbar">
+        <strong>Utenti del dealer</strong>
+        <button id="btn-new-user" onclick="openUserFormNew()">Nuovo utente</button>
+        <button id="btn-edit-user" onclick="openUserFormEdit()">Modifica utente selezionato</button>
+      </div>
+
+      <div id="users-container">Seleziona un dealer per vedere gli utenti.</div>
+    </div>
+
+  </div> <!-- /container -->
+
+  <!-- ====================== PANNELLO DEALER ====================== -->
+  <div id="dealer-form-panel">
+    <button class="close-btn" onclick="closeDealerForm()">Chiudi</button>
+    <h3 id="dealer-form-title">Dealer</h3>
+
+    <div class="field">
+      <label>Stato dealer</label>
+      <select id="dealerStatusSelect">
+        <option value="attivo">Attivo</option>
+        <option value="sospeso">Sospeso</option>
+        <option value="dismesso">Dismesso</option>
+      </select>
+    </div>
+
+    <h4>Main data</h4>
+
+    <div class="field">
+      <label>Codice Dealer (dealerID)</label>
+      <div style="display:flex; gap:6px;">
+        <input id="dealerIDInput" type="text" placeholder="Es. FT001">
+        <button type="button" onclick="generateDealerCode()">Genera</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Sub-Dealer Name</label>
+      <input id="subDealerNameInput" type="text">
+    </div>
+
+    <div class="field">
+      <label>Address1</label>
+      <input id="address1Input" type="text">
+    </div>
+
+    <div class="two-columns">
+      <div class="field">
+        <label>City</label>
+        <input id="cityInput" type="text">
+      </div>
+      <div class="field">
+        <label>Province</label>
+        <input id="provinceInput" type="text">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Region</label>
+      <select id="regionInput">
+        <option value="">-- seleziona --</option>
+        <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
+        <option>Campania</option><option>Emilia-Romagna</option>
+        <option>Friuli Venezia Giulia</option><option>Lazio</option><option>Liguria</option>
+        <option>Lombardia</option><option>Marche</option><option>Molise</option>
+        <option>Piemonte</option><option>Puglia</option><option>Sardegna</option>
+        <option>Sicilia</option><option>Toscana</option><option>Trentino-Alto Adige</option>
+        <option>Umbria</option><option>Valle d'Aosta</option><option>Veneto</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>IBAN</label>
+      <input id="ibanInput" type="text" maxlength="27">
+    </div>
+
+    <div class="field">
+      <label>Vat Number</label>
+      <input id="vatNumberInput" type="text" maxlength="11">
+    </div>
+
+    <div class="field">
+      <label>LaborRateStd</label>
+      <input id="laborStdInput" type="number">
+    </div>
+
+    <div class="field" id="laborWarrantyField">
+      <label>LaborRateWarranty (solo distributore)</label>
+      <input id="laborWarrantyInput" type="number">
+    </div>
+
+    <div class="checkbox-row">
+      <label><input type="checkbox" id="dealerFlag"> Dealer</label>
+      <label><input type="checkbox" id="workshopFlag"> Workshop</label>
+      <label><input type="checkbox" id="rsaFlag"> RSA</label>
+      <label><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()"> Distributore</label>
+    </div>
+
+    <h4>Sezione Dealer</h4>
+
+    <div class="two-columns">
+      <div class="field">
+        <label>Dealer Contact</label>
+        <input id="dealerContactInput" type="text">
+      </div>
+      <div class="field">
+        <label>Dealer Email</label>
+        <input id="dealerEmailInput" type="text">
+      </div>
+    </div>
+
+    <div class="two-columns">
+      <div class="field">
+        <label>Dealer Phone</label>
+        <input id="dealerPhoneInput" type="text">
+      </div>
+      <div class="field">
+        <label>Dealer CloseTime</label>
+        <input id="dealerCloseInput" type="text">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Dealer OpenTime</label>
+      <input id="dealerOpenInput" type="text">
+    </div>
+
+    <h4>Sezione Workshop</h4>
+
+    <div class="two-columns">
+      <div class="field">
+        <label>Workshop Contact</label>
+        <input id="wsContactInput" type="text">
+      </div>
+      <div class="field">
+        <label>Workshop Email</label>
+        <input id="wsEmailInput" type="text">
+      </div>
+    </div>
+
+    <div class="two-columns">
+      <div class="field">
+        <label>Workshop Phone</label>
+        <input id="wsPhoneInput" type="text">
+      </div>
+      <div class="field">
+        <label>Workshop CloseTime</label>
+        <input id="wsCloseInput" type="text">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Workshop OpenTime</label>
+      <input id="wsOpenInput" type="text">
+    </div>
+
+    <h4>Sezione RSA</h4>
+
+    <div class="field">
+      <label>Coverage Radius (km)</label>
+      <input id="coverageRadiusInput" type="text">
+    </div>
+
+    <div class="two-columns">
+      <div class="field">
+        <label>RSA Contact Name</label>
+        <input id="rsaContactInput" type="text">
+      </div>
+      <div class="field">
+        <label>RSA Email</label>
+        <input id="rsaEmailInput" type="text">
+      </div>
+    </div>
+
+    <div class="two-columns">
+      <div class="field">
+        <label>RSA Phone</label>
+        <input id="rsaPhoneInput" type="text">
+      </div>
+      <div class="field">
+        <label>RSA CloseTime</label>
+        <input id="rsaCloseInput" type="text">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>RSA OpenTime</label>
+      <input id="rsaOpenInput" type="text">
+    </div>
+
+    <button id="dealerSaveBtn" onclick="saveDealer()">Salva dealer</button>
+    <br><br>
+  </div>
+
+  <!-- ====================== PANNELLO UTENTE ====================== -->
+  <div id="user-form-panel">
+    <button class="close-btn" onclick="closeUserForm()">Chiudi</button>
+    <h3 id="user-form-title">Utente</h3>
+
+    <div class="field">
+      <label>Email</label>
+      <input id="userEmailInput" type="email" placeholder="nome.cognome@dealer.it">
+    </div>
+
+    <div class="field">
+      <label>Nome visualizzato</label>
+      <input id="userDisplayNameInput" type="text" placeholder="Nome Cognome">
+    </div>
+
+    <div class="two-columns">
+      <div class="field">
+        <label>Stato</label>
+        <select id="userStatusSelect">
+          <option value="active">Attivo</option>
+          <option value="suspended">Sospeso</option>
+          <option value="blocked">Bloccato</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Ruolo</label>
+        <select id="userRoleSelect">
+          <option value="User">User</option>
+          <option value="Admin">Admin</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field" id="userPasswordField">
+      <label>Password iniziale (solo in creazione)</label>
+      <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri">
+    </div>
+
+    <button onclick="saveUser()">Salva utente</button>
+    <br><br>
+  </div>
+
+  <script>
+    // ======= VARIABILI GLOBALI =======
+    let currentUser = null;
+    let currentUserData = null;
+
+    let selectedDealer = null;
+    let dealerFormMode = "new";
+    let dealerFormEditingId = null;
+    let knownDealerIds = [];
+
+    let selectedUserId = null;
+    let userFormMode = "view";   // "new" | "edit"
+    let secondaryApp = null;
+
+    // ======= RUOLI & PERMESSI (FTDMS) =======
+    let currentAccount = null; // contiene utente + permessi
+
+    async function loadCurrentUserPermissions(user) {
+      // /Users/<uid>
+      const userRef = db.collection("Users").doc(user.uid);
+      const userSnap = await userRef.get();
+      if (!userSnap.exists) {
+        throw new Error("Profilo utente non trovato in Firestore.");
+      }
+
+      const userData = userSnap.data();
+      currentUserData = userData;
+
+      // ruolo logico: deve corrispondere a /roles/<roleId>
+      const roleId = userData.role || "User"; // "Admin" / "User" / "Network Manager"
+
+      // /roles/<roleId>
+      const roleRef = db.collection("roles").doc(roleId);
+      const roleSnap = await roleRef.get();
+      if (!roleSnap.exists) {
+        throw new Error("Ruolo non trovato in /roles: " + roleId);
+      }
+
+      const roleData = roleSnap.data();
+      const basePermissions = roleData.permission || {};
+      const extra = userData.extraPermissions || {};
+
+      // merge permessi base + extra
+      const effectivePermissions = JSON.parse(JSON.stringify(basePermissions));
+      Object.keys(extra).forEach(section => {
+        effectivePermissions[section] = {
+          ...(effectivePermissions[section] || { read: false, write: false }),
+          ...extra[section]
+        };
       });
 
-      tbody.innerHTML = html;
-    } catch (e) {
-      console.error("Errore caricando dealers:", e);
-      tbody.innerHTML =
-        "<tr><td colspan='9'>Errore caricamento dealers: " + e.message + "</td></tr>";
-    }
-  }
+      currentAccount = {
+        firebaseUser: user,
+        userData,
+        roleId,
+        permissions: effectivePermissions
+      };
 
-  function selectDealer(dealerId) {
-    selectedDealer = dealerId;
-    selectedUserId = null;
-    document.getElementById("selected-dealer").innerText =
-      "Dealer selezionato: " + dealerId;
-    loadDealers();
-    loadUsersForDealer();
-  }
-
-  async function loadUsersForDealer() {
-    const container = document.getElementById("users-container");
-
-    if (!selectedDealer) {
-      container.innerHTML = "Seleziona un dealer per vedere gli utenti.";
-      return;
+      return currentAccount;
     }
 
-    container.innerHTML = "Caricamento utenti...";
+    function canRead(section) {
+      if (!currentAccount) return false;
+      return currentAccount.permissions[section]?.read === true;
+    }
 
-    try {
-      const q = db.collection("Users").where("dealerId", "==", selectedDealer);
-      const snap = await q.get();
+    function canWrite(section) {
+      if (!currentAccount) return false;
+      return currentAccount.permissions[section]?.write === true;
+    }
 
-      if (snap.empty) {
-        container.innerHTML = "Nessun utente trovato per questo dealer.";
+    function ensureCanWriteFTDMS() {
+      if (!canWrite("FTDMS")) {
+        alert("Non hai i permessi per modificare il DMS (FTDMS).");
+        return false;
+      }
+      return true;
+    }
+
+    // ======= LOGIN & PERMESSI PER FTDMS =======
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      currentUser = user;
+
+      try {
+        await loadCurrentUserPermissions(user);
+
+        // se NON ha accesso alla sezione FTDMS → blocco
+        if (!canRead("FTDMS")) {
+          document.getElementById("welcomeMsg").innerText =
+            "Non hai i permessi per accedere al DMS (FTDMS). Verrai reindirizzato alla home.";
+          // disabilito bottoni per sicurezza
+          document.getElementById("btn-new-dealer").disabled = true;
+          document.getElementById("btn-edit-dealer").disabled = true;
+          document.getElementById("btn-new-user").disabled = true;
+          document.getElementById("btn-edit-user").disabled = true;
+
+          setTimeout(() => window.location.href = "FTHUBAS.html", 2000);
+          return;
+        }
+
+        const data = currentAccount.userData;
+        document.getElementById("welcomeMsg").innerText =
+          "Accesso al DMS come " + (currentAccount.roleId || "-") +
+          (canWrite("FTDMS") ? " (permessi di modifica)" : " (sola lettura)");
+
+        // se non ha write, blocco i pulsanti di creazione/modifica
+        if (!canWrite("FTDMS")) {
+          document.getElementById("btn-new-dealer").disabled = true;
+          document.getElementById("btn-edit-dealer").disabled = true;
+          document.getElementById("btn-new-user").disabled = true;
+          document.getElementById("btn-edit-user").disabled = true;
+          document.getElementById("dealerSaveBtn").disabled = true;
+        }
+
+        // Carica i dealers (lista visibile anche in sola lettura)
+        loadDealers();
+
+      } catch (e) {
+        console.error("Errore controllo permessi:", e);
+        document.getElementById("welcomeMsg").innerText =
+          "Errore nel controllo permessi: " + e.message;
+      }
+    });
+
+    // ======= FORM DEALER =======
+    function resetDealerForm() {
+      dealerFormMode = "new";
+      dealerFormEditingId = null;
+
+      document.getElementById("dealerStatusSelect").value = "attivo";
+
+      document.getElementById("dealerIDInput").value = "";
+      document.getElementById("dealerIDInput").disabled = false;
+      document.getElementById("subDealerNameInput").value = "";
+      document.getElementById("address1Input").value = "";
+      document.getElementById("cityInput").value = "";
+      document.getElementById("provinceInput").value = "";
+      document.getElementById("regionInput").value = "";
+      document.getElementById("ibanInput").value = "";
+      document.getElementById("vatNumberInput").value = "";
+      document.getElementById("laborStdInput").value = "";
+      document.getElementById("laborWarrantyInput").value = "";
+      document.getElementById("coverageRadiusInput").value = "";
+
+      document.getElementById("rsaContactInput").value = "";
+      document.getElementById("rsaEmailInput").value = "";
+      document.getElementById("rsaPhoneInput").value = "";
+      document.getElementById("rsaCloseInput").value = "";
+      document.getElementById("rsaOpenInput").value = "";
+
+      document.getElementById("dealerContactInput").value = "";
+      document.getElementById("dealerEmailInput").value = "";
+      document.getElementById("dealerPhoneInput").value = "";
+      document.getElementById("dealerCloseInput").value = "";
+      document.getElementById("dealerOpenInput").value = "";
+
+      document.getElementById("wsContactInput").value = "";
+      document.getElementById("wsEmailInput").value = "";
+      document.getElementById("wsPhoneInput").value = "";
+      document.getElementById("wsCloseInput").value = "";
+      document.getElementById("wsOpenInput").value = "";
+
+      document.getElementById("dealerFlag").checked = false;
+      document.getElementById("workshopFlag").checked = false;
+      document.getElementById("rsaFlag").checked = false;
+      document.getElementById("isDistributorCheckbox").checked = false;
+
+      updateLaborWarrantyState();
+      setDealerFormEnabled(true);
+      document.getElementById("dealerSaveBtn").style.display = "inline-block";
+      document.getElementById("dealerSaveBtn").disabled = !canWrite("FTDMS");
+    }
+
+    function setDealerFormEnabled(enabled) {
+      const panel = document.getElementById("dealer-form-panel");
+      const controls = panel.querySelectorAll("input, select, textarea");
+      controls.forEach(ctrl => {
+        if (ctrl.id === "dealerSaveBtn") return;
+        if (ctrl.type === "button") return;
+        ctrl.disabled = !enabled;
+      });
+    }
+
+    function openDealerFormNew() {
+      if (!ensureCanWriteFTDMS()) return;
+      resetDealerForm();
+      dealerFormMode = "new";
+      dealerFormEditingId = null;
+      document.getElementById("dealer-form-title").innerText = "Nuovo dealer";
+      document.getElementById("dealer-form-panel").style.display = "block";
+    }
+
+    async function openDealerFormEdit() {
+      if (!selectedDealer) {
+        alert("Seleziona prima un dealer dalla tabella.");
         return;
       }
 
-      let html = `
-        <table>
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Email</th>
-              <th>Dealer</th>
-              <th>Ruolo</th>
-              <th>Status</th>
-              <th>Admin</th>
-              <th>Distributore</th>
-              <th>Azioni</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
+      resetDealerForm();
+      dealerFormMode = "edit";
+      dealerFormEditingId = selectedDealer;
+      document.getElementById("dealer-form-title").innerText =
+        "Modifica dealer " + selectedDealer;
 
-      snap.forEach(doc => {
+      try {
+        const doc = await db.collection("dealers").doc(selectedDealer).get();
+        if (!doc.exists) {
+          alert("Dealer non trovato in Firestore.");
+          return;
+        }
+        const d = doc.data();
+
+        document.getElementById("dealerIDInput").value = d.dealerID || doc.id;
+        document.getElementById("dealerIDInput").disabled = true;
+        document.getElementById("subDealerNameInput").value = d["Sub-Dealer Name"] || "";
+        document.getElementById("address1Input").value = d.Address1 || "";
+        document.getElementById("cityInput").value = d.City || "";
+        document.getElementById("provinceInput").value = d.Province || "";
+        document.getElementById("regionInput").value = d.Region || "";
+        document.getElementById("ibanInput").value = d.IBAN || "";
+        document.getElementById("vatNumberInput").value = d["Vat Number"] || "";
+        document.getElementById("laborStdInput").value = d.LaborRateStd || "";
+        document.getElementById("laborWarrantyInput").value = d.LaborRateWarranty || "";
+        document.getElementById("coverageRadiusInput").value = d["Coverage Radius (km)"] || "";
+
+        document.getElementById("rsaContactInput").value = d.RSA_ContactName || "";
+        document.getElementById("rsaEmailInput").value = d.RSA_EmailMain || "";
+        document.getElementById("rsaPhoneInput").value = d.RSA_PhoneMain || "";
+        document.getElementById("rsaCloseInput").value = d.RSA_CloseTime || "";
+        document.getElementById("rsaOpenInput").value = d.RSA_OpenTime || "";
+
+        document.getElementById("dealerContactInput").value = d.Dealer_ContactName || "";
+        document.getElementById("dealerEmailInput").value = d.Dealer_EmailMain || "";
+        document.getElementById("dealerPhoneInput").value = d.Dealer_PhoneMain || "";
+        document.getElementById("dealerCloseInput").value = d.Dealer_CloseTime || "";
+        document.getElementById("dealerOpenInput").value = d.Dealer_OpenTime || "";
+
+        document.getElementById("wsContactInput").value = d.Workshop_ContactName || "";
+        document.getElementById("wsEmailInput").value = d.Workshop_EmailMain || "";
+        document.getElementById("wsPhoneInput").value = d.Workshop_PhoneMain || "";
+        document.getElementById("wsCloseInput").value = d.Workshop_CloseTime || "";
+        document.getElementById("wsOpenInput").value = d.Workshop_OpenTime || "";
+
+        document.getElementById("dealerFlag").checked = !!d.Dealer;
+        document.getElementById("workshopFlag").checked = !!d.Workshop;
+        document.getElementById("rsaFlag").checked = !!d.RSA;
+        document.getElementById("isDistributorCheckbox").checked = !!d.isDistributor;
+
+        const statoDealer = d.DealerStatus || (d.active === false ? "dismesso" : "attivo");
+        document.getElementById("dealerStatusSelect").value = statoDealer;
+
+        updateLaborWarrantyState();
+        document.getElementById("dealer-form-panel").style.display = "block";
+
+        // se sola lettura, blocco i campi
+        if (!canWrite("FTDMS")) {
+          setDealerFormEnabled(false);
+          document.getElementById("dealerSaveBtn").style.display = "none";
+        }
+
+      } catch (e) {
+        console.error("Errore caricando dealer:", e);
+        alert("Errore caricando il dealer: " + e.message);
+      }
+    }
+
+    function openDealerFormEditWrapped() {
+      if (!ensureCanWriteFTDMS()) return;
+      openDealerFormEdit();
+      dealerFormMode = "edit";
+      document.getElementById("dealerSaveBtn").style.display = "inline-block";
+      document.getElementById("dealerSaveBtn").disabled = !canWrite("FTDMS");
+      setDealerFormEnabled(true);
+    }
+
+    async function openDealerFormView() {
+      if (!selectedDealer) {
+        alert("Seleziona prima un dealer.");
+        return;
+      }
+      await openDealerFormEdit();
+      dealerFormMode = "view";
+      document.getElementById("dealer-form-title").innerText =
+        "Visualizza dealer " + selectedDealer;
+      setDealerFormEnabled(false);
+      document.getElementById("dealerSaveBtn").style.display = "none";
+    }
+
+    function closeDealerForm() {
+      document.getElementById("dealer-form-panel").style.display = "none";
+    }
+
+    function updateLaborWarrantyState() {
+      const isDist = document.getElementById("isDistributorCheckbox").checked;
+      const fieldDiv = document.getElementById("laborWarrantyField");
+      const input = document.getElementById("laborWarrantyInput");
+
+      if (isDist) {
+        fieldDiv.style.display = "block";
+        input.disabled = false;
+      } else {
+        fieldDiv.style.display = "none";
+        input.disabled = true;
+        input.value = "";
+      }
+    }
+
+    function generateDealerCode() {
+      for (let i = 0; i < 1000; i++) {
+        const n = Math.floor(Math.random() * 1000);
+        const code = "FT" + String(n).padStart(3, "0");
+        if (!knownDealerIds.includes(code)) {
+          document.getElementById("dealerIDInput").value = code;
+          return;
+        }
+      }
+      alert("Impossibile generare un codice univoco.");
+    }
+
+    async function saveDealer() {
+      if (!ensureCanWriteFTDMS()) return;
+
+      const dealerID = document.getElementById("dealerIDInput").value.trim();
+      if (!dealerID) {
+        alert("Il codice dealer è obbligatorio.");
+        return;
+      }
+
+      const dealerStatus = document.getElementById("dealerStatusSelect").value;
+      const subName = document.getElementById("subDealerNameInput").value.trim();
+      const address1 = document.getElementById("address1Input").value.trim();
+      const city = document.getElementById("cityInput").value.trim();
+      const province = document.getElementById("provinceInput").value.trim();
+      const region = document.getElementById("regionInput").value;
+      const iban = document.getElementById("ibanInput").value.trim();
+      const vat = document.getElementById("vatNumberInput").value.trim();
+      const laborStd = document.getElementById("laborStdInput").value.trim();
+      const laborWar = document.getElementById("laborWarrantyInput").value.trim();
+      const coverage = document.getElementById("coverageRadiusInput").value.trim();
+
+      const rsaContact = document.getElementById("rsaContactInput").value.trim();
+      const rsaEmail = document.getElementById("rsaEmailInput").value.trim();
+      const rsaPhone = document.getElementById("rsaPhoneInput").value.trim();
+      const rsaClose = document.getElementById("rsaCloseInput").value.trim();
+      const rsaOpen = document.getElementById("rsaOpenInput").value.trim();
+
+      const dealerContact = document.getElementById("dealerContactInput").value.trim();
+      const dealerEmail = document.getElementById("dealerEmailInput").value.trim();
+      const dealerPhone = document.getElementById("dealerPhoneInput").value.trim();
+      const dealerClose = document.getElementById("dealerCloseInput").value.trim();
+      const dealerOpen = document.getElementById("dealerOpenInput").value.trim();
+
+      const wsContact = document.getElementById("wsContactInput").value.trim();
+      const wsEmail = document.getElementById("wsEmailInput").value.trim();
+      const wsPhone = document.getElementById("wsPhoneInput").value.trim();
+      const wsClose = document.getElementById("wsCloseInput").value.trim();
+      const wsOpen = document.getElementById("wsOpenInput").value.trim();
+
+      const dealerFlag = document.getElementById("dealerFlag").checked;
+      const workshopFlag = document.getElementById("workshopFlag").checked;
+      const rsaFlag = document.getElementById("rsaFlag").checked;
+      const isDist = document.getElementById("isDistributorCheckbox").checked;
+
+      if (iban && iban.length !== 27) {
+        alert("IBAN deve avere esattamente 27 caratteri.");
+        return;
+      }
+      if (vat && vat.length !== 11) {
+        alert("VAT Number deve avere esattamente 11 caratteri.");
+        return;
+      }
+
+      const conferma = confirm("Salvare il dealer " + dealerID + "?");
+      if (!conferma) return;
+
+      const docData = {
+        dealerID: dealerID,
+        DealerStatus: dealerStatus,
+        active: dealerStatus === "attivo",
+
+        "Sub-Dealer Name": subName || "",
+        Address1: address1 || "",
+        City: city || "",
+        Province: province || "",
+        Region: region || "",
+        IBAN: iban ? iban.toUpperCase() : "",
+        "Vat Number": vat || "",
+        LaborRateStd: laborStd || "",
+        LaborRateWarranty: isDist ? (laborWar || "") : "",
+        "Coverage Radius (km)": coverage || "",
+
+        RSA_ContactName: rsaContact || "",
+        RSA_EmailMain: rsaEmail || "",
+        RSA_PhoneMain: rsaPhone || "",
+        RSA_CloseTime: rsaClose || "",
+        RSA_OpenTime: rsaOpen || "",
+
+        Dealer_ContactName: dealerContact || "",
+        Dealer_EmailMain: dealerEmail || "",
+        Dealer_PhoneMain: dealerPhone || "",
+        Dealer_CloseTime: dealerClose || "",
+        Dealer_OpenTime: dealerOpen || "",
+
+        Workshop_ContactName: wsContact || "",
+        Workshop_EmailMain: wsEmail || "",
+        Workshop_PhoneMain: wsPhone || "",
+        Workshop_CloseTime: wsClose || "",
+        Workshop_OpenTime: wsOpen || "",
+
+        Dealer: dealerFlag,
+        Workshop: workshopFlag,
+        RSA: rsaFlag,
+        isDistributor: isDist
+      };
+
+      try {
+        const docId = (dealerFormMode === "edit" && dealerFormEditingId)
+          ? dealerFormEditingId
+          : dealerID;
+
+        await db.collection("dealers").doc(docId).set(docData);
+        alert("Dealer salvato correttamente.");
+        closeDealerForm();
+        loadDealers();
+      } catch (e) {
+        console.error("Errore salvataggio dealer:", e);
+        alert("Errore salvando il dealer: " + e.message);
+      }
+    }
+
+    // ======= FORM UTENTE =======
+    function resetUserFormFields() {
+      document.getElementById("userEmailInput").value = "";
+      document.getElementById("userDisplayNameInput").value = "";
+      document.getElementById("userStatusSelect").value = "active";
+      document.getElementById("userRoleSelect").value = "User";
+      document.getElementById("userPasswordInput").value = "";
+    }
+
+    function openUserFormNew() {
+      if (!ensureCanWriteFTDMS()) return;
+      if (!selectedDealer) {
+        alert("Seleziona prima un dealer.");
+        return;
+      }
+      userFormMode = "new";
+      selectedUserId = null;
+      resetUserFormFields();
+      document.getElementById("user-form-title").innerText =
+        "Nuovo utente per dealer " + selectedDealer;
+      document.getElementById("userPasswordField").style.display = "block";
+      document.getElementById("user-form-panel").style.display = "block";
+    }
+
+    async function openUserFormEdit() {
+      if (!ensureCanWriteFTDMS()) return;
+      if (!selectedDealer) {
+        alert("Seleziona prima un dealer.");
+        return;
+      }
+      if (!selectedUserId) {
+        alert("Seleziona prima un utente dalla tabella.");
+        return;
+      }
+
+      try {
+        const doc = await db.collection("Users").doc(selectedUserId).get();
+        if (!doc.exists) {
+          alert("Utente non trovato.");
+          return;
+        }
         const u = doc.data();
-        const id = doc.id;
-        const sel = (selectedUserId === id) ? " style='background:#e3f2fd;'" : "";
-        html += `
-          <tr${sel} onclick="selectUserRow('${id}')">
-            <td>${u.displayName || "-"}</td>
-            <td>${u.Email || u.email || "-"}</td>
-            <td>${u.dealerId || "-"}</td>
-            <td>${u.role || "-"}</td>
-            <td>${u.Status || "-"}</td>
-            <td>${u.isAdmin ? "Sì" : "No"}</td>
-            <td>${u.isDistributorUser ? "Sì" : "No"}</td>
-            <td>
+
+        userFormMode = "edit";
+        resetUserFormFields();
+        document.getElementById("user-form-title").innerText = "Modifica utente";
+
+        document.getElementById("userEmailInput").value = u.Email || u.email || "";
+        document.getElementById("userDisplayNameInput").value = u.displayName || "";
+        document.getElementById("userStatusSelect").value = u.Status || "active";
+        const role = u.role || (u.isAdmin ? "Admin" : "User");
+        document.getElementById("userRoleSelect").value = role;
+
+        document.getElementById("userPasswordField").style.display = "none";
+        document.getElementById("user-form-panel").style.display = "block";
+
+      } catch (e) {
+        console.error("Errore caricando utente:", e);
+        alert("Errore caricando utente: " + e.message);
+      }
+    }
+
+    function closeUserForm() {
+      document.getElementById("user-form-panel").style.display = "none";
+    }
+
+    async function saveUser() {
+      if (!ensureCanWriteFTDMS()) return;
+      if (!selectedDealer) {
+        alert("Seleziona prima un dealer.");
+        return;
+      }
+
+      const email = document.getElementById("userEmailInput").value.trim();
+      const displayName = document.getElementById("userDisplayNameInput").value.trim();
+      const status = document.getElementById("userStatusSelect").value;
+      const role = document.getElementById("userRoleSelect").value; // "Admin" | "User"
+      const password = document.getElementById("userPasswordInput").value;
+
+      if (!email) {
+        alert("L'email è obbligatoria.");
+        return;
+      }
+
+      try {
+        // 1) scopriamo se il dealer selezionato è un distributore
+        let isDistUser = false;
+        const dealerDoc = await db.collection("dealers").doc(selectedDealer).get();
+        if (dealerDoc.exists && dealerDoc.data().isDistributor === true) {
+          isDistUser = true;
+        }
+
+        // 2) documento utente da salvare
+        const userDoc = {
+          Email: email,
+          displayName: displayName || "",
+          Status: status,             // "active" | "suspended" | "blocked"
+          dealerId: selectedDealer,
+          role: role,                 // "Admin" | "User"
+          isAdmin: (role === "Admin"), // legacy, per compatibilità
+          isDistributorUser: isDistUser
+        };
+
+        // -------- CREAZIONE NUOVO UTENTE --------
+        if (userFormMode === "new") {
+          if (!password || password.length < 6) {
+            alert("Per creare un utente devi inserire una password iniziale (min. 6 caratteri).");
+            return;
+          }
+
+          if (!secondaryApp) {
+            secondaryApp =
+              firebase.apps.find(a => a.name === "Secondary") ||
+              firebase.initializeApp(firebaseConfig, "Secondary");
+          }
+          const secondaryAuth = secondaryApp.auth();
+          const cred = await secondaryAuth.createUserWithEmailAndPassword(email, password);
+          const uid = cred.user.uid;
+
+          await db.collection("Users").doc(uid).set(userDoc);
+          await secondaryAuth.signOut();
+
+          alert("Utente creato con successo.");
+          closeUserForm();
+          loadUsersForDealer();
+          return;
+        }
+
+        // -------- MODIFICA UTENTE ESISTENTE --------
+        if (userFormMode === "edit" && selectedUserId) {
+          await db.collection("Users").doc(selectedUserId).update(userDoc);
+          alert("Utente aggiornato.");
+          closeUserForm();
+          loadUsersForDealer();
+          return;
+        }
+
+        alert("Nessuna operazione da eseguire.");
+
+      } catch (e) {
+        console.error("Errore salvataggio utente:", e);
+        alert("Errore salvataggio utente: " + e.message);
+      }
+    }
+
+    // ======= LISTA DEALERS & UTENTI =======
+    async function loadDealers() {
+      const tbody = document.querySelector("#dealersTable tbody");
+      tbody.innerHTML = "<tr><td colspan='9'>Caricamento...</td></tr>";
+      knownDealerIds = [];
+
+      try {
+        const snap = await db.collection("dealers").get();
+        if (snap.empty) {
+          tbody.innerHTML = "<tr><td colspan='9'>Nessun dealer trovato.</td></tr>";
+          return;
+        }
+
+        let html = "";
+        snap.forEach(doc => {
+          const d = doc.data();
+          const id = doc.id;
+          knownDealerIds.push(id);
+
+          const stato = d.DealerStatus || (d.active === false ? "dismesso" : "attivo");
+          const sel = (selectedDealer === id) ? " style='background:#e3f2fd;'" : "";
+
+          html += `
+            <tr${sel} onclick="selectDealer('${id}')">
+              <td>${d.dealerID || id}</td>
+              <td>${d["Sub-Dealer Name"] || "-"}</td>
+              <td>${d.City || "-"}</td>
+              <td>${d.Province || "-"}</td>
+              <td>${d.Region || "-"}</td>
+              <td>${d.Dealer ? "✔️" : ""}</td>
+              <td>${d.Workshop ? "✔️" : ""}</td>
+              <td>${d.RSA ? "✔️" : ""}</td>
+              <td>${stato}</td>
+            </tr>
+          `;
+        });
+
+        tbody.innerHTML = html;
+      } catch (e) {
+        console.error("Errore caricando dealers:", e);
+        tbody.innerHTML =
+          "<tr><td colspan='9'>Errore caricamento dealers: " + e.message + "</td></tr>";
+      }
+    }
+
+    function selectDealer(dealerId) {
+      selectedDealer = dealerId;
+      selectedUserId = null;
+      document.getElementById("selected-dealer").innerText =
+        "Dealer selezionato: " + dealerId;
+      loadDealers();
+      loadUsersForDealer();
+    }
+
+    async function loadUsersForDealer() {
+      const container = document.getElementById("users-container");
+
+      if (!selectedDealer) {
+        container.innerHTML = "Seleziona un dealer per vedere gli utenti.";
+        return;
+      }
+
+      container.innerHTML = "Caricamento utenti...";
+
+      try {
+        const q = db.collection("Users").where("dealerId", "==", selectedDealer);
+        const snap = await q.get();
+
+        if (snap.empty) {
+          container.innerHTML = "Nessun utente trovato per questo dealer.";
+          return;
+        }
+
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Dealer</th>
+                <th>Ruolo</th>
+                <th>Status</th>
+                <th>Admin</th>
+                <th>Distributore</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        snap.forEach(doc => {
+          const u = doc.data();
+          const id = doc.id;
+          const sel = (selectedUserId === id) ? " style='background:#e3f2fd;'" : "";
+
+          // se non ha write su FTDMS, niente pulsanti di azione
+          let actionButtons = "";
+          if (canWrite("FTDMS")) {
+            actionButtons = `
               <button onclick="event.stopPropagation(); updateUserStatus('${id}','active')">Attiva</button>
               <button onclick="event.stopPropagation(); updateUserStatus('${id}','suspended')">Sospendi</button>
               <button onclick="event.stopPropagation(); updateUserStatus('${id}','blocked')">Blocca</button>
-            </td>
-          </tr>
-        `;
-      });
+            `;
+          }
 
-      html += "</tbody></table>";
-      container.innerHTML = html;
+          html += `
+            <tr${sel} onclick="selectUserRow('${id}')">
+              <td>${u.displayName || "-"}</td>
+              <td>${u.Email || u.email || "-"}</td>
+              <td>${u.dealerId || "-"}</td>
+              <td>${u.role || "-"}</td>
+              <td>${u.Status || "-"}</td>
+              <td>${u.isAdmin ? "Sì" : "No"}</td>
+              <td>${u.isDistributorUser ? "Sì" : "No"}</td>
+              <td>${actionButtons}</td>
+            </tr>
+          `;
+        });
 
-    } catch (e) {
-      console.error("Errore caricando utenti:", e);
-      container.innerHTML = "Errore nel caricamento utenti: " + e.message;
+        html += "</tbody></table>";
+        container.innerHTML = html;
+
+      } catch (e) {
+        console.error("Errore caricando utenti:", e);
+        container.innerHTML = "Errore nel caricamento utenti: " + e.message;
+      }
     }
-  }
 
-  function selectUserRow(userId) {
-    selectedUserId = userId;
-    loadUsersForDealer(); // solo per evidenziare riga selezionata
-  }
-
-  async function updateUserStatus(userId, newStatus) {
-    const conferma = confirm("Impostare lo stato utente su: " + newStatus + "?");
-    if (!conferma) return;
-
-    try {
-      await db.collection("Users").doc(userId).update({ Status: newStatus });
-      alert("Stato aggiornato.");
-      loadUsersForDealer();
-    } catch (e) {
-      console.error("Errore aggiornando stato utente:", e);
-      alert("Errore aggiornando lo stato: " + e.message);
+    function selectUserRow(userId) {
+      selectedUserId = userId;
+      loadUsersForDealer(); // solo per evidenziare riga selezionata
     }
-  }
-</script>
+
+    async function updateUserStatus(userId, newStatus) {
+      if (!ensureCanWriteFTDMS()) return;
+      const conferma = confirm("Impostare lo stato utente su: " + newStatus + "?");
+      if (!conferma) return;
+
+      try {
+        await db.collection("Users").doc(userId).update({ Status: newStatus });
+        alert("Stato aggiornato.");
+        loadUsersForDealer();
+      } catch (e) {
+        console.error("Errore aggiornando stato utente:", e);
+        alert("Errore aggiornando lo stato: " + e.message);
+      }
+    }
+  </script>
 </body>
 </html>
