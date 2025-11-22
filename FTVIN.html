@@ -257,245 +257,260 @@
   </div>
 
   <script>
-    // QUI usiamo direttamente auth e db definiti in firebase-config.js
-    // const auth = firebase.auth();
-    // const db   = firebase.firestore();
-    // NON ridichiarare const db / const auth qui, altrimenti si rompe tutto.
+    // TUTTO il JS parte solo dopo che il DOM è pronto
+    window.addEventListener('DOMContentLoaded', function() {
+      const userInfoEl      = document.getElementById('userInfo');
+      const vinInput        = document.getElementById('vinInput');
+      const searchBtn       = document.getElementById('searchBtn');
+      const searchMessageEl = document.getElementById('searchMessage');
+      const resultsEl       = document.getElementById('results');
+      const contractInfoEl  = document.getElementById('contractInfo');
+      const timeKmInfoEl    = document.getElementById('timeKmInfo');
+      const boolTbodyEl     = document.querySelector('#boolTable tbody');
 
-    // --- Autenticazione (solo per mostrare "Utente: ...") ---
-    if (typeof auth !== 'undefined') {
-      auth.onAuthStateChanged(function(user) {
-        const userInfoEl = document.getElementById('userInfo');
-        if (user) {
-          userInfoEl.textContent = 'Utente: ' + (user.email || user.uid);
-        } else {
-          userInfoEl.textContent = 'Utente: non loggato';
-          // se vuoi forzare il login:
-          // window.location.href = 'index.html';
+      // Se per qualche motivo non troviamo il bottone, lo segnaliamo subito
+      if (!searchBtn) {
+        console.error('Elemento con id="searchBtn" non trovato.');
+        if (searchMessageEl) {
+          searchMessageEl.textContent = 'Errore interno: bottone di ricerca non trovato.';
+          searchMessageEl.className = 'message error';
         }
-      });
-    }
-
-    // --- Utility ---
-    function escapeHtml(text) {
-      if (text === null || text === undefined) return '';
-      return String(text)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    function formatDate(value) {
-      if (!value) return '-';
-      return String(value);
-    }
-
-    function formatNumber(value) {
-      if (value === null || value === undefined) return '-';
-      return String(value);
-    }
-
-    function formatText(value) {
-      if (value === null || value === undefined || value === '') return '-';
-      return escapeHtml(value);
-    }
-
-    function formatBool(value) {
-      const v = !!value; // null/undefined => false
-      if (v) {
-        return '<span class="badge badge-ok">SI</span>';
-      } else {
-        return '<span class="badge badge-ko">NO</span>';
-      }
-    }
-
-    function showMessage(text, type) {
-      const el = document.getElementById('searchMessage');
-      el.textContent = text || '';
-      el.className = 'message' + (type ? ' ' + type : '');
-    }
-
-    function setLoading(isLoading) {
-      const btn = document.getElementById('searchBtn');
-      const msg = document.getElementById('searchMessage');
-      if (isLoading) {
-        btn.disabled = true;
-        btn.innerHTML = 'Caricamento...';
-        msg.innerHTML = 'Ricerca in corso<span class="loader"></span>';
-        msg.className = 'message';
-      } else {
-        btn.disabled = false;
-        btn.textContent = 'Cerca';
-      }
-    }
-
-    // --- Rendering risultati ---
-    function renderResults(vin, data) {
-      const resultsEl      = document.getElementById('results');
-      const contractInfoEl = document.getElementById('contractInfo');
-      const timeKmInfoEl   = document.getElementById('timeKmInfo');
-      const boolTbodyEl    = document.querySelector('#boolTable tbody');
-
-      const contractHtml = `
-        <div class="info-item">
-          <span class="label">VIN</span>
-          <span class="value">${formatText(data.vin || vin)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Cliente</span>
-          <span class="value">${formatText(data.customer)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Tipo contratto</span>
-          <span class="value">${formatText(data.contract_type)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Validazione contratto</span>
-          <span class="value">${formatText(data.validate_contract)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Durata contratto</span>
-          <span class="value">${formatNumber(data.duration_contract)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Inter-market</span>
-          <span class="value">${formatText(data.inter_market)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Lingua</span>
-          <span class="value">${formatText(data.language)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Note</span>
-          <span class="value">${formatText(data.note)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Creato il</span>
-          <span class="value">${formatDate(data.created)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Creato da</span>
-          <span class="value">${formatText(data.created_by)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Contratto data start</span>
-          <span class="value">${formatDate(data.contratto_data_start)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Contratto data end</span>
-          <span class="value">${formatDate(data.contratto_data_end)}</span>
-        </div>
-      `;
-      contractInfoEl.innerHTML = contractHtml;
-
-      const timeKmHtml = `
-        <div class="info-item">
-          <span class="label">Completa - Data inizio</span>
-          <span class="value">${formatDate(data.completa_data_start)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Completa - Data fine</span>
-          <span class="value">${formatDate(data.completa_data_end)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Completa - KM inizio</span>
-          <span class="value">${formatNumber(data.completa_km_start)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Completa - KM fine</span>
-          <span class="value">${formatNumber(data.completa_km_end)}</span>
-        </div>
-
-        <div class="info-item">
-          <span class="label">Cat. cinematica - Data inizio</span>
-          <span class="value">${formatDate(data.catcinematica_data_start)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Cat. cinematica - Data fine</span>
-          <span class="value">${formatDate(data.catcinematica_data_end)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Cat. cinematica - KM inizio</span>
-          <span class="value">${formatNumber(data.catcinematica_km_start)}</span>
-        </div>
-        <div class="info-item">
-          <span class="label">Cat. cinematica - KM fine</span>
-          <span class="value">${formatNumber(data.catcinematica_km_end)}</span>
-        </div>
-      `;
-      timeKmInfoEl.innerHTML = timeKmHtml;
-
-      const boolRows = [
-        ['Altre opzioni',      data.altre_opzioni],
-        ['Batterie',           data.batterie],
-        ['Fusibili / lampadine', data.fusibili_lampadine],
-        ['Parti d’usura',      data.parti_usara],
-        ['Pulizia FAP',        data.pulizia_fap],
-        ['Rabbocco olio',      data.rabbocco_olio],
-        ['Tergicristallo',     data.tergicristallo],
-        ['Traino',             data.traino],
-        ['Uptime service',     data.uptime_service],
-      ];
-
-      boolTbodyEl.innerHTML = boolRows.map(row => (
-        '<tr>' +
-          '<td>' + escapeHtml(row[0]) + '</td>' +
-          '<td>' + formatBool(row[1]) + '</td>' +
-        '</tr>'
-      )).join('');
-
-      resultsEl.style.display = 'block';
-    }
-
-    // --- Ricerca VIN ---
-    async function searchVIN() {
-      const input = document.getElementById('vinInput');
-      const resultsEl = document.getElementById('results');
-      let vin = input.value.trim().toUpperCase();
-
-      resultsEl.style.display = 'none';
-      showMessage('', '');
-
-      if (!vin) {
-        showMessage('Inserisci un telaio (VIN) prima di avviare la ricerca.', 'error');
         return;
       }
 
-      if (typeof db === 'undefined') {
-        console.error('db non definito: controlla firebase-config.js');
-        showMessage('Errore configurazione Firebase.', 'error');
-        return;
-      }
-
-      setLoading(true);
-
+      // --- Autenticazione: solo per mostrare il nome in alto ---
       try {
-        const docRef = db.collection('DBVIN').doc(vin);
-        const snap = await docRef.get();
-
-        if (!snap.exists) {
-          showMessage('Nessuna copertura trovata per il telaio: ' + vin, 'error');
+        if (typeof auth !== 'undefined' && auth && typeof auth.onAuthStateChanged === 'function') {
+          auth.onAuthStateChanged(function(user) {
+            if (user) {
+              userInfoEl.textContent = 'Utente: ' + (user.email || user.uid);
+            } else {
+              userInfoEl.textContent = 'Utente: non loggato';
+            }
+          });
         } else {
-          const data = snap.data() || {};
-          renderResults(vin, data);
-          showMessage('Copertura trovata per il telaio ' + vin + '.', 'success');
+          userInfoEl.textContent = 'Utente: (auth non configurata)';
         }
-      } catch (err) {
-        console.error('Errore lettura DBVIN:', err);
-        showMessage('Errore durante la lettura dei dati. Controlla la console.', 'error');
-      } finally {
-        setLoading(false);
+      } catch (e) {
+        console.error('Errore auth:', e);
+        userInfoEl.textContent = 'Utente: errore autenticazione';
       }
-    }
 
-    // --- Event listeners ---
-    document.getElementById('searchBtn').addEventListener('click', searchVIN);
-    document.getElementById('vinInput').addEventListener('keyup', function(e) {
-      if (e.key === 'Enter') {
-        searchVIN();
+      // --- Utility ---
+      function escapeHtml(text) {
+        if (text === null || text === undefined) return '';
+        return String(text)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
       }
+
+      function formatDate(value) {
+        if (!value) return '-';
+        return String(value);
+      }
+
+      function formatNumber(value) {
+        if (value === null || value === undefined) return '-';
+        return String(value);
+      }
+
+      function formatText(value) {
+        if (value === null || value === undefined || value === '') return '-';
+        return escapeHtml(value);
+      }
+
+      function formatBool(value) {
+        const v = !!value; // null/undefined => false
+        if (v) {
+          return '<span class="badge badge-ok">SI</span>';
+        } else {
+          return '<span class="badge badge-ko">NO</span>';
+        }
+      }
+
+      function showMessage(text, type) {
+        if (!searchMessageEl) return;
+        searchMessageEl.textContent = text || '';
+        searchMessageEl.className = 'message' + (type ? ' ' + type : '');
+      }
+
+      function setLoading(isLoading) {
+        if (!searchBtn) return;
+        if (isLoading) {
+          searchBtn.disabled = true;
+          searchBtn.innerHTML = 'Caricamento...';
+          if (searchMessageEl) {
+            searchMessageEl.innerHTML = 'Ricerca in corso<span class="loader"></span>';
+            searchMessageEl.className = 'message';
+          }
+        } else {
+          searchBtn.disabled = false;
+          searchBtn.textContent = 'Cerca';
+        }
+      }
+
+      function renderResults(vin, data) {
+        if (!resultsEl) return;
+
+        const contractHtml = `
+          <div class="info-item">
+            <span class="label">VIN</span>
+            <span class="value">${formatText(data.vin || vin)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Cliente</span>
+            <span class="value">${formatText(data.customer)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Tipo contratto</span>
+            <span class="value">${formatText(data.contract_type)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Validazione contratto</span>
+            <span class="value">${formatText(data.validate_contract)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Durata contratto</span>
+            <span class="value">${formatNumber(data.duration_contract)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Inter-market</span>
+            <span class="value">${formatText(data.inter_market)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Lingua</span>
+            <span class="value">${formatText(data.language)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Note</span>
+            <span class="value">${formatText(data.note)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Creato il</span>
+            <span class="value">${formatDate(data.created)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Creato da</span>
+            <span class="value">${formatText(data.created_by)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Contratto data start</span>
+            <span class="value">${formatDate(data.contratto_data_start)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Contratto data end</span>
+            <span class="value">${formatDate(data.contratto_data_end)}</span>
+          </div>
+        `;
+        contractInfoEl.innerHTML = contractHtml;
+
+        const timeKmHtml = `
+          <div class="info-item">
+            <span class="label">Completa - Data inizio</span>
+            <span class="value">${formatDate(data.completa_data_start)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Completa - Data fine</span>
+            <span class="value">${formatDate(data.completa_data_end)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Completa - KM inizio</span>
+            <span class="value">${formatNumber(data.completa_km_start)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Completa - KM fine</span>
+            <span class="value">${formatNumber(data.completa_km_end)}</span>
+          </div>
+
+          <div class="info-item">
+            <span class="label">Cat. cinematica - Data inizio</span>
+            <span class="value">${formatDate(data.catcinematica_data_start)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - Data fine</span>
+            <span class="value">${formatDate(data.catcinematica_data_end)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - KM inizio</span>
+            <span class="value">${formatNumber(data.catcinematica_km_start)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - KM fine</span>
+            <span class="value">${formatNumber(data.catcinematica_km_end)}</span>
+          </div>
+        `;
+        timeKmInfoEl.innerHTML = timeKmHtml;
+
+        const boolRows = [
+          ['Altre opzioni',        data.altre_opzioni],
+          ['Batterie',             data.batterie],
+          ['Fusibili / lampadine', data.fusibili_lampadine],
+          ['Parti d’usura',        data.parti_usara],
+          ['Pulizia FAP',          data.pulizia_fap],
+          ['Rabbocco olio',        data.rabbocco_olio],
+          ['Tergicristallo',       data.tergicristallo],
+          ['Traino',               data.traino],
+          ['Uptime service',       data.uptime_service],
+        ];
+
+        boolTbodyEl.innerHTML = boolRows.map(function(row) {
+          return '<tr>' +
+            '<td>' + escapeHtml(row[0]) + '</td>' +
+            '<td>' + formatBool(row[1]) + '</td>' +
+          '</tr>';
+        }).join('');
+
+        resultsEl.style.display = 'block';
+      }
+
+      async function searchVIN() {
+        if (!vinInput) return;
+
+        let vin = vinInput.value.trim().toUpperCase();
+        resultsEl.style.display = 'none';
+        showMessage('', '');
+
+        if (!vin) {
+          showMessage('Inserisci un telaio (VIN) prima di avviare la ricerca.', 'error');
+          return;
+        }
+
+        // Controllo che db esista davvero
+        if (typeof db === 'undefined' || !db) {
+          console.error('db non definito: controlla firebase-config.js');
+          showMessage('Errore configurazione Firebase (db non definito).', 'error');
+          return;
+        }
+
+        setLoading(true);
+
+        try {
+          const docRef = db.collection('DBVIN').doc(vin);
+          const snap = await docRef.get();
+
+          if (!snap.exists) {
+            showMessage('Nessuna copertura trovata per il telaio: ' + vin, 'error');
+          } else {
+            const data = snap.data() || {};
+            renderResults(vin, data);
+            showMessage('Copertura trovata per il telaio ' + vin + '.', 'success');
+          }
+        } catch (err) {
+          console.error('Errore lettura DBVIN:', err);
+          showMessage('Errore durante la lettura dei dati. Controlla la console.', 'error');
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      // Event listeners
+      searchBtn.addEventListener('click', searchVIN);
+      vinInput.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') searchVIN();
+      });
     });
   </script>
 </body>
