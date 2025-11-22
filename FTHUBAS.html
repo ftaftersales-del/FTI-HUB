@@ -36,7 +36,8 @@
       cursor: pointer;
       margin-left: 8px;
     }
-    #admin-section {
+    #admin-section,
+    #ftvin-section {
       margin-top: 16px;
       padding-top: 8px;
       border-top: 1px solid #eee;
@@ -55,14 +56,27 @@
 
     <div id="user-info">Caricamento dati utente...</div>
 
+    <!-- AREA FTDMS -->
     <div id="admin-section" style="display:none;">
       <h3>Area Amministratore (FTDMS)</h3>
       <p>Da qui puoi accedere al pannello di gestione Dealer e Utenze (DMS).</p>
       <button onclick="goToDMS()">Apri DMS</button>
     </div>
+
+    <!-- AREA FTVIN -->
+    <div id="ftvin-section" style="display:none;">
+      <h3>Verifica Copertura VIN (FTVIN)</h3>
+      <p>Accedi alla ricerca dei contratti per telaio.</p>
+      <button onclick="goToFTVIN()">Apri FTVIN</button>
+    </div>
   </div>
 
   <script>
+    // Si assume che in firebase-config.js siano già definiti:
+    // firebase.initializeApp(firebaseConfig);
+    // const auth = firebase.auth();
+    // const db   = firebase.firestore();
+
     // user + permessi caricati da Firestore
     let currentAccount = null;
 
@@ -87,7 +101,7 @@
       const basePermissions = roleData.permission || {};
       const extra = userData.extraPermissions || {};
 
-      // merge permessi base + extra
+      // merge permessi base + extra (deep-ish merge sulle sezioni)
       const effectivePermissions = JSON.parse(JSON.stringify(basePermissions));
       Object.keys(extra).forEach(section => {
         effectivePermissions[section] = {
@@ -129,12 +143,20 @@
     }
 
     function updateUIFromPermissions() {
-      // l'area DMS è visibile solo se l'utente ha accesso a FTDMS
+      // Sezione FTDMS
       const adminSection = document.getElementById('admin-section');
       if (canRead('FTDMS')) {
         adminSection.style.display = 'block';
       } else {
         adminSection.style.display = 'none';
+      }
+
+      // Sezione FTVIN
+      const ftvinSection = document.getElementById('ftvin-section');
+      if (canRead('FTVIN')) {
+        ftvinSection.style.display = 'block';
+      } else {
+        ftvinSection.style.display = 'none';
       }
     }
 
@@ -163,13 +185,19 @@
     }
 
     function goToDMS() {
-      // l’utente vede il pulsante solo se ha FTDMS.read,
-      // ma se vuoi puoi fare un ulteriore check:
       if (!canRead('FTDMS')) {
         alert("Non hai i permessi per accedere a FTDMS.");
         return;
       }
       window.location.href = "FTDMS.html";
+    }
+
+    function goToFTVIN() {
+      if (!canRead('FTVIN')) {
+        alert("Non hai i permessi per accedere a FTVIN.");
+        return;
+      }
+      window.location.href = "FTVIN.html";
     }
   </script>
 </body>
