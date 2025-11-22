@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>FTVIN - Verifica Copertura</title>
+  <title>FTVIN - Verifica copertura contratti</title>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -20,40 +20,32 @@
 
     .container {
       max-width: 1100px;
-      margin: auto;
+      margin: 0 auto;
       background: #ffffff;
-      padding: 20px 24px 32px;
+      padding: 20px 24px 28px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.08);
-    }
-
-    h1 {
-      margin-top: 0;
-      font-size: 24px;
-      color: #333;
-    }
-
-    .subtitle {
-      color: #666;
-      margin-bottom: 20px;
     }
 
     .top-bar {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
       font-size: 13px;
       color: #555;
+      margin-bottom: 8px;
     }
 
-    .top-bar button {
-      padding: 6px 10px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      background: #fafafa;
-      cursor: pointer;
-      font-size: 12px;
+    h1 {
+      margin: 8px 0 6px;
+      font-size: 26px;
+      color: #333;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 20px;
+      font-size: 14px;
     }
 
     .search-box {
@@ -61,7 +53,7 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 10px;
     }
 
     .search-box label {
@@ -95,7 +87,7 @@
     }
 
     .message {
-      margin-top: 6px;
+      margin-top: 4px;
       font-size: 13px;
       color: #666;
     }
@@ -182,11 +174,6 @@
       color: #c62828;
     }
 
-    .badge-na {
-      background: #eceff1;
-      color: #546e7a;
-    }
-
     .bool-table {
       width: 100%;
       border-collapse: collapse;
@@ -270,24 +257,26 @@
   </div>
 
   <script>
-    // Inizializzazione Firebase (se non già fatta nel file firebase-config.js)
-    if (!firebase.apps.length && typeof firebaseConfig !== 'undefined') {
-      firebase.initializeApp(firebaseConfig);
-    }
-    const db = firebase.firestore();
+    // QUI usiamo direttamente auth e db definiti in firebase-config.js
+    // const auth = firebase.auth();
+    // const db   = firebase.firestore();
+    // NON ridichiarare const db / const auth qui, altrimenti si rompe tutto.
 
-    // Controllo autenticazione base (adatta l'URL di redirect se necessario)
-    firebase.auth().onAuthStateChanged(function(user) {
-      if (user) {
+    // --- Autenticazione (solo per mostrare "Utente: ...") ---
+    if (typeof auth !== 'undefined') {
+      auth.onAuthStateChanged(function(user) {
         const userInfoEl = document.getElementById('userInfo');
-        userInfoEl.textContent = 'Utente: ' + (user.email || user.uid);
-      } else {
-        // Se vuoi proteggere la pagina, decommenta la riga seguente:
-        // window.location.href = 'index.html';
-      }
-    });
+        if (user) {
+          userInfoEl.textContent = 'Utente: ' + (user.email || user.uid);
+        } else {
+          userInfoEl.textContent = 'Utente: non loggato';
+          // se vuoi forzare il login:
+          // window.location.href = 'index.html';
+        }
+      });
+    }
 
-    // Utilità
+    // --- Utility ---
     function escapeHtml(text) {
       if (text === null || text === undefined) return '';
       return String(text)
@@ -300,8 +289,7 @@
 
     function formatDate(value) {
       if (!value) return '-';
-      // value già in formato "YYYY-MM-DD"
-      return value;
+      return String(value);
     }
 
     function formatNumber(value) {
@@ -343,14 +331,13 @@
       }
     }
 
-    // Rendering risultati
+    // --- Rendering risultati ---
     function renderResults(vin, data) {
-      const resultsEl = document.getElementById('results');
+      const resultsEl      = document.getElementById('results');
       const contractInfoEl = document.getElementById('contractInfo');
-      const timeKmInfoEl = document.getElementById('timeKmInfo');
-      const boolTbodyEl = document.querySelector('#boolTable tbody');
+      const timeKmInfoEl   = document.getElementById('timeKmInfo');
+      const boolTbodyEl    = document.querySelector('#boolTable tbody');
 
-      // Dati contratto
       const contractHtml = `
         <div class="info-item">
           <span class="label">VIN</span>
@@ -403,7 +390,6 @@
       `;
       contractInfoEl.innerHTML = contractHtml;
 
-      // Copertura temporale / chilometrica
       const timeKmHtml = `
         <div class="info-item">
           <span class="label">Completa - Data inizio</span>
@@ -441,30 +427,29 @@
       `;
       timeKmInfoEl.innerHTML = timeKmHtml;
 
-      // Tabella booleani (null => NO)
       const boolRows = [
-        ['Altre opzioni', data.altre_opzioni],
-        ['Batterie', data.batterie],
+        ['Altre opzioni',      data.altre_opzioni],
+        ['Batterie',           data.batterie],
         ['Fusibili / lampadine', data.fusibili_lampadine],
-        ['Parti d’usura', data.parti_usara],
-        ['Pulizia FAP', data.pulizia_fap],
-        ['Rabbocco olio', data.rabbocco_olio],
-        ['Tergicristallo', data.tergicristallo],
-        ['Traino', data.traino],
-        ['Uptime service', data.uptime_service],
+        ['Parti d’usura',      data.parti_usara],
+        ['Pulizia FAP',        data.pulizia_fap],
+        ['Rabbocco olio',      data.rabbocco_olio],
+        ['Tergicristallo',     data.tergicristallo],
+        ['Traino',             data.traino],
+        ['Uptime service',     data.uptime_service],
       ];
 
-      boolTbodyEl.innerHTML = boolRows.map(function(row) {
-        return '<tr>' +
+      boolTbodyEl.innerHTML = boolRows.map(row => (
+        '<tr>' +
           '<td>' + escapeHtml(row[0]) + '</td>' +
           '<td>' + formatBool(row[1]) + '</td>' +
-        '</tr>';
-      }).join('');
+        '</tr>'
+      )).join('');
 
       resultsEl.style.display = 'block';
     }
 
-    // Gestione ricerca
+    // --- Ricerca VIN ---
     async function searchVIN() {
       const input = document.getElementById('vinInput');
       const resultsEl = document.getElementById('results');
@@ -475,6 +460,12 @@
 
       if (!vin) {
         showMessage('Inserisci un telaio (VIN) prima di avviare la ricerca.', 'error');
+        return;
+      }
+
+      if (typeof db === 'undefined') {
+        console.error('db non definito: controlla firebase-config.js');
+        showMessage('Errore configurazione Firebase.', 'error');
         return;
       }
 
@@ -499,6 +490,7 @@
       }
     }
 
+    // --- Event listeners ---
     document.getElementById('searchBtn').addEventListener('click', searchVIN);
     document.getElementById('vinInput').addEventListener('keyup', function(e) {
       if (e.key === 'Enter') {
