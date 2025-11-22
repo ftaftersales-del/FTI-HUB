@@ -154,6 +154,27 @@
       word-break: break-word;
     }
 
+    .note-box {
+      background: #fafafa;
+      border-radius: 6px;
+      padding: 8px 10px;
+      min-height: 80px; /* abbastanza alta per 3–4 righe */
+    }
+
+    .note-label {
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
+    .note-value {
+      font-size: 13px;
+      color: #222;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
     .badge {
       display: inline-block;
       padding: 3px 8px;
@@ -234,12 +255,30 @@
     <div id="searchMessage" class="message"></div>
 
     <div id="results" class="results">
-      <div class="section-title">Dati contratto</div>
-      <div class="info-grid" id="contractInfo"></div>
+      <!-- Dati veicolo -->
+      <div class="section-title">Dati Veicolo</div>
+      <div class="info-grid" id="vehicleInfo"></div>
 
-      <div class="section-title">Copertura temporale / chilometrica</div>
-      <div class="info-grid" id="timeKmInfo"></div>
+      <!-- Note -->
+      <div class="section-title">Note</div>
+      <div class="note-box" id="noteBox">
+        <div class="note-label">Note</div>
+        <div class="note-value"></div>
+      </div>
 
+      <!-- Full Line -->
+      <div class="section-title">Full Line</div>
+      <div class="info-grid" id="fullLineInfo"></div>
+
+      <!-- Drive Line -->
+      <div class="section-title">Drive Line</div>
+      <div class="info-grid" id="driveLineInfo"></div>
+
+      <!-- Contratto di manutenzione -->
+      <div class="section-title">Contratto di Manutenzione</div>
+      <div class="info-grid" id="contractMaintInfo"></div>
+
+      <!-- Opzioni aggiuntive / servizi -->
       <div class="section-title">Opzioni aggiuntive / servizi</div>
       <table class="bool-table" id="boolTable">
         <thead>
@@ -257,18 +296,21 @@
   </div>
 
   <script>
-    // TUTTO il JS parte solo dopo che il DOM è pronto
+    // Tutto il JS parte solo dopo che il DOM è pronto
     window.addEventListener('DOMContentLoaded', function() {
-      const userInfoEl      = document.getElementById('userInfo');
-      const vinInput        = document.getElementById('vinInput');
-      const searchBtn       = document.getElementById('searchBtn');
-      const searchMessageEl = document.getElementById('searchMessage');
-      const resultsEl       = document.getElementById('results');
-      const contractInfoEl  = document.getElementById('contractInfo');
-      const timeKmInfoEl    = document.getElementById('timeKmInfo');
-      const boolTbodyEl     = document.querySelector('#boolTable tbody');
+      const userInfoEl          = document.getElementById('userInfo');
+      const vinInput            = document.getElementById('vinInput');
+      const searchBtn           = document.getElementById('searchBtn');
+      const searchMessageEl     = document.getElementById('searchMessage');
+      const resultsEl           = document.getElementById('results');
+      const vehicleInfoEl       = document.getElementById('vehicleInfo');
+      const noteBoxEl           = document.getElementById('noteBox');
+      const noteValueEl         = noteBoxEl ? noteBoxEl.querySelector('.note-value') : null;
+      const fullLineInfoEl      = document.getElementById('fullLineInfo');
+      const driveLineInfoEl     = document.getElementById('driveLineInfo');
+      const contractMaintInfoEl = document.getElementById('contractMaintInfo');
+      const boolTbodyEl         = document.querySelector('#boolTable tbody');
 
-      // Se per qualche motivo non troviamo il bottone, lo segnaliamo subito
       if (!searchBtn) {
         console.error('Elemento con id="searchBtn" non trovato.');
         if (searchMessageEl) {
@@ -352,10 +394,12 @@
         }
       }
 
+      // --- Rendering risultati ---
       function renderResults(vin, data) {
         if (!resultsEl) return;
 
-        const contractHtml = `
+        // Dati veicolo
+        const vehicleHtml = `
           <div class="info-item">
             <span class="label">VIN</span>
             <span class="value">${formatText(data.vin || vin)}</span>
@@ -384,30 +428,16 @@
             <span class="label">Lingua</span>
             <span class="value">${formatText(data.language)}</span>
           </div>
-          <div class="info-item">
-            <span class="label">Note</span>
-            <span class="value">${formatText(data.note)}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">Creato il</span>
-            <span class="value">${formatDate(data.created)}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">Creato da</span>
-            <span class="value">${formatText(data.created_by)}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">Contratto data start</span>
-            <span class="value">${formatDate(data.contratto_data_start)}</span>
-          </div>
-          <div class="info-item">
-            <span class="label">Contratto data end</span>
-            <span class="value">${formatDate(data.contratto_data_end)}</span>
-          </div>
         `;
-        contractInfoEl.innerHTML = contractHtml;
+        vehicleInfoEl.innerHTML = vehicleHtml;
 
-        const timeKmHtml = `
+        // Note (solo campo note, box un po' alto)
+        if (noteValueEl) {
+          noteValueEl.innerHTML = formatText(data.note);
+        }
+
+        // Full Line (completa_*)
+        const fullLineHtml = `
           <div class="info-item">
             <span class="label">Completa - Data inizio</span>
             <span class="value">${formatDate(data.completa_data_start)}</span>
@@ -424,7 +454,11 @@
             <span class="label">Completa - KM fine</span>
             <span class="value">${formatNumber(data.completa_km_end)}</span>
           </div>
+        `;
+        fullLineInfoEl.innerHTML = fullLineHtml;
 
+        // Drive Line (catcinematica_*)
+        const driveLineHtml = `
           <div class="info-item">
             <span class="label">Cat. cinematica - Data inizio</span>
             <span class="value">${formatDate(data.catcinematica_data_start)}</span>
@@ -442,8 +476,22 @@
             <span class="value">${formatNumber(data.catcinematica_km_end)}</span>
           </div>
         `;
-        timeKmInfoEl.innerHTML = timeKmHtml;
+        driveLineInfoEl.innerHTML = driveLineHtml;
 
+        // Contratto di manutenzione (contratto_data_*)
+        const contractMaintHtml = `
+          <div class="info-item">
+            <span class="label">Contratto data start</span>
+            <span class="value">${formatDate(data.contratto_data_start)}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Contratto data end</span>
+            <span class="value">${formatDate(data.contratto_data_end)}</span>
+          </div>
+        `;
+        contractMaintInfoEl.innerHTML = contractMaintHtml;
+
+        // Opzioni aggiuntive / servizi (boolean + null = false)
         const boolRows = [
           ['Altre opzioni',        data.altre_opzioni],
           ['Batterie',             data.batterie],
@@ -463,9 +511,11 @@
           '</tr>';
         }).join('');
 
+        // Mostra il blocco risultati
         resultsEl.style.display = 'block';
       }
 
+      // --- Ricerca VIN ---
       async function searchVIN() {
         if (!vinInput) return;
 
@@ -478,7 +528,6 @@
           return;
         }
 
-        // Controllo che db esista davvero
         if (typeof db === 'undefined' || !db) {
           console.error('db non definito: controlla firebase-config.js');
           showMessage('Errore configurazione Firebase (db non definito).', 'error');
