@@ -19,7 +19,7 @@
     }
     .card {
       background: #fff;
-      padding: 16px;
+      padding: 16px 24px 24px;
       border-radius: 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       max-width: 900px;
@@ -36,11 +36,19 @@
       cursor: pointer;
       margin-left: 8px;
     }
-    #admin-section,
-    #ftvin-section {
-      margin-top: 16px;
-      padding-top: 8px;
+    hr {
+      margin: 16px -24px;
+      border: none;
       border-top: 1px solid #eee;
+    }
+    .section {
+      margin-top: 8px;
+    }
+    .section h3 {
+      margin: 0 0 4px 0;
+    }
+    .section p {
+      margin: 0 0 8px 0;
     }
   </style>
 </head>
@@ -56,15 +64,17 @@
 
     <div id="user-info">Caricamento dati utente...</div>
 
-    <!-- AREA FTDMS -->
-    <div id="admin-section" style="display:none;">
+    <hr>
+
+    <!-- AREA FTDMS (mostrata solo se permesso) -->
+    <div id="admin-section" class="section" style="display:none;">
       <h3>Area Amministratore (FTDMS)</h3>
       <p>Da qui puoi accedere al pannello di gestione Dealer e Utenze (DMS).</p>
       <button onclick="goToDMS()">Apri DMS</button>
     </div>
 
-    <!-- AREA FTVIN -->
-    <div id="ftvin-section" style="display:none;">
+    <!-- AREA FTVIN (sempre visibile per utente loggato) -->
+    <div id="ftvin-section" class="section">
       <h3>Verifica Copertura VIN (FTVIN)</h3>
       <p>Accedi alla ricerca dei contratti per telaio.</p>
       <button onclick="goToFTVIN()">Apri FTVIN</button>
@@ -72,15 +82,14 @@
   </div>
 
   <script>
-    // In firebase-config.js dovresti avere già:
-    // const firebaseConfig = {...};
+    // Si assume che in firebase-config.js siano già definiti:
     // firebase.initializeApp(firebaseConfig);
     // const auth = firebase.auth();
     // const db   = firebase.firestore();
 
     let currentAccount = null;
 
-    async function loadCurrentUserPermissions(user) {
+    async function loadCurrentUserInfo(user) {
       const userRef = db.collection('Users').doc(user.uid);
       const userSnap = await userRef.get();
       if (!userSnap.exists) {
@@ -88,9 +97,9 @@
       }
 
       const userData = userSnap.data();
-      const roleId   = userData.role || "User"; // "Admin", "User", "Network Manager", ecc.
+      const roleId   = userData.role || "User";
 
-      // Leggo il documento ruolo (se esiste)
+      // provo a leggere i permessi ruolo (solo per FTDMS)
       let permissions = {};
       try {
         const roleRef = db.collection('roles').doc(roleId);
@@ -126,19 +135,10 @@
     function canRead(section) {
       if (!currentAccount) return false;
 
-      // 1) se ho un permesso esplicito
+      // permessi espliciti
       if (currentAccount.permissions[section]?.read === true) return true;
 
-      // 2) fallback: gli Admin possono leggere tutto
-      if (currentAccount.roleId === 'Admin') return true;
-
-      return false;
-    }
-
-    function canWrite(section) {
-      if (!currentAccount) return false;
-
-      if (currentAccount.permissions[section]?.write === true) return true;
+      // fallback: Admin vede tutto
       if (currentAccount.roleId === 'Admin') return true;
 
       return false;
@@ -157,23 +157,18 @@
       `;
     }
 
-    function updateUIFromPermissions() {
+    function updateUI() {
       const adminSection = document.getElementById('admin-section');
-      const ftvinSection = document.getElementById('ftvin-section');
 
-      // FTDMS visibile se Admin o se ha permesso FTDMS.read
+      // FTDMS dipende dai permessi
       if (canRead('FTDMS')) {
         adminSection.style.display = 'block';
       } else {
         adminSection.style.display = 'none';
       }
 
-      // FTVIN visibile se Admin o se ha permesso FTVIN.read
-      if (canRead('FTVIN')) {
-        ftvinSection.style.display = 'block';
-      } else {
-        ftvinSection.style.display = 'none';
-      }
+      // FTVIN NON dipende dai permessi: è sempre visibile
+      // (se vuoi nasconderlo in futuro aggiungiamo un controllo qui)
     }
 
     // Listener autenticazione
@@ -184,11 +179,11 @@
       }
 
       try {
-        await loadCurrentUserPermissions(user);
+        await loadCurrentUserInfo(user);
         renderUserInfo();
-        updateUIFromPermissions();
+        updateUI();
       } catch (e) {
-        console.error("Errore nel recupero dati utente/permessi:", e);
+        console.error("Errore nel recupero dati utente:", e);
         document.getElementById('user-info').innerText =
           "Errore nel recupero dati utente: " + e.message;
       }
@@ -209,10 +204,7 @@
     }
 
     function goToFTVIN() {
-      if (!canRead('FTVIN')) {
-        alert("Non hai i permessi per accedere a FTVIN.");
-        return;
-      }
+      // nessun controllo permessi: basta essere loggati
       window.location.href = "FTVIN.html";
     }
   </script>
