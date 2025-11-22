@@ -56,51 +56,101 @@
     <div id="user-info">Caricamento dati utente...</div>
 
     <div id="admin-section" style="display:none;">
-      <h3>Area Amministratore</h3>
+      <h3>Area Amministratore (FTDMS)</h3>
       <p>Da qui puoi accedere al pannello di gestione Dealer e Utenze (DMS).</p>
       <button onclick="goToDMS()">Apri DMS</button>
     </div>
   </div>
 
   <script>
-    let currentUserData = null;
+    // user + permessi caricati da Firestore
+    let currentAccount = null;
 
+    // Legge /Users/<uid> e /roles/<role> e costruisce l'oggetto permessi
+    async function loadCurrentUserPermissions(user) {
+      const userRef = db.collection('Users').doc(user.uid);
+      const userSnap = await userRef.get();
+      if (!userSnap.exists) {
+        throw new Error("Profilo utente non trovato nel database.");
+      }
+
+      const userData = userSnap.data();
+      const roleId = userData.role || "User";  // Admin | User | Network Manager
+
+      const roleRef = db.collection('roles').doc(roleId);
+      const roleSnap = await roleRef.get();
+      if (!roleSnap.exists) {
+        throw new Error("Ruolo non trovato: " + roleId);
+      }
+
+      const roleData = roleSnap.data();
+      const basePermissions = roleData.permission || {};
+      const extra = userData.extraPermissions || {};
+
+      // merge permessi base + extra
+      const effectivePermissions = JSON.parse(JSON.stringify(basePermissions));
+      Object.keys(extra).forEach(section => {
+        effectivePermissions[section] = {
+          ...(effectivePermissions[section] || { read: false, write: false }),
+          ...extra[section]
+        };
+      });
+
+      currentAccount = {
+        firebaseUser: user,
+        userData,
+        roleId,
+        permissions: effectivePermissions
+      };
+      return currentAccount;
+    }
+
+    function canRead(section) {
+      if (!currentAccount) return false;
+      return currentAccount.permissions[section]?.read === true;
+    }
+
+    function canWrite(section) {
+      if (!currentAccount) return false;
+      return currentAccount.permissions[section]?.write === true;
+    }
+
+    function renderUserInfo() {
+      const { firebaseUser, userData, roleId } = currentAccount;
+      const userInfoEl = document.getElementById('user-info');
+
+      userInfoEl.innerHTML = `
+        <p><strong>Nome:</strong> ${userData.displayName || firebaseUser.email}</p>
+        <p><strong>Email:</strong> ${firebaseUser.email}</p>
+        <p><strong>Dealer ID:</strong> ${userData.dealerId || '-'}</p>
+        <p><strong>Ruolo:</strong> ${roleId}</p>
+        <p><strong>Stato:</strong> ${userData.Status || '-'}</p>
+      `;
+    }
+
+    function updateUIFromPermissions() {
+      // l'area DMS è visibile solo se l'utente ha accesso a FTDMS
+      const adminSection = document.getElementById('admin-section');
+      if (canRead('FTDMS')) {
+        adminSection.style.display = 'block';
+      } else {
+        adminSection.style.display = 'none';
+      }
+    }
+
+    // Auth listener
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        // Non loggato → torna al login
         window.location.href = "index.html";
         return;
       }
 
       try {
-        const doc = await db.collection('Users').doc(user.uid).get();
-
-        if (!doc.exists) {
-          document.getElementById('user-info').innerText =
-            "Profilo utente non trovato nel database.";
-          return;
-        }
-
-        const dati = doc.data();
-        currentUserData = dati;
-
-        const userInfoEl = document.getElementById('user-info');
-        userInfoEl.innerHTML = `
-          <p><strong>Nome:</strong> ${dati.displayName || user.email}</p>
-          <p><strong>Email:</strong> ${user.email}</p>
-          <p><strong>Dealer ID:</strong> ${dati.dealerId || '-'}</p>
-          <p><strong>Ruolo:</strong> ${dati.role || '-'}</p>
-          <p><strong>Stato:</strong> ${dati.Status || '-'}</p>
-          <p><strong>Utente Distributore:</strong> ${dati.isDistributorUser ? 'Sì' : 'No'}</p>
-        `;
-
-        // Mostra area admin se isAdmin = true
-        if (dati.isAdmin === true) {
-          document.getElementById('admin-section').style.display = 'block';
-        }
-
+        await loadCurrentUserPermissions(user);
+        renderUserInfo();
+        updateUIFromPermissions();
       } catch (e) {
-        console.error("Errore nel recupero dati utente:", e);
+        console.error("Errore nel recupero dati utente/permessi:", e);
         document.getElementById('user-info').innerText =
           "Errore nel recupero dati utente: " + e.message;
       }
@@ -113,6 +163,12 @@
     }
 
     function goToDMS() {
+      // l’utente vede il pulsante solo se ha FTDMS.read,
+      // ma se vuoi puoi fare un ulteriore check:
+      if (!canRead('FTDMS')) {
+        alert("Non hai i permessi per accedere a FTDMS.");
+        return;
+      }
       window.location.href = "FTDMS.html";
     }
   </script>
