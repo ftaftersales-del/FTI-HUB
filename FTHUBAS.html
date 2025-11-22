@@ -72,15 +72,14 @@
   </div>
 
   <script>
-    // Si assume che in firebase-config.js siano già definiti:
+    // In firebase-config.js dovresti avere già:
+    // const firebaseConfig = {...};
     // firebase.initializeApp(firebaseConfig);
     // const auth = firebase.auth();
     // const db   = firebase.firestore();
 
-    // user + permessi caricati da Firestore
     let currentAccount = null;
 
-    // Legge /Users/<uid> e /roles/<role> e costruisce l'oggetto permessi
     async function loadCurrentUserPermissions(user) {
       const userRef = db.collection('Users').doc(user.uid);
       const userSnap = await userRef.get();
@@ -89,44 +88,60 @@
       }
 
       const userData = userSnap.data();
-      const roleId = userData.role || "User";  // Admin | User | Network Manager
+      const roleId   = userData.role || "User"; // "Admin", "User", "Network Manager", ecc.
 
-      const roleRef = db.collection('roles').doc(roleId);
-      const roleSnap = await roleRef.get();
-      if (!roleSnap.exists) {
-        throw new Error("Ruolo non trovato: " + roleId);
+      // Leggo il documento ruolo (se esiste)
+      let permissions = {};
+      try {
+        const roleRef = db.collection('roles').doc(roleId);
+        const roleSnap = await roleRef.get();
+        if (roleSnap.exists) {
+          const roleData = roleSnap.data() || {};
+          const basePermissions = roleData.permission || {};
+          const extra = userData.extraPermissions || {};
+
+          const effectivePermissions = JSON.parse(JSON.stringify(basePermissions));
+          Object.keys(extra).forEach(section => {
+            effectivePermissions[section] = {
+              ...(effectivePermissions[section] || { read: false, write: false }),
+              ...extra[section]
+            };
+          });
+
+          permissions = effectivePermissions;
+        }
+      } catch (e) {
+        console.warn("Impossibile leggere il documento ruolo:", e);
       }
-
-      const roleData = roleSnap.data();
-      const basePermissions = roleData.permission || {};
-      const extra = userData.extraPermissions || {};
-
-      // merge permessi base + extra (deep-ish merge sulle sezioni)
-      const effectivePermissions = JSON.parse(JSON.stringify(basePermissions));
-      Object.keys(extra).forEach(section => {
-        effectivePermissions[section] = {
-          ...(effectivePermissions[section] || { read: false, write: false }),
-          ...extra[section]
-        };
-      });
 
       currentAccount = {
         firebaseUser: user,
         userData,
         roleId,
-        permissions: effectivePermissions
+        permissions
       };
       return currentAccount;
     }
 
     function canRead(section) {
       if (!currentAccount) return false;
-      return currentAccount.permissions[section]?.read === true;
+
+      // 1) se ho un permesso esplicito
+      if (currentAccount.permissions[section]?.read === true) return true;
+
+      // 2) fallback: gli Admin possono leggere tutto
+      if (currentAccount.roleId === 'Admin') return true;
+
+      return false;
     }
 
     function canWrite(section) {
       if (!currentAccount) return false;
-      return currentAccount.permissions[section]?.write === true;
+
+      if (currentAccount.permissions[section]?.write === true) return true;
+      if (currentAccount.roleId === 'Admin') return true;
+
+      return false;
     }
 
     function renderUserInfo() {
@@ -143,16 +158,17 @@
     }
 
     function updateUIFromPermissions() {
-      // Sezione FTDMS
       const adminSection = document.getElementById('admin-section');
+      const ftvinSection = document.getElementById('ftvin-section');
+
+      // FTDMS visibile se Admin o se ha permesso FTDMS.read
       if (canRead('FTDMS')) {
         adminSection.style.display = 'block';
       } else {
         adminSection.style.display = 'none';
       }
 
-      // Sezione FTVIN
-      const ftvinSection = document.getElementById('ftvin-section');
+      // FTVIN visibile se Admin o se ha permesso FTVIN.read
       if (canRead('FTVIN')) {
         ftvinSection.style.display = 'block';
       } else {
@@ -160,7 +176,7 @@
       }
     }
 
-    // Auth listener
+    // Listener autenticazione
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
         window.location.href = "index.html";
