@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>FTCLAIMS - Nuova pratica di garanzia</title>
+
+  <!-- Firebase (versione compat, come nelle altre pagine) -->
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 20px 25px 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+    }
+
+    .field-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    input[type="text"],
+    input[type="date"] {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    .buttons {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #btnCheckCoverage {
+      background-color: #007bff;
+      color: white;
+    }
+    #btnNext {
+      background-color: #28a745;
+      color: white;
+    }
+    #btnCancel {
+      background-color: #dc3545;
+      color: white;
+      margin-left: auto; /* spinge Annulla a destra */
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #resultArea {
+      margin-top: 20px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+    #resultArea.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    #resultArea.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    #userInfo {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Nuova pratica di garanzia – Verifica copertura</h2>
+
+    <div id="userInfo">Verifica accesso in corso…</div>
+
+    <div class="field-group">
+      <label for="vinInput">Telaio (VIN)</label>
+      <input type="text" id="vinInput" placeholder="Inserisci il numero di telaio">
+    </div>
+
+    <div class="field-group">
+      <label for="dataOrdineInput">Data apertura ordine di lavoro</label>
+      <input type="date" id="dataOrdineInput">
+    </div>
+
+    <div class="buttons">
+      <button id="btnCheckCoverage">Controlla copertura</button>
+      <button id="btnNext" style="display:none;">Avanti</button>
+      <button id="btnCancel">Annulla</button>
+    </div>
+
+    <div id="resultArea"></div>
+  </div>
+
+  <script>
+    // === CONFIGURAZIONE FIREBASE ===
+    // Si assume che firebase-config.js chiami già firebase.initializeApp(firebaseConfig).
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // NOME COLLEZIONE DBVIN DA ADATTARE SE DIVERSO
+    const DBVIN_COLLECTION = "DBVIN"; // <-- cambia se hai usato un nome diverso
+
+    // Al caricamento, controllo login + ruoli
+    auth.onAuthStateChanged(async (user) => {
+      const userInfoDiv = document.getElementById('userInfo');
+
+      if (!user) {
+        userInfoDiv.textContent = "Utente non autenticato. Verrai reindirizzato…";
+        // TODO: metti la pagina di login corretta
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 1500);
+        return;
+      }
+
+      try {
+        const userDocRef = db.collection("PersonaleDealers").doc(user.uid);
+        const userDoc = await userDocRef.get();
+
+        if (!userDoc.exists) {
+          userInfoDiv.textContent = "Utente non riconosciuto. Accesso non consentito.";
+          setTimeout(() => {
+            window.location.href = "FTHUBAS.html";
+          }, 1500);
+          return;
+        }
+
+        const data = userDoc.data();
+        const roles = Array.isArray(data.Type) ? data.Type : [data.Type];
+        const isActive = data.Attivo === true || data.Active === true || data.attivo === true;
+
+        const allowed = isActive && (roles.includes("admin") || roles.includes("user"));
+
+        if (!allowed) {
+          userInfoDiv.textContent = "Non hai i permessi per accedere a questa pagina.";
+          setTimeout(() => {
+            window.location.href = "FTHUBAS.html";
+          }, 1500);
+          return;
+        }
+
+        userInfoDiv.textContent = `Accesso consentito. Utente: ${data.Nome || ""} ${data.Cognome || ""} (${roles.join(", ")})`;
+
+      } catch (err) {
+        console.error("Errore caricamento utente:", err);
+        userInfoDiv.textContent = "Errore nel controllo dei permessi. Verrai reindirizzato.";
+        setTimeout(() => {
+          window.location.href = "FTHUBAS.html";
+        }, 1500);
+      }
+    });
+
+    // === GESTIONE BOTTONI ===
+    const btnCancel = document.getElementById('btnCancel');
+    const btnCheckCoverage = document.getElementById('btnCheckCoverage');
+    const btnNext = document.getElementById('btnNext');
+
+    btnCancel.addEventListener('click', () => {
+      window.location.href = "FTHUBAS.html";
+    });
+
+    btnCheckCoverage.addEventListener('click', async () => {
+      await handleCheckCoverage();
+    });
+
+    btnNext.addEventListener('click', () => {
+      // Salvo i dati minimi in sessionStorage per la pagina successiva
+      const vin = document.getElementById('vinInput').value.trim().toUpperCase();
+      const dataOrdineStr = document.getElementById('dataOrdineInput').value;
+
+      const claimState = {
+        vin: vin,
+        dataOrdine: dataOrdineStr
+      };
+      sessionStorage.setItem("currentClaimStep1", JSON.stringify(claimState));
+
+      // Vai alla pagina successiva (da creare)
+      window.location.href = "FTCLAIMS_STEP2.html";
+    });
+
+    // === FUNZIONI DI SUPPORTO ===
+
+    function showMessage(type, text) {
+      const area = document.getElementById('resultArea');
+      area.style.display = 'block';
+      area.className = ''; // reset
+      if (type === 'error') {
+        area.classList.add('error');
+      } else if (type === 'success') {
+        area.classList.add('success');
+      }
+      area.innerHTML = text;
+    }
+
+    function clearMessage() {
+      const area = document.getElementById('resultArea');
+      area.style.display = 'none';
+      area.className = '';
+      area.textContent = '';
+    }
+
+    function startOfDay(date) {
+      const d = new Date(date);
+      d.setHours(0,0,0,0);
+      return d;
+    }
+
+    function getDateFromField(value) {
+      if (!value) return null;
+      // Firestore Timestamp
+      if (value.toDate && typeof value.toDate === "function") {
+        return startOfDay(value.toDate());
+      }
+      // Stringa data
+      if (typeof value === "string") {
+        // Funziona bene con formati tipo "2024-01-31"
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) return startOfDay(d);
+      }
+      // Millisecondi epoch
+      if (typeof value === "number") {
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) return startOfDay(d);
+      }
+      return null;
+    }
+
+    function isDateWithinRange(target, start, end) {
+      if (!start || !end) return false;
+      const t = startOfDay(target).getTime();
+      const s = startOfDay(start).getTime();
+      const e = startOfDay(end).getTime();
+      return t >= s && t <= e;
+    }
+
+    async function handleCheckCoverage() {
+      clearMessage();
+      btnNext.style.display = "none";
+
+      const vinInput = document.getElementById('vinInput');
+      const dataOrdineInput = document.getElementById('dataOrdineInput');
+
+      let vin = vinInput.value.trim().toUpperCase();
+      const dataOrdineStr = dataOrdineInput.value;
+
+      if (!vin) {
+        showMessage('error', "Inserisci il numero di telaio (VIN).");
+        return;
+      }
+      if (!dataOrdineStr) {
+        showMessage('error', "Inserisci la data di apertura dell'ordine di lavoro.");
+        return;
+      }
+
+      const dataOrdine = startOfDay(new Date(dataOrdineStr));
+      if (isNaN(dataOrdine.getTime())) {
+        showMessage('error', "La data inserita non è valida.");
+        return;
+      }
+
+      const oggi = startOfDay(new Date());
+      const minDate = startOfDay(new Date());
+      minDate.setDate(minDate.getDate() - 90);
+
+      // Controllo futura
+      if (dataOrdine > oggi) {
+        showMessage('error', "La data dell'ordine di lavoro non può essere futura.");
+        return;
+      }
+
+      // Controllo non più vecchia di 90 giorni
+      if (dataOrdine < minDate) {
+        showMessage('error', "È possibile aprire una pratica solo entro 90 giorni dalla data dell'ordine di lavoro.");
+        return;
+      }
+
+      // Tutto ok lato data → cerchiamo il telaio in DBVIN
+      try {
+        showMessage('success', "Ricerca del telaio in corso…");
+        btnCheckCoverage.disabled = true;
+
+        const snapshot = await db.collection(DBVIN_COLLECTION)
+          .where("VIN", "==", vin) // CAMPO DA ADATTARE se non si chiama VIN
+          .limit(1)
+          .get();
+
+        if (snapshot.empty) {
+          showMessage('error', "Telaio non presente in banca dati DBVIN. Verifica il numero inserito.");
+          btnCheckCoverage.disabled = false;
+          return;
+        }
+
+        const doc = snapshot.docs[0];
+        const data = doc.data();
+
+        // === QUI DEFINIAMO COME LEGGERE LE DATE DI COPERTURA ===
+        // Sostituisci i nomi dei campi con quelli reali del tuo DBVIN.
+        //
+        // Esempio ipotetico:
+        //  - data.fullLine_startDate
+        //  - data.fullLine_endDate
+        //  - data.driveLine_startDate
+        //  - data.driveLine_endDate
+        //  - data.maintenance_startDate
+        //  - data.maintenance_endDate
+
+        const fullStart = getDateFromField(data.fullLine_startDate);
+        const fullEnd   = getDateFromField(data.fullLine_endDate);
+
+        const driveStart = getDateFromField(data.driveLine_startDate);
+        const driveEnd   = getDateFromField(data.driveLine_endDate);
+
+        const maintStart = getDateFromField(data.maintenance_startDate);
+        const maintEnd   = getDateFromField(data.maintenance_endDate);
+
+        const copertureValide = [];
+
+        if (isDateWithinRange(dataOrdine, fullStart, fullEnd)) {
+          copertureValide.push({
+            tipo: "FULL LINE",
+            start: fullStart,
+            end: fullEnd
+          });
+        }
+        if (isDateWithinRange(dataOrdine, driveStart, driveEnd)) {
+          copertureValide.push({
+            tipo: "DRIVE LINE",
+            start: driveStart,
+            end: driveEnd
+          });
+        }
+        if (isDateWithinRange(dataOrdine, maintStart, maintEnd)) {
+          copertureValide.push({
+            tipo: "CONTRATTO DI MANUTENZIONE",
+            start: maintStart,
+            end: maintEnd
+          });
+        }
+
+        if (copertureValide.length === 0) {
+          showMessage(
+            'error',
+            "Alla data dell'ordine di lavoro non risulta alcuna copertura valida (FULL LINE, DRIVE LINE o CONTRATTO DI MANUTENZIONE) per questo telaio."
+          );
+          btnCheckCoverage.disabled = false;
+          return;
+        }
+
+        // Formatta coperture trovate
+        const formatDate = (d) => {
+          if (!d) return "-";
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          return `${dd}/${mm}/${yyyy}`;
+        };
+
+        let html = `<strong>Telaio:</strong> ${vin}<br>`;
+        html += `<strong>Data ordine di lavoro:</strong> ${formatDate(dataOrdine)}<br><br>`;
+        html += `<strong>Coperture valide alla data selezionata:</strong><ul>`;
+
+        copertureValide.forEach(c => {
+          html += `<li>${c.tipo}: dal ${formatDate(c.start)} al ${formatDate(c.end)}</li>`;
+        });
+        html += `</ul>`;
+        html += `<br>Puoi procedere con la creazione della pratica di garanzia.`;
+
+        showMessage('success', html);
+        btnNext.style.display = "inline-block"; // mostra Avanti
+        btnCheckCoverage.disabled = false;
+
+      } catch (err) {
+        console.error("Errore durante il controllo copertura:", err);
+        showMessage('error', "Errore durante il controllo della copertura. Riprova più tardi.");
+        btnCheckCoverage.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
