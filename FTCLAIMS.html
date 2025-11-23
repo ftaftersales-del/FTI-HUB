@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>FTCLAIMS - Nuova pratica di garanzia</title>
 
-  <!-- Firebase (versione compat, come nelle altre pagine) -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
@@ -106,7 +106,7 @@
   <div class="container">
     <h2>Nuova pratica di garanzia – Verifica copertura</h2>
 
-    <div id="userInfo">Verifica accesso in corso…</div>
+    <div id="userInfo">Verifica accesso in corso...</div>
 
     <div class="field-group">
       <label for="vinInput">Telaio (VIN)</label>
@@ -128,21 +128,51 @@
   </div>
 
   <script>
-    // === CONFIGURAZIONE FIREBASE ===
-    // Si assume che firebase-config.js chiami già firebase.initializeApp(firebaseConfig).
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    // ATTENZIONE:
+    // auth e db SONO GIA' DEFINITI in firebase-config.js:
+    //   const auth = firebase.auth();
+    //   const db   = firebase.firestore();
+    // NON li ridichiariamo qui, altrimenti JS va in errore.
 
-    // NOME COLLEZIONE DBVIN DA ADATTARE SE DIVERSO
-    const DBVIN_COLLECTION = "DBVIN"; // <-- cambia se hai usato un nome diverso
+    const DBVIN_COLLECTION = "DBVIN"; // cambia se la tua collection VIN ha un altro nome
 
-    // Al caricamento, controllo login + ruoli
+    let currentAccount = null;
+
+    async function loadCurrentUserInfo(user) {
+      const userRef = db.collection('Users').doc(user.uid);
+      const userSnap = await userRef.get();
+      if (!userSnap.exists) {
+        throw new Error("Profilo utente non trovato nel database.");
+      }
+
+      const userData = userSnap.data();
+      const roleId   = userData.role || "User";
+
+      currentAccount = {
+        firebaseUser: user,
+        userData,
+        roleId
+      };
+      return currentAccount;
+    }
+
+    function renderUserInfo() {
+      const { firebaseUser, userData, roleId } = currentAccount;
+      const userInfoEl = document.getElementById('userInfo');
+
+      userInfoEl.innerHTML = `
+        <p><strong>Utente:</strong> ${userData.displayName || firebaseUser.email}</p>
+        <p><strong>Dealer ID:</strong> ${userData.dealerId || '-'}</p>
+        <p><strong>Ruolo:</strong> ${roleId}</p>
+      `;
+    }
+
+    // Controllo accesso: solo Admin e User
     auth.onAuthStateChanged(async (user) => {
       const userInfoDiv = document.getElementById('userInfo');
 
       if (!user) {
-        userInfoDiv.textContent = "Utente non autenticato. Verrai reindirizzato…";
-        // TODO: metti la pagina di login corretta
+        userInfoDiv.textContent = "Utente non autenticato. Verrai reindirizzato...";
         setTimeout(() => {
           window.location.href = "index.html";
         }, 1500);
@@ -150,24 +180,10 @@
       }
 
       try {
-        const userDocRef = db.collection("PersonaleDealers").doc(user.uid);
-        const userDoc = await userDocRef.get();
+        await loadCurrentUserInfo(user);
 
-        if (!userDoc.exists) {
-          userInfoDiv.textContent = "Utente non riconosciuto. Accesso non consentito.";
-          setTimeout(() => {
-            window.location.href = "FTHUBAS.html";
-          }, 1500);
-          return;
-        }
-
-        const data = userDoc.data();
-        const roles = Array.isArray(data.Type) ? data.Type : [data.Type];
-        const isActive = data.Attivo === true || data.Active === true || data.attivo === true;
-
-        const allowed = isActive && (roles.includes("admin") || roles.includes("user"));
-
-        if (!allowed) {
+        const roleId = currentAccount.roleId;
+        if (!(roleId === 'Admin' || roleId === 'User')) {
           userInfoDiv.textContent = "Non hai i permessi per accedere a questa pagina.";
           setTimeout(() => {
             window.location.href = "FTHUBAS.html";
@@ -175,8 +191,7 @@
           return;
         }
 
-        userInfoDiv.textContent = `Accesso consentito. Utente: ${data.Nome || ""} ${data.Cognome || ""} (${roles.join(", ")})`;
-
+        renderUserInfo();
       } catch (err) {
         console.error("Errore caricamento utente:", err);
         userInfoDiv.textContent = "Errore nel controllo dei permessi. Verrai reindirizzato.";
@@ -200,26 +215,20 @@
     });
 
     btnNext.addEventListener('click', () => {
-      // Salvo i dati minimi in sessionStorage per la pagina successiva
       const vin = document.getElementById('vinInput').value.trim().toUpperCase();
       const dataOrdineStr = document.getElementById('dataOrdineInput').value;
 
-      const claimState = {
-        vin: vin,
-        dataOrdine: dataOrdineStr
-      };
+      const claimState = { vin, dataOrdine: dataOrdineStr };
       sessionStorage.setItem("currentClaimStep1", JSON.stringify(claimState));
 
-      // Vai alla pagina successiva (da creare)
       window.location.href = "FTCLAIMS_STEP2.html";
     });
 
-    // === FUNZIONI DI SUPPORTO ===
-
+    // === FUNZIONI SUPPORTO UI ===
     function showMessage(type, text) {
       const area = document.getElementById('resultArea');
       area.style.display = 'block';
-      area.className = ''; // reset
+      area.className = '';
       if (type === 'error') {
         area.classList.add('error');
       } else if (type === 'success') {
@@ -243,17 +252,13 @@
 
     function getDateFromField(value) {
       if (!value) return null;
-      // Firestore Timestamp
       if (value.toDate && typeof value.toDate === "function") {
         return startOfDay(value.toDate());
       }
-      // Stringa data
       if (typeof value === "string") {
-        // Funziona bene con formati tipo "2024-01-31"
         const d = new Date(value);
         if (!isNaN(d.getTime())) return startOfDay(d);
       }
-      // Millisecondi epoch
       if (typeof value === "number") {
         const d = new Date(value);
         if (!isNaN(d.getTime())) return startOfDay(d);
@@ -269,6 +274,7 @@
       return t >= s && t <= e;
     }
 
+    // === LOGICA CONTROLLO COPERTURA ===
     async function handleCheckCoverage() {
       clearMessage();
       btnNext.style.display = "none";
@@ -298,19 +304,16 @@
       const minDate = startOfDay(new Date());
       minDate.setDate(minDate.getDate() - 90);
 
-      // Controllo futura
       if (dataOrdine > oggi) {
         showMessage('error', "La data dell'ordine di lavoro non può essere futura.");
         return;
       }
 
-      // Controllo non più vecchia di 90 giorni
       if (dataOrdine < minDate) {
         showMessage('error', "È possibile aprire una pratica solo entro 90 giorni dalla data dell'ordine di lavoro.");
         return;
       }
 
-      // Tutto ok lato data → cerchiamo il telaio in DBVIN
       try {
         showMessage('success', "Ricerca del telaio in corso…");
         btnCheckCoverage.disabled = true;
@@ -329,48 +332,24 @@
         const doc = snapshot.docs[0];
         const data = doc.data();
 
-        // === QUI DEFINIAMO COME LEGGERE LE DATE DI COPERTURA ===
-        // Sostituisci i nomi dei campi con quelli reali del tuo DBVIN.
-        //
-        // Esempio ipotetico:
-        //  - data.fullLine_startDate
-        //  - data.fullLine_endDate
-        //  - data.driveLine_startDate
-        //  - data.driveLine_endDate
-        //  - data.maintenance_startDate
-        //  - data.maintenance_endDate
-
-        const fullStart = getDateFromField(data.fullLine_startDate);
-        const fullEnd   = getDateFromField(data.fullLine_endDate);
-
+        // QUI ADATTA I NOMI AI TUOI CAMPI REALI DI COPERTURA
+        const fullStart  = getDateFromField(data.fullLine_startDate);
+        const fullEnd    = getDateFromField(data.fullLine_endDate);
         const driveStart = getDateFromField(data.driveLine_startDate);
         const driveEnd   = getDateFromField(data.driveLine_endDate);
-
         const maintStart = getDateFromField(data.maintenance_startDate);
         const maintEnd   = getDateFromField(data.maintenance_endDate);
 
         const copertureValide = [];
 
         if (isDateWithinRange(dataOrdine, fullStart, fullEnd)) {
-          copertureValide.push({
-            tipo: "FULL LINE",
-            start: fullStart,
-            end: fullEnd
-          });
+          copertureValide.push({ tipo: "FULL LINE", start: fullStart, end: fullEnd });
         }
         if (isDateWithinRange(dataOrdine, driveStart, driveEnd)) {
-          copertureValide.push({
-            tipo: "DRIVE LINE",
-            start: driveStart,
-            end: driveEnd
-          });
+          copertureValide.push({ tipo: "DRIVE LINE", start: driveStart, end: driveEnd });
         }
         if (isDateWithinRange(dataOrdine, maintStart, maintEnd)) {
-          copertureValide.push({
-            tipo: "CONTRATTO DI MANUTENZIONE",
-            start: maintStart,
-            end: maintEnd
-          });
+          copertureValide.push({ tipo: "CONTRATTO DI MANUTENZIONE", start: maintStart, end: maintEnd });
         }
 
         if (copertureValide.length === 0) {
@@ -382,7 +361,6 @@
           return;
         }
 
-        // Formatta coperture trovate
         const formatDate = (d) => {
           if (!d) return "-";
           const yyyy = d.getFullYear();
@@ -402,7 +380,7 @@
         html += `<br>Puoi procedere con la creazione della pratica di garanzia.`;
 
         showMessage('success', html);
-        btnNext.style.display = "inline-block"; // mostra Avanti
+        btnNext.style.display = "inline-block";
         btnCheckCoverage.disabled = false;
 
       } catch (err) {
