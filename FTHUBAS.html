@@ -79,6 +79,13 @@
       <p>Accedi alla ricerca dei contratti per telaio.</p>
       <button onclick="goToFTVIN()">Apri FTVIN</button>
     </div>
+
+    <!-- AREA FTCLAIMS (reclamo di garanzia) -->
+    <div id="ftclaims-section" class="section">
+      <h3>Reclamo di Garanzia (FTCLAIMS)</h3>
+      <p>Apri una nuova pratica di garanzia.</p>
+      <button onclick="goToFTCLAIMS()">Apri Reclamo di Garanzia</button>
+    </div>
   </div>
 
   <script>
@@ -167,8 +174,9 @@
         adminSection.style.display = 'none';
       }
 
-      // FTVIN NON dipende dai permessi: è sempre visibile
-      // (se vuoi nasconderlo in futuro aggiungiamo un controllo qui)
+      // FTVIN è sempre visibile per utente loggato
+      // FTCLAIMS per ora è sempre visibile per utente loggato
+      // (se in futuro vuoi legarla ai permessi, possiamo usare canRead('FTCLAIMS'))
     }
 
     // Listener autenticazione
@@ -206,6 +214,11 @@
     function goToFTVIN() {
       // nessun controllo permessi: basta essere loggati
       window.location.href = "FTVIN.html";
+    }
+
+    function goToFTCLAIMS() {
+      // accesso per ora a tutti gli utenti loggati (Admin e User)
+      window.location.href = "FTCLAIMS.html";
     }
   </script>
 </body>
