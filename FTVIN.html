@@ -188,9 +188,38 @@
       display: none;
     }
 
-    .admin-section h2 {
-      font-size: 20px;
-      margin: 10px 0;
+    .admin-toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .admin-toolbar button {
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      font-size: 13px;
+      background: #f5f5f5;
+    }
+
+    .admin-toolbar button.primary {
+      background: #007bff;
+      border-color: #007bff;
+      color: white;
+    }
+
+    .admin-toolbar button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .admin-mode-label {
+      font-size: 12px;
+      color: #555;
+      margin-left: auto;
+      font-style: italic;
     }
 
     .field-input, .field-textarea {
@@ -233,6 +262,8 @@
       .section-title { flex-direction: column; align-items: flex-start; }
       .top-bar { flex-direction: column; align-items: flex-start; gap: 4px; }
       .top-actions { align-self: flex-end; }
+      .admin-toolbar { flex-wrap: wrap; }
+      .admin-mode-label { margin-left: 0; margin-top: 4px; }
     }
   </style>
 </head>
@@ -311,157 +342,161 @@
 
   <!-- AREA ADMIN -->
   <div id="adminEditSection" class="admin-section">
-    <h2>Gestione Copertura (solo Admin)</h2>
-    <p style="font-size:12px;color:#777;">
-      Gli Admin possono creare una nuova copertura per il VIN inserito o modificare una copertura esistente.
-    </p>
+    <h2>Area amministratore (coperture VIN)</h2>
 
-    <form id="coverageForm" onsubmit="return false;">
+    <div class="admin-toolbar">
+      <button id="btnNewCoverage" class="primary" type="button">Crea nuova copertura</button>
+      <button id="btnEditCoverage" type="button" disabled>Modifica copertura caricata</button>
+      <span id="adminModeLabel" class="admin-mode-label"></span>
+    </div>
 
-      <h3>Dati veicolo</h3>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">VIN</span>
-          <input id="f_vin" class="field-input" readonly />
-        </div>
-        <div class="info-item">
-          <span class="label">Cliente</span>
-          <input id="f_customer" class="field-input" />
-        </div>
-        <div class="info-item">
-          <span class="label">Tipo contratto</span>
-          <input id="f_contract_type" class="field-input" />
-        </div>
-        <div class="info-item">
-          <span class="label">Validazione contratto</span>
-          <input id="f_validate_contract" class="field-input" />
-        </div>
-        <div class="info-item">
-          <span class="label">Durata contratto</span>
-          <input id="f_duration_contract" class="field-input" type="number" />
-        </div>
-        <div class="info-item">
-          <span class="label">Inter-market</span>
-          <input id="f_inter_market" class="field-input" />
-        </div>
-        <div class="info-item">
-          <span class="label">Lingua</span>
-          <input id="f_language" class="field-input" />
-        </div>
-      </div>
+    <div id="adminFormWrapper" style="display:none;">
+      <form id="coverageForm" onsubmit="return false;">
 
-      <h3>Note</h3>
-      <textarea id="f_note" class="field-textarea"></textarea>
+        <h3>Dati veicolo</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">VIN</span>
+            <input id="f_vin" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Cliente</span>
+            <input id="f_customer" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Tipo contratto</span>
+            <input id="f_contract_type" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Validazione contratto</span>
+            <input id="f_validate_contract" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Durata contratto</span>
+            <input id="f_duration_contract" class="field-input" type="number" />
+          </div>
+          <div class="info-item">
+            <span class="label">Inter-market</span>
+            <input id="f_inter_market" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Lingua</span>
+            <input id="f_language" class="field-input" />
+          </div>
+        </div>
 
-      <h3>Full Line</h3>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">Completa - Data inizio</span>
-          <input id="f_completa_data_start" class="field-input" placeholder="YYYY-MM-DD" />
-        </div>
-        <div class="info-item">
-          <span class="label">Completa - Data fine</span>
-          <input id="f_completa_data_end" class="field-input" placeholder="YYYY-MM-DD" />
-        </div>
-        <div class="info-item">
-          <span class="label">Completa - KM inizio</span>
-          <input id="f_completa_km_start" class="field-input" type="number" />
-        </div>
-        <div class="info-item">
-          <span class="label">Completa - KM fine</span>
-          <input id="f_completa_km_end" class="field-input" type="number" />
-        </div>
-      </div>
+        <h3>Note</h3>
+        <textarea id="f_note" class="field-textarea"></textarea>
 
-      <h3>Drive Line</h3>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">Cat. cinematica - Data inizio</span>
-          <input id="f_catcinematica_data_start" class="field-input" placeholder="YYYY-MM-DD" />
+        <h3>Full Line</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Completa - Data inizio</span>
+            <input id="f_completa_data_start" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Completa - Data fine</span>
+            <input id="f_completa_data_end" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Completa - KM inizio</span>
+            <input id="f_completa_km_start" class="field-input" type="number" />
+          </div>
+          <div class="info-item">
+            <span class="label">Completa - KM fine</span>
+            <input id="f_completa_km_end" class="field-input" type="number" />
+          </div>
         </div>
-        <div class="info-item">
-          <span class="label">Cat. cinematica - Data fine</span>
-          <input id="f_catcinematica_data_end" class="field-input" placeholder="YYYY-MM-DD" />
-        </div>
-        <div class="info-item">
-          <span class="label">Cat. cinematica - KM inizio</span>
-          <input id="f_catcinematica_km_start" class="field-input" type="number" />
-        </div>
-        <div class="info-item">
-          <span class="label">Cat. cinematica - KM fine</span>
-          <input id="f_catcinematica_km_end" class="field-input" type="number" />
-        </div>
-      </div>
 
-      <h3>Contratto di Manutenzione</h3>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">Contratto data start</span>
-          <input id="f_contratto_data_start" class="field-input" placeholder="YYYY-MM-DD" />
+        <h3>Drive Line</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Cat. cinematica - Data inizio</span>
+            <input id="f_catcinematica_data_start" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - Data fine</span>
+            <input id="f_catcinematica_data_end" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - KM inizio</span>
+            <input id="f_catcinematica_km_start" class="field-input" type="number" />
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - KM fine</span>
+            <input id="f_catcinematica_km_end" class="field-input" type="number" />
+          </div>
         </div>
-        <div class="info-item">
-          <span class="label">Contratto data end</span>
-          <input id="f_contratto_data_end" class="field-input" placeholder="YYYY-MM-DD" />
-        </div>
-      </div>
 
-      <h3>Opzioni aggiuntive / servizi</h3>
-      <div class="info-item">
-        <div class="checkbox-row">
-          <input id="f_altre_opzioni" type="checkbox" />
-          <label for="f_altre_opzioni">Altre opzioni</label>
+        <h3>Contratto di Manutenzione</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Contratto data start</span>
+            <input id="f_contratto_data_start" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Contratto data end</span>
+            <input id="f_contratto_data_end" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
         </div>
-        <div class="checkbox-row">
-          <input id="f_batterie" type="checkbox" />
-          <label for="f_batterie">Batterie</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_fusibili_lampadine" type="checkbox" />
-          <label for="f_fusibili_lampadine">Fusibili / lampadine</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_parti_usara" type="checkbox" />
-          <label for="f_parti_usara">Parti d’usura</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_pulizia_fap" type="checkbox" />
-          <label for="f_pulizia_fap">Pulizia FAP</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_rabbocco_olio" type="checkbox" />
-          <label for="f_rabbocco_olio">Rabbocco olio</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_tergicristallo" type="checkbox" />
-          <label for="f_tergicristallo">Tergicristallo</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_traino" type="checkbox" />
-          <label for="f_traino">Traino</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_uptime_service" type="checkbox" />
-          <label for="f_uptime_service">Uptime service</label>
-        </div>
-        <div style="margin-top:10px;">
-          <span class="label">Uptime service type</span>
-          <input id="f_uptime_service_type" class="field-input" placeholder="Es. GOLD, BASIC..." />
-        </div>
-      </div>
 
-      <div class="admin-actions">
-        <button id="saveCoverageBtn" type="button">Salva copertura</button>
-        <span id="adminSaveMessage" class="message"></span>
-      </div>
-    </form>
+        <h3>Opzioni aggiuntive / servizi</h3>
+        <div class="info-item">
+          <div class="checkbox-row">
+            <input id="f_altre_opzioni" type="checkbox" />
+            <label for="f_altre_opzioni">Altre opzioni</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_batterie" type="checkbox" />
+            <label for="f_batterie">Batterie</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_fusibili_lampadine" type="checkbox" />
+            <label for="f_fusibili_lampadine">Fusibili / lampadine</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_parti_usara" type="checkbox" />
+            <label for="f_parti_usara">Parti d’usura</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_pulizia_fap" type="checkbox" />
+            <label for="f_pulizia_fap">Pulizia FAP</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_rabbocco_olio" type="checkbox" />
+            <label for="f_rabbocco_olio">Rabbocco olio</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_tergicristallo" type="checkbox" />
+            <label for="f_tergicristallo">Tergicristallo</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_traino" type="checkbox" />
+            <label for="f_traino">Traino</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_uptime_service" type="checkbox" />
+            <label for="f_uptime_service">Uptime service</label>
+          </div>
+          <div style="margin-top:10px;">
+            <span class="label">Uptime service type</span>
+            <input id="f_uptime_service_type" class="field-input" placeholder="Es. GOLD, BASIC..." />
+          </div>
+        </div>
+
+        <div class="admin-actions">
+          <button id="saveCoverageBtn" type="button">Salva copertura</button>
+          <span id="adminSaveMessage" class="message"></span>
+        </div>
+      </form>
+    </div>
   </div>
 
 </div>
 
 <script>
   function goHome() {
-    // modifica il nome file se la home è diversa
-    window.location.href = "FTHUBAS.html";
+    window.location.href = "FTHUBAS.html"; // cambia se la home ha un nome diverso
   }
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -483,11 +518,16 @@
     const flagMaint     = document.getElementById('flagMaint');
     const flagOptions   = document.getElementById('flagOptions');
 
-    // Admin stuff
+    // Admin elements
     const adminSection     = document.getElementById('adminEditSection');
+    const adminFormWrapper = document.getElementById('adminFormWrapper');
+    const adminModeLabel   = document.getElementById('adminModeLabel');
+    const btnNewCoverage   = document.getElementById('btnNewCoverage');
+    const btnEditCoverage  = document.getElementById('btnEditCoverage');
     const adminSaveMessage = document.getElementById('adminSaveMessage');
     const saveCoverageBtn  = document.getElementById('saveCoverageBtn');
 
+    // Form fields
     const f_vin  = document.getElementById('f_vin');
     const f_customer            = document.getElementById('f_customer');
     const f_contract_type       = document.getElementById('f_contract_type');
@@ -518,9 +558,10 @@
     const f_uptime_service      = document.getElementById('f_uptime_service');
     const f_uptime_service_type = document.getElementById('f_uptime_service_type');
 
-    let isAdmin    = false;
-    let currentVin = null;
+    let isAdmin     = false;
+    let currentVin  = null;
     let lastDocData = null;
+    let adminMode   = null; // "create" | "edit" | null
 
     // --------- Utility ---------
     function escapeHtml(text) {
@@ -578,13 +619,117 @@
       }
     }
 
-    // --------- Auth: mostra utente e ruolo ---------
+    function setAdminMode(mode) {
+      adminMode = mode; // "create" | "edit" | null
+      if (!isAdmin) {
+        adminFormWrapper.style.display = "none";
+        adminModeLabel.textContent = "";
+        return;
+      }
+      if (mode === "create") {
+        adminFormWrapper.style.display = "block";
+        adminModeLabel.textContent = "Modalità: creazione nuova copertura";
+      } else if (mode === "edit") {
+        adminFormWrapper.style.display = "block";
+        adminModeLabel.textContent = "Modalità: modifica copertura VIN " + (currentVin || "");
+      } else {
+        adminFormWrapper.style.display = "none";
+        adminModeLabel.textContent = "";
+      }
+    }
+
+    function resetAdminForm() {
+      f_vin.value = "";
+      f_customer.value = "";
+      f_contract_type.value = "";
+      f_validate_contract.value = "";
+      f_duration_contract.value = "";
+      f_inter_market.value = "";
+      f_language.value = "";
+      f_note.value = "";
+
+      f_completa_data_start.value = "";
+      f_completa_data_end.value = "";
+      f_completa_km_start.value = "";
+      f_completa_km_end.value = "";
+
+      f_catcinematica_data_start.value = "";
+      f_catcinematica_data_end.value = "";
+      f_catcinematica_km_start.value = "";
+      f_catcinematica_km_end.value = "";
+
+      f_contratto_data_start.value = "";
+      f_contratto_data_end.value = "";
+
+      f_altre_opzioni.checked = false;
+      f_batterie.checked = false;
+      f_fusibili_lampadine.checked = false;
+      f_parti_usara.checked = false;
+      f_pulizia_fap.checked = false;
+      f_rabbocco_olio.checked = false;
+      f_tergicristallo.checked = false;
+      f_traino.checked = false;
+      f_uptime_service.checked = false;
+      f_uptime_service_type.value = "";
+
+      if (adminSaveMessage) adminSaveMessage.textContent = "";
+    }
+
+    function fillAdminForm(vin, data) {
+      data = data || {};
+      f_vin.value                 = vin || "";
+      f_customer.value            = data.customer || "";
+      f_contract_type.value       = data.contract_type || "";
+      f_validate_contract.value   = data.validate_contract || "";
+      f_duration_contract.value   = data.duration_contract != null ? data.duration_contract : "";
+      f_inter_market.value        = data.inter_market || "";
+      f_language.value            = data.language || "";
+      f_note.value                = data.note || "";
+
+      f_completa_data_start.value = data.completa_data_start || "";
+      f_completa_data_end.value   = data.completa_data_end || "";
+      f_completa_km_start.value   = data.completa_km_start != null ? data.completa_km_start : "";
+      f_completa_km_end.value     = data.completa_km_end != null ? data.completa_km_end : "";
+
+      f_catcinematica_data_start.value = data.catcinematica_data_start || "";
+      f_catcinematica_data_end.value   = data.catcinematica_data_end || "";
+      f_catcinematica_km_start.value   = data.catcinematica_km_start != null ? data.catcinematica_km_start : "";
+      f_catcinematica_km_end.value     = data.catcinematica_km_end != null ? data.catcinematica_km_end : "";
+
+      f_contratto_data_start.value     = data.contratto_data_start || "";
+      f_contratto_data_end.value       = data.contratto_data_end || "";
+
+      f_altre_opzioni.checked      = !!data.altre_opzioni;
+      f_batterie.checked           = !!data.batterie;
+      f_fusibili_lampadine.checked = !!data.fusibili_lampadine;
+      f_parti_usara.checked        = !!data.parti_usara;
+      f_pulizia_fap.checked        = !!data.pulizia_fap;
+      f_rabbocco_olio.checked      = !!data.rabbocco_olio;
+      f_tergicristallo.checked     = !!data.tergicristallo;
+      f_traino.checked             = !!data.traino;
+      f_uptime_service.checked     = !!data.uptime_service;
+
+      f_uptime_service_type.value  = data.uptime_service_type || "";
+
+      if (adminSaveMessage) adminSaveMessage.textContent = "";
+    }
+
+    function updateAdminButtons(hasExistingDoc) {
+      if (!isAdmin) {
+        adminSection.style.display = "none";
+        return;
+      }
+      adminSection.style.display = "block";
+      btnEditCoverage.disabled = !hasExistingDoc;
+    }
+
+    // --------- Auth ---------
     try {
       auth.onAuthStateChanged(async (user) => {
         if (!user) {
           userInfoEl.textContent = "Utente: non loggato";
           isAdmin = false;
-          if (adminSection) adminSection.style.display = "none";
+          adminSection.style.display = "none";
           return;
         }
         userInfoEl.textContent = "Utente: " + (user.email || user.uid);
@@ -598,9 +743,8 @@
           isAdmin = false;
         }
 
-        if (adminSection) {
-          adminSection.style.display = isAdmin ? "block" : "none";
-        }
+        updateAdminButtons(false);
+        setAdminMode(null);
       });
     } catch (e) {
       console.error("Errore auth:", e);
@@ -676,52 +820,14 @@
 
       flagOptions.textContent = badge(hasOptionActive);
 
-      // aggiorna stati per admin
       lastDocData = data;
       currentVin  = vin;
-      if (isAdmin) fillAdminForm(vin, data);
+
+      if (isAdmin && adminMode === "edit") {
+        fillAdminForm(vin, data);
+      }
 
       resultsEl.style.display = "block";
-    }
-
-    // --------- Riempimento form Admin ---------
-    function fillAdminForm(vin, data) {
-      data = data || {};
-      f_vin.value                 = vin || "";
-      f_customer.value            = data.customer || "";
-      f_contract_type.value       = data.contract_type || "";
-      f_validate_contract.value   = data.validate_contract || "";
-      f_duration_contract.value   = data.duration_contract != null ? data.duration_contract : "";
-      f_inter_market.value        = data.inter_market || "";
-      f_language.value            = data.language || "";
-      f_note.value                = data.note || "";
-
-      f_completa_data_start.value = data.completa_data_start || "";
-      f_completa_data_end.value   = data.completa_data_end || "";
-      f_completa_km_start.value   = data.completa_km_start != null ? data.completa_km_start : "";
-      f_completa_km_end.value     = data.completa_km_end != null ? data.completa_km_end : "";
-
-      f_catcinematica_data_start.value = data.catcinematica_data_start || "";
-      f_catcinematica_data_end.value   = data.catcinematica_data_end || "";
-      f_catcinematica_km_start.value   = data.catcinematica_km_start != null ? data.catcinematica_km_start : "";
-      f_catcinematica_km_end.value     = data.catcinematica_km_end != null ? data.catcinematica_km_end : "";
-
-      f_contratto_data_start.value     = data.contratto_data_start || "";
-      f_contratto_data_end.value       = data.contratto_data_end || "";
-
-      f_altre_opzioni.checked      = !!data.altre_opzioni;
-      f_batterie.checked           = !!data.batterie;
-      f_fusibili_lampadine.checked = !!data.fusibili_lampadine;
-      f_parti_usara.checked        = !!data.parti_usara;
-      f_pulizia_fap.checked        = !!data.pulizia_fap;
-      f_rabbocco_olio.checked      = !!data.rabbocco_olio;
-      f_tergicristallo.checked     = !!data.tergicristallo;
-      f_traino.checked             = !!data.traino;
-      f_uptime_service.checked     = !!data.uptime_service;
-
-      f_uptime_service_type.value  = data.uptime_service_type || "";
-
-      if (adminSaveMessage) adminSaveMessage.textContent = "";
     }
 
     // --------- Ricerca VIN ---------
@@ -744,15 +850,18 @@
 
         if (!snap.exists) {
           showMessage("Nessuna copertura trovata per " + vin, "error");
-          renderResults(vin, {});  // mostra layout vuoto
+          renderResults(vin, {});
+          updateAdminButtons(false);
         } else {
           const data = snap.data() || {};
           renderResults(vin, data);
           showMessage("Copertura caricata correttamente.", "success");
+          updateAdminButtons(true);
         }
       } catch (err) {
         console.error("Errore Firestore:", err);
         showMessage("Errore durante la lettura dei dati.", "error");
+        updateAdminButtons(false);
       } finally {
         setLoading(false);
       }
@@ -767,15 +876,28 @@
         }
         return;
       }
-      if (!currentVin) {
-        if (adminSaveMessage) {
-          adminSaveMessage.textContent = "Prima cerca un VIN.";
+
+      let vin;
+
+      if (adminMode === "create") {
+        vin = (f_vin.value || "").trim().toUpperCase();
+        if (!vin) {
+          adminSaveMessage.textContent = "Inserisci un VIN per creare la copertura.";
           adminSaveMessage.className = "message error";
+          return;
         }
+      } else if (adminMode === "edit") {
+        vin = currentVin;
+        if (!vin) {
+          adminSaveMessage.textContent = "Nessun VIN caricato da modificare.";
+          adminSaveMessage.className = "message error";
+          return;
+        }
+      } else {
+        adminSaveMessage.textContent = "Seleziona prima se creare o modificare.";
+        adminSaveMessage.className = "message error";
         return;
       }
-
-      const vin = currentVin;
 
       const payload = {
         vin: vin,
@@ -824,7 +946,6 @@
         uptime_service_type: f_uptime_service_type.value.trim() || null
       };
 
-      // created / created_by solo se nuovo
       try {
         const user = auth.currentUser;
         const today = new Date().toISOString().slice(0,10);
@@ -838,25 +959,21 @@
         console.warn("Errore set created/created_by:", e);
       }
 
-      if (adminSaveMessage) {
-        adminSaveMessage.textContent = "Salvataggio in corso...";
-        adminSaveMessage.className = "message";
-      }
+      adminSaveMessage.textContent = "Salvataggio in corso...";
+      adminSaveMessage.className = "message";
 
       try {
         await db.collection("DBVIN").doc(vin).set(payload, { merge: true });
         lastDocData = Object.assign({}, lastDocData || {}, payload);
+        currentVin  = vin;
         renderResults(vin, lastDocData);
-        if (adminSaveMessage) {
-          adminSaveMessage.textContent = "Copertura salvata correttamente.";
-          adminSaveMessage.className = "message success";
-        }
+        updateAdminButtons(true);
+        adminSaveMessage.textContent = "Copertura salvata correttamente.";
+        adminSaveMessage.className = "message success";
       } catch (err) {
         console.error("Errore salvataggio:", err);
-        if (adminSaveMessage) {
-          adminSaveMessage.textContent = "Errore durante il salvataggio.";
-          adminSaveMessage.className = "message error";
-        }
+        adminSaveMessage.textContent = "Errore durante il salvataggio.";
+        adminSaveMessage.className = "message error";
       }
     }
 
@@ -865,8 +982,34 @@
     vinInput.addEventListener('keyup', (e) => {
       if (e.key === "Enter") searchVIN();
     });
+
     if (saveCoverageBtn) {
       saveCoverageBtn.addEventListener('click', saveCoverage);
+    }
+
+    if (btnNewCoverage) {
+      btnNewCoverage.addEventListener('click', () => {
+        if (!isAdmin) return;
+        resetAdminForm();
+        f_vin.readOnly = false;
+        const typedVin = (vinInput.value || "").trim().toUpperCase();
+        if (typedVin) f_vin.value = typedVin;
+        setAdminMode("create");
+      });
+    }
+
+    if (btnEditCoverage) {
+      btnEditCoverage.addEventListener('click', () => {
+        if (!isAdmin) return;
+        if (!currentVin || !lastDocData || Object.keys(lastDocData).length === 0) {
+          adminSaveMessage.textContent = "Nessuna copertura caricata da modificare.";
+          adminSaveMessage.className = "message error";
+          return;
+        }
+        f_vin.readOnly = true;
+        fillAdminForm(currentVin, lastDocData);
+        setAdminMode("edit");
+      });
     }
   });
 </script>
