@@ -28,6 +28,15 @@
       margin-top: 0;
     }
 
+    #userInfo {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 15px;
+    }
+    #userInfo p {
+      margin: 0;
+    }
+
     .field-group {
       margin-bottom: 15px;
     }
@@ -94,12 +103,6 @@
       color: #155724;
       border: 1px solid #c3e6cb;
     }
-
-    #userInfo {
-      font-size: 13px;
-      color: #555;
-      margin-bottom: 15px;
-    }
   </style>
 </head>
 <body>
@@ -127,7 +130,7 @@
     <div id="resultArea"></div>
   </div>
 
-    <script>
+  <script>
     (function () {
       const userInfoDiv = document.getElementById('userInfo');
 
@@ -153,7 +156,9 @@
         return;
       }
 
-      const DBVIN_COLLECTION = "DBVIN"; // cambia se la tua collection VIN ha un altro nome
+      // Cambia questo se la collezione ha un altro nome
+      const DBVIN_COLLECTION = "DBVIN";
+
       let currentAccount = null;
 
       async function loadCurrentUserInfo(user) {
@@ -207,7 +212,6 @@
         } catch (err) {
           console.error("Errore caricamento utente:", err);
           userInfoDiv.textContent = "Errore nel controllo dei permessi: " + err.message;
-          // niente redirect immediato: così vedi l’errore
         }
       });
 
@@ -262,13 +266,16 @@
 
       function getDateFromField(value) {
         if (!value) return null;
+        // Timestamp Firestore
         if (value.toDate && typeof value.toDate === "function") {
           return startOfDay(value.toDate());
         }
+        // Stringa tipo "2025-07-23"
         if (typeof value === "string") {
           const d = new Date(value);
           if (!isNaN(d.getTime())) return startOfDay(d);
         }
+        // Millisecondi epoch
         if (typeof value === "number") {
           const d = new Date(value);
           if (!isNaN(d.getTime())) return startOfDay(d);
@@ -329,34 +336,46 @@
           btnCheckCoverage.disabled = true;
 
           const snapshot = await db.collection(DBVIN_COLLECTION)
-            .where("VIN", "==", vin) // CAMPO DA ADATTARE se non si chiama VIN
+            .where("vin", "==", vin)   // <-- campo reale minuscolo
             .limit(1)
             .get();
 
+          console.log("Risultato query DBVIN per VIN =", vin, " -> num docs:", snapshot.size);
+
           if (snapshot.empty) {
-            showMessage('error', "Telaio non presente in banca dati DBVIN. Verifica il numero inserito.");
+            showMessage(
+              'error',
+              "Telaio non trovato nella collezione Firestore '" + DBVIN_COLLECTION +
+              "' con campo 'vin'.<br>Controlla che la collezione e il nome campo siano corretti."
+            );
             btnCheckCoverage.disabled = false;
             return;
           }
 
           const doc = snapshot.docs[0];
           const data = doc.data();
+          console.log("Documento DBVIN trovato:", doc.id, data);
 
-          // ADATTA QUI I NOMI DEI CAMPI AL TUO DBVIN
-          const fullStart  = getDateFromField(data.fullLine_startDate);
-          const fullEnd    = getDateFromField(data.fullLine_endDate);
-          const driveStart = getDateFromField(data.driveLine_startDate);
-          const driveEnd   = getDateFromField(data.driveLine_endDate);
-          const maintStart = getDateFromField(data.maintenance_startDate);
-          const maintEnd   = getDateFromField(data.maintenance_endDate);
+          // Mappatura ai tuoi campi reali di copertura:
+          // COMPLETA -> FULL LINE
+          const fullStart  = getDateFromField(data.completa_data_start);
+          const fullEnd    = getDateFromField(data.completa_data_end);
+
+          // CATENA CINEMATICA -> DRIVE LINE
+          const driveStart = getDateFromField(data.catcinematica_data_start);
+          const driveEnd   = getDateFromField(data.catcinematica_data_end);
+
+          // CONTRATTO DI MANUTENZIONE
+          const maintStart = getDateFromField(data.contratto_data_start);
+          const maintEnd   = getDateFromField(data.contratto_data_end);
 
           const copertureValide = [];
 
           if (isDateWithinRange(dataOrdine, fullStart, fullEnd)) {
-            copertureValide.push({ tipo: "FULL LINE", start: fullStart, end: fullEnd });
+            copertureValide.push({ tipo: "FULL LINE (COMPLETA)", start: fullStart, end: fullEnd });
           }
           if (isDateWithinRange(dataOrdine, driveStart, driveEnd)) {
-            copertureValide.push({ tipo: "DRIVE LINE", start: driveStart, end: driveEnd });
+            copertureValide.push({ tipo: "DRIVE LINE (CAT. CINEMATICA)", start: driveStart, end: driveEnd });
           }
           if (isDateWithinRange(dataOrdine, maintStart, maintEnd)) {
             copertureValide.push({ tipo: "CONTRATTO DI MANUTENZIONE", start: maintStart, end: maintEnd });
