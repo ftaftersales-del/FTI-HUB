@@ -46,7 +46,8 @@
       margin-bottom: 5px;
     }
     input[type="text"],
-    input[type="date"] {
+    input[type="date"],
+    select {
       width: 100%;
       padding: 8px;
       box-sizing: border-box;
@@ -122,9 +123,17 @@
       <input type="date" id="dataOrdineInput">
     </div>
 
+    <!-- NUOVO: selezione tipologia pratica -->
+    <div class="field-group" id="tipoPraticaGroup" style="display:none;">
+      <label for="tipoPratica">Tipologia pratica</label>
+      <select id="tipoPratica">
+        <!-- opzioni riempite via JavaScript -->
+      </select>
+    </div>
+
     <div class="buttons">
       <button id="btnCheckCoverage">Controlla copertura</button>
-      <button id="btnNext" style="display:none;">Avanti</button>
+      <button id="btnNext" style="display:none;" disabled>Avanti</button>
       <button id="btnCancel">Annulla</button>
     </div>
 
@@ -133,7 +142,7 @@
 
   <script>
     (function () {
-      console.log("FTCLAIMS v3 – file caricato");
+      console.log("FTCLAIMS – file caricato con menu tipologia pratica");
 
       const userInfoDiv = document.getElementById('userInfo');
 
@@ -149,15 +158,13 @@
         return;
       }
 
-      // Usa auth/db globali se esistono, altrimenti creali ora
       const auth = window.auth || firebase.auth();
       const db   = window.db   || firebase.firestore();
       window.auth = auth;
       window.db   = db;
 
-      // ⚠️ QUI DEVI METTERE IL NOME DELLA COLLEZIONE DOVE HAI I VIN IN FIRESTORE
-      // Usa lo stesso nome che usi in FTVIN (per es. "warranty_contracts" o simile).
-      const VIN_COLLECTION = "DBVIN"; // ← CAMBIA QUESTO SE SERVE
+      // ⚠️ NOME DELLA COLLEZIONE VIN (quella che ora funziona per te)
+      const VIN_COLLECTION = "DBVIN";
 
       let currentAccount = null;
 
@@ -215,10 +222,12 @@
         }
       });
 
-      // === GESTIONE BOTTONI ===
+      // === GESTIONE BOTTONI E SELECT ===
       const btnCancel = document.getElementById('btnCancel');
       const btnCheckCoverage = document.getElementById('btnCheckCoverage');
       const btnNext = document.getElementById('btnNext');
+      const tipoPraticaGroup = document.getElementById('tipoPraticaGroup');
+      const tipoPraticaSelect = document.getElementById('tipoPratica');
 
       btnCancel.addEventListener('click', () => {
         window.location.href = "FTHUBAS.html";
@@ -228,15 +237,78 @@
         await handleCheckCoverage();
       });
 
+      tipoPraticaSelect.addEventListener('change', () => {
+        btnNext.disabled = !tipoPraticaSelect.value;
+      });
+
       btnNext.addEventListener('click', () => {
         const vin = document.getElementById('vinInput').value.trim().toUpperCase();
         const dataOrdineStr = document.getElementById('dataOrdineInput').value;
+        const tipoPratica = tipoPraticaSelect.value;
 
-        const claimState = { vin, dataOrdine: dataOrdineStr };
+        if (!tipoPratica) {
+          alert("Seleziona una tipologia di pratica.");
+          return;
+        }
+
+        const claimState = {
+          vin,
+          dataOrdine: dataOrdineStr,
+          tipoPratica
+        };
         sessionStorage.setItem("currentClaimStep1", JSON.stringify(claimState));
 
         window.location.href = "FTCLAIMS_STEP2.html";
       });
+
+      function resetTipoPratica() {
+        tipoPraticaSelect.innerHTML = "";
+        tipoPraticaGroup.style.display = "none";
+        btnNext.style.display = "none";
+        btnNext.disabled = true;
+      }
+
+      function populateTipoPraticaOptions(hasWarrantyCoverage, hasMaintenanceCoverage) {
+        // hasWarrantyCoverage = FULL LINE o DRIVE LINE attiva
+        // hasMaintenanceCoverage = contratto manutenzione attivo
+
+        tipoPraticaSelect.innerHTML = "";
+
+        const addOption = (value, label) => {
+          const opt = document.createElement("option");
+          opt.value = value;
+          opt.textContent = label;
+          tipoPraticaSelect.appendChild(opt);
+        };
+
+        // placeholder
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Seleziona tipologia pratica --";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        tipoPraticaSelect.appendChild(placeholder);
+
+        // voci sempre disponibili
+        addOption("PDI", "PDI");
+        addOption("FSA", "FSA");
+        addOption("GOODWILL", "Goodwill");
+        addOption("SOLO_RSA", "Solo RSA");
+
+        // Reclamo di Garanzia solo se FULL o DRIVE attiva
+        if (hasWarrantyCoverage) {
+          addOption("RECLAMO_GARANZIA", "Reclamo di Garanzia");
+        }
+
+        // Contratto di Manutenzione solo se copertura manutenzione attiva
+        if (hasMaintenanceCoverage) {
+          addOption("CONTRATTO_MANUTENZIONE", "Contratto di Manutenzione");
+        }
+
+        tipoPraticaGroup.style.display = "block";
+        btnNext.style.display = "inline-block";
+        btnNext.disabled = true;
+      }
 
       // === FUNZIONI SUPPORTO UI ===
       function showMessage(type, text) {
@@ -266,16 +338,13 @@
 
       function getDateFromField(value) {
         if (!value) return null;
-        // Timestamp Firestore
         if (value.toDate && typeof value.toDate === "function") {
           return startOfDay(value.toDate());
         }
-        // Stringa tipo "2025-07-23"
         if (typeof value === "string") {
           const d = new Date(value);
           if (!isNaN(d.getTime())) return startOfDay(d);
         }
-        // Millisecondi epoch
         if (typeof value === "number") {
           const d = new Date(value);
           if (!isNaN(d.getTime())) return startOfDay(d);
@@ -294,7 +363,7 @@
       // === LOGICA CONTROLLO COPERTURA ===
       async function handleCheckCoverage() {
         clearMessage();
-        btnNext.style.display = "none";
+        resetTipoPratica();
 
         const vinInput = document.getElementById('vinInput');
         const dataOrdineInput = document.getElementById('dataOrdineInput');
@@ -336,7 +405,7 @@
           btnCheckCoverage.disabled = true;
 
           const snapshot = await db.collection(VIN_COLLECTION)
-            .where("vin", "==", vin)   // campo reale minuscolo
+            .where("vin", "==", vin)
             .limit(1)
             .get();
 
@@ -356,7 +425,7 @@
           const data = doc.data();
           console.log("[FTCLAIMS] Documento VIN:", doc.id, data);
 
-          // Mappatura ai tuoi campi reali di copertura:
+          // Mappatura ai campi reali:
           // COMPLETA -> FULL LINE
           const fullStart  = getDateFromField(data.completa_data_start);
           const fullEnd    = getDateFromField(data.completa_data_end);
@@ -369,27 +438,14 @@
           const maintStart = getDateFromField(data.contratto_data_start);
           const maintEnd   = getDateFromField(data.contratto_data_end);
 
-          const copertureValide = [];
+          const hasFullCoverage  = isDateWithinRange(dataOrdine, fullStart, fullEnd);
+          const hasDriveCoverage = isDateWithinRange(dataOrdine, driveStart, driveEnd);
+          const hasMaintCoverage = isDateWithinRange(dataOrdine, maintStart, maintEnd);
 
-          if (isDateWithinRange(dataOrdine, fullStart, fullEnd)) {
-            copertureValide.push({ tipo: "FULL LINE (COMPLETA)", start: fullStart, end: fullEnd });
-          }
-          if (isDateWithinRange(dataOrdine, driveStart, driveEnd)) {
-            copertureValide.push({ tipo: "DRIVE LINE (CAT. CINEMATICA)", start: driveStart, end: driveEnd });
-          }
-          if (isDateWithinRange(dataOrdine, maintStart, maintEnd)) {
-            copertureValide.push({ tipo: "CONTRATTO DI MANUTENZIONE", start: maintStart, end: maintEnd });
-          }
+          const hasWarrantyCoverage = hasFullCoverage || hasDriveCoverage;
+          const hasAnyCoverage = hasWarrantyCoverage || hasMaintCoverage;
 
-          if (copertureValide.length === 0) {
-            showMessage(
-              'error',
-              "Alla data dell'ordine di lavoro non risulta alcuna copertura valida (FULL LINE, DRIVE LINE o CONTRATTO DI MANUTENZIONE) per questo telaio."
-            );
-            btnCheckCoverage.disabled = false;
-            return;
-          }
-
+          // Prepariamo testo riepilogo
           const formatDate = (d) => {
             if (!d) return "-";
             const yyyy = d.getFullYear();
@@ -400,22 +456,37 @@
 
           let html = `<strong>Telaio:</strong> ${vin}<br>`;
           html += `<strong>Data ordine di lavoro:</strong> ${formatDate(dataOrdine)}<br><br>`;
-          html += `<strong>Coperture valide alla data selezionata:</strong><ul>`;
 
-          copertureValide.forEach(c => {
-            html += `<li>${c.tipo}: dal ${formatDate(c.start)} al ${formatDate(c.end)}</li>`;
-          });
-          html += `</ul>`;
-          html += `<br>Puoi procedere con la creazione della pratica di garanzia.`;
+          if (hasAnyCoverage) {
+            html += `<strong>Coperture valide alla data selezionata:</strong><ul>`;
+            if (hasFullCoverage) {
+              html += `<li>FULL LINE (COMPLETA): dal ${formatDate(fullStart)} al ${formatDate(fullEnd)}</li>`;
+            }
+            if (hasDriveCoverage) {
+              html += `<li>DRIVE LINE (CAT. CINEMATICA): dal ${formatDate(driveStart)} al ${formatDate(driveEnd)}</li>`;
+            }
+            if (hasMaintCoverage) {
+              html += `<li>CONTRATTO DI MANUTENZIONE: dal ${formatDate(maintStart)} al ${formatDate(maintEnd)}</li>`;
+            }
+            html += `</ul>`;
+            html += `<br>Seleziona la tipologia di pratica dal menu sottostante.`;
+          } else {
+            html += `<strong>Alla data selezionata non risulta alcuna copertura FULL LINE, DRIVE LINE o CONTRATTO DI MANUTENZIONE attiva per questo telaio.</strong>`;
+            html += `<br><br>Puoi comunque procedere selezionando una delle tipologie disponibili (PDI, FSA, Goodwill, Solo RSA).`;
+          }
 
           showMessage('success', html);
-          btnNext.style.display = "inline-block";
+
+          // Popoliamo il menu a tendina in base alle coperture
+          populateTipoPraticaOptions(hasWarrantyCoverage, hasMaintCoverage);
+
           btnCheckCoverage.disabled = false;
 
         } catch (err) {
           console.error("Errore durante il controllo copertura:", err);
           showMessage('error', "Errore durante il controllo della copertura: " + err.message);
           btnCheckCoverage.disabled = false;
+          resetTipoPratica();
         }
       }
     })();
