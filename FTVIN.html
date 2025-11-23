@@ -16,6 +16,7 @@
       background: #f5f5f5;
       margin: 0;
       padding: 20px;
+      overscroll-behavior: none; /* evita scroll strani con il drawer */
     }
 
     .container {
@@ -247,7 +248,7 @@
       right: -420px;
       width: 390px;
       max-width: 90%;
-      height: 100%;
+      height: 100vh;          /* <- fix: occupa esattamente il viewport */
       background: #ffffff;
       box-shadow: -2px 0 10px rgba(0,0,0,0.15);
       padding: 16px 16px 20px;
@@ -255,6 +256,7 @@
       z-index: 999;
       display: flex;
       flex-direction: column;
+      overflow: hidden;       /* evita che il contenuto sbordi sotto la barra */
     }
 
     .drawer.open {
@@ -290,7 +292,7 @@
     }
 
     .drawer-footer {
-      margin-top: 12px;
+      margin-top: 8px;
       display: flex;
       justify-content: flex-end;
       gap: 8px;
@@ -415,7 +417,7 @@
     </table>
   </div>
 
-  <!-- AREA ADMIN (solo toolbar, il form è nel drawer) -->
+  <!-- AREA ADMIN (toolbar) -->
   <div id="adminEditSection" class="admin-section">
     <h2>Area amministratore (coperture VIN)</h2>
     <div class="admin-toolbar">
@@ -1076,7 +1078,7 @@
         if (!isAdmin) return;
         resetAdminForm();
         const typedVin = (vinInput.value || "").trim().toUpperCase();
-        // Se vuoi lasciarlo vuoto sempre, commenta la riga sotto:
+        // Se vuoi precompilare il VIN con quello cercato, scommenta:
         // f_vin.value = typedVin;
         f_vin.readOnly = false;
         openDrawer("create", "Crea nuova copertura");
@@ -1089,6 +1091,7 @@
         if (!currentVin || !lastDocData || Object.keys(lastDocData).length === 0) {
           drawerMessage.textContent = "Nessuna copertura caricata da modificare.";
           drawerMessage.className = "message error";
+          openDrawer("edit", "Modifica copertura");
           return;
         }
         resetAdminForm();
