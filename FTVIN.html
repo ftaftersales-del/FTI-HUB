@@ -248,7 +248,7 @@
       right: -420px;
       width: 390px;
       max-width: 90%;
-      height: 100vh;          /* <- fix: occupa esattamente il viewport */
+      height: 100vh;          /* occupa esattamente il viewport */
       background: #ffffff;
       box-shadow: -2px 0 10px rgba(0,0,0,0.15);
       padding: 16px 16px 20px;
@@ -256,7 +256,7 @@
       z-index: 999;
       display: flex;
       flex-direction: column;
-      overflow: hidden;       /* evita che il contenuto sbordi sotto la barra */
+      overflow: hidden;
     }
 
     .drawer.open {
@@ -358,7 +358,7 @@
 
   <h1>Verifica copertura per telaio (VIN)</h1>
   <div class="subtitle">
-    Inserisci un VIN e premi "Cerca" per visualizzare i dettagli di copertura memorizzati in Firestore (collezione <b>DBVIN</b>).
+    Inserisci un VIN e premi "Cerca" per visualizzare i dettagli di copertura memorizzati in Firestore (collezione <b>DBVIN</b>) o sul portale Ford.
   </div>
 
   <div class="search-box">
@@ -377,12 +377,14 @@
     </div>
     <div id="vehicleInfo" class="info-grid"></div>
 
-    <!-- Note -->
-    <div class="section-title">
-      <span>Note</span>
-    </div>
-    <div class="note-box">
-      <div id="noteValue" class="note-value"></div>
+    <!-- Note (visibile solo distributore) -->
+    <div id="noteSection">
+      <div class="section-title">
+        <span>Note</span>
+      </div>
+      <div class="note-box">
+        <div id="noteValue" class="note-value"></div>
+      </div>
     </div>
 
     <!-- Full Line -->
@@ -595,6 +597,7 @@
     const resultsEl       = document.getElementById('results');
     const vehicleInfoEl   = document.getElementById('vehicleInfo');
     const noteValueEl     = document.getElementById('noteValue');
+    const noteSection     = document.getElementById('noteSection');
     const fullLineInfoEl  = document.getElementById('fullLineInfo');
     const driveLineInfoEl = document.getElementById('driveLineInfo');
     const contractInfoEl  = document.getElementById('contractMaintInfo');
@@ -651,10 +654,17 @@
     const f_uptime_service      = document.getElementById('f_uptime_service');
     const f_uptime_service_type = document.getElementById('f_uptime_service_type');
 
-    let isAdmin     = false;
-    let currentVin  = null;
-    let lastDocData = null;
-    let adminMode   = null; // "create" | "edit" | null
+    let isAdmin        = false;
+    let isDistributor  = false;
+    let currentVin     = null;
+    let lastDocData    = null;
+    let adminMode      = null;      // "create" | "edit" | null
+    let coverageSource = null;      // "dbvin" | "backend" | "none"
+    let coverageView   = null;      // oggetto normalizzato per la UI
+
+    // --------- Firebase refs (da firebase-config.js) ---------
+    // Si assume che firebase-config.js inizializzi firebase, auth, db
+    // es: const app = firebase.initializeApp(...); const auth = firebase.auth(); const db = firebase.firestore();
 
     // --------- Utility ---------
     function escapeHtml(text) {
@@ -679,7 +689,7 @@
 
     function fmtDate(v) {
       if (!v) return "-";
-      return v;
+      return escapeHtml(v);
     }
 
     function fmtBool(v) {
@@ -710,6 +720,115 @@
         searchBtn.disabled = false;
         searchBtn.textContent = "Cerca";
       }
+    }
+
+    function normalizeBool(v) {
+      if (v === null || v === undefined) return false;
+      if (typeof v === "boolean") return v;
+      const s = String(v).toLowerCase();
+      return s === "1" || s === "true" || s === "si" || s === "yes";
+    }
+
+    function cutDate(v) {
+      if (!v) return null;
+      return String(v).slice(0, 10); // "YYYY-MM-DD"
+    }
+
+    function buildCoverageFromDbVin(vin, data) {
+      data = data || {};
+      return {
+        vin,
+        customer:          data.customer || null,
+        contract_type:     data.contract_type || null,
+        validate_contract: data.validate_contract || null,
+        duration_contract: data.duration_contract != null ? data.duration_contract : 0,
+        inter_market:      data.inter_market || null,
+        language:          data.language || null,
+        note:              data.note || null,
+
+        fullLine: {
+          start_date: data.completa_data_start || null,
+          end_date:   data.completa_data_end   || null,
+          km_start:   data.completa_km_start != null ? data.completa_km_start : 0,
+          km_end:     data.completa_km_end   != null ? data.completa_km_end   : 0,
+        },
+
+        driveLine: {
+          start_date: data.catcinematica_data_start || null,
+          end_date:   data.catcinematica_data_end   || null,
+          km_start:   data.catcinematica_km_start != null ? data.catcinematica_km_start : 0,
+          km_end:     data.catcinematica_km_end   != null ? data.catcinematica_km_end   : 0,
+        },
+
+        maintenance: {
+          start_date: data.contratto_data_start || null,
+          end_date:   data.contratto_data_end   || null,
+        },
+
+        options: {
+          altre_opzioni:      normalizeBool(data.altre_opzioni),
+          batterie:           normalizeBool(data.batterie),
+          fusibili_lampadine: normalizeBool(data.fusibili_lampadine),
+          parti_usura:        normalizeBool(data.parti_usara),
+          pulizia_fap:        normalizeBool(data.pulizia_fap),
+          rabbocco_olio:      normalizeBool(data.rabbocco_olio),
+          tergicristallo:     normalizeBool(data.tergicristallo),
+          traino:             normalizeBool(data.traino),
+          uptime_service:     normalizeBool(data.uptime_service),
+          uptime_service_type: data.uptime_service_type || null,
+        }
+      };
+    }
+
+    function buildCoverageFromBackend(vin, backendData) {
+      const cli = backendData.cliente_veicolo || {};
+      const c   = backendData.copertura || {};
+
+      const hasTow = !!(c.FREETOWING_START_DATE || c.FREETOWING_END_DATE);
+      const uptimeName = (c.UPTIME_NAME && c.UPTIME_NAME !== "0") ? c.UPTIME_NAME : null;
+
+      return {
+        vin:                c.VIN || vin,
+        customer:           cli.rag_sociale || null,
+        contract_type:      c.WARRANTY_TYPE || null,
+        validate_contract:  c.WARRANTY_TYPE || null,
+        duration_contract:  0,
+        inter_market:       null,
+        language:           null,
+        note:               null,
+
+        fullLine: {
+          start_date: cutDate(c.WARRANTY_START_DATE),
+          end_date:   cutDate(c.WARRANTY_END_DATE),
+          km_start:   0,
+          km_end:     0,
+        },
+
+        driveLine: {
+          start_date: null,
+          end_date:   null,
+          km_start:   0,
+          km_end:     0,
+        },
+
+        maintenance: {
+          start_date: null,
+          end_date:   null,
+        },
+
+        options: {
+          altre_opzioni:      normalizeBool(c.HAS_VEHICLE_SC),
+          batterie:           normalizeBool(c.HAS_BATTERY),
+          fusibili_lampadine: normalizeBool(c.HAS_FUSESBULBS),
+          parti_usura:        normalizeBool(c.HAS_WEARTEAR),
+          pulizia_fap:        normalizeBool(c.HAS_DPFFILTER),
+          rabbocco_olio:      normalizeBool(c.HAS_OILTOP),
+          tergicristallo:     false,
+          traino:             hasTow,
+          uptime_service:     normalizeBool(c.HAS_UPTIME),
+          uptime_service_type: uptimeName,
+        }
+      };
     }
 
     function openDrawer(mode, titleText) {
@@ -768,6 +887,7 @@
       f_uptime_service_type.value = "";
 
       drawerMessage.textContent = "";
+      drawerMessage.className = "message";
     }
 
     function fillAdminForm(vin, data) {
@@ -806,6 +926,7 @@
       f_uptime_service_type.value  = data.uptime_service_type || "";
 
       drawerMessage.textContent = "";
+      drawerMessage.className = "message";
     }
 
     function updateAdminButtons(hasExistingDoc) {
@@ -813,8 +934,119 @@
         adminSection.style.display = "none";
         return;
       }
+
       adminSection.style.display = "block";
-      btnEditCoverage.disabled = !hasExistingDoc;
+
+      if (coverageSource === "dbvin") {
+        btnNewCoverage.disabled  = false;
+        btnEditCoverage.disabled = !hasExistingDoc;
+      } else if (coverageSource === "backend") {
+        btnNewCoverage.disabled  = true;
+        btnEditCoverage.disabled = true;
+      } else if (coverageSource === "none") {
+        btnNewCoverage.disabled  = false;
+        btnEditCoverage.disabled = true;
+      } else {
+        btnNewCoverage.disabled  = true;
+        btnEditCoverage.disabled = true;
+      }
+    }
+
+    function renderCoverage() {
+      if (!coverageView) {
+        resultsEl.style.display = "none";
+        return;
+      }
+
+      const cv = coverageView;
+
+      // Dati veicolo
+      vehicleInfoEl.innerHTML = `
+        <div class="info-item"><span class="label">VIN</span>${fmtText(cv.vin)}</div>
+        <div class="info-item"><span class="label">Cliente</span>${fmtText(cv.customer)}</div>
+        <div class="info-item"><span class="label">Tipo Contratto</span>${fmtText(cv.contract_type)}</div>
+        <div class="info-item"><span class="label">Validazione Contratto</span>${fmtText(cv.validate_contract)}</div>
+        <div class="info-item"><span class="label">Durata Contratto</span>${fmtNum(cv.duration_contract)}</div>
+        <div class="info-item"><span class="label">Inter-market</span>${fmtText(cv.inter_market)}</div>
+        <div class="info-item"><span class="label">Lingua</span>${fmtText(cv.language)}</div>
+      `;
+
+      // Note (solo distributore)
+      if (noteSection) {
+        if (isDistributor) {
+          noteSection.style.display = "block";
+          noteValueEl.innerHTML = fmtText(cv.note);
+        } else {
+          noteSection.style.display = "none";
+        }
+      }
+
+      // Full Line
+      fullLineInfoEl.innerHTML = `
+        <div class="info-item"><span class="label">Data inizio</span>${fmtDate(cv.fullLine.start_date)}</div>
+        <div class="info-item"><span class="label">Data fine</span>${fmtDate(cv.fullLine.end_date)}</div>
+        <div class="info-item"><span class="label">KM inizio</span>${fmtNum(cv.fullLine.km_start)}</div>
+        <div class="info-item"><span class="label">KM fine</span>${fmtNum(cv.fullLine.km_end)}</div>
+      `;
+      flagFullLine.textContent = badge(isActiveDate(cv.fullLine.start_date, cv.fullLine.end_date));
+
+      // Drive Line
+      driveLineInfoEl.innerHTML = `
+        <div class="info-item"><span class="label">Data inizio</span>${fmtDate(cv.driveLine.start_date)}</div>
+        <div class="info-item"><span class="label">Data fine</span>${fmtDate(cv.driveLine.end_date)}</div>
+        <div class="info-item"><span class="label">KM inizio</span>${fmtNum(cv.driveLine.km_start)}</div>
+        <div class="info-item"><span class="label">KM fine</span>${fmtNum(cv.driveLine.km_end)}</div>
+      `;
+      flagDriveLine.textContent = badge(isActiveDate(cv.driveLine.start_date, cv.driveLine.end_date));
+
+      // Contratto manutenzione
+      contractInfoEl.innerHTML = `
+        <div class="info-item"><span class="label">Data inizio</span>${fmtDate(cv.maintenance.start_date)}</div>
+        <div class="info-item"><span class="label">Data fine</span>${fmtDate(cv.maintenance.end_date)}</div>
+      `;
+      flagMaint.textContent = badge(isActiveDate(cv.maintenance.start_date, cv.maintenance.end_date));
+
+      // Opzioni
+      const o = cv.options;
+      const options = [
+        ["Altre opzioni", o.altre_opzioni],
+        ["Batterie", o.batterie],
+        ["Fusibili / lampadine", o.fusibili_lampadine],
+        ["Parti d’usura", o.parti_usura],
+        ["Pulizia FAP", o.pulizia_fap],
+        ["Rabbocco olio", o.rabbocco_olio],
+        ["Tergicristallo", o.tergicristallo],
+        ["Traino", o.traino],
+        ["Uptime service", o.uptime_service],
+        ["Uptime service type", fmtText(o.uptime_service_type)],
+      ];
+
+      boolTableEl.innerHTML = options.map(([label, val]) => {
+        const valueHtml = typeof val === "boolean" ? fmtBool(val) : val;
+        return `<tr><td>${escapeHtml(label)}</td><td>${valueHtml}</td></tr>`;
+      }).join("");
+
+      const hasOptionActive = [
+        o.altre_opzioni, o.batterie, o.fusibili_lampadine,
+        o.parti_usura, o.pulizia_fap, o.rabbocco_olio,
+        o.tergicristallo, o.traino, o.uptime_service
+      ].some(v => !!v);
+
+      flagOptions.textContent = badge(hasOptionActive);
+
+      resultsEl.style.display = "block";
+    }
+
+    async function fetchBackendCoverage(vin) {
+      const resp = await fetch("https://verifica-garanzia-backend.onrender.com/verifica", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telaio: vin }),
+      });
+      if (!resp.ok) {
+        throw new Error("Errore HTTP backend: " + resp.status);
+      }
+      return await resp.json();
     }
 
     // --------- Auth ---------
@@ -823,6 +1055,7 @@
         if (!user) {
           userInfoEl.textContent = "Utente: non loggato";
           isAdmin = false;
+          isDistributor = false;
           adminSection.style.display = "none";
           closeDrawer();
           return;
@@ -833,9 +1066,14 @@
           const userSnap = await db.collection('Users').doc(user.uid).get();
           const data = userSnap.exists ? userSnap.data() : {};
           isAdmin = data.role === "Admin";
+
+          const dealerId = data.DealerID || data.dealerId || null;
+          // Logica distributore: ad esempio FT001
+          isDistributor = dealerId === "FT001";
         } catch (e) {
           console.error("Errore lettura ruolo utente:", e);
           isAdmin = false;
+          isDistributor = false;
         }
 
         updateAdminButtons(false);
@@ -843,82 +1081,6 @@
       });
     } catch (e) {
       console.error("Errore auth:", e);
-    }
-
-    // --------- Rendering risultati ---------
-    function renderResults(vin, data) {
-      data = data || {};
-
-      // Dati veicolo
-      vehicleInfoEl.innerHTML = `
-        <div class="info-item"><span class="label">VIN</span>${fmtText(vin)}</div>
-        <div class="info-item"><span class="label">Cliente</span>${fmtText(data.customer)}</div>
-        <div class="info-item"><span class="label">Tipo Contratto</span>${fmtText(data.contract_type)}</div>
-        <div class="info-item"><span class="label">Validazione Contratto</span>${fmtText(data.validate_contract)}</div>
-        <div class="info-item"><span class="label">Durata Contratto</span>${fmtNum(data.duration_contract)}</div>
-        <div class="info-item"><span class="label">Inter-market</span>${fmtText(data.inter_market)}</div>
-        <div class="info-item"><span class="label">Lingua</span>${fmtText(data.language)}</div>
-      `;
-
-      // Note
-      noteValueEl.innerHTML = fmtText(data.note);
-
-      // Full Line
-      fullLineInfoEl.innerHTML = `
-        <div class="info-item"><span class="label">Data inizio</span>${fmtDate(data.completa_data_start)}</div>
-        <div class="info-item"><span class="label">Data fine</span>${fmtDate(data.completa_data_end)}</div>
-        <div class="info-item"><span class="label">KM inizio</span>${fmtNum(data.completa_km_start)}</div>
-        <div class="info-item"><span class="label">KM fine</span>${fmtNum(data.completa_km_end)}</div>
-      `;
-      flagFullLine.textContent = badge(isActiveDate(data.completa_data_start, data.completa_data_end));
-
-      // Drive Line
-      driveLineInfoEl.innerHTML = `
-        <div class="info-item"><span class="label">Data inizio</span>${fmtDate(data.catcinematica_data_start)}</div>
-        <div class="info-item"><span class="label">Data fine</span>${fmtDate(data.catcinematica_data_end)}</div>
-        <div class="info-item"><span class="label">KM inizio</span>${fmtNum(data.catcinematica_km_start)}</div>
-        <div class="info-item"><span class="label">KM fine</span>${fmtNum(data.catcinematica_km_end)}</div>
-      `;
-      flagDriveLine.textContent = badge(isActiveDate(data.catcinematica_data_start, data.catcinematica_data_end));
-
-      // Contratto manutenzione
-      contractInfoEl.innerHTML = `
-        <div class="info-item"><span class="label">Data inizio</span>${fmtDate(data.contratto_data_start)}</div>
-        <div class="info-item"><span class="label">Data fine</span>${fmtDate(data.contratto_data_end)}</div>
-      `;
-      flagMaint.textContent = badge(isActiveDate(data.contratto_data_start, data.contratto_data_end));
-
-      // Opzioni
-      const options = [
-        ["Altre opzioni", data.altre_opzioni],
-        ["Batterie", data.batterie],
-        ["Fusibili / lampadine", data.fusibili_lampadine],
-        ["Parti d’usura", data.parti_usara],
-        ["Pulizia FAP", data.pulizia_fap],
-        ["Rabbocco olio", data.rabbocco_olio],
-        ["Tergicristallo", data.tergicristallo],
-        ["Traino", data.traino],
-        ["Uptime service", data.uptime_service],
-        ["Uptime service type", fmtText(data.uptime_service_type)]
-      ];
-
-      boolTableEl.innerHTML = options.map(([label, val]) => {
-        const valueHtml = typeof val === "boolean" ? fmtBool(val) : val;
-        return `<tr><td>${escapeHtml(label)}</td><td>${valueHtml}</td></tr>`;
-      }).join("");
-
-      const hasOptionActive = [
-        data.altre_opzioni, data.batterie, data.fusibili_lampadine,
-        data.parti_usara, data.pulizia_fap, data.rabbocco_olio,
-        data.tergicristallo, data.traino, data.uptime_service
-      ].some(v => !!v);
-
-      flagOptions.textContent = badge(hasOptionActive);
-
-      lastDocData = data;
-      currentVin  = vin;
-
-      resultsEl.style.display = "block";
     }
 
     // --------- Ricerca VIN ---------
@@ -929,31 +1091,81 @@
         return;
       }
 
+      if (vin.length !== 17) {
+        showMessage("Il VIN deve contenere esattamente 17 caratteri.", "error");
+        return;
+      }
+
       showMessage("", "");
       resultsEl.style.display = "none";
-      lastDocData = null;
-      currentVin  = null;
+      lastDocData    = null;
+      currentVin     = null;
+      coverageView   = null;
+      coverageSource = null;
       closeDrawer();
       updateAdminButtons(false);
 
       setLoading(true);
       try {
-        const ref = db.collection("DBVIN").doc(vin);
+        // 1) Firestore
+        const ref  = db.collection("DBVIN").doc(vin);
         const snap = await ref.get();
 
-        if (!snap.exists) {
-          showMessage("Nessuna copertura trovata per " + vin, "error");
-          renderResults(vin, {});
-          updateAdminButtons(false);
-        } else {
+        if (snap.exists) {
           const data = snap.data() || {};
-          renderResults(vin, data);
-          showMessage("Copertura caricata correttamente.", "success");
+          lastDocData    = data;
+          currentVin     = vin;
+          coverageSource = "dbvin";
+          coverageView   = buildCoverageFromDbVin(vin, data);
+          renderCoverage();
+          showMessage("Copertura caricata dal database locale (DBVIN).", "success");
           updateAdminButtons(true);
+          return;
         }
+
+        // 2) Backend se non esiste in DBVIN
+        try {
+          const backendData = await fetchBackendCoverage(vin);
+
+          if (backendData.success && backendData.copertura && backendData.copertura.HAS_WARRANTY) {
+            currentVin     = vin;
+            lastDocData    = null;
+            coverageSource = "backend";
+            coverageView   = buildCoverageFromBackend(vin, backendData);
+            renderCoverage();
+            showMessage("Copertura trovata sul portale Ford (backend).", "success");
+            updateAdminButtons(false); // solo lettura
+          } else {
+            // nessuna copertura in backend
+            coverageSource = "none";
+            coverageView   = null;
+            resultsEl.style.display = "none";
+            showMessage("Telaio inesistente nelle banche dati.", "error");
+            updateAdminButtons(false);
+            if (isAdmin) {
+              coverageSource = "none";
+              updateAdminButtons(false);
+              adminModeLabel.textContent = "Nessuna copertura trovata: puoi creare una nuova copertura.";
+            }
+          }
+        } catch (err2) {
+          console.error("Errore backend:", err2);
+          coverageSource = "none";
+          coverageView   = null;
+          resultsEl.style.display = "none";
+          showMessage("Errore nel backend di verifica garanzia.", "error");
+          updateAdminButtons(false);
+          if (isAdmin) {
+            adminModeLabel.textContent = "Errore backend: puoi comunque creare una nuova copertura.";
+          }
+        }
+
       } catch (err) {
         console.error("Errore Firestore:", err);
         showMessage("Errore durante la lettura dei dati.", "error");
+        coverageSource = "none";
+        coverageView   = null;
+        resultsEl.style.display = "none";
         updateAdminButtons(false);
       } finally {
         setLoading(false);
@@ -973,6 +1185,11 @@
         vin = (f_vin.value || "").trim().toUpperCase();
         if (!vin) {
           drawerMessage.textContent = "Inserisci un VIN per creare la copertura.";
+          drawerMessage.className = "message error";
+          return;
+        }
+        if (vin.length !== 17) {
+          drawerMessage.textContent = "Il VIN deve contenere esattamente 17 caratteri.";
           drawerMessage.className = "message error";
           return;
         }
@@ -1056,7 +1273,10 @@
         await db.collection("DBVIN").doc(vin).set(payload, { merge: true });
         lastDocData = Object.assign({}, lastDocData || {}, payload);
         currentVin  = vin;
-        renderResults(vin, lastDocData);
+        coverageSource = "dbvin";
+        coverageView   = buildCoverageFromDbVin(vin, lastDocData);
+
+        renderCoverage();
         updateAdminButtons(true);
         drawerMessage.textContent = "Copertura salvata correttamente.";
         drawerMessage.className = "message success";
@@ -1078,8 +1298,7 @@
         if (!isAdmin) return;
         resetAdminForm();
         const typedVin = (vinInput.value || "").trim().toUpperCase();
-        // Se vuoi precompilare il VIN con quello cercato, scommenta:
-        // f_vin.value = typedVin;
+        f_vin.value = typedVin;
         f_vin.readOnly = false;
         openDrawer("create", "Crea nuova copertura");
       });
