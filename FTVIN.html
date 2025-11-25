@@ -248,7 +248,7 @@
       right: -420px;
       width: 390px;
       max-width: 90%;
-      height: 100vh;          /* occupa esattamente il viewport */
+      height: 100vh;
       background: #ffffff;
       box-shadow: -2px 0 10px rgba(0,0,0,0.15);
       padding: 16px 16px 20px;
@@ -662,10 +662,6 @@
     let coverageSource = null;      // "dbvin" | "backend" | "none"
     let coverageView   = null;      // oggetto normalizzato per la UI
 
-    // --------- Firebase refs (da firebase-config.js) ---------
-    // Si assume che firebase-config.js inizializzi firebase, auth, db
-    // es: const app = firebase.initializeApp(...); const auth = firebase.auth(); const db = firebase.firestore();
-
     // --------- Utility ---------
     function escapeHtml(text) {
       if (text === null || text === undefined) return "";
@@ -812,8 +808,8 @@
         },
 
         maintenance: {
-          start_date: null,
-          end_date:   null,
+          start_date: cutDate(c.SC_DT_START_DATE),
+          end_date:   cutDate(c.SC_DT_END_DATE),
         },
 
         options: {
