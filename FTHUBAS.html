@@ -86,6 +86,15 @@
       <p>Apri una nuova pratica di garanzia.</p>
       <button onclick="goToFTCLAIMS()">Apri Reclamo di Garanzia</button>
     </div>
+
+    <!-- 🔹 NUOVA AREA FTHOTLINE -->
+    <div id="fthotline-section" class="section">
+      <h3>Hotline Tecnica (FTHOTLINE)</h3>
+      <p>Gestisci i ticket di assistenza tra dealer e distributore.</p>
+      <button onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
+    </div>
+    <!-- 🔹 FINE NUOVA AREA -->
+
   </div>
 
   <script>
@@ -174,9 +183,10 @@
         adminSection.style.display = 'none';
       }
 
-      // FTVIN è sempre visibile per utente loggato
-      // FTCLAIMS per ora è sempre visibile per utente loggato
-      // (se in futuro vuoi legarla ai permessi, possiamo usare canRead('FTCLAIMS'))
+      // FTVIN e FTCLAIMS e FTHOTLINE:
+      // per ora accesso a tutti gli utenti loggati.
+      // In futuro, se vuoi, puoi legare FTHOTLINE ai permessi:
+      // if (!canRead('FTHOTLINE')) { document.getElementById('fthotline-section').style.display = 'none'; }
     }
 
     // Listener autenticazione
@@ -212,14 +222,19 @@
     }
 
     function goToFTVIN() {
-      // nessun controllo permessi: basta essere loggati
       window.location.href = "FTVIN.html";
     }
 
     function goToFTCLAIMS() {
-      // accesso per ora a tutti gli utenti loggati (Admin e User)
       window.location.href = "FTCLAIMS.html";
     }
+
+    // 🔹 NUOVA FUNZIONE NAVIGAZIONE HOTLINE
+    function goToFTHOTLINE() {
+      window.location.href = "FTHOTLINE.html";
+    }
+    // 🔹 FINE NUOVA FUNZIONE
+
   </script>
 </body>
 </html>
