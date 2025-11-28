@@ -149,8 +149,7 @@
     }
 
     .ticket-detail-header input,
-    .ticket-detail-header select,
-    .ticket-detail-header textarea {
+    .ticket-detail-header select {
       padding: 4px 6px;
       border-radius: 4px;
       border: 1px solid #ccc;
@@ -347,16 +346,102 @@
       max-width: 60%;
     }
 
-    /* Messaggio "nessun ticket selezionato" */
     #noTicketSelectedMessage {
       font-size: 13px;
       color: #444;
+    }
+
+    /* ===== MODALE NUOVO TICKET ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      max-width: 900px;
+      width: 90%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      box-sizing: border-box;
+    }
+
+    .modal-header {
+      padding: 10px 15px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body {
+      padding: 10px 15px;
+      overflow-y: auto;
+      box-sizing: border-box;
+      font-size: 13px;
+    }
+
+    .modal-footer {
+      padding: 10px 15px;
+      border-top: 1px solid #ddd;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      box-sizing: border-box;
+    }
+
+    .modal-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .modal-field-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 150px;
+      max-width: 260px;
+      flex: 1 1 180px;
+    }
+
+    .modal-field-group label {
+      font-size: 11px;
+      color: #555;
+      margin-bottom: 2px;
+    }
+
+    .modal-field-group input,
+    .modal-field-group select,
+    .modal-field-group textarea {
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+    .modal-field-group textarea {
+      min-height: 60px;
+      resize: vertical;
+    }
+
+    .modal-error {
+      color: #b91c1c;
+      font-size: 11px;
+      margin-top: 4px;
     }
   </style>
 </head>
 <body>
   <div class="page-container">
-    <!-- HEADER -->
     <div class="page-header">
       <div>FTHOTLINE - Gestione Ticket</div>
       <div>
@@ -364,19 +449,16 @@
       </div>
     </div>
 
-    <!-- CONTENUTO -->
     <div class="page-content">
-      <!-- PANNELLO SINISTRO: filtri + lista ticket -->
+      <!-- Pannello sinistro: filtri + lista ticket -->
       <div class="tickets-panel">
         <div class="tickets-filters">
-          <!-- Ricerca testuale -->
           <input
             type="text"
             id="searchInput"
             placeholder="Cerca per codice, oggetto, VIN, targa..."
           >
 
-          <!-- Filtro stato -->
           <select id="statusFilter">
             <option value="">Tutti gli stati</option>
             <option value="open_waiting_distributor">Aperti (in attesa distributore)</option>
@@ -384,24 +466,18 @@
             <option value="closed">Chiusi</option>
           </select>
 
-          <!-- Filtro reparto -->
           <select id="departmentFilter">
             <option value="">Tutti i reparti</option>
-            <!-- Opzioni da Firestore -->
           </select>
 
-          <!-- Nuovo ticket -->
           <button class="btn btn-primary" id="btnNewTicket">Nuovo ticket</button>
         </div>
 
-        <div class="tickets-list" id="ticketsList">
-          <!-- Popolato da JS -->
-        </div>
+        <div class="tickets-list" id="ticketsList"></div>
       </div>
 
-      <!-- PANNELLO DESTRO: dettaglio ticket + chat -->
+      <!-- Pannello destro: dettaglio + chat -->
       <div class="ticket-detail-panel">
-        <!-- HEADER DETTAGLIO -->
         <div class="ticket-detail-header" id="ticketDetailHeader">
           <div id="noTicketSelectedMessage">
             Nessun ticket selezionato. Seleziona un ticket dalla lista o creane uno nuovo.
@@ -440,7 +516,6 @@
               </div>
 
               <div class="ticket-detail-actions">
-                <!-- Tasto modifica riservato a futuri sviluppi -->
                 <button class="btn btn-secondary" id="btnEditTicket" style="display:none;">Modifica</button>
                 <button class="btn btn-danger" id="btnCloseTicket">Chiudi ticket</button>
               </div>
@@ -469,15 +544,12 @@
 
               <div class="field-group wide">
                 <label>Reparto</label>
-                <select id="ticketDepartment" disabled>
-                  <!-- Opzioni reparti -->
-                </select>
+                <select id="ticketDepartment" disabled></select>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- CORPO RICHIESTA INIZIALE -->
         <div class="ticket-body-container" id="ticketBodyContainer" style="display:none;">
           <div>
             <strong>Richiesta iniziale:</strong>
@@ -489,17 +561,13 @@
           </div>
         </div>
 
-        <!-- CHAT -->
         <div class="ticket-chat-container">
-          <div class="chat-messages" id="chatMessages">
-            <!-- Messaggi caricati da JS -->
-          </div>
+          <div class="chat-messages" id="chatMessages"></div>
 
           <div class="chat-input-area">
             <textarea id="chatMessageInput" placeholder="Scrivi una risposta..."></textarea>
 
             <div class="chat-input-actions">
-              <!-- File, per ora non gestiti in JS (ma già pronti) -->
               <input type="file" id="chatFileInput" multiple>
               <button class="btn btn-primary" id="btnSendMessage">Invia</button>
             </div>
@@ -509,7 +577,65 @@
     </div>
   </div>
 
-  <!-- LOGICA JS -->
+  <!-- MODALE NUOVO TICKET -->
+  <div class="modal-overlay" id="newTicketModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>Nuovo ticket hotline</div>
+      </div>
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div class="modal-field-group">
+            <label>Oggetto *</label>
+            <input type="text" id="newTicketSubject">
+          </div>
+
+          <div class="modal-field-group">
+            <label>Reparto *</label>
+            <select id="newTicketDepartment">
+              <option value="">Seleziona reparto</option>
+            </select>
+          </div>
+
+          <div class="modal-field-group">
+            <label>VIN</label>
+            <input type="text" id="newTicketVin">
+          </div>
+
+          <div class="modal-field-group">
+            <label>Targa</label>
+            <input type="text" id="newTicketPlate">
+          </div>
+
+          <div class="modal-field-group">
+            <label>Km</label>
+            <input type="number" id="newTicketKm">
+          </div>
+
+          <div class="modal-field-group">
+            <label>Ore motore</label>
+            <input type="number" id="newTicketEngineHours">
+          </div>
+
+          <div class="modal-field-group" style="flex:1 1 100%;">
+            <label>Richiesta di garanzia</label>
+            <textarea id="newTicketWarranty"></textarea>
+          </div>
+
+          <div class="modal-field-group" style="flex:1 1 100%;">
+            <label>Descrizione / Corpo richiesta *</label>
+            <textarea id="newTicketBody"></textarea>
+          </div>
+        </div>
+        <div id="newTicketError" class="modal-error"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="newTicketCancel">Annulla</button>
+        <button class="btn btn-primary" id="newTicketSubmit">Invia</button>
+      </div>
+    </div>
+  </div>
+
   <script src="FTHOTLINE.js"></script>
 </body>
 </html>
