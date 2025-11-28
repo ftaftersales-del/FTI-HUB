@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>FTHOTLINE - Gestione Ticket</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+
+    .page-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .page-header {
+      padding: 10px 20px;
+      background: #1f2933;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+    }
+
+    .page-content {
+      flex: 1;
+      display: flex;
+      padding: 10px;
+      gap: 10px;
+      box-sizing: border-box;
+    }
+
+    /* Colonna sinistra: lista + filtri */
+    .tickets-panel {
+      width: 35%;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 320px;
+    }
+
+    .tickets-filters {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-sizing: border-box;
+    }
+
+    .tickets-filters input,
+    .tickets-filters select {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      font-size: 12px;
+    }
+
+    .tickets-filters .btn {
+      width: 100%;
+    }
+
+    .tickets-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .ticket-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .ticket-item:hover {
+      background: #f3f4f6;
+    }
+
+    .ticket-item.selected {
+      background: #e5e7eb;
+    }
+
+    .ticket-item-code {
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .ticket-item-subject {
+      font-size: 13px;
+      margin-top: 3px;
+    }
+
+    .ticket-item-meta {
+      font-size: 11px;
+      color: #555;
+      margin-top: 3px;
+    }
+
+    /* Colonna destra: dettaglio + chat */
+    .ticket-detail-panel {
+      flex: 1;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .ticket-detail-header {
+      padding: 10px 15px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-sizing: border-box;
+    }
+
+    .ticket-detail-header-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .ticket-detail-header label {
+      font-size: 11px;
+      color: #555;
+      display: block;
+    }
+
+    .ticket-detail-header input,
+    .ticket-detail-header select,
+    .ticket-detail-header textarea {
+      padding: 4px 6px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+    .ticket-detail-header .field-group {
+      display: flex;
+      flex-direction: column;
+      min-width: 140px;
+      max-width: 220px;
+      flex: 0 0 auto;
+    }
+
+    .ticket-detail-header .field-group.wide {
+      min-width: 240px;
+      max-width: 420px;
+      flex: 1 1 auto;
+    }
+
+    .ticket-status-badge {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      display: inline-block;
+    }
+
+    .ticket-status-open {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    .ticket-status-waiting {
+      background: #fef9c3;
+      color: #854d0e;
+    }
+
+    .ticket-status-closed {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+
+    .ticket-detail-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+
+    .btn {
+      padding: 5px 10px;
+      border-radius: 4px;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+
+    .btn-danger {
+      background: #b91c1c;
+      color: white;
+    }
+
+    .btn[disabled] {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    /* Corpo richiesta iniziale */
+    .ticket-body-container {
+      padding: 10px 15px;
+      border-bottom: 1px solid #ddd;
+      font-size: 13px;
+      max-height: 140px;
+      overflow-y: auto;
+      background: #f9fafb;
+      box-sizing: border-box;
+    }
+
+    .ticket-body-container strong {
+      font-size: 12px;
+    }
+
+    /* Chat */
+    .ticket-chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 10px 15px;
+      gap: 10px;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chat-message-row {
+      display: flex;
+    }
+
+    .chat-message-row.dealer {
+      justify-content: flex-end;
+    }
+
+    .chat-message-row.distributor {
+      justify-content: flex-start;
+    }
+
+    .chat-bubble {
+      max-width: 70%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      box-sizing: border-box;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .chat-bubble.dealer {
+      background: #2563eb;
+      color: white;
+      border-bottom-right-radius: 2px;
+    }
+
+    .chat-bubble.distributor {
+      background: #e5e7eb;
+      color: #111827;
+      border-bottom-left-radius: 2px;
+    }
+
+    .chat-meta {
+      font-size: 10px;
+      opacity: 0.8;
+      margin-bottom: 3px;
+    }
+
+    .chat-attachments {
+      margin-top: 5px;
+      font-size: 11px;
+    }
+
+    .chat-attachments a {
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    .chat-input-area {
+      border-top: 1px solid #ddd;
+      padding-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-sizing: border-box;
+    }
+
+    .chat-input-area textarea {
+      width: 100%;
+      height: 60px;
+      resize: vertical;
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 12px;
+      box-sizing: border-box;
+    }
+
+    .chat-input-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chat-input-actions input[type="file"] {
+      font-size: 11px;
+      max-width: 60%;
+    }
+
+    /* Messaggio "nessun ticket selezionato" */
+    #noTicketSelectedMessage {
+      font-size: 13px;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <!-- HEADER -->
+    <div class="page-header">
+      <div>FTHOTLINE - Gestione Ticket</div>
+      <div>
+        <span id="currentUserInfo"></span>
+      </div>
+    </div>
+
+    <!-- CONTENUTO -->
+    <div class="page-content">
+      <!-- PANNELLO SINISTRO: filtri + lista ticket -->
+      <div class="tickets-panel">
+        <div class="tickets-filters">
+          <!-- Ricerca testuale -->
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Cerca per codice, oggetto, VIN, targa..."
+          >
+
+          <!-- Filtro stato -->
+          <select id="statusFilter">
+            <option value="">Tutti gli stati</option>
+            <option value="open_waiting_distributor">Aperti (in attesa distributore)</option>
+            <option value="open_waiting_dealer">Aperti (in attesa dealer)</option>
+            <option value="closed">Chiusi</option>
+          </select>
+
+          <!-- Filtro reparto -->
+          <select id="departmentFilter">
+            <option value="">Tutti i reparti</option>
+            <!-- Opzioni da Firestore -->
+          </select>
+
+          <!-- Nuovo ticket -->
+          <button class="btn btn-primary" id="btnNewTicket">Nuovo ticket</button>
+        </div>
+
+        <div class="tickets-list" id="ticketsList">
+          <!-- Popolato da JS -->
+        </div>
+      </div>
+
+      <!-- PANNELLO DESTRO: dettaglio ticket + chat -->
+      <div class="ticket-detail-panel">
+        <!-- HEADER DETTAGLIO -->
+        <div class="ticket-detail-header" id="ticketDetailHeader">
+          <div id="noTicketSelectedMessage">
+            Nessun ticket selezionato. Seleziona un ticket dalla lista o creane uno nuovo.
+          </div>
+
+          <div id="ticketHeaderContent" style="display:none;">
+            <div class="ticket-detail-header-row">
+              <div class="field-group">
+                <label>Codice ticket</label>
+                <input type="text" id="ticketCode" readonly>
+              </div>
+
+              <div class="field-group wide">
+                <label>Oggetto</label>
+                <input type="text" id="ticketSubject" readonly>
+              </div>
+
+              <div class="field-group">
+                <label>Dealer</label>
+                <input type="text" id="ticketDealer" readonly>
+              </div>
+
+              <div class="field-group">
+                <label>Creato da</label>
+                <input type="text" id="ticketCreator" readonly>
+              </div>
+
+              <div class="field-group">
+                <label>Data creazione</label>
+                <input type="text" id="ticketCreatedAt" readonly>
+              </div>
+
+              <div class="field-group">
+                <label>Stato</label>
+                <span id="ticketStatusBadge" class="ticket-status-badge ticket-status-open">-</span>
+              </div>
+
+              <div class="ticket-detail-actions">
+                <!-- Tasto modifica riservato a futuri sviluppi -->
+                <button class="btn btn-secondary" id="btnEditTicket" style="display:none;">Modifica</button>
+                <button class="btn btn-danger" id="btnCloseTicket">Chiudi ticket</button>
+              </div>
+            </div>
+
+            <div class="ticket-detail-header-row">
+              <div class="field-group">
+                <label>VIN</label>
+                <input type="text" id="ticketVin" readonly>
+              </div>
+
+              <div class="field-group">
+                <label>Targa</label>
+                <input type="text" id="ticketPlate" readonly>
+              </div>
+
+              <div class="field-group">
+                <label>Km</label>
+                <input type="number" id="ticketKm" readonly>
+              </div>
+
+              <div class="field-group">
+                <label>Ore motore</label>
+                <input type="number" id="ticketEngineHours" readonly>
+              </div>
+
+              <div class="field-group wide">
+                <label>Reparto</label>
+                <select id="ticketDepartment" disabled>
+                  <!-- Opzioni reparti -->
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CORPO RICHIESTA INIZIALE -->
+        <div class="ticket-body-container" id="ticketBodyContainer" style="display:none;">
+          <div>
+            <strong>Richiesta iniziale:</strong>
+            <div id="ticketBodyText"></div>
+          </div>
+          <div style="margin-top:6px;">
+            <strong>Richiesta di garanzia:</strong>
+            <div id="ticketWarrantyRequestText"></div>
+          </div>
+        </div>
+
+        <!-- CHAT -->
+        <div class="ticket-chat-container">
+          <div class="chat-messages" id="chatMessages">
+            <!-- Messaggi caricati da JS -->
+          </div>
+
+          <div class="chat-input-area">
+            <textarea id="chatMessageInput" placeholder="Scrivi una risposta..."></textarea>
+
+            <div class="chat-input-actions">
+              <!-- File, per ora non gestiti in JS (ma già pronti) -->
+              <input type="file" id="chatFileInput" multiple>
+              <button class="btn btn-primary" id="btnSendMessage">Invia</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGICA JS -->
+  <script src="FTHOTLINE.js"></script>
+</body>
+</html>
