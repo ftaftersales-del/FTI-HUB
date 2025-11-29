@@ -153,14 +153,33 @@ async function loadCurrentUserProfile() {
   const data = snap.data() || {};
   currentUserData = data;
 
-  // supporta sia dealerId che dealerID
-  currentDealerId = data.dealerId || data.dealerID || null;
-  currentRole     = data.role || "User";
-  isDistributor   = currentDealerId === "FT001";
+  // supporta dealerId, dealerID, DealerID, DealerId
+  currentDealerId =
+    data.dealerId ||
+    data.dealerID ||
+    data.DealerID ||
+    data.DealerId ||
+    null;
+
+  currentRole   = data.role || "User";
+  isDistributor = currentDealerId === "FT001";
 
   const displayName = data.displayName || currentUser.email || "(utente)";
   currentUserInfoEl.textContent =
     `${displayName} - Dealer ${currentDealerId || "-"} - Ruolo: ${currentRole}`;
+
+  console.log("Profilo utente FTHOTLINE:", {
+    uid: currentUser.uid,
+    dealerFromDoc: {
+      dealerId: data.dealerId,
+      dealerID: data.dealerID,
+      DealerID: data.DealerID,
+      DealerId: data.DealerId,
+    },
+    currentDealerId,
+    currentRole,
+    isDistributor,
+  });
 }
 
 // ================== REPARTI HOTLINE ==================
@@ -246,7 +265,7 @@ function fillNewTicketDepartmentSelect() {
 
 // ================== TICKET: SUBSCRIBE & RENDER ==================
 function subscribeTickets() {
-  if (!currentDealerId) {
+  if (!currentDealerId && !isDistributor) {
     console.warn("Nessun dealerId, impossibile caricare i ticket.");
     return;
   }
