@@ -5,10 +5,10 @@ if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
-// Usiamo istanze locali per evitare conflitto con "auth" e "db" globali
-const hotlineAuth     = firebase.auth();
-const hotlineDb       = firebase.firestore();
-const hotlineStorage  = firebase.storage ? firebase.storage() : null; // per gli allegati in futuro
+// Istanze locali per evitare conflitti con altre pagine
+const hotlineAuth    = firebase.auth();
+const hotlineDb      = firebase.firestore();
+const hotlineStorage = firebase.storage ? firebase.storage() : null; // per allegati
 
 // ================== STATO GLOBALE ==================
 let currentUser       = null;
@@ -70,7 +70,7 @@ window.addEventListener("load", () => {
   ticketEngineHoursInput = document.getElementById("ticketEngineHours");
   ticketDepartmentSelect = document.getElementById("ticketDepartment");
 
-  ticketBodyTextEl           = document.getElementById("ticketBodyText");
+  ticketBodyTextEl            = document.getElementById("ticketBodyText");
   ticketWarrantyRequestTextEl = document.getElementById("ticketWarrantyRequestText");
 
   // chat
@@ -460,7 +460,7 @@ function clearTicketDetail() {
   ticketEngineHoursInput.value = "";
   ticketDepartmentSelect.value = "";
 
-  ticketBodyTextEl.textContent           = "";
+  ticketBodyTextEl.textContent            = "";
   ticketWarrantyRequestTextEl.textContent = "";
 
   chatMessagesEl.innerHTML   = "";
@@ -499,7 +499,7 @@ function renderTicketDetail(ticket) {
   ticketEngineHoursInput.value = ticket.engineHours != null ? ticket.engineHours : "";
   ticketDepartmentSelect.value = ticket.departmentId || "";
 
-  ticketBodyTextEl.textContent           = ticket.body || "";
+  ticketBodyTextEl.textContent            = ticket.body || "";
   ticketWarrantyRequestTextEl.textContent = ticket.warrantyRequest || "";
 
   const isClosed = ticket.status === "closed";
@@ -575,6 +575,28 @@ function renderMessages(messages) {
     bubble.appendChild(metaDiv);
     bubble.appendChild(textDiv);
 
+    // --- ALLEGATI (se presenti) ---
+    if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
+      const attDiv = document.createElement("div");
+      attDiv.className = "chat-attachments";
+      attDiv.style.marginTop = "4px";
+      attDiv.style.fontSize = "11px";
+      attDiv.textContent = "Allegati: ";
+
+      msg.attachments.forEach((att, idx) => {
+        if (!att.downloadUrl || !att.fileName) return;
+        const link = document.createElement("a");
+        link.href = att.downloadUrl;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.textContent = att.fileName;
+        link.style.marginRight = "8px";
+        attDiv.appendChild(link);
+      });
+
+      bubble.appendChild(attDiv);
+    }
+
     row.appendChild(bubble);
     chatMessagesEl.appendChild(row);
   });
@@ -615,7 +637,35 @@ async function onSendMessageClick() {
   btnSendMessage.disabled = true;
 
   try {
-    const attachments = []; // upload file lo gestiremo in seguito
+    // ===== Upload allegati su Storage =====
+    let attachments = [];
+
+    if (files && files.length > 0) {
+      if (!hotlineStorage) {
+        alert("Funzione allegati non disponibile (Storage non inizializzato).");
+      } else {
+        const uploadPromises = [];
+        const filesArray = Array.from(files);
+
+        filesArray.forEach((file, index) => {
+          const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+          const path = `hotlineAttachments/${selectedTicketId}/${Date.now()}_${index}_${safeName}`;
+          const ref = hotlineStorage.ref().child(path);
+
+          const p = ref
+            .put(file)
+            .then((snapshot) => snapshot.ref.getDownloadURL())
+            .then((url) => ({
+              fileName: file.name,
+              downloadUrl: url,
+            }));
+
+          uploadPromises.push(p);
+        });
+
+        attachments = await Promise.all(uploadPromises);
+      }
+    }
 
     const displayName =
       currentUserData.displayName || currentUser.email || "(utente)";
