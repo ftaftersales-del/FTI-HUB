@@ -6,16 +6,16 @@ if (!firebase.apps.length) {
 }
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage();
+const storage = firebase.storage(); // per allegati in futuro
 
 // ================== STATO GLOBALE ==================
 let currentUser = null;
 let currentUserData = null;   // doc in "Users"
 let currentDealerId = null;
-let currentUserRoles = [];    // es. ["Admin"]
+let currentRole = "User";
 let isDistributor = false;    // dealerId === "FT001"
 
-let hotlineDepartments = [];  // {id, code, name, allowedRoles, order}
+let hotlineDepartments = [];  // {id, code, name, order}
 let hotlineTickets = [];      // lista ticket visibili
 let selectedTicketId = null;
 
@@ -24,7 +24,7 @@ let messagesUnsubscribe = null;
 
 // DOM refs
 let currentUserInfoEl;
-let searchInput, statusFilter, departmentFilter, ticketsList;
+let searchInput, statusFilter, departmentFilter, authorFilter, ticketsList;
 let noTicketSelectedMessage, ticketHeaderContent, ticketBodyContainer;
 let ticketCodeInput, ticketSubjectInput, ticketDealerInput, ticketCreatorInput, ticketCreatedAtInput;
 let ticketStatusBadge, ticketVinInput, ticketPlateInput, ticketKmInput, ticketEngineHoursInput, ticketDepartmentSelect;
@@ -44,59 +44,61 @@ window.addEventListener("load", () => {
   currentUserInfoEl = document.getElementById("currentUserInfo");
 
   // pannello sinistro
-  searchInput = document.getElementById("searchInput");
-  statusFilter = document.getElementById("statusFilter");
-  departmentFilter = document.getElementById("departmentFilter");
-  ticketsList = document.getElementById("ticketsList");
+  searchInput        = document.getElementById("searchInput");
+  statusFilter       = document.getElementById("statusFilter");
+  departmentFilter   = document.getElementById("departmentFilter");
+  authorFilter       = document.getElementById("authorFilter"); // può anche non esistere
+  ticketsList        = document.getElementById("ticketsList");
 
   // dettaglio ticket
   noTicketSelectedMessage = document.getElementById("noTicketSelectedMessage");
-  ticketHeaderContent = document.getElementById("ticketHeaderContent");
-  ticketBodyContainer = document.getElementById("ticketBodyContainer");
+  ticketHeaderContent     = document.getElementById("ticketHeaderContent");
+  ticketBodyContainer     = document.getElementById("ticketBodyContainer");
 
-  ticketCodeInput = document.getElementById("ticketCode");
-  ticketSubjectInput = document.getElementById("ticketSubject");
-  ticketDealerInput = document.getElementById("ticketDealer");
-  ticketCreatorInput = document.getElementById("ticketCreator");
+  ticketCodeInput      = document.getElementById("ticketCode");
+  ticketSubjectInput   = document.getElementById("ticketSubject");
+  ticketDealerInput    = document.getElementById("ticketDealer");
+  ticketCreatorInput   = document.getElementById("ticketCreator");
   ticketCreatedAtInput = document.getElementById("ticketCreatedAt");
-  ticketStatusBadge = document.getElementById("ticketStatusBadge");
+  ticketStatusBadge    = document.getElementById("ticketStatusBadge");
 
-  ticketVinInput = document.getElementById("ticketVin");
-  ticketPlateInput = document.getElementById("ticketPlate");
-  ticketKmInput = document.getElementById("ticketKm");
+  ticketVinInput         = document.getElementById("ticketVin");
+  ticketPlateInput       = document.getElementById("ticketPlate");
+  ticketKmInput          = document.getElementById("ticketKm");
   ticketEngineHoursInput = document.getElementById("ticketEngineHours");
   ticketDepartmentSelect = document.getElementById("ticketDepartment");
 
-  ticketBodyTextEl = document.getElementById("ticketBodyText");
+  ticketBodyTextEl          = document.getElementById("ticketBodyText");
   ticketWarrantyRequestTextEl = document.getElementById("ticketWarrantyRequestText");
 
   // chat
-  chatMessagesEl = document.getElementById("chatMessages");
+  chatMessagesEl   = document.getElementById("chatMessages");
   chatMessageInput = document.getElementById("chatMessageInput");
-  chatFileInput = document.getElementById("chatFileInput");
+  chatFileInput    = document.getElementById("chatFileInput");
 
-  btnNewTicket = document.getElementById("btnNewTicket");
+  btnNewTicket   = document.getElementById("btnNewTicket");
   btnCloseTicket = document.getElementById("btnCloseTicket");
   btnSendMessage = document.getElementById("btnSendMessage");
 
   // modale nuovo ticket
-  newTicketModal = document.getElementById("newTicketModal");
-  newTicketSubjectInput = document.getElementById("newTicketSubject");
-  newTicketDepartmentSelect = document.getElementById("newTicketDepartment");
-  newTicketVinInput = document.getElementById("newTicketVin");
-  newTicketPlateInput = document.getElementById("newTicketPlate");
-  newTicketKmInput = document.getElementById("newTicketKm");
-  newTicketEngineHoursInput = document.getElementById("newTicketEngineHours");
-  newTicketWarrantyInput = document.getElementById("newTicketWarranty");
-  newTicketBodyInput = document.getElementById("newTicketBody");
-  newTicketErrorEl = document.getElementById("newTicketError");
-  newTicketCancelBtn = document.getElementById("newTicketCancel");
-  newTicketSubmitBtn = document.getElementById("newTicketSubmit");
+  newTicketModal             = document.getElementById("newTicketModal");
+  newTicketSubjectInput      = document.getElementById("newTicketSubject");
+  newTicketDepartmentSelect  = document.getElementById("newTicketDepartment");
+  newTicketVinInput          = document.getElementById("newTicketVin");
+  newTicketPlateInput        = document.getElementById("newTicketPlate");
+  newTicketKmInput           = document.getElementById("newTicketKm");
+  newTicketEngineHoursInput  = document.getElementById("newTicketEngineHours");
+  newTicketWarrantyInput     = document.getElementById("newTicketWarranty");
+  newTicketBodyInput         = document.getElementById("newTicketBody");
+  newTicketErrorEl           = document.getElementById("newTicketError");
+  newTicketCancelBtn         = document.getElementById("newTicketCancel");
+  newTicketSubmitBtn         = document.getElementById("newTicketSubmit");
 
   // Eventi filtri/lista
-  searchInput.addEventListener("input", renderTicketsList);
-  statusFilter.addEventListener("change", renderTicketsList);
-  departmentFilter.addEventListener("change", renderTicketsList);
+  if (searchInput)      searchInput.addEventListener("input", renderTicketsList);
+  if (statusFilter)     statusFilter.addEventListener("change", renderTicketsList);
+  if (departmentFilter) departmentFilter.addEventListener("change", renderTicketsList);
+  if (authorFilter)     authorFilter.addEventListener("change", renderTicketsList);
 
   // Eventi azioni
   btnNewTicket.addEventListener("click", onNewTicketClick);
@@ -112,7 +114,7 @@ window.addEventListener("load", () => {
       currentUser = null;
       currentUserData = null;
       currentDealerId = null;
-      currentUserRoles = [];
+      currentRole = "User";
       isDistributor = false;
       currentUserInfoEl.textContent = "Non autenticato";
       clearTickets();
@@ -142,23 +144,23 @@ async function loadCurrentUserProfile() {
     console.warn("Documento Users non trovato per uid:", uid);
     currentUserData = null;
     currentDealerId = null;
-    currentUserRoles = [];
+    currentRole = "User";
     isDistributor = false;
     currentUserInfoEl.textContent = "[Utente senza profilo Users]";
     return;
   }
 
-  const data = snap.data();
+  const data = snap.data() || {};
   currentUserData = data;
 
-  currentDealerId = data.dealerId || null;
-  const roleId = data.role || "User";
-  currentUserRoles = [roleId];
-  isDistributor = currentDealerId === "FT001";
+  // supporta sia dealerId che dealerID
+  currentDealerId = data.dealerId || data.dealerID || null;
+  currentRole     = data.role || "User";
+  isDistributor   = currentDealerId === "FT001";
 
   const displayName = data.displayName || currentUser.email || "(utente)";
   currentUserInfoEl.textContent =
-    `${displayName} - Dealer ${currentDealerId || "-"} - Ruolo: ${roleId}`;
+    `${displayName} - Dealer ${currentDealerId || "-"} - Ruolo: ${currentRole}`;
 }
 
 // ================== REPARTI HOTLINE ==================
@@ -166,28 +168,20 @@ async function loadDepartments() {
   hotlineDepartments = [];
 
   try {
-    // i documenti hanno: code, name, order, allowedRoles (array)
     const snap = await db.collection("HotlineDepartments")
       .orderBy("order", "asc")
       .get();
 
     snap.forEach((doc) => {
       const data = doc.data() || {};
-
-      const allowed = Array.isArray(data.allowedRoles)
-        ? data.allowedRoles
-        : [];
-
       hotlineDepartments.push({
         id: doc.id,
         code: data.code || "",
         name: data.name || "",
-        allowedRoles: allowed,
         order: data.order || 0,
       });
     });
 
-    // riempi le combo
     fillDepartmentFilterSelect();
     fillTicketDepartmentSelect();
     fillNewTicketDepartmentSelect();
@@ -200,8 +194,9 @@ async function loadDepartments() {
 }
 
 function fillDepartmentFilterSelect() {
-  departmentFilter.innerHTML = "";
+  if (!departmentFilter) return;
 
+  departmentFilter.innerHTML = "";
   const optAll = document.createElement("option");
   optAll.value = "";
   optAll.textContent = "Tutti i reparti";
@@ -263,16 +258,9 @@ function subscribeTickets() {
 
   let query = db.collection("HotlineTickets");
 
-  if (isDistributor) {
-    // distributore: per ruolo, sui departmentRoles
-    if (currentUserRoles.length > 0) {
-      query = query.where("departmentRoles", "array-contains-any", currentUserRoles);
-    } else {
-      // nessun ruolo → nessun risultato
-      query = query.where("departmentId", "==", "__none__");
-    }
-  } else {
-    // dealer: solo ticket del proprio dealer
+  // Dealer: solo ticket del proprio dealer
+  // Distributore: tutti i ticket
+  if (!isDistributor) {
     query = query.where("dealerId", "==", currentDealerId);
   }
 
@@ -287,14 +275,14 @@ function subscribeTickets() {
 
       console.log("Ticket hotline caricati:", hotlineTickets.length);
       renderTicketsList();
+      updateAuthorFilterOptions();
 
       if (selectedTicketId) {
-        const stillExists = hotlineTickets.some((t) => t.id === selectedTicketId);
-        if (!stillExists) {
-          clearTicketDetail();
+        const t = hotlineTickets.find((tt) => tt.id === selectedTicketId);
+        if (t) {
+          renderTicketDetail(t);
         } else {
-          const t = hotlineTickets.find((tt) => tt.id === selectedTicketId);
-          if (t) renderTicketDetail(t);
+          clearTicketDetail();
         }
       }
     },
@@ -305,14 +293,48 @@ function subscribeTickets() {
   );
 }
 
+function updateAuthorFilterOptions() {
+  if (!authorFilter) return;
+
+  const previous = authorFilter.value;
+  authorFilter.innerHTML = "";
+
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "Tutti gli autori";
+  authorFilter.appendChild(optAll);
+
+  const map = {};
+  hotlineTickets.forEach((t) => {
+    if (!t.creatorUid) return;
+    const k = t.creatorUid;
+    if (!map[k]) {
+      map[k] = t.creatorName || t.creatorUid;
+    }
+  });
+
+  Object.keys(map).forEach((uid) => {
+    const opt = document.createElement("option");
+    opt.value = uid;
+    opt.textContent = map[uid];
+    authorFilter.appendChild(opt);
+  });
+
+  const exists = Array.from(authorFilter.options).some(
+    (o) => o.value === previous
+  );
+  if (exists) authorFilter.value = previous;
+}
+
 function renderTicketsList() {
   ticketsList.innerHTML = "";
 
-  const search = (searchInput.value || "").trim().toLowerCase();
-  const statusVal = statusFilter.value;
-  const depVal = departmentFilter.value;
-
   let filtered = hotlineTickets.slice();
+
+  const search    = (searchInput?.value || "").trim().toLowerCase();
+  const statusVal = statusFilter?.value || "";
+  const depVal    = departmentFilter?.value || "";
+  const authorVal = authorFilter?.value || "";
 
   if (statusVal) {
     filtered = filtered.filter((t) => t.status === statusVal);
@@ -322,12 +344,16 @@ function renderTicketsList() {
     filtered = filtered.filter((t) => t.departmentId === depVal);
   }
 
+  if (authorVal) {
+    filtered = filtered.filter((t) => t.creatorUid === authorVal);
+  }
+
   if (search) {
     filtered = filtered.filter((t) => {
-      const code = (t.ticketCode || "").toLowerCase();
+      const code    = (t.ticketCode || "").toLowerCase();
       const subject = (t.subject || "").toLowerCase();
-      const vin = (t.vin || "").toLowerCase();
-      const plate = (t.plate || "").toLowerCase();
+      const vin     = (t.vin || "").toLowerCase();
+      const plate   = (t.plate || "").toLowerCase();
       return (
         code.includes(search) ||
         subject.includes(search) ||
@@ -361,14 +387,15 @@ function renderTicketsList() {
 
     const metaDiv = document.createElement("div");
     metaDiv.className = "ticket-item-meta";
+
     const dealerText = isDistributor ? `Dealer ${t.dealerId || ""}` : "";
     const statusLabel = getStatusLabelForUser(t.status);
     const createdAt =
       t.createdAt && t.createdAt.toDate ? t.createdAt.toDate() : null;
     const dateStr = createdAt ? formatDateTimeShort(createdAt) : "";
-    metaDiv.textContent = `${dealerText} ${
-      statusLabel ? "- " + statusLabel : ""
-    } ${dateStr ? "- " + dateStr : ""}`;
+
+    metaDiv.textContent =
+      `${dealerText} ${statusLabel ? "- " + statusLabel : ""} ${dateStr ? "- " + dateStr : ""}`;
 
     item.appendChild(codeDiv);
     item.appendChild(subjectDiv);
@@ -443,10 +470,11 @@ function renderTicketDetail(ticket) {
   ticketHeaderContent.style.display = "";
   ticketBodyContainer.style.display = "";
 
-  ticketCodeInput.value = ticket.ticketCode || "";
+  ticketCodeInput.value    = ticket.ticketCode || "";
   ticketSubjectInput.value = ticket.subject || "";
-  ticketDealerInput.value = ticket.dealerId || "";
+  ticketDealerInput.value  = ticket.dealerId || "";
   ticketCreatorInput.value = ticket.creatorName || "";
+
   const createdAt =
     ticket.createdAt && ticket.createdAt.toDate
       ? ticket.createdAt.toDate()
@@ -462,21 +490,20 @@ function renderTicketDetail(ticket) {
   );
   if (statusInfo.cssClass) ticketStatusBadge.classList.add(statusInfo.cssClass);
 
-  ticketVinInput.value = ticket.vin || "";
-  ticketPlateInput.value = ticket.plate || "";
-  ticketKmInput.value = ticket.km != null ? ticket.km : "";
-  ticketEngineHoursInput.value =
-    ticket.engineHours != null ? ticket.engineHours : "";
+  ticketVinInput.value         = ticket.vin || "";
+  ticketPlateInput.value       = ticket.plate || "";
+  ticketKmInput.value          = ticket.km != null ? ticket.km : "";
+  ticketEngineHoursInput.value = ticket.engineHours != null ? ticket.engineHours : "";
   ticketDepartmentSelect.value = ticket.departmentId || "";
 
-  ticketBodyTextEl.textContent = ticket.body || "";
+  ticketBodyTextEl.textContent          = ticket.body || "";
   ticketWarrantyRequestTextEl.textContent = ticket.warrantyRequest || "";
 
   const isClosed = ticket.status === "closed";
-  btnCloseTicket.disabled = isClosed;
+  btnCloseTicket.disabled   = isClosed;
   chatMessageInput.disabled = isClosed;
-  chatFileInput.disabled = isClosed;
-  btnSendMessage.disabled = isClosed;
+  chatFileInput.disabled    = isClosed;
+  btnSendMessage.disabled   = isClosed;
   btnCloseTicket.textContent = isClosed ? "Ticket chiuso" : "Chiudi ticket";
 }
 
@@ -521,8 +548,7 @@ function renderMessages(messages) {
     const row = document.createElement("div");
     row.className = "chat-message-row";
 
-    const fromDistributor =
-      msg.authorIsDistributor === true || msg.authorDealerId === "FT001";
+    const fromDistributor = msg.authorDealerId === "FT001";
     row.classList.add(fromDistributor ? "distributor" : "dealer");
 
     const bubble = document.createElement("div");
@@ -532,7 +558,7 @@ function renderMessages(messages) {
     metaDiv.className = "chat-meta";
 
     const authorName = msg.authorName || "Sconosciuto";
-    const dealerId = msg.authorDealerId || "";
+    const dealerId   = msg.authorDealerId || "";
     const createdAt =
       msg.createdAt && msg.createdAt.toDate ? msg.createdAt.toDate() : null;
     const dateStr = createdAt ? formatDateTimeShort(createdAt) : "";
@@ -545,22 +571,6 @@ function renderMessages(messages) {
 
     bubble.appendChild(metaDiv);
     bubble.appendChild(textDiv);
-
-    if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
-      const attDiv = document.createElement("div");
-      attDiv.className = "chat-attachments";
-      attDiv.textContent = "Allegati: ";
-      msg.attachments.forEach((att) => {
-        if (!att.downloadUrl || !att.fileName) return;
-        const link = document.createElement("a");
-        link.href = att.downloadUrl;
-        link.target = "_blank";
-        link.rel = "noopener";
-        link.textContent = att.fileName;
-        attDiv.appendChild(link);
-      });
-      bubble.appendChild(attDiv);
-    }
 
     row.appendChild(bubble);
     chatMessagesEl.appendChild(row);
@@ -586,7 +596,7 @@ async function onSendMessageClick() {
     return;
   }
 
-  const text = (chatMessageInput.value || "").trim();
+  const text  = (chatMessageInput.value || "").trim();
   const files = chatFileInput.files;
 
   if (!text && (!files || files.length === 0)) {
@@ -611,7 +621,6 @@ async function onSendMessageClick() {
       authorUid: currentUser.uid,
       authorName: displayName,
       authorDealerId: currentDealerId,
-      authorIsDistributor: isDistributor,
       text: text,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       attachments: attachments,
@@ -685,15 +694,15 @@ function onNewTicketClick() {
     return;
   }
 
-  newTicketSubjectInput.value = "";
+  newTicketSubjectInput.value     = "";
   newTicketDepartmentSelect.value = "";
-  newTicketVinInput.value = "";
-  newTicketPlateInput.value = "";
-  newTicketKmInput.value = "";
+  newTicketVinInput.value         = "";
+  newTicketPlateInput.value       = "";
+  newTicketKmInput.value          = "";
   newTicketEngineHoursInput.value = "";
-  newTicketWarrantyInput.value = "";
-  newTicketBodyInput.value = "";
-  newTicketErrorEl.textContent = "";
+  newTicketWarrantyInput.value    = "";
+  newTicketBodyInput.value        = "";
+  newTicketErrorEl.textContent    = "";
 
   newTicketModal.style.display = "flex";
 }
@@ -717,14 +726,14 @@ async function submitNewTicket() {
     return;
   }
 
-  const subject = (newTicketSubjectInput.value || "").trim();
+  const subject        = (newTicketSubjectInput.value || "").trim();
   const departmentCode = newTicketDepartmentSelect.value;
-  const vin = (newTicketVinInput.value || "").trim();
-  const plate = (newTicketPlateInput.value || "").trim();
-  const kmStr = (newTicketKmInput.value || "").trim();
-  const engineHoursStr = (newTicketEngineHoursInput.value || "").trim();
-  const warranty = (newTicketWarrantyInput.value || "").trim();
-  const body = (newTicketBodyInput.value || "").trim();
+  const vin            = (newTicketVinInput.value || "").trim();
+  const plate          = (newTicketPlateInput.value || "").trim();
+  const kmStr          = (newTicketKmInput.value || "").trim();
+  const engineStr      = (newTicketEngineHoursInput.value || "").trim();
+  const warranty       = (newTicketWarrantyInput.value || "").trim();
+  const body           = (newTicketBodyInput.value || "").trim();
 
   if (!subject) {
     newTicketErrorEl.textContent = "L'oggetto è obbligatorio.";
@@ -745,8 +754,8 @@ async function submitNewTicket() {
     return;
   }
 
-  const km = kmStr ? Number(kmStr) : null;
-  const engineHours = engineHoursStr ? Number(engineHoursStr) : null;
+  const km          = kmStr ? Number(kmStr) : null;
+  const engineHours = engineStr ? Number(engineStr) : null;
   const displayName =
     currentUserData.displayName || currentUser.email || "(utente)";
 
@@ -769,7 +778,6 @@ async function submitNewTicket() {
 
     departmentId: dep.code,
     departmentName: dep.name,
-    departmentRoles: dep.allowedRoles || [],
 
     status: "open_waiting_distributor",
     lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
@@ -796,10 +804,10 @@ function getStatusLabelForUser(status) {
 
   if (isDistributor) {
     if (status === "open_waiting_distributor") return "In attesa";
-    if (status === "open_waiting_dealer") return "Gestita";
+    if (status === "open_waiting_dealer")       return "Gestita";
   } else {
     if (status === "open_waiting_distributor") return "Inviata";
-    if (status === "open_waiting_dealer") return "In attesa";
+    if (status === "open_waiting_dealer")       return "In attesa";
   }
   return status || "";
 }
@@ -808,9 +816,9 @@ function getStatusLabelAndClass(status) {
   let label = getStatusLabelForUser(status);
   let cssClass = "";
 
-  if (status === "closed") cssClass = "ticket-status-closed";
+  if (status === "closed")                  cssClass = "ticket-status-closed";
   else if (status === "open_waiting_distributor") cssClass = "ticket-status-open";
-  else if (status === "open_waiting_dealer") cssClass = "ticket-status-waiting";
+  else if (status === "open_waiting_dealer")      cssClass = "ticket-status-waiting";
 
   return { label, cssClass };
 }
@@ -821,9 +829,9 @@ function pad2(n) {
 
 function formatDateTime(date) {
   if (!date) return "";
-  const d = pad2(date.getDate());
-  const m = pad2(date.getMonth() + 1);
-  const y = date.getFullYear();
+  const d  = pad2(date.getDate());
+  const m  = pad2(date.getMonth() + 1);
+  const y  = date.getFullYear();
   const hh = pad2(date.getHours());
   const mm = pad2(date.getMinutes());
   return `${d}/${m}/${y} ${hh}:${mm}`;
@@ -831,8 +839,8 @@ function formatDateTime(date) {
 
 function formatDateTimeShort(date) {
   if (!date) return "";
-  const d = pad2(date.getDate());
-  const m = pad2(date.getMonth() + 1);
+  const d  = pad2(date.getDate());
+  const m  = pad2(date.getMonth() + 1);
   const hh = pad2(date.getHours());
   const mm = pad2(date.getMinutes());
   return `${d}/${m} ${hh}:${mm}`;
