@@ -1,7 +1,7 @@
 // ================== FTHOTLINE.js ==================
 //
-// Gestione ticket Hotline con vista "tipo chat"
-// =================================================
+// Gestione ticket Hotline tipo chat
+// ===============================================
 
 // -------- INIT FIREBASE --------
 if (!firebase.apps.length) {
@@ -9,17 +9,17 @@ if (!firebase.apps.length) {
 }
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage(); // per futuri allegati
+const storage = firebase.storage(); // per allegati futuri
 
 // -------- STATO GLOBALE --------
 let currentUser = null;
-let currentUserData = null;   // doc in "Users"
+let currentUserData = null;
 let currentDealerId = null;
 let currentRole = "User";
-let isDistributor = false;    // dealerId === "FT001"
+let isDistributor = false;
 
-let hotlineDepartments = [];  // [{id, code, name, order}]
-let hotlineTickets = [];      // [{id, ...data}]
+let hotlineDepartments = [];
+let hotlineTickets = [];
 let selectedTicketId = null;
 
 let ticketsUnsubscribe = null;
@@ -53,7 +53,7 @@ window.addEventListener("load", () => {
   authorFilter     = document.getElementById("authorFilter");
   ticketsList      = document.getElementById("ticketsList");
 
-  // dettaglio / header
+  // dettaglio
   noTicketSelectedMessage = document.getElementById("noTicketSelectedMessage");
   ticketHeaderContent     = document.getElementById("ticketHeaderContent");
   ticketBodyContainer     = document.getElementById("ticketBodyContainer");
@@ -97,21 +97,21 @@ window.addEventListener("load", () => {
   newTicketCancelBtn        = document.getElementById("newTicketCancel");
   newTicketSubmitBtn        = document.getElementById("newTicketSubmit");
 
-  // ---- Eventi filtri/lista ----
+  // --- Eventi filtri (tutti protetti da if) ---
   if (searchInput)      searchInput.addEventListener("input", renderTicketsList);
   if (statusFilter)     statusFilter.addEventListener("change", renderTicketsList);
   if (departmentFilter) departmentFilter.addEventListener("change", renderTicketsList);
   if (authorFilter)     authorFilter.addEventListener("change", renderTicketsList);
 
-  // ---- Eventi azioni ----
-  btnNewTicket.addEventListener("click", onNewTicketClick);
-  btnCloseTicket.addEventListener("click", onCloseTicketClick);
-  btnSendMessage.addEventListener("click", onSendMessageClick);
+  // --- Eventi azioni (protetti) ---
+  if (btnNewTicket)   btnNewTicket.addEventListener("click", onNewTicketClick);
+  if (btnCloseTicket) btnCloseTicket.addEventListener("click", onCloseTicketClick);
+  if (btnSendMessage) btnSendMessage.addEventListener("click", onSendMessageClick);
 
-  newTicketCancelBtn.addEventListener("click", closeNewTicketModal);
-  newTicketSubmitBtn.addEventListener("click", submitNewTicket);
+  if (newTicketCancelBtn) newTicketCancelBtn.addEventListener("click", closeNewTicketModal);
+  if (newTicketSubmitBtn) newTicketSubmitBtn.addEventListener("click", submitNewTicket);
 
-  // ---- Listener autenticazione ----
+  // Listener auth
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
       currentUser = null;
@@ -119,9 +119,7 @@ window.addEventListener("load", () => {
       currentDealerId = null;
       currentRole = "User";
       isDistributor = false;
-      if (currentUserInfoEl) {
-        currentUserInfoEl.textContent = "Non autenticato";
-      }
+      if (currentUserInfoEl) currentUserInfoEl.textContent = "Non autenticato";
       clearTickets();
       return;
     }
@@ -139,7 +137,7 @@ window.addEventListener("load", () => {
   });
 });
 
-// ================== PROFILO UTENTE (Users) ==================
+// ================== PROFILO UTENTE ==================
 async function loadCurrentUserProfile() {
   const uid = currentUser.uid;
   const docRef = db.collection("Users").doc(uid);
@@ -151,16 +149,13 @@ async function loadCurrentUserProfile() {
     currentDealerId = null;
     currentRole = "User";
     isDistributor = false;
-    if (currentUserInfoEl) {
-      currentUserInfoEl.textContent = "[Profilo Users mancante]";
-    }
+    if (currentUserInfoEl) currentUserInfoEl.textContent = "[Profilo Users mancante]";
     return;
   }
 
   const data = snap.data() || {};
   currentUserData = data;
 
-  // supporta sia dealerId che dealerID, come negli altri moduli
   currentDealerId = data.dealerId || data.dealerID || null;
   currentRole     = data.role || "User";
   isDistributor   = currentDealerId === "FT001";
@@ -174,7 +169,7 @@ async function loadCurrentUserProfile() {
   console.log("Profilo utente:", { currentDealerId, currentRole, isDistributor });
 }
 
-// ================== REPARTI HOTLINE ==================
+// ================== REPARTI ==================
 async function loadDepartments() {
   hotlineDepartments = [];
 
@@ -237,7 +232,7 @@ function fillTicketDepartmentSelect() {
     ticketDepartmentSelect.appendChild(opt);
   });
 
-  ticketDepartmentSelect.disabled = true; // solo lettura
+  ticketDepartmentSelect.disabled = true;
 }
 
 function fillNewTicketDepartmentSelect() {
@@ -258,21 +253,15 @@ function fillNewTicketDepartmentSelect() {
 }
 
 // ================== TICKET: SUBSCRIBE & RENDER ==================
+
+// PER ORA: nessun filtro lato Firestore, leggiamo TUTTI i ticket
 function subscribeTickets() {
   if (ticketsUnsubscribe) {
     ticketsUnsubscribe();
     ticketsUnsubscribe = null;
   }
 
-  // Dealer = solo ticket del proprio dealer
-  // Distributore = tutti i ticket
-  let query = db.collection("HotlineTickets");
-  if (!isDistributor && currentDealerId) {
-    query = query.where("dealerId", "==", currentDealerId);
-  }
-
-  // uso createdAt per evitare rogne di indice
-  query = query.orderBy("createdAt", "desc");
+  const query = db.collection("HotlineTickets");
 
   ticketsUnsubscribe = query.onSnapshot(
     (snap) => {
@@ -311,9 +300,7 @@ function updateAuthorFilterOptions() {
   hotlineTickets.forEach((t) => {
     if (!t.creatorUid) return;
     const k = t.creatorUid;
-    if (!map[k]) {
-      map[k] = t.creatorName || t.creatorUid;
-    }
+    if (!map[k]) map[k] = t.creatorName || t.creatorUid;
   });
 
   Object.keys(map).forEach((uid) => {
@@ -439,8 +426,8 @@ function clearTicketDetail() {
   }
 
   noTicketSelectedMessage.style.display = "";
-  ticketHeaderContent.style.display = "none";
-  ticketBodyContainer.style.display = "none";
+  ticketHeaderContent.style.display     = "none";
+  ticketBodyContainer.style.display     = "none";
 
   ticketCodeInput.value      = "";
   ticketSubjectInput.value   = "";
@@ -498,11 +485,11 @@ function renderTicketDetail(ticket) {
   ticketWarrantyRequestTextEl.textContent = ticket.warrantyRequest || "";
 
   const isClosed = ticket.status === "closed";
-  btnCloseTicket.disabled   = isClosed;
-  chatMessageInput.disabled = isClosed;
-  chatFileInput.disabled    = isClosed;
-  btnSendMessage.disabled   = isClosed;
-  btnCloseTicket.textContent = isClosed ? "Ticket chiuso" : "Chiudi ticket";
+  if (btnCloseTicket)   btnCloseTicket.disabled   = isClosed;
+  if (chatMessageInput) chatMessageInput.disabled = isClosed;
+  if (chatFileInput)    chatFileInput.disabled    = isClosed;
+  if (btnSendMessage)   btnSendMessage.disabled   = isClosed;
+  if (btnCloseTicket)   btnCloseTicket.textContent = isClosed ? "Ticket chiuso" : "Chiudi ticket";
 }
 
 // ================== CHAT ==================
@@ -524,7 +511,7 @@ function subscribeMessages(ticketId) {
       renderMessages(messages);
     },
     (err) => {
-      console.error("Errore subscribe messaggi hotline:", err);
+      console.error("Errore subscribe messages hotline:", err);
     }
   );
 }
@@ -556,10 +543,9 @@ function renderMessages(messages) {
 
     const authorName = msg.authorName || "Sconosciuto";
     const dealerId   = msg.authorDealerId || "";
-    const createdAt =
-      msg.createdAt && msg.createdAt.toDate ? msg.createdAt.toDate() : null;
-    const dateStr  = createdAt ? formatDateTimeShort(createdAt) : "";
-    const roleText = dealerId === "FT001" ? "Distributore" : "Dealer";
+    const createdAt  = msg.createdAt && msg.createdAt.toDate ? msg.createdAt.toDate() : null;
+    const dateStr    = createdAt ? formatDateTimeShort(createdAt) : "";
+    const roleText   = dealerId === "FT001" ? "Distributore" : "Dealer";
 
     metaDiv.textContent = `${authorName} (${roleText} ${dealerId}) - ${dateStr}`;
 
@@ -606,11 +592,10 @@ async function onSendMessageClick() {
     return;
   }
 
-  btnSendMessage.disabled = true;
+  if (btnSendMessage) btnSendMessage.disabled = true;
 
   try {
-    // allegati: placeholder per il futuro
-    const attachments = [];
+    const attachments = []; // placeholder
 
     const displayName =
       currentUserData.displayName || currentUser.email || "(utente)";
@@ -629,7 +614,7 @@ async function onSendMessageClick() {
       .collection("messages")
       .add(msgData);
 
-    // cambio stato in base a chi risponde
+    // stato: se risponde dealer → in attesa distributore, se risponde distributore → in attesa dealer
     let newStatus = ticket.status;
     if (ticket.status !== "closed") {
       newStatus = isDistributor ? "open_waiting_dealer" : "open_waiting_distributor";
@@ -646,7 +631,7 @@ async function onSendMessageClick() {
     console.error("Errore invio messaggio hotline:", err);
     alert("Errore durante l'invio del messaggio.");
   } finally {
-    btnSendMessage.disabled = false;
+    if (btnSendMessage) btnSendMessage.disabled = false;
   }
 }
 
@@ -664,12 +649,10 @@ async function onCloseTicketClick() {
   }
   if (ticket.status === "closed") return;
 
-  const conferma = confirm(
-    "Vuoi davvero chiudere questo ticket? Non sarà più modificabile."
-  );
+  const conferma = confirm("Vuoi davvero chiudere questo ticket? Non sarà più modificabile.");
   if (!conferma) return;
 
-  btnCloseTicket.disabled = true;
+  if (btnCloseTicket) btnCloseTicket.disabled = true;
 
   try {
     await db.collection("HotlineTickets").doc(selectedTicketId).update({
@@ -679,7 +662,7 @@ async function onCloseTicketClick() {
   } catch (err) {
     console.error("Errore chiusura ticket:", err);
     alert("Errore durante la chiusura del ticket.");
-    btnCloseTicket.disabled = false;
+    if (btnCloseTicket) btnCloseTicket.disabled = false;
   }
 }
 
@@ -752,10 +735,8 @@ async function submitNewTicket() {
 
   const km          = kmStr ? Number(kmStr) : null;
   const engineHours = engineStr ? Number(engineStr) : null;
-  const displayName =
-    currentUserData.displayName || currentUser.email || "(utente)";
+  const displayName = currentUserData.displayName || currentUser.email || "(utente)";
 
-  // stato iniziale dipende da chi apre
   const initialStatus = isDistributor
     ? "open_waiting_dealer"
     : "open_waiting_distributor";
@@ -817,7 +798,7 @@ function getStatusLabelAndClass(status) {
   let label = getStatusLabelForUser(status);
   let cssClass = "";
 
-  if (status === "closed")                    cssClass = "ticket-status-closed";
+  if (status === "closed") cssClass = "ticket-status-closed";
   else if (status === "open_waiting_distributor") cssClass = "ticket-status-open";
   else if (status === "open_waiting_dealer")      cssClass = "ticket-status-waiting";
 
