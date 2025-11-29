@@ -1,12 +1,15 @@
 // ================== FTHOTLINE.js ==================
 
-// Init Firebase (se non già fatto in firebase-config.js)
+// Inizializzazione Firebase per FTHOTLINE
+// (se l'app è già inizializzata non la reinizializziamo)
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
-const auth = firebase.auth();
-const db = firebase.firestore();
-const storage = firebase.storage(); // <-- per allegati
+
+// Usiamo nomi dedicati per evitare conflitti con altri script
+const hotlineAuth    = firebase.auth();
+const hotlineDb      = firebase.firestore();
+const hotlineStorage = firebase.storage(); // <-- per allegati
 
 // ================== STATO GLOBALE ==================
 let currentUser = null;
@@ -109,7 +112,7 @@ window.addEventListener("load", () => {
   newTicketSubmitBtn.addEventListener("click", submitNewTicket);
 
   // Auth listener
-  auth.onAuthStateChanged(async (user) => {
+  hotlineAuth.onAuthStateChanged(async (user) => {
     if (!user) {
       currentUser = null;
       currentUserData = null;
@@ -137,7 +140,7 @@ window.addEventListener("load", () => {
 // ================== PROFILO UTENTE (Users) ==================
 async function loadCurrentUserProfile() {
   const uid = currentUser.uid;
-  const docRef = db.collection("Users").doc(uid);
+  const docRef = hotlineDb.collection("Users").doc(uid);
   const snap = await docRef.get();
 
   if (!snap.exists) {
@@ -187,7 +190,7 @@ async function loadDepartments() {
   hotlineDepartments = [];
 
   try {
-    const snap = await db.collection("HotlineDepartments")
+    const snap = await hotlineDb.collection("HotlineDepartments")
       .orderBy("order", "asc")
       .get();
 
@@ -275,7 +278,7 @@ function subscribeTickets() {
     ticketsUnsubscribe = null;
   }
 
-  let query = db.collection("HotlineTickets");
+  let query = hotlineDb.collection("HotlineTickets");
 
   // Dealer: solo ticket del proprio dealer
   // Distributore: tutti i ticket
@@ -533,7 +536,7 @@ function subscribeMessages(ticketId) {
     messagesUnsubscribe = null;
   }
 
-  const ref = db
+  const ref = hotlineDb
     .collection("HotlineTickets")
     .doc(ticketId)
     .collection("messages")
@@ -666,7 +669,7 @@ async function onSendMessageClick() {
         const file = files[i];
         const safeName = sanitizeFileName(file.name);
         const path = `hotlineAttachments/${selectedTicketId}/${Date.now()}_${safeName}`;
-        const storageRef = storage.ref().child(path);
+        const storageRef = hotlineStorage.ref().child(path);
 
         console.log("Upload allegato su:", path);
         await storageRef.put(file);
@@ -693,7 +696,7 @@ async function onSendMessageClick() {
       attachments: attachments,
     };
 
-    await db
+    await hotlineDb
       .collection("HotlineTickets")
       .doc(selectedTicketId)
       .collection("messages")
@@ -706,7 +709,7 @@ async function onSendMessageClick() {
         : "open_waiting_distributor";
     }
 
-    await db.collection("HotlineTickets").doc(selectedTicketId).update({
+    await hotlineDb.collection("HotlineTickets").doc(selectedTicketId).update({
       status: newStatus,
       lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
     });
@@ -743,7 +746,7 @@ async function onCloseTicketClick() {
   btnCloseTicket.disabled = true;
 
   try {
-    await db.collection("HotlineTickets").doc(selectedTicketId).update({
+    await hotlineDb.collection("HotlineTickets").doc(selectedTicketId).update({
       status: "closed",
       lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
     });
@@ -854,7 +857,7 @@ async function submitNewTicket() {
   newTicketErrorEl.textContent = "";
 
   try {
-    await db.collection("HotlineTickets").add(ticketData);
+    await hotlineDb.collection("HotlineTickets").add(ticketData);
     closeNewTicketModal();
   } catch (err) {
     console.error("Errore creazione ticket hotline:", err);
@@ -871,10 +874,10 @@ function getStatusLabelForUser(status) {
 
   if (isDistributor) {
     if (status === "open_waiting_distributor") return "In attesa";
-    if (status === "open_waiting_dealer")       return "Gestita";
+    if (status === "open_waiting_dealer")      return "Gestita";
   } else {
     if (status === "open_waiting_distributor") return "Inviata";
-    if (status === "open_waiting_dealer")       return "In attesa";
+    if (status === "open_waiting_dealer")      return "In attesa";
   }
   return status || "";
 }
