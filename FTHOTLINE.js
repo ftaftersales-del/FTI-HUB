@@ -1,28 +1,31 @@
 // ================== FTHOTLINE.js ==================
+//
+// Gestione ticket Hotline con vista "tipo chat"
+// =================================================
 
-// Init Firebase (se non già fatto in firebase-config.js)
+// -------- INIT FIREBASE --------
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage(); // per allegati in futuro
+const storage = firebase.storage(); // per futuri allegati
 
-// ================== STATO GLOBALE ==================
+// -------- STATO GLOBALE --------
 let currentUser = null;
 let currentUserData = null;   // doc in "Users"
 let currentDealerId = null;
 let currentRole = "User";
 let isDistributor = false;    // dealerId === "FT001"
 
-let hotlineDepartments = [];  // {id, code, name, order}
-let hotlineTickets = [];      // lista ticket visibili
+let hotlineDepartments = [];  // [{id, code, name, order}]
+let hotlineTickets = [];      // [{id, ...data}]
 let selectedTicketId = null;
 
 let ticketsUnsubscribe = null;
 let messagesUnsubscribe = null;
 
-// DOM refs
+// -------- RIFERIMENTI DOM --------
 let currentUserInfoEl;
 let searchInput, statusFilter, departmentFilter, authorFilter, ticketsList;
 let noTicketSelectedMessage, ticketHeaderContent, ticketBodyContainer;
@@ -32,7 +35,7 @@ let ticketBodyTextEl, ticketWarrantyRequestTextEl;
 let chatMessagesEl, chatMessageInput, chatFileInput;
 let btnNewTicket, btnCloseTicket, btnSendMessage;
 
-// DOM refs modale nuovo ticket
+// modale nuovo ticket
 let newTicketModal, newTicketSubjectInput, newTicketDepartmentSelect;
 let newTicketVinInput, newTicketPlateInput, newTicketKmInput, newTicketEngineHoursInput;
 let newTicketWarrantyInput, newTicketBodyInput;
@@ -44,13 +47,13 @@ window.addEventListener("load", () => {
   currentUserInfoEl = document.getElementById("currentUserInfo");
 
   // pannello sinistro
-  searchInput        = document.getElementById("searchInput");
-  statusFilter       = document.getElementById("statusFilter");
-  departmentFilter   = document.getElementById("departmentFilter");
-  authorFilter       = document.getElementById("authorFilter"); // può anche non esistere
-  ticketsList        = document.getElementById("ticketsList");
+  searchInput      = document.getElementById("searchInput");
+  statusFilter     = document.getElementById("statusFilter");
+  departmentFilter = document.getElementById("departmentFilter");
+  authorFilter     = document.getElementById("authorFilter");
+  ticketsList      = document.getElementById("ticketsList");
 
-  // dettaglio ticket
+  // dettaglio / header
   noTicketSelectedMessage = document.getElementById("noTicketSelectedMessage");
   ticketHeaderContent     = document.getElementById("ticketHeaderContent");
   ticketBodyContainer     = document.getElementById("ticketBodyContainer");
@@ -68,7 +71,7 @@ window.addEventListener("load", () => {
   ticketEngineHoursInput = document.getElementById("ticketEngineHours");
   ticketDepartmentSelect = document.getElementById("ticketDepartment");
 
-  ticketBodyTextEl          = document.getElementById("ticketBodyText");
+  ticketBodyTextEl            = document.getElementById("ticketBodyText");
   ticketWarrantyRequestTextEl = document.getElementById("ticketWarrantyRequestText");
 
   // chat
@@ -81,26 +84,26 @@ window.addEventListener("load", () => {
   btnSendMessage = document.getElementById("btnSendMessage");
 
   // modale nuovo ticket
-  newTicketModal             = document.getElementById("newTicketModal");
-  newTicketSubjectInput      = document.getElementById("newTicketSubject");
-  newTicketDepartmentSelect  = document.getElementById("newTicketDepartment");
-  newTicketVinInput          = document.getElementById("newTicketVin");
-  newTicketPlateInput        = document.getElementById("newTicketPlate");
-  newTicketKmInput           = document.getElementById("newTicketKm");
-  newTicketEngineHoursInput  = document.getElementById("newTicketEngineHours");
-  newTicketWarrantyInput     = document.getElementById("newTicketWarranty");
-  newTicketBodyInput         = document.getElementById("newTicketBody");
-  newTicketErrorEl           = document.getElementById("newTicketError");
-  newTicketCancelBtn         = document.getElementById("newTicketCancel");
-  newTicketSubmitBtn         = document.getElementById("newTicketSubmit");
+  newTicketModal            = document.getElementById("newTicketModal");
+  newTicketSubjectInput     = document.getElementById("newTicketSubject");
+  newTicketDepartmentSelect = document.getElementById("newTicketDepartment");
+  newTicketVinInput         = document.getElementById("newTicketVin");
+  newTicketPlateInput       = document.getElementById("newTicketPlate");
+  newTicketKmInput          = document.getElementById("newTicketKm");
+  newTicketEngineHoursInput = document.getElementById("newTicketEngineHours");
+  newTicketWarrantyInput    = document.getElementById("newTicketWarranty");
+  newTicketBodyInput        = document.getElementById("newTicketBody");
+  newTicketErrorEl          = document.getElementById("newTicketError");
+  newTicketCancelBtn        = document.getElementById("newTicketCancel");
+  newTicketSubmitBtn        = document.getElementById("newTicketSubmit");
 
-  // Eventi filtri/lista
+  // ---- Eventi filtri/lista ----
   if (searchInput)      searchInput.addEventListener("input", renderTicketsList);
   if (statusFilter)     statusFilter.addEventListener("change", renderTicketsList);
   if (departmentFilter) departmentFilter.addEventListener("change", renderTicketsList);
   if (authorFilter)     authorFilter.addEventListener("change", renderTicketsList);
 
-  // Eventi azioni
+  // ---- Eventi azioni ----
   btnNewTicket.addEventListener("click", onNewTicketClick);
   btnCloseTicket.addEventListener("click", onCloseTicketClick);
   btnSendMessage.addEventListener("click", onSendMessageClick);
@@ -108,7 +111,7 @@ window.addEventListener("load", () => {
   newTicketCancelBtn.addEventListener("click", closeNewTicketModal);
   newTicketSubmitBtn.addEventListener("click", submitNewTicket);
 
-  // Auth listener
+  // ---- Listener autenticazione ----
   auth.onAuthStateChanged(async (user) => {
     if (!user) {
       currentUser = null;
@@ -116,7 +119,9 @@ window.addEventListener("load", () => {
       currentDealerId = null;
       currentRole = "User";
       isDistributor = false;
-      currentUserInfoEl.textContent = "Non autenticato";
+      if (currentUserInfoEl) {
+        currentUserInfoEl.textContent = "Non autenticato";
+      }
       clearTickets();
       return;
     }
@@ -146,21 +151,27 @@ async function loadCurrentUserProfile() {
     currentDealerId = null;
     currentRole = "User";
     isDistributor = false;
-    currentUserInfoEl.textContent = "[Utente senza profilo Users]";
+    if (currentUserInfoEl) {
+      currentUserInfoEl.textContent = "[Profilo Users mancante]";
+    }
     return;
   }
 
   const data = snap.data() || {};
   currentUserData = data;
 
-  // supporta sia dealerId che dealerID
+  // supporta sia dealerId che dealerID, come negli altri moduli
   currentDealerId = data.dealerId || data.dealerID || null;
   currentRole     = data.role || "User";
   isDistributor   = currentDealerId === "FT001";
 
   const displayName = data.displayName || currentUser.email || "(utente)";
-  currentUserInfoEl.textContent =
-    `${displayName} - Dealer ${currentDealerId || "-"} - Ruolo: ${currentRole}`;
+  if (currentUserInfoEl) {
+    currentUserInfoEl.textContent =
+      `${displayName} - Dealer ${currentDealerId || "-"} - Ruolo: ${currentRole}`;
+  }
+
+  console.log("Profilo utente:", { currentDealerId, currentRole, isDistributor });
 }
 
 // ================== REPARTI HOTLINE ==================
@@ -178,7 +189,7 @@ async function loadDepartments() {
         id: doc.id,
         code: data.code || "",
         name: data.name || "",
-        order: data.order || 0,
+        order: data.order || 0
       });
     });
 
@@ -186,10 +197,10 @@ async function loadDepartments() {
     fillTicketDepartmentSelect();
     fillNewTicketDepartmentSelect();
 
-    console.log("Reparti caricati:", hotlineDepartments);
+    console.log("Reparti hotline caricati:", hotlineDepartments);
   } catch (err) {
     console.error("Errore caricamento HotlineDepartments:", err);
-    alert("Errore nel caricamento dei reparti Hotline. Controlla la console.");
+    alert("Errore nel caricamento dei reparti Hotline.");
   }
 }
 
@@ -211,8 +222,9 @@ function fillDepartmentFilterSelect() {
 }
 
 function fillTicketDepartmentSelect() {
-  ticketDepartmentSelect.innerHTML = "";
+  if (!ticketDepartmentSelect) return;
 
+  ticketDepartmentSelect.innerHTML = "";
   const optEmpty = document.createElement("option");
   optEmpty.value = "";
   optEmpty.textContent = "";
@@ -229,8 +241,9 @@ function fillTicketDepartmentSelect() {
 }
 
 function fillNewTicketDepartmentSelect() {
-  newTicketDepartmentSelect.innerHTML = "";
+  if (!newTicketDepartmentSelect) return;
 
+  newTicketDepartmentSelect.innerHTML = "";
   const optRoot = document.createElement("option");
   optRoot.value = "";
   optRoot.textContent = "Seleziona reparto";
@@ -246,32 +259,25 @@ function fillNewTicketDepartmentSelect() {
 
 // ================== TICKET: SUBSCRIBE & RENDER ==================
 function subscribeTickets() {
-  if (!currentDealerId) {
-    console.warn("Nessun dealerId, impossibile caricare i ticket.");
-    return;
-  }
-
   if (ticketsUnsubscribe) {
     ticketsUnsubscribe();
     ticketsUnsubscribe = null;
   }
 
+  // Dealer = solo ticket del proprio dealer
+  // Distributore = tutti i ticket
   let query = db.collection("HotlineTickets");
-
-  // Dealer: solo ticket del proprio dealer
-  // Distributore: tutti i ticket
-  if (!isDistributor) {
+  if (!isDistributor && currentDealerId) {
     query = query.where("dealerId", "==", currentDealerId);
   }
 
-  query = query.orderBy("lastUpdate", "desc");
+  // uso createdAt per evitare rogne di indice
+  query = query.orderBy("createdAt", "desc");
 
   ticketsUnsubscribe = query.onSnapshot(
     (snap) => {
       hotlineTickets = [];
-      snap.forEach((doc) => {
-        hotlineTickets.push({ id: doc.id, ...doc.data() });
-      });
+      snap.forEach((doc) => hotlineTickets.push({ id: doc.id, ...doc.data() }));
 
       console.log("Ticket hotline caricati:", hotlineTickets.length);
       renderTicketsList();
@@ -279,16 +285,13 @@ function subscribeTickets() {
 
       if (selectedTicketId) {
         const t = hotlineTickets.find((tt) => tt.id === selectedTicketId);
-        if (t) {
-          renderTicketDetail(t);
-        } else {
-          clearTicketDetail();
-        }
+        if (t) renderTicketDetail(t);
+        else clearTicketDetail();
       }
     },
     (err) => {
       console.error("Errore subscribe HotlineTickets:", err);
-      alert("Errore nel caricamento dei ticket Hotline. Controlla la console.");
+      alert("Errore nel caricamento dei ticket Hotline.");
     }
   );
 }
@@ -320,9 +323,7 @@ function updateAuthorFilterOptions() {
     authorFilter.appendChild(opt);
   });
 
-  const exists = Array.from(authorFilter.options).some(
-    (o) => o.value === previous
-  );
+  const exists = Array.from(authorFilter.options).some(o => o.value === previous);
   if (exists) authorFilter.value = previous;
 }
 
@@ -337,19 +338,16 @@ function renderTicketsList() {
   const authorVal = authorFilter?.value || "";
 
   if (statusVal) {
-    filtered = filtered.filter((t) => t.status === statusVal);
+    filtered = filtered.filter(t => t.status === statusVal);
   }
-
   if (depVal) {
-    filtered = filtered.filter((t) => t.departmentId === depVal);
+    filtered = filtered.filter(t => t.departmentId === depVal);
   }
-
   if (authorVal) {
-    filtered = filtered.filter((t) => t.creatorUid === authorVal);
+    filtered = filtered.filter(t => t.creatorUid === authorVal);
   }
-
   if (search) {
-    filtered = filtered.filter((t) => {
+    filtered = filtered.filter(t => {
       const code    = (t.ticketCode || "").toLowerCase();
       const subject = (t.subject || "").toLowerCase();
       const vin     = (t.vin || "").toLowerCase();
@@ -422,7 +420,7 @@ function onTicketSelected(ticketId) {
     else el.classList.remove("selected");
   });
 
-  const ticket = hotlineTickets.find((t) => t.id === ticketId);
+  const ticket = hotlineTickets.find(t => t.id === ticketId);
   if (!ticket) {
     clearTicketDetail();
     return;
@@ -444,31 +442,31 @@ function clearTicketDetail() {
   ticketHeaderContent.style.display = "none";
   ticketBodyContainer.style.display = "none";
 
-  ticketCodeInput.value = "";
-  ticketSubjectInput.value = "";
-  ticketDealerInput.value = "";
-  ticketCreatorInput.value = "";
+  ticketCodeInput.value      = "";
+  ticketSubjectInput.value   = "";
+  ticketDealerInput.value    = "";
+  ticketCreatorInput.value   = "";
   ticketCreatedAtInput.value = "";
   ticketStatusBadge.textContent = "-";
 
-  ticketVinInput.value = "";
-  ticketPlateInput.value = "";
-  ticketKmInput.value = "";
+  ticketVinInput.value         = "";
+  ticketPlateInput.value       = "";
+  ticketKmInput.value          = "";
   ticketEngineHoursInput.value = "";
   ticketDepartmentSelect.value = "";
 
-  ticketBodyTextEl.textContent = "";
+  ticketBodyTextEl.textContent            = "";
   ticketWarrantyRequestTextEl.textContent = "";
 
   chatMessagesEl.innerHTML = "";
-  chatMessageInput.value = "";
-  chatFileInput.value = "";
+  chatMessageInput.value   = "";
+  chatFileInput.value      = "";
 }
 
 function renderTicketDetail(ticket) {
   noTicketSelectedMessage.style.display = "none";
-  ticketHeaderContent.style.display = "";
-  ticketBodyContainer.style.display = "";
+  ticketHeaderContent.style.display     = "";
+  ticketBodyContainer.style.display     = "";
 
   ticketCodeInput.value    = ticket.ticketCode || "";
   ticketSubjectInput.value = ticket.subject || "";
@@ -496,7 +494,7 @@ function renderTicketDetail(ticket) {
   ticketEngineHoursInput.value = ticket.engineHours != null ? ticket.engineHours : "";
   ticketDepartmentSelect.value = ticket.departmentId || "";
 
-  ticketBodyTextEl.textContent          = ticket.body || "";
+  ticketBodyTextEl.textContent            = ticket.body || "";
   ticketWarrantyRequestTextEl.textContent = ticket.warrantyRequest || "";
 
   const isClosed = ticket.status === "closed";
@@ -514,8 +512,7 @@ function subscribeMessages(ticketId) {
     messagesUnsubscribe = null;
   }
 
-  const ref = db
-    .collection("HotlineTickets")
+  const ref = db.collection("HotlineTickets")
     .doc(ticketId)
     .collection("messages")
     .orderBy("createdAt", "asc");
@@ -523,11 +520,11 @@ function subscribeMessages(ticketId) {
   messagesUnsubscribe = ref.onSnapshot(
     (snap) => {
       const messages = [];
-      snap.forEach((doc) => messages.push({ id: doc.id, ...doc.data() }));
+      snap.forEach(doc => messages.push({ id: doc.id, ...doc.data() }));
       renderMessages(messages);
     },
     (err) => {
-      console.error("Errore subscribe messages hotline:", err);
+      console.error("Errore subscribe messaggi hotline:", err);
     }
   );
 }
@@ -561,7 +558,7 @@ function renderMessages(messages) {
     const dealerId   = msg.authorDealerId || "";
     const createdAt =
       msg.createdAt && msg.createdAt.toDate ? msg.createdAt.toDate() : null;
-    const dateStr = createdAt ? formatDateTimeShort(createdAt) : "";
+    const dateStr  = createdAt ? formatDateTimeShort(createdAt) : "";
     const roleText = dealerId === "FT001" ? "Distributore" : "Dealer";
 
     metaDiv.textContent = `${authorName} (${roleText} ${dealerId}) - ${dateStr}`;
@@ -586,7 +583,7 @@ async function onSendMessageClick() {
     return;
   }
 
-  const ticket = hotlineTickets.find((t) => t.id === selectedTicketId);
+  const ticket = hotlineTickets.find(t => t.id === selectedTicketId);
   if (!ticket) {
     alert("Ticket non trovato.");
     return;
@@ -612,7 +609,8 @@ async function onSendMessageClick() {
   btnSendMessage.disabled = true;
 
   try {
-    const attachments = []; // upload file lo aggiungeremo in seguito
+    // allegati: placeholder per il futuro
+    const attachments = [];
 
     const displayName =
       currentUserData.displayName || currentUser.email || "(utente)";
@@ -623,29 +621,27 @@ async function onSendMessageClick() {
       authorDealerId: currentDealerId,
       text: text,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      attachments: attachments,
+      attachments: attachments
     };
 
-    await db
-      .collection("HotlineTickets")
+    await db.collection("HotlineTickets")
       .doc(selectedTicketId)
       .collection("messages")
       .add(msgData);
 
+    // cambio stato in base a chi risponde
     let newStatus = ticket.status;
     if (ticket.status !== "closed") {
-      newStatus = isDistributor
-        ? "open_waiting_dealer"
-        : "open_waiting_distributor";
+      newStatus = isDistributor ? "open_waiting_dealer" : "open_waiting_distributor";
     }
 
     await db.collection("HotlineTickets").doc(selectedTicketId).update({
       status: newStatus,
-      lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+      lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
     });
 
     chatMessageInput.value = "";
-    chatFileInput.value = "";
+    chatFileInput.value    = "";
   } catch (err) {
     console.error("Errore invio messaggio hotline:", err);
     alert("Errore durante l'invio del messaggio.");
@@ -661,7 +657,7 @@ async function onCloseTicketClick() {
     return;
   }
 
-  const ticket = hotlineTickets.find((t) => t.id === selectedTicketId);
+  const ticket = hotlineTickets.find(t => t.id === selectedTicketId);
   if (!ticket) {
     alert("Ticket non trovato.");
     return;
@@ -678,7 +674,7 @@ async function onCloseTicketClick() {
   try {
     await db.collection("HotlineTickets").doc(selectedTicketId).update({
       status: "closed",
-      lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+      lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
     });
   } catch (err) {
     console.error("Errore chiusura ticket:", err);
@@ -748,7 +744,7 @@ async function submitNewTicket() {
     return;
   }
 
-  const dep = hotlineDepartments.find((d) => d.code === departmentCode);
+  const dep = hotlineDepartments.find(d => d.code === departmentCode);
   if (!dep) {
     newTicketErrorEl.textContent = "Reparto non valido.";
     return;
@@ -758,6 +754,11 @@ async function submitNewTicket() {
   const engineHours = engineStr ? Number(engineStr) : null;
   const displayName =
     currentUserData.displayName || currentUser.email || "(utente)";
+
+  // stato iniziale dipende da chi apre
+  const initialStatus = isDistributor
+    ? "open_waiting_dealer"
+    : "open_waiting_distributor";
 
   const ticketData = {
     ticketCode: generateTicketCode(),
@@ -779,8 +780,8 @@ async function submitNewTicket() {
     departmentId: dep.code,
     departmentName: dep.name,
 
-    status: "open_waiting_distributor",
-    lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+    status: initialStatus,
+    lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
   };
 
   newTicketSubmitBtn.disabled = true;
@@ -816,7 +817,7 @@ function getStatusLabelAndClass(status) {
   let label = getStatusLabelForUser(status);
   let cssClass = "";
 
-  if (status === "closed")                  cssClass = "ticket-status-closed";
+  if (status === "closed")                    cssClass = "ticket-status-closed";
   else if (status === "open_waiting_distributor") cssClass = "ticket-status-open";
   else if (status === "open_waiting_dealer")      cssClass = "ticket-status-waiting";
 
