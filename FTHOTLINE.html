@@ -18,19 +18,32 @@
       background: #f5f5f5;
     }
 
-    .topbar {
-      background: #004080;
+    .top-bar {
+      background: #004a92;
       color: #fff;
-      padding: 6px 12px;
-      font-size: 13px;
+      padding: 8px 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      font-size: 14px;
     }
 
-    .container {
+    .top-bar-title {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .top-bar-user {
+      font-size: 13px;
+    }
+
+    .top-bar-user span {
+      font-weight: bold;
+    }
+
+    .main-layout {
       display: flex;
-      height: calc(100vh - 32px);
+      height: calc(100vh - 40px);
     }
 
     /* Colonna sinistra */
@@ -45,50 +58,61 @@
     }
 
     .left-panel input,
-    .left-panel select {
+    .left-panel select,
+    .left-panel button {
       width: 100%;
       box-sizing: border-box;
       margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    .left-panel input[type="text"] {
       padding: 4px 6px;
-      font-size: 12px;
     }
 
-    #btnNewTicket {
-      width: 100%;
-      margin-top: 4px;
-      padding: 6px;
-      font-size: 12px;
-      background: #007bff;
-      border: none;
+    .left-panel select {
+      padding: 3px 6px;
+    }
+
+    .left-panel button {
+      padding: 6px 8px;
+      background: #1976d2;
       color: #fff;
+      border: none;
       cursor: pointer;
+      border-radius: 3px;
     }
 
-    #btnNewTicket:hover {
-      background: #0062cc;
+    .left-panel button:hover {
+      background: #0d5ea8;
     }
 
     #ticketsList {
       flex: 1;
-      margin-top: 8px;
-      border: 1px solid #ddd;
-      overflow-y: auto;
+      border: 1px solid #ccc;
       background: #fafafa;
+      overflow-y: auto;
+      font-size: 12px;
     }
 
     .ticket-item {
       padding: 6px 8px;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid #e0e0e0;
       cursor: pointer;
-      font-size: 12px;
     }
 
     .ticket-item:hover {
-      background: #eef3ff;
+      background: #f0f5ff;
     }
 
     .ticket-item.selected {
       background: #dce7ff;
+    }
+
+    .ticket-item-needs-reply {
+      font-weight: bold;
+      background: #fff7e0;
+      border-left: 3px solid #ff9800;
     }
 
     .ticket-item-code {
@@ -110,71 +134,73 @@
       flex: 1;
       display: flex;
       flex-direction: column;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    #noTicketSelectedMessage {
+      font-size: 14px;
+      color: #555;
+      margin-top: 16px;
     }
 
     .ticket-header {
-      padding: 8px 10px;
-      background: #fff;
-      border-bottom: 1px solid #ddd;
-      font-size: 12px;
+      margin-bottom: 8px;
     }
 
     .ticket-header-row {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
       gap: 6px;
       margin-bottom: 4px;
+      font-size: 12px;
     }
 
     .ticket-header-row label {
       font-size: 11px;
       display: block;
+      margin-bottom: 2px;
     }
 
     .ticket-header-row input,
     .ticket-header-row select {
-      font-size: 12px;
-      padding: 3px 4px;
-      width: 180px;
+      width: 100%;
       box-sizing: border-box;
+      padding: 3px 5px;
+      font-size: 12px;
     }
 
     .ticket-status-badge {
       display: inline-block;
-      padding: 2px 6px;
-      border-radius: 3px;
+      padding: 3px 8px;
+      border-radius: 10px;
       font-size: 11px;
-      margin-left: 6px;
+      color: #fff;
     }
 
     .ticket-status-open {
-      background: #e3f2fd;
-      color: #1565c0;
+      background: #007bff;
     }
 
     .ticket-status-waiting {
-      background: #fff3cd;
-      color: #8a6d3b;
+      background: #ffa000;
     }
 
     .ticket-status-closed {
-      background: #e2e3e5;
-      color: #383d41;
+      background: #9e9e9e;
     }
 
-    .ticket-body {
+    .ticket-body-section {
+      margin-top: 6px;
       flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 8px 10px;
-      box-sizing: border-box;
-      background: #fdfdfd;
     }
 
-    .ticket-body-section-title {
+    .ticket-body-label {
       font-weight: bold;
       font-size: 12px;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
 
     .ticket-body-box {
@@ -222,21 +248,24 @@
     .chat-bubble {
       max-width: 70%;
       padding: 4px 6px;
-      border-radius: 4px;
+      border-radius: 5px;
       font-size: 12px;
-      background: #e9ecef;
     }
 
     .chat-bubble.dealer {
-      background: #e9f5ff;
+      background: #e3f2fd;
+      border: 1px solid #bbdefb;
+      text-align: left;
     }
 
     .chat-bubble.distributor {
-      background: #ffe9e9;
+      background: #f1f8e9;
+      border: 1px solid #c5e1a5;
+      text-align: left;
     }
 
     .chat-meta {
-      font-size: 10px;
+      font-size: 11px;
       color: #555;
       margin-bottom: 2px;
     }
@@ -245,67 +274,90 @@
       display: flex;
       align-items: center;
       gap: 4px;
-      margin-top: 4px;
-    }
-
-    #chatMessageInput {
-      flex: 1;
       font-size: 12px;
     }
 
-    #chatFileInput {
+    .chat-input-row textarea {
+      flex: 1;
+      resize: none;
+      height: 40px;
+      font-size: 12px;
+      padding: 3px 5px;
+    }
+
+    .chat-input-row input[type="file"] {
       font-size: 11px;
     }
 
-    #btnCloseTicket,
-    #btnSendMessage {
-      padding: 3px 8px;
-      font-size: 11px;
-      cursor: pointer;
+    .chat-input-row button {
+      padding: 5px 8px;
+      font-size: 12px;
       border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #1976d2;
       color: #fff;
     }
 
-    #btnCloseTicket {
-      background: #ff9800;
+    .btn-primary:hover {
+      background: #0d5ea8;
     }
 
-    #btnSendMessage {
-      background: #007bff;
+    .btn-secondary {
+      background: #eee;
+      color: #333;
     }
 
-    /* Nessun ticket selezionato */
-    #noTicketSelectedMessage {
-      padding: 8px 10px;
-      font-size: 12px;
+    .btn-secondary:hover {
+      background: #ddd;
+    }
+
+    .btn-danger {
+      background: #e53935;
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: #c62828;
+    }
+
+    .chat-file-label {
+      font-size: 11px;
       color: #555;
     }
 
-    /* Modale nuovo ticket */
-    #newTicketModal {
+    /* Modal nuovo ticket */
+    .modal-backdrop {
       position: fixed;
-      inset: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background: rgba(0,0,0,0.4);
       display: none;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       z-index: 999;
     }
 
     .modal-content {
       background: #fff;
       padding: 12px;
-      border-radius: 6px;
-      width: 420px;
-      max-width: 95vw;
+      border-radius: 4px;
+      width: 480px;
+      max-width: 90%;
       box-sizing: border-box;
-      font-size: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      font-size: 13px;
     }
 
-    .modal-content h3 {
-      margin-top: 0;
+    .modal-header {
+      font-size: 15px;
+      font-weight: bold;
       margin-bottom: 8px;
-      font-size: 14px;
     }
 
     .modal-row {
@@ -314,7 +366,7 @@
 
     .modal-row label {
       display: block;
-      font-size: 11px;
+      font-size: 12px;
       margin-bottom: 2px;
     }
 
@@ -323,54 +375,38 @@
     .modal-row textarea {
       width: 100%;
       box-sizing: border-box;
-      font-size: 12px;
       padding: 4px 6px;
+      font-size: 12px;
     }
 
     .modal-row textarea {
       resize: vertical;
-      min-height: 60px;
     }
 
     .modal-footer {
+      margin-top: 8px;
       display: flex;
       justify-content: flex-end;
       gap: 6px;
-      margin-top: 8px;
-    }
-
-    .btn-secondary {
-      padding: 4px 10px;
-      font-size: 12px;
-      border: 1px solid #ccc;
-      background: #f8f9fa;
-      cursor: pointer;
-    }
-
-    .btn-primary {
-      padding: 4px 10px;
-      font-size: 12px;
-      border: none;
-      background: #007bff;
-      color: #fff;
-      cursor: pointer;
     }
 
     #newTicketError {
-      color: #c00;
-      font-size: 11px;
+      color: #e53935;
+      font-size: 12px;
       margin-top: 4px;
-      min-height: 14px;
+      min-height: 16px;
     }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <span>FTHOTLINE - Gestione Ticket</span>
-    <span id="currentUserInfo">Caricamento utente...</span>
+  <div class="top-bar">
+    <div class="top-bar-title">FTHOTLINE - Gestione Ticket</div>
+    <div class="top-bar-user">
+      Utente: <span id="currentUserInfo">Caricamento utente...</span>
+    </div>
   </div>
 
-  <div class="container">
+  <div class="main-layout">
     <!-- Pannello sinistro -->
     <div class="left-panel">
       <input id="searchInput" type="text" placeholder="Cerca per codice, oggetto, VIN, targa..." />
@@ -390,6 +426,7 @@
       <button id="btnNewTicket">Nuovo ticket</button>
 
       <div id="ticketsList"></div>
+      <button id="btnLoadMoreTickets">Carica altri</button>
     </div>
 
     <!-- Pannello destro -->
@@ -421,7 +458,7 @@
             <input id="ticketCreatedAt" type="text" readonly />
           </div>
           <div>
-            <label>Stato</label>
+            <label>Stato</label><br />
             <span id="ticketStatusBadge" class="ticket-status-badge ticket-status-open">-</span>
           </div>
         </div>
@@ -447,16 +484,19 @@
             <label>Reparto</label>
             <select id="ticketDepartment" disabled></select>
           </div>
+          <div style="display:flex; align-items:flex-end;">
+            <button id="btnCloseTicket" class="btn-danger" style="width:100%;">Chiudi ticket</button>
+          </div>
         </div>
       </div>
 
-      <div id="ticketBodyContainer" class="ticket-body" style="display:none;">
+      <div id="ticketBodyContainer" class="ticket-body-section" style="display:none;">
         <div>
-          <div class="ticket-body-section-title">Richiesta</div>
+          <div class="ticket-body-label">Richiesta</div>
           <div id="ticketBodyText" class="ticket-body-box"></div>
         </div>
         <div>
-          <div class="ticket-body-section-title">Richiesta di garanzia</div>
+          <div class="ticket-body-label">Richiesta di garanzia</div>
           <div id="ticketWarrantyRequestText" class="ticket-body-box"></div>
         </div>
 
@@ -464,20 +504,23 @@
           <div id="chatMessages"></div>
 
           <div class="chat-input-row">
-            <input id="chatMessageInput" type="text" placeholder="Scrivi una risposta..." />
-            <input id="chatFileInput" type="file" />
-            <button id="btnCloseTicket">Chiudi ticket</button>
-            <button id="btnSendMessage">Invia</button>
+            <textarea
+              id="chatMessageInput"
+              placeholder="Scrivi una risposta..."
+            ></textarea>
+            <input id="chatFileInput" type="file" multiple />
+            <button id="btnSendMessage" class="btn-primary">Invia</button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- MODALE NUOVO TICKET -->
-  <div id="newTicketModal">
+  <!-- Modal nuovo ticket -->
+  <div id="newTicketModal" class="modal-backdrop">
     <div class="modal-content">
-      <h3>Nuovo ticket</h3>
+      <div class="modal-header">Nuovo ticket Hotline</div>
+
       <div class="modal-row">
         <label for="newTicketSubject">Oggetto *</label>
         <input id="newTicketSubject" type="text" />
@@ -485,7 +528,9 @@
 
       <div class="modal-row">
         <label for="newTicketDepartment">Reparto *</label>
-        <select id="newTicketDepartment"></select>
+        <select id="newTicketDepartment">
+          <option value="">Seleziona reparto</option>
+        </select>
       </div>
 
       <div class="modal-row">
@@ -500,12 +545,12 @@
 
       <div class="modal-row">
         <label for="newTicketKm">Km</label>
-        <input id="newTicketKm" type="number" />
+        <input id="newTicketKm" type="number" min="0" />
       </div>
 
       <div class="modal-row">
         <label for="newTicketEngineHours">Ore motore</label>
-        <input id="newTicketEngineHours" type="number" />
+        <input id="newTicketEngineHours" type="number" min="0" />
       </div>
 
       <div class="modal-row">
@@ -527,7 +572,7 @@
     </div>
   </div>
 
-  <!-- QUI SOLO il nostro JS, nessun altro codice inline -->
+  <!-- JS -->
   <script src="FTHOTLINE.js"></script>
 </body>
 </html>
