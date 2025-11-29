@@ -1,641 +1,763 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <title>FTHOTLINE - Gestione Ticket</title>
+// ========= INIT FIREBASE =========
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
-  <script src="firebase-config.js"></script>
+// ========= STATO GLOBALE =========
+let currentUser = null;
+let currentUserData = null;
+let currentDealerId = null;
+let currentRole = "User";
+let isDistributor = false;
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 0;
+let hotlineDepartments = [];
+let hotlineTickets = [];
+let selectedTicketId = null;
+
+let ticketsUnsubscribe = null;
+let messagesUnsubscribe = null;
+
+// DOM
+let currentUserInfoEl;
+let searchInput, statusFilter, departmentFilter, authorFilter, ticketsList;
+let noTicketSelectedMessage, ticketHeaderContent, ticketBodyContainer;
+let ticketCodeInput, ticketSubjectInput, ticketDealerInput, ticketCreatorInput, ticketCreatedAtInput;
+let ticketStatusBadge, ticketVinInput, ticketPlateInput, ticketKmInput, ticketEngineHoursInput, ticketDepartmentSelect;
+let ticketBodyTextEl, ticketWarrantyRequestTextEl;
+let chatMessagesEl, chatMessageInput, chatFileInput;
+let btnNewTicket, btnCloseTicket, btnSendMessage;
+// nuovo ticket
+let newTicketModal, newTicketSubjectInput, newTicketDepartmentSelect;
+let newTicketVinInput, newTicketPlateInput, newTicketKmInput, newTicketEngineHoursInput;
+let newTicketWarrantyInput, newTicketBodyInput;
+let newTicketErrorEl, newTicketCancelBtn, newTicketSubmitBtn;
+
+// ========= ON LOAD =========
+window.addEventListener("load", () => {
+  currentUserInfoEl = document.getElementById("currentUserInfo");
+
+  searchInput = document.getElementById("searchInput");
+  statusFilter = document.getElementById("statusFilter");
+  departmentFilter = document.getElementById("departmentFilter");
+  authorFilter = document.getElementById("authorFilter");
+  ticketsList = document.getElementById("ticketsList");
+
+  noTicketSelectedMessage = document.getElementById("noTicketSelectedMessage");
+  ticketHeaderContent = document.getElementById("ticketHeaderContent");
+  ticketBodyContainer = document.getElementById("ticketBodyContainer");
+
+  ticketCodeInput = document.getElementById("ticketCode");
+  ticketSubjectInput = document.getElementById("ticketSubject");
+  ticketDealerInput = document.getElementById("ticketDealer");
+  ticketCreatorInput = document.getElementById("ticketCreator");
+  ticketCreatedAtInput = document.getElementById("ticketCreatedAt");
+  ticketStatusBadge = document.getElementById("ticketStatusBadge");
+
+  ticketVinInput = document.getElementById("ticketVin");
+  ticketPlateInput = document.getElementById("ticketPlate");
+  ticketKmInput = document.getElementById("ticketKm");
+  ticketEngineHoursInput = document.getElementById("ticketEngineHours");
+  ticketDepartmentSelect = document.getElementById("ticketDepartment");
+
+  ticketBodyTextEl = document.getElementById("ticketBodyText");
+  ticketWarrantyRequestTextEl = document.getElementById("ticketWarrantyRequestText");
+
+  chatMessagesEl = document.getElementById("chatMessages");
+  chatMessageInput = document.getElementById("chatMessageInput");
+  chatFileInput = document.getElementById("chatFileInput");
+
+  btnNewTicket = document.getElementById("btnNewTicket");
+  btnCloseTicket = document.getElementById("btnCloseTicket");
+  btnSendMessage = document.getElementById("btnSendMessage");
+
+  // modale nuovo ticket
+  newTicketModal = document.getElementById("newTicketModal");
+  newTicketSubjectInput = document.getElementById("newTicketSubject");
+  newTicketDepartmentSelect = document.getElementById("newTicketDepartment");
+  newTicketVinInput = document.getElementById("newTicketVin");
+  newTicketPlateInput = document.getElementById("newTicketPlate");
+  newTicketKmInput = document.getElementById("newTicketKm");
+  newTicketEngineHoursInput = document.getElementById("newTicketEngineHours");
+  newTicketWarrantyInput = document.getElementById("newTicketWarranty");
+  newTicketBodyInput = document.getElementById("newTicketBody");
+  newTicketErrorEl = document.getElementById("newTicketError");
+  newTicketCancelBtn = document.getElementById("newTicketCancel");
+  newTicketSubmitBtn = document.getElementById("newTicketSubmit");
+
+  // eventi filtri
+  searchInput.addEventListener("input", renderTicketsList);
+  statusFilter.addEventListener("change", renderTicketsList);
+  departmentFilter.addEventListener("change", renderTicketsList);
+  authorFilter.addEventListener("change", renderTicketsList);
+
+  // eventi azioni
+  btnNewTicket.addEventListener("click", onNewTicketClick);
+  btnCloseTicket.addEventListener("click", onCloseTicketClick);
+  btnSendMessage.addEventListener("click", onSendMessageClick);
+
+  newTicketCancelBtn.addEventListener("click", closeNewTicketModal);
+  newTicketSubmitBtn.addEventListener("click", submitNewTicket);
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      currentUser = null;
+      currentUserData = null;
+      currentDealerId = null;
+      currentRole = "User";
+      isDistributor = false;
+      currentUserInfoEl.textContent = "Non autenticato";
+      clearTickets();
+      return;
     }
 
-    .page-container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
+    currentUser = user;
+
+    try {
+      await loadCurrentUserProfile();
+      await loadDepartments();
+      subscribeTickets();
+    } catch (err) {
+      console.error("Errore inizializzazione FTHOTLINE:", err);
+      alert("Errore nel caricamento della Hotline. Controlla la console.");
+    }
+  });
+});
+
+// ========= PROFILO UTENTE (Users) =========
+async function loadCurrentUserProfile() {
+  const uid = currentUser.uid;
+  const docRef = db.collection("Users").doc(uid);
+  const snap = await docRef.get();
+  if (!snap.exists) {
+    currentUserInfoEl.textContent = "[Profilo Users mancante]";
+    return;
+  }
+
+  const data = snap.data() || {};
+  currentUserData = data;
+  currentDealerId = data.dealerId || null;
+  currentRole = data.role || "User";
+  isDistributor = currentDealerId === "FT001";
+
+  const displayName = data.displayName || currentUser.email || "(utente)";
+  currentUserInfoEl.textContent = `${displayName} - Dealer ${currentDealerId || "-"} - Ruolo: ${currentRole}`;
+}
+
+// ========= REPARTI =========
+async function loadDepartments() {
+  hotlineDepartments = [];
+
+  const snap = await db.collection("HotlineDepartments")
+    .orderBy("order", "asc")
+    .get();
+
+  snap.forEach(doc => {
+    const d = doc.data() || {};
+    hotlineDepartments.push({
+      id: doc.id,
+      code: d.code || "",
+      name: d.name || "",
+      order: d.order || 0
+    });
+  });
+
+  fillDepartmentFilterSelect();
+  fillTicketDepartmentSelect();
+  fillNewTicketDepartmentSelect();
+}
+
+function fillDepartmentFilterSelect() {
+  departmentFilter.innerHTML = "";
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "Tutti i reparti";
+  departmentFilter.appendChild(optAll);
+
+  hotlineDepartments.forEach(dep => {
+    const opt = document.createElement("option");
+    opt.value = dep.code;
+    opt.textContent = dep.name;
+    departmentFilter.appendChild(opt);
+  });
+}
+
+function fillTicketDepartmentSelect() {
+  ticketDepartmentSelect.innerHTML = "";
+  const opt = document.createElement("option");
+  opt.value = "";
+  opt.textContent = "";
+  ticketDepartmentSelect.appendChild(opt);
+
+  hotlineDepartments.forEach(dep => {
+    const o = document.createElement("option");
+    o.value = dep.code;
+    o.textContent = dep.name;
+    ticketDepartmentSelect.appendChild(o);
+  });
+
+  ticketDepartmentSelect.disabled = true;
+}
+
+function fillNewTicketDepartmentSelect() {
+  newTicketDepartmentSelect.innerHTML = "";
+  const optRoot = document.createElement("option");
+  optRoot.value = "";
+  optRoot.textContent = "Seleziona reparto";
+  newTicketDepartmentSelect.appendChild(optRoot);
+
+  hotlineDepartments.forEach(dep => {
+    const o = document.createElement("option");
+    o.value = dep.code;
+    o.textContent = dep.name;
+    newTicketDepartmentSelect.appendChild(o);
+  });
+}
+
+// ========= TICKET: SUBSCRIBE & RENDER =========
+function subscribeTickets() {
+  if (!currentDealerId) {
+    console.warn("Nessun dealerId nel profilo, niente ticket.");
+    return;
+  }
+
+  if (ticketsUnsubscribe) {
+    ticketsUnsubscribe();
+    ticketsUnsubscribe = null;
+  }
+
+  let query = db.collection("HotlineTickets");
+
+  if (!isDistributor) {
+    // Dealer: solo ticket del proprio dealer
+    query = query.where("dealerId", "==", currentDealerId);
+  }
+  // distributore: tutti i ticket
+
+  query = query.orderBy("lastUpdate", "desc");
+
+  ticketsUnsubscribe = query.onSnapshot(
+    snap => {
+      hotlineTickets = [];
+      snap.forEach(doc => hotlineTickets.push({ id: doc.id, ...doc.data() }));
+
+      renderTicketsList();
+      updateAuthorFilterOptions();
+      if (selectedTicketId) {
+        const t = hotlineTickets.find(x => x.id === selectedTicketId);
+        if (t) renderTicketDetail(t);
+        else clearTicketDetail();
+      }
+    },
+    err => {
+      console.error("Errore subscribe HotlineTickets:", err);
+      alert("Errore nel caricamento dei ticket Hotline.");
+    }
+  );
+}
+
+function updateAuthorFilterOptions() {
+  const previous = authorFilter.value;
+  authorFilter.innerHTML = "";
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "Tutti gli autori";
+  authorFilter.appendChild(optAll);
+
+  const map = {};
+  hotlineTickets.forEach(t => {
+    if (!t.creatorUid) return;
+    const k = t.creatorUid;
+    if (!map[k]) {
+      map[k] = t.creatorName || t.creatorUid;
+    }
+  });
+
+  Object.keys(map).forEach(uid => {
+    const opt = document.createElement("option");
+    opt.value = uid;
+    opt.textContent = map[uid];
+    authorFilter.appendChild(opt);
+  });
+
+  // se il valore precedente esiste ancora, ripristinalo
+  const exists = Array.from(authorFilter.options).some(o => o.value === previous);
+  if (exists) authorFilter.value = previous;
+}
+
+function renderTicketsList() {
+  ticketsList.innerHTML = "";
+
+  let filtered = hotlineTickets.slice();
+
+  const search = (searchInput.value || "").trim().toLowerCase();
+  const statusVal = statusFilter.value;
+  const deptVal = departmentFilter.value;
+  const authorVal = authorFilter.value;
+
+  if (statusVal) {
+    filtered = filtered.filter(t => t.status === statusVal);
+  }
+  if (deptVal) {
+    filtered = filtered.filter(t => t.departmentId === deptVal);
+  }
+  if (authorVal) {
+    filtered = filtered.filter(t => t.creatorUid === authorVal);
+  }
+  if (search) {
+    filtered = filtered.filter(t => {
+      const code = (t.ticketCode || "").toLowerCase();
+      const subject = (t.subject || "").toLowerCase();
+      const vin = (t.vin || "").toLowerCase();
+      const plate = (t.plate || "").toLowerCase();
+      return (
+        code.includes(search) ||
+        subject.includes(search) ||
+        vin.includes(search) ||
+        plate.includes(search)
+      );
+    });
+  }
+
+  if (filtered.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "ticket-item";
+    empty.textContent = "Nessun ticket trovato.";
+    ticketsList.appendChild(empty);
+    return;
+  }
+
+  filtered.forEach(t => {
+    const item = document.createElement("div");
+    item.className = "ticket-item";
+    if (t.id === selectedTicketId) item.classList.add("selected");
+    item.dataset.ticketId = t.id;
+
+    const codeDiv = document.createElement("div");
+    codeDiv.className = "ticket-item-code";
+    codeDiv.textContent = t.ticketCode || "(senza codice)";
+
+    const subjectDiv = document.createElement("div");
+    subjectDiv.className = "ticket-item-subject";
+    subjectDiv.textContent = t.subject || "(senza oggetto)";
+
+    const metaDiv = document.createElement("div");
+    metaDiv.className = "ticket-item-meta";
+
+    const dealerText = isDistributor ? `Dealer ${t.dealerId || ""}` : "";
+    const statusLabel = getStatusLabelForUser(t.status);
+    const createdAt = t.createdAt && t.createdAt.toDate ? t.createdAt.toDate() : null;
+    const dateStr = createdAt ? formatDateTimeShort(createdAt) : "";
+
+    metaDiv.textContent = `${dealerText} ${statusLabel ? "- " + statusLabel : ""} ${dateStr ? "- " + dateStr : ""}`;
+
+    item.appendChild(codeDiv);
+    item.appendChild(subjectDiv);
+    item.appendChild(metaDiv);
+
+    item.addEventListener("click", () => onTicketSelected(t.id));
+
+    ticketsList.appendChild(item);
+  });
+}
+
+function clearTickets() {
+  hotlineTickets = [];
+  ticketsList.innerHTML = "";
+  clearTicketDetail();
+}
+
+// ========= DETTAGLIO & CHAT =========
+function onTicketSelected(ticketId) {
+  selectedTicketId = ticketId;
+
+  document.querySelectorAll(".ticket-item").forEach(el => {
+    if (el.dataset.ticketId === ticketId) el.classList.add("selected");
+    else el.classList.remove("selected");
+  });
+
+  const ticket = hotlineTickets.find(t => t.id === ticketId);
+  if (!ticket) {
+    clearTicketDetail();
+    return;
+  }
+
+  renderTicketDetail(ticket);
+  subscribeMessages(ticket.id);
+}
+
+function clearTicketDetail() {
+  selectedTicketId = null;
+
+  if (messagesUnsubscribe) {
+    messagesUnsubscribe();
+    messagesUnsubscribe = null;
+  }
+
+  noTicketSelectedMessage.style.display = "";
+  ticketHeaderContent.style.display = "none";
+  ticketBodyContainer.style.display = "none";
+
+  ticketCodeInput.value = "";
+  ticketSubjectInput.value = "";
+  ticketDealerInput.value = "";
+  ticketCreatorInput.value = "";
+  ticketCreatedAtInput.value = "";
+  ticketStatusBadge.textContent = "-";
+
+  ticketVinInput.value = "";
+  ticketPlateInput.value = "";
+  ticketKmInput.value = "";
+  ticketEngineHoursInput.value = "";
+  ticketDepartmentSelect.value = "";
+
+  ticketBodyTextEl.textContent = "";
+  ticketWarrantyRequestTextEl.textContent = "";
+
+  chatMessagesEl.innerHTML = "";
+  chatMessageInput.value = "";
+  chatFileInput.value = "";
+}
+
+function renderTicketDetail(ticket) {
+  noTicketSelectedMessage.style.display = "none";
+  ticketHeaderContent.style.display = "";
+  ticketBodyContainer.style.display = "";
+
+  ticketCodeInput.value = ticket.ticketCode || "";
+  ticketSubjectInput.value = ticket.subject || "";
+  ticketDealerInput.value = ticket.dealerId || "";
+  ticketCreatorInput.value = ticket.creatorName || "";
+  const createdAt = ticket.createdAt && ticket.createdAt.toDate ? ticket.createdAt.toDate() : null;
+  ticketCreatedAtInput.value = createdAt ? formatDateTime(createdAt) : "";
+
+  const statusInfo = getStatusLabelAndClass(ticket.status);
+  ticketStatusBadge.textContent = statusInfo.label;
+  ticketStatusBadge.classList.remove("ticket-status-open", "ticket-status-waiting", "ticket-status-closed");
+  if (statusInfo.cssClass) ticketStatusBadge.classList.add(statusInfo.cssClass);
+
+  ticketVinInput.value = ticket.vin || "";
+  ticketPlateInput.value = ticket.plate || "";
+  ticketKmInput.value = ticket.km != null ? ticket.km : "";
+  ticketEngineHoursInput.value = ticket.engineHours != null ? ticket.engineHours : "";
+  ticketDepartmentSelect.value = ticket.departmentId || "";
+
+  ticketBodyTextEl.textContent = ticket.body || "";
+  ticketWarrantyRequestTextEl.textContent = ticket.warrantyRequest || "";
+
+  const isClosed = ticket.status === "closed";
+  btnCloseTicket.disabled = isClosed;
+  chatMessageInput.disabled = isClosed;
+  chatFileInput.disabled = isClosed;
+  btnSendMessage.disabled = isClosed;
+  btnCloseTicket.textContent = isClosed ? "Ticket chiuso" : "Chiudi ticket";
+}
+
+// ========= CHAT =========
+function subscribeMessages(ticketId) {
+  if (messagesUnsubscribe) {
+    messagesUnsubscribe();
+    messagesUnsubscribe = null;
+  }
+
+  const ref = db.collection("HotlineTickets").doc(ticketId)
+    .collection("messages").orderBy("createdAt", "asc");
+
+  messagesUnsubscribe = ref.onSnapshot(snap => {
+    const messages = [];
+    snap.forEach(doc => messages.push({ id: doc.id, ...doc.data() }));
+    renderMessages(messages);
+  }, err => {
+    console.error("Errore subscribe messaggi hotline:", err);
+  });
+}
+
+function renderMessages(messages) {
+  chatMessagesEl.innerHTML = "";
+
+  if (!messages || messages.length === 0) {
+    const empty = document.createElement("div");
+    empty.style.fontSize = "12px";
+    empty.style.color = "#555";
+    empty.textContent = "Nessun messaggio. Scrivi la prima risposta.";
+    chatMessagesEl.appendChild(empty);
+    return;
+  }
+
+  messages.forEach(msg => {
+    const row = document.createElement("div");
+    row.className = "chat-message-row";
+
+    const fromDistributor = msg.authorDealerId === "FT001";
+    row.classList.add(fromDistributor ? "distributor" : "dealer");
+
+    const bubble = document.createElement("div");
+    bubble.className = "chat-bubble " + (fromDistributor ? "distributor" : "dealer");
+
+    const metaDiv = document.createElement("div");
+    metaDiv.className = "chat-meta";
+
+    const authorName = msg.authorName || "Sconosciuto";
+    const dealerId = msg.authorDealerId || "";
+    const createdAt = msg.createdAt && msg.createdAt.toDate ? msg.createdAt.toDate() : null;
+    const dateStr = createdAt ? formatDateTimeShort(createdAt) : "";
+    const roleText = dealerId === "FT001" ? "Distributore" : "Dealer";
+
+    metaDiv.textContent = `${authorName} (${roleText} ${dealerId}) - ${dateStr}`;
+
+    const textDiv = document.createElement("div");
+    textDiv.textContent = msg.text || "";
+
+    bubble.appendChild(metaDiv);
+    bubble.appendChild(textDiv);
+
+    row.appendChild(bubble);
+    chatMessagesEl.appendChild(row);
+  });
+
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+}
+
+// ========= INVIO MESSAGGIO =========
+async function onSendMessageClick() {
+  if (!selectedTicketId) {
+    alert("Seleziona prima un ticket.");
+    return;
+  }
+  const ticket = hotlineTickets.find(t => t.id === selectedTicketId);
+  if (!ticket) {
+    alert("Ticket non trovato.");
+    return;
+  }
+  if (ticket.status === "closed") {
+    alert("Il ticket è chiuso, non puoi aggiungere messaggi.");
+    return;
+  }
+
+  const text = (chatMessageInput.value || "").trim();
+  if (!text && (!chatFileInput.files || chatFileInput.files.length === 0)) {
+    alert("Scrivi un messaggio o allega un file.");
+    return;
+  }
+
+  const displayName = currentUserData?.displayName || currentUser.email || "(utente)";
+
+  btnSendMessage.disabled = true;
+  try {
+    // niente upload file per ora
+    const msgData = {
+      authorUid: currentUser.uid,
+      authorName: displayName,
+      authorDealerId: currentDealerId,
+      text: text,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      attachments: []
+    };
+
+    await db.collection("HotlineTickets").doc(selectedTicketId)
+      .collection("messages").add(msgData);
+
+    // cambia stato in base a chi risponde
+    let newStatus = ticket.status;
+    if (ticket.status !== "closed") {
+      newStatus = isDistributor ? "open_waiting_dealer" : "open_waiting_distributor";
     }
 
-    .page-header {
-      padding: 10px 20px;
-      background: #1f2933;
-      color: white;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-sizing: border-box;
-    }
-
-    .page-content {
-      flex: 1;
-      display: flex;
-      padding: 10px;
-      gap: 10px;
-      box-sizing: border-box;
-    }
-
-    /* Colonna sinistra: lista + filtri */
-    .tickets-panel {
-      width: 35%;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-width: 320px;
-    }
-
-    .tickets-filters {
-      padding: 10px;
-      border-bottom: 1px solid #ddd;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      box-sizing: border-box;
-    }
-
-    .tickets-filters input,
-    .tickets-filters select {
-      width: 100%;
-      padding: 6px 8px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-      font-size: 12px;
-    }
-
-    .tickets-filters .btn {
-      width: 100%;
-    }
-
-    .tickets-list {
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .ticket-item {
-      padding: 10px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-      box-sizing: border-box;
-    }
-
-    .ticket-item:hover {
-      background: #f3f4f6;
-    }
-
-    .ticket-item.selected {
-      background: #e5e7eb;
-    }
-
-    .ticket-item-code {
-      font-weight: bold;
-      font-size: 14px;
-    }
-
-    .ticket-item-subject {
-      font-size: 13px;
-      margin-top: 3px;
-    }
-
-    .ticket-item-meta {
-      font-size: 11px;
-      color: #555;
-      margin-top: 3px;
-    }
-
-    /* Colonna destra: dettaglio + chat */
-    .ticket-detail-panel {
-      flex: 1;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      min-width: 0;
-    }
-
-    .ticket-detail-header {
-      padding: 10px 15px;
-      border-bottom: 1px solid #ddd;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      box-sizing: border-box;
-    }
-
-    .ticket-detail-header-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .ticket-detail-header label {
-      font-size: 11px;
-      color: #555;
-      display: block;
-    }
-
-    .ticket-detail-header input,
-    .ticket-detail-header select {
-      padding: 4px 6px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      font-size: 12px;
-      box-sizing: border-box;
-    }
-
-    .ticket-detail-header .field-group {
-      display: flex;
-      flex-direction: column;
-      min-width: 140px;
-      max-width: 220px;
-      flex: 0 0 auto;
-    }
-
-    .ticket-detail-header .field-group.wide {
-      min-width: 240px;
-      max-width: 420px;
-      flex: 1 1 auto;
-    }
-
-    .ticket-status-badge {
-      padding: 3px 8px;
-      border-radius: 999px;
-      font-size: 11px;
-      display: inline-block;
-    }
-
-    .ticket-status-open {
-      background: #e0f2fe;
-      color: #0369a1;
-    }
-
-    .ticket-status-waiting {
-      background: #fef9c3;
-      color: #854d0e;
-    }
-
-    .ticket-status-closed {
-      background: #fee2e2;
-      color: #b91c1c;
-    }
-
-    .ticket-detail-actions {
-      margin-left: auto;
-      display: flex;
-      gap: 8px;
-      flex-wrap: nowrap;
-    }
-
-    .btn {
-      padding: 5px 10px;
-      border-radius: 4px;
-      border: none;
-      font-size: 12px;
-      cursor: pointer;
-      box-sizing: border-box;
-    }
-
-    .btn-primary {
-      background: #2563eb;
-      color: white;
-    }
-
-    .btn-secondary {
-      background: #6b7280;
-      color: white;
-    }
-
-    .btn-danger {
-      background: #b91c1c;
-      color: white;
-    }
-
-    .btn[disabled] {
-      opacity: 0.6;
-      cursor: default;
-    }
-
-    /* Corpo richiesta iniziale */
-    .ticket-body-container {
-      padding: 10px 15px;
-      border-bottom: 1px solid #ddd;
-      font-size: 13px;
-      max-height: 140px;
-      overflow-y: auto;
-      background: #f9fafb;
-      box-sizing: border-box;
-    }
-
-    .ticket-body-container strong {
-      font-size: 12px;
-    }
-
-    /* Chat */
-    .ticket-chat-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 10px 15px;
-      gap: 10px;
-      overflow: hidden;
-      box-sizing: border-box;
-    }
-
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .chat-message-row {
-      display: flex;
-    }
-
-    .chat-message-row.dealer {
-      justify-content: flex-end;
-    }
-
-    .chat-message-row.distributor {
-      justify-content: flex-start;
-    }
-
-    .chat-bubble {
-      max-width: 70%;
-      padding: 8px 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      box-sizing: border-box;
-      word-wrap: break-word;
-      white-space: pre-wrap;
-    }
-
-    .chat-bubble.dealer {
-      background: #2563eb;
-      color: white;
-      border-bottom-right-radius: 2px;
-    }
-
-    .chat-bubble.distributor {
-      background: #e5e7eb;
-      color: #111827;
-      border-bottom-left-radius: 2px;
-    }
-
-    .chat-meta {
-      font-size: 10px;
-      opacity: 0.8;
-      margin-bottom: 3px;
-    }
-
-    .chat-attachments {
-      margin-top: 5px;
-      font-size: 11px;
-    }
-
-    .chat-attachments a {
-      display: inline-block;
-      margin-right: 6px;
-    }
-
-    .chat-input-area {
-      border-top: 1px solid #ddd;
-      padding-top: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      box-sizing: border-box;
-    }
-
-    .chat-input-area textarea {
-      width: 100%;
-      height: 60px;
-      resize: vertical;
-      padding: 6px 8px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      font-size: 12px;
-      box-sizing: border-box;
-    }
-
-    .chat-input-actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .chat-input-actions input[type="file"] {
-      font-size: 11px;
-      max-width: 60%;
-    }
-
-    #noTicketSelectedMessage {
-      font-size: 13px;
-      color: #444;
-    }
-
-    /* ===== MODALE NUOVO TICKET ===== */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 999;
-    }
-
-    .modal-content {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-      max-width: 900px;
-      width: 90%;
-      max-height: 90vh;
-      display: flex;
-      flex-direction: column;
-      box-sizing: border-box;
-    }
-
-    .modal-header {
-      padding: 10px 15px;
-      border-bottom: 1px solid #ddd;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-body {
-      padding: 10px 15px;
-      overflow-y: auto;
-      box-sizing: border-box;
-      font-size: 13px;
-    }
-
-    .modal-footer {
-      padding: 10px 15px;
-      border-top: 1px solid #ddd;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      box-sizing: border-box;
-    }
-
-    .modal-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .modal-field-group {
-      display: flex;
-      flex-direction: column;
-      min-width: 150px;
-      max-width: 260px;
-      flex: 1 1 180px;
-    }
-
-    .modal-field-group label {
-      font-size: 11px;
-      color: #555;
-      margin-bottom: 2px;
-    }
-
-    .modal-field-group input,
-    .modal-field-group select,
-    .modal-field-group textarea {
-      padding: 4px 6px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      font-size: 12px;
-      box-sizing: border-box;
-    }
-
-    .modal-field-group textarea {
-      min-height: 60px;
-      resize: vertical;
-    }
-
-    .modal-error {
-      color: #b91c1c;
-      font-size: 11px;
-      margin-top: 4px;
-    }
-  </style>
-</head>
-<body>
-  <div class="page-container">
-    <div class="page-header">
-      <div>FTHOTLINE - Gestione Ticket</div>
-      <div>
-        <span id="currentUserInfo"></span>
-      </div>
-    </div>
-
-    <div class="page-content">
-      <!-- Pannello sinistro: filtri + lista ticket -->
-      <div class="tickets-panel">
-        <div class="tickets-filters">
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="Cerca per codice, oggetto, VIN, targa..."
-          >
-
-          <select id="statusFilter">
-            <option value="">Tutti gli stati</option>
-            <option value="open_waiting_distributor">Aperti (in attesa distributore)</option>
-            <option value="open_waiting_dealer">Aperti (in attesa dealer)</option>
-            <option value="closed">Chiusi</option>
-          </select>
-
-          <select id="departmentFilter">
-            <option value="">Tutti i reparti</option>
-          </select>
-
-          <button class="btn btn-primary" id="btnNewTicket">Nuovo ticket</button>
-        </div>
-
-        <div class="tickets-list" id="ticketsList"></div>
-      </div>
-
-      <!-- Pannello destro: dettaglio + chat -->
-      <div class="ticket-detail-panel">
-        <div class="ticket-detail-header" id="ticketDetailHeader">
-          <div id="noTicketSelectedMessage">
-            Nessun ticket selezionato. Seleziona un ticket dalla lista o creane uno nuovo.
-          </div>
-
-          <div id="ticketHeaderContent" style="display:none;">
-            <div class="ticket-detail-header-row">
-              <div class="field-group">
-                <label>Codice ticket</label>
-                <input type="text" id="ticketCode" readonly>
-              </div>
-
-              <div class="field-group wide">
-                <label>Oggetto</label>
-                <input type="text" id="ticketSubject" readonly>
-              </div>
-
-              <div class="field-group">
-                <label>Dealer</label>
-                <input type="text" id="ticketDealer" readonly>
-              </div>
-
-              <div class="field-group">
-                <label>Creato da</label>
-                <input type="text" id="ticketCreator" readonly>
-              </div>
-
-              <div class="field-group">
-                <label>Data creazione</label>
-                <input type="text" id="ticketCreatedAt" readonly>
-              </div>
-
-              <div class="field-group">
-                <label>Stato</label>
-                <span id="ticketStatusBadge" class="ticket-status-badge ticket-status-open">-</span>
-              </div>
-
-              <div class="ticket-detail-actions">
-                <button class="btn btn-secondary" id="btnEditTicket" style="display:none;">Modifica</button>
-                <button class="btn btn-danger" id="btnCloseTicket">Chiudi ticket</button>
-              </div>
-            </div>
-
-            <div class="ticket-detail-header-row">
-              <div class="field-group">
-                <label>VIN</label>
-                <input type="text" id="ticketVin" readonly>
-              </div>
-
-              <div class="field-group">
-                <label>Targa</label>
-                <input type="text" id="ticketPlate" readonly>
-              </div>
-
-              <div class="field-group">
-                <label>Km</label>
-                <input type="number" id="ticketKm" readonly>
-              </div>
-
-              <div class="field-group">
-                <label>Ore motore</label>
-                <input type="number" id="ticketEngineHours" readonly>
-              </div>
-
-              <div class="field-group wide">
-                <label>Reparto</label>
-                <select id="ticketDepartment" disabled></select>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="ticket-body-container" id="ticketBodyContainer" style="display:none;">
-          <div>
-            <strong>Richiesta iniziale:</strong>
-            <div id="ticketBodyText"></div>
-          </div>
-          <div style="margin-top:6px;">
-            <strong>Richiesta di garanzia:</strong>
-            <div id="ticketWarrantyRequestText"></div>
-          </div>
-        </div>
-
-        <div class="ticket-chat-container">
-          <div class="chat-messages" id="chatMessages"></div>
-
-          <div class="chat-input-area">
-            <textarea id="chatMessageInput" placeholder="Scrivi una risposta..."></textarea>
-
-            <div class="chat-input-actions">
-              <input type="file" id="chatFileInput" multiple>
-              <button class="btn btn-primary" id="btnSendMessage">Invia</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODALE NUOVO TICKET -->
-  <div class="modal-overlay" id="newTicketModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div>Nuovo ticket hotline</div>
-      </div>
-      <div class="modal-body">
-        <div class="modal-grid">
-          <div class="modal-field-group">
-            <label>Oggetto *</label>
-            <input type="text" id="newTicketSubject">
-          </div>
-
-          <div class="modal-field-group">
-            <label>Reparto *</label>
-            <select id="newTicketDepartment">
-              <option value="">Seleziona reparto</option>
-            </select>
-          </div>
-
-          <div class="modal-field-group">
-            <label>VIN</label>
-            <input type="text" id="newTicketVin">
-          </div>
-
-          <div class="modal-field-group">
-            <label>Targa</label>
-            <input type="text" id="newTicketPlate">
-          </div>
-
-          <div class="modal-field-group">
-            <label>Km</label>
-            <input type="number" id="newTicketKm">
-          </div>
-
-          <div class="modal-field-group">
-            <label>Ore motore</label>
-            <input type="number" id="newTicketEngineHours">
-          </div>
-
-          <div class="modal-field-group" style="flex:1 1 100%;">
-            <label>Richiesta di garanzia</label>
-            <textarea id="newTicketWarranty"></textarea>
-          </div>
-
-          <div class="modal-field-group" style="flex:1 1 100%;">
-            <label>Descrizione / Corpo richiesta *</label>
-            <textarea id="newTicketBody"></textarea>
-          </div>
-        </div>
-        <div id="newTicketError" class="modal-error"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" id="newTicketCancel">Annulla</button>
-        <button class="btn btn-primary" id="newTicketSubmit">Invia</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="FTHOTLINE.js"></script>
-</body>
-</html>
+    await db.collection("HotlineTickets").doc(selectedTicketId).update({
+      status: newStatus,
+      lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    chatMessageInput.value = "";
+    chatFileInput.value = "";
+  } catch (err) {
+    console.error("Errore invio messaggio hotline:", err);
+    alert("Errore durante l'invio del messaggio.");
+  } finally {
+    btnSendMessage.disabled = false;
+  }
+}
+
+// ========= CHIUDI TICKET =========
+async function onCloseTicketClick() {
+  if (!selectedTicketId) {
+    alert("Seleziona prima un ticket.");
+    return;
+  }
+  const ticket = hotlineTickets.find(t => t.id === selectedTicketId);
+  if (!ticket) {
+    alert("Ticket non trovato.");
+    return;
+  }
+  if (ticket.status === "closed") return;
+
+  if (!confirm("Vuoi davvero chiudere questo ticket? Non sarà più modificabile.")) return;
+
+  btnCloseTicket.disabled = true;
+
+  try {
+    await db.collection("HotlineTickets").doc(selectedTicketId).update({
+      status: "closed",
+      lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (err) {
+    console.error("Errore chiusura ticket:", err);
+    alert("Errore durante la chiusura del ticket.");
+    btnCloseTicket.disabled = false;
+  }
+}
+
+// ========= NUOVO TICKET =========
+function onNewTicketClick() {
+  if (!currentDealerId) {
+    alert("Profilo utente non valido (manca dealerId).");
+    return;
+  }
+
+  newTicketSubjectInput.value = "";
+  newTicketDepartmentSelect.value = "";
+  newTicketVinInput.value = "";
+  newTicketPlateInput.value = "";
+  newTicketKmInput.value = "";
+  newTicketEngineHoursInput.value = "";
+  newTicketWarrantyInput.value = "";
+  newTicketBodyInput.value = "";
+  newTicketErrorEl.textContent = "";
+
+  newTicketModal.style.display = "flex";
+}
+
+function closeNewTicketModal() {
+  newTicketModal.style.display = "none";
+}
+
+function generateTicketCode() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "";
+  for (let i = 0; i < 9; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+async function submitNewTicket() {
+  if (!currentUser || !currentDealerId) {
+    newTicketErrorEl.textContent = "Profilo utente non valido.";
+    return;
+  }
+
+  const subject = (newTicketSubjectInput.value || "").trim();
+  const deptCode = newTicketDepartmentSelect.value;
+  const vin = (newTicketVinInput.value || "").trim();
+  const plate = (newTicketPlateInput.value || "").trim();
+  const kmStr = (newTicketKmInput.value || "").trim();
+  const engineStr = (newTicketEngineHoursInput.value || "").trim();
+  const warranty = (newTicketWarrantyInput.value || "").trim();
+  const body = (newTicketBodyInput.value || "").trim();
+
+  if (!subject) {
+    newTicketErrorEl.textContent = "L'oggetto è obbligatorio.";
+    return;
+  }
+  if (!deptCode) {
+    newTicketErrorEl.textContent = "Il reparto è obbligatorio.";
+    return;
+  }
+  if (!body) {
+    newTicketErrorEl.textContent = "La descrizione è obbligatoria.";
+    return;
+  }
+
+  const dep = hotlineDepartments.find(d => d.code === deptCode);
+  if (!dep) {
+    newTicketErrorEl.textContent = "Reparto non valido.";
+    return;
+  }
+
+  const km = kmStr ? Number(kmStr) : null;
+  const engineHours = engineStr ? Number(engineStr) : null;
+  const displayName = currentUserData?.displayName || currentUser.email || "(utente)";
+
+  const ticketData = {
+    ticketCode: generateTicketCode(),
+    dealerId: currentDealerId,
+    creatorUid: currentUser.uid,
+    creatorName: displayName,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+
+    subject: subject,
+    body: body,
+    vin: vin || "",
+    plate: plate || "",
+    km: km,
+    engineHours: engineHours,
+    warrantyRequest: warranty || "",
+
+    departmentId: dep.code,
+    departmentName: dep.name,
+
+    status: "open_waiting_distributor",
+    lastUpdate: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  newTicketSubmitBtn.disabled = true;
+  newTicketErrorEl.textContent = "";
+
+  try {
+    await db.collection("HotlineTickets").add(ticketData);
+    closeNewTicketModal();
+  } catch (err) {
+    console.error("Errore creazione ticket hotline:", err);
+    newTicketErrorEl.textContent = "Errore nella creazione del ticket: " + (err.message || "");
+  } finally {
+    newTicketSubmitBtn.disabled = false;
+  }
+}
+
+// ========= HELPER STATO & DATE =========
+function getStatusLabelForUser(status) {
+  if (status === "closed") return "Chiuso";
+
+  if (isDistributor) {
+    if (status === "open_waiting_distributor") return "In attesa";
+    if (status === "open_waiting_dealer") return "Gestita";
+  } else {
+    if (status === "open_waiting_distributor") return "Inviata";
+    if (status === "open_waiting_dealer") return "In attesa";
+  }
+  return status || "";
+}
+
+function getStatusLabelAndClass(status) {
+  let label = getStatusLabelForUser(status);
+  let cssClass = "";
+  if (status === "closed") cssClass = "ticket-status-closed";
+  else if (status === "open_waiting_distributor") cssClass = "ticket-status-open";
+  else if (status === "open_waiting_dealer") cssClass = "ticket-status-waiting";
+  return { label, cssClass };
+}
+
+function pad2(n) {
+  return n < 10 ? "0" + n : "" + n;
+}
+
+function formatDateTime(date) {
+  if (!date) return "";
+  const d = pad2(date.getDate());
+  const m = pad2(date.getMonth() + 1);
+  const y = date.getFullYear();
+  const hh = pad2(date.getHours());
+  const mm = pad2(date.getMinutes());
+  return `${d}/${m}/${y} ${hh}:${mm}`;
+}
+
+function formatDateTimeShort(date) {
+  if (!date) return "";
+  const d = pad2(date.getDate());
+  const m = pad2(date.getMonth() + 1);
+  const hh = pad2(date.getHours());
+  const mm = pad2(date.getMinutes());
+  return `${d}/${m} ${hh}:${mm}`;
+}
