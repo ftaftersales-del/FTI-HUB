@@ -11,6 +11,9 @@ const hotlineAuth    = firebase.auth();
 const hotlineDb      = firebase.firestore();
 const hotlineStorage = firebase.storage(); // <-- per allegati
 
+// dimensione massima allegati: 20 MB
+const MAX_ATTACHMENT_SIZE = 20 * 1024 * 1024;
+
 // ================== STATO GLOBALE ==================
 let currentUser = null;
 let currentUserData = null;   // doc in "Users"
@@ -21,6 +24,9 @@ let isDistributor = false;    // dealerId === "FT001"
 let hotlineDepartments = [];  // {id, code, name, order}
 let hotlineTickets = [];      // lista ticket visibili
 let selectedTicketId = null;
+
+// numero massimo di ticket caricati (paginazione)
+let ticketsLimit = 50;
 
 let ticketsUnsubscribe = null;
 let messagesUnsubscribe = null;
@@ -33,7 +39,7 @@ let ticketCodeInput, ticketSubjectInput, ticketDealerInput, ticketCreatorInput, 
 let ticketStatusBadge, ticketVinInput, ticketPlateInput, ticketKmInput, ticketEngineHoursInput, ticketDepartmentSelect;
 let ticketBodyTextEl, ticketWarrantyRequestTextEl;
 let chatMessagesEl, chatMessageInput, chatFileInput;
-let btnNewTicket, btnCloseTicket, btnSendMessage;
+let btnNewTicket, btnCloseTicket, btnSendMessage, btnLoadMoreTickets;
 
 // DOM refs modale nuovo ticket
 let newTicketModal, newTicketSubjectInput, newTicketDepartmentSelect;
@@ -79,9 +85,10 @@ window.addEventListener("load", () => {
   chatMessageInput = document.getElementById("chatMessageInput");
   chatFileInput    = document.getElementById("chatFileInput");
 
-  btnNewTicket   = document.getElementById("btnNewTicket");
-  btnCloseTicket = document.getElementById("btnCloseTicket");
-  btnSendMessage = document.getElementById("btnSendMessage");
+  btnNewTicket       = document.getElementById("btnNewTicket");
+  btnCloseTicket     = document.getElementById("btnCloseTicket");
+  btnSendMessage     = document.getElementById("btnSendMessage");
+  btnLoadMoreTickets = document.getElementById("btnLoadMoreTickets");
 
   // modale nuovo ticket
   newTicketModal             = document.getElementById("newTicketModal");
@@ -107,6 +114,9 @@ window.addEventListener("load", () => {
   btnNewTicket.addEventListener("click", onNewTicketClick);
   btnCloseTicket.addEventListener("click", onCloseTicketClick);
   btnSendMessage.addEventListener("click", onSendMessageClick);
+  if (btnLoadMoreTickets) {
+    btnLoadMoreTickets.addEventListener("click", onLoadMoreTicketsClick);
+  }
 
   newTicketCancelBtn.addEventListener("click", closeNewTicketModal);
   newTicketSubmitBtn.addEventListener("click", submitNewTicket);
@@ -267,6 +277,12 @@ function fillNewTicketDepartmentSelect() {
 }
 
 // ================== TICKET: SUBSCRIBE & RENDER ==================
+function onLoadMoreTicketsClick() {
+  // aumenta il limite e ri-sottoscrive la query
+  ticketsLimit += 50;
+  subscribeTickets();
+}
+
 function subscribeTickets() {
   if (!currentDealerId && !isDistributor) {
     console.warn("Nessun dealerId, impossibile caricare i ticket.");
@@ -286,7 +302,7 @@ function subscribeTickets() {
     query = query.where("dealerId", "==", currentDealerId);
   }
 
-  query = query.orderBy("lastUpdate", "desc");
+  query = query.orderBy("lastUpdate", "desc").limit(ticketsLimit);
 
   ticketsUnsubscribe = query.onSnapshot(
     (snap) => {
@@ -398,6 +414,16 @@ function renderTicketsList() {
     item.className = "ticket-item";
     if (t.id === selectedTicketId) item.classList.add("selected");
     item.dataset.ticketId = t.id;
+
+    // evidenzia i ticket in cui l'ultimo messaggio NON è del mio dealer
+    const needsReply =
+      t.status !== "closed" &&
+      t.lastMessageAuthorDealerId &&
+      t.lastMessageAuthorDealerId !== currentDealerId;
+
+    if (needsReply) {
+      item.classList.add("ticket-item-needs-reply");
+    }
 
     const codeDiv = document.createElement("div");
     codeDiv.className = "ticket-item-code";
@@ -658,6 +684,19 @@ async function onSendMessageClick() {
     return;
   }
 
+  // controllo dimensione massima 20 MB per ogni file
+  if (files && files.length > 0) {
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      if (f && typeof f.size === "number" && f.size > MAX_ATTACHMENT_SIZE) {
+        alert(
+          `Il file "${f.name}" supera il limite massimo di 20 MB. Riduci la dimensione o scegli un altro file.`
+        );
+        return;
+      }
+    }
+  }
+
   btnSendMessage.disabled = true;
 
   try {
@@ -679,7 +718,7 @@ async function onSendMessageClick() {
           fileName: file.name,
           downloadUrl: downloadUrl,
           size: file.size || null,
-          contentType: file.type || null
+          contentType: file.type || null,
         });
       }
     }
@@ -709,9 +748,15 @@ async function onSendMessageClick() {
         : "open_waiting_distributor";
     }
 
+    const now = firebase.firestore.FieldValue.serverTimestamp();
+
     await hotlineDb.collection("HotlineTickets").doc(selectedTicketId).update({
       status: newStatus,
-      lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+      lastUpdate: now,
+      lastMessageAt: now,
+      lastMessageAuthorUid: currentUser.uid,
+      lastMessageAuthorName: displayName,
+      lastMessageAuthorDealerId: currentDealerId,
     });
 
     chatMessageInput.value = "";
@@ -746,9 +791,20 @@ async function onCloseTicketClick() {
   btnCloseTicket.disabled = true;
 
   try {
+    const displayName =
+      (currentUserData && currentUserData.displayName) ||
+      (currentUser && currentUser.email) ||
+      "(utente)";
+
+    const now = firebase.firestore.FieldValue.serverTimestamp();
+
     await hotlineDb.collection("HotlineTickets").doc(selectedTicketId).update({
       status: "closed",
-      lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+      lastUpdate: now,
+      closedAt: now,
+      closedByUid: currentUser ? currentUser.uid : null,
+      closedByName: displayName,
+      closedByDealerId: currentDealerId,
     });
   } catch (err) {
     console.error("Errore chiusura ticket:", err);
@@ -829,13 +885,15 @@ async function submitNewTicket() {
   const displayName =
     currentUserData.displayName || currentUser.email || "(utente)";
 
+  const now = firebase.firestore.FieldValue.serverTimestamp();
+
   const ticketData = {
     ticketCode: generateTicketCode(),
 
     dealerId: currentDealerId,
     creatorUid: currentUser.uid,
     creatorName: displayName,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    createdAt: now,
 
     subject: subject,
     body: body,
@@ -850,7 +908,13 @@ async function submitNewTicket() {
     departmentName: dep.name,
 
     status: "open_waiting_distributor",
-    lastUpdate: firebase.firestore.FieldValue.serverTimestamp(),
+    lastUpdate: now,
+
+    // per evidenziare i ticket con ultimi messaggi
+    lastMessageAt: now,
+    lastMessageAuthorUid: currentUser.uid,
+    lastMessageAuthorName: displayName,
+    lastMessageAuthorDealerId: currentDealerId,
   };
 
   newTicketSubmitBtn.disabled = true;
