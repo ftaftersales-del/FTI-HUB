@@ -324,11 +324,6 @@
       background: #c62828;
     }
 
-    .chat-file-label {
-      font-size: 11px;
-      color: #555;
-    }
-
     /* Modal nuovo ticket */
     .modal-backdrop {
       position: fixed;
@@ -400,7 +395,19 @@
 </head>
 <body>
   <div class="top-bar">
-    <div class="top-bar-title">FTHOTLINE - Gestione Ticket</div>
+
+    <!-- 🔵 PULSANTE TORNA AL PORTALE -->
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button onclick="window.location.href='FTHUBAS.html'"
+              style="background:#ffffff; color:#004a92; border:none;
+                     padding:4px 10px; border-radius:3px;
+                     cursor:pointer; font-size:13px;">
+        ⬅ Torna al portale
+      </button>
+
+      <div class="top-bar-title">FTHOTLINE - Gestione Ticket</div>
+    </div>
+
     <div class="top-bar-user">
       Utente: <span id="currentUserInfo">Caricamento utente...</span>
     </div>
