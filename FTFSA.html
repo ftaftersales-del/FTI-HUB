@@ -39,7 +39,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 20px;
     }
 
     .btn {
@@ -63,12 +63,6 @@
     .btn[disabled] {
       opacity: 0.6;
       cursor: default;
-    }
-
-    .debug-info {
-      font-size: 11px;
-      color: #666;
-      margin-bottom: 15px;
     }
 
     .search-section {
@@ -188,18 +182,13 @@
     <div class="top-bar">
       <h1>Gestione FSA (FTFSA)</h1>
       <div>
-        <!-- Bottone Aggiorna FSA: visibile solo ad admin del distributore -->
-        <button id="btnAggiornaFSA" class="btn btn-primary" style="display:none;">
+        <!-- 🔓 Per ora SEMPRE visibile, sistemiamo i permessi in Firestore -->
+        <button id="btnAggiornaFSA" class="btn btn-primary">
           Aggiorna FSA
         </button>
         <!-- input file nascosto -->
         <input type="file" id="inputFSAFile" accept=".xls,.xlsx" style="display:none;">
       </div>
-    </div>
-
-    <!-- 🔎 DEBUG: info admin letta da Firestore -->
-    <div id="debugAdmin" class="debug-info">
-      DEBUG: caricamento dati utente...
     </div>
 
     <div class="search-section">
@@ -240,34 +229,13 @@
 
   <script>
     // ==========================
-    // Inizializzazione Firebase
+    // Firebase base
     // ==========================
-    const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let isDistributorAdminFlag = false; // true solo per admin distributore
-
-    // -------- Regola admin distributore --------
-    // Admin distributore se:
-    // dealerId === "FT001"  E  (isAdmin === true  OPPURE  role === "Admin" case-insensitive)
-    function isDistributorAdmin(userDoc) {
-      if (!userDoc || !userDoc.exists) return false;
-      const d = userDoc.data() || {};
-
-      const dealerId = (d.dealerId || d.DealerID || "").toString().toUpperCase();
-      if (dealerId !== "FT001") return false;
-
-      const isAdminFlag = d.isAdmin === true;
-
-      let roleAdmin = false;
-      if (typeof d.role === "string") {
-        roleAdmin = d.role.toLowerCase() === "admin";
-      }
-
-      return isAdminFlag || roleAdmin;
-    }
-
-    // Mostra messaggi nella sezione messages
+    // ==========================
+    // Messaggi
+    // ==========================
     function showMessage(text, type = "info") {
       const messagesDiv = document.getElementById("messages");
       messagesDiv.innerHTML = "";
@@ -278,52 +246,6 @@
       p.textContent = text;
       messagesDiv.appendChild(p);
     }
-
-    // ==========================
-    // Gestione autenticazione
-    // ==========================
-    auth.onAuthStateChanged(async (user) => {
-      const debugDiv = document.getElementById("debugAdmin");
-
-      if (!user) {
-        debugDiv.textContent = "DEBUG: nessun utente loggato (redirect a index.html)";
-        window.location.href = "index.html";
-        return;
-      }
-
-      try {
-        // Profilo utente nella collection Users
-        const doc = await db.collection("Users").doc(user.uid).get();
-        const data = doc.data() || {};
-
-        const dealerId = (data.dealerId || data.DealerID || "").toString().toUpperCase();
-        const role = data.role || "";
-        const isAdminField = data.isAdmin === true;
-
-        isDistributorAdminFlag = isDistributorAdmin(doc);
-
-        // DEBUG a schermo
-        debugDiv.textContent =
-          "DEBUG utente: dealerId=" + dealerId +
-          ", role=" + role +
-          ", isAdmin=" + isAdminField +
-          ", flagAdmin=" + isDistributorAdminFlag;
-
-        // DEBUG in console
-        console.log("FTFSA - user uid:", user.uid);
-        console.log("FTFSA - user data:", data);
-        console.log("FTFSA - computed isDistributorAdminFlag:", isDistributorAdminFlag);
-
-        // Mostra il bottone Aggiorna FSA solo per admin distributore
-        if (isDistributorAdminFlag) {
-          document.getElementById("btnAggiornaFSA").style.display = "inline-block";
-        }
-      } catch (error) {
-        console.error("Errore nel recupero dati utente:", error);
-        debugDiv.textContent = "DEBUG: errore nel recupero dati utente (" + error.message + ")";
-        showMessage("Errore nel recupero dati utente. Contattare l'amministratore.", "error");
-      }
-    });
 
     // ==========================
     // Ricerca per telaio
@@ -420,12 +342,8 @@
         statusSpan.dataset.docId = doc.id;
         statusSpan.dataset.value = isPerformed ? "true" : "false";
 
-        // Se l'utente NON è admin del distributore, disabilito il click
-        if (!isDistributorAdminFlag) {
-          statusSpan.classList.add("disabled");
-        } else {
-          statusSpan.addEventListener("click", onTogglePerformed);
-        }
+        // Per ora SEMPRE cliccabile
+        statusSpan.addEventListener("click", onTogglePerformed);
 
         tdPerf.appendChild(statusSpan);
         tr.appendChild(tdPerf);
@@ -454,11 +372,9 @@
     }
 
     // ==========================
-    // Toggle campo IsPerformed (solo admin distributore)
+    // Toggle campo IsPerformed
     // ==========================
     async function onTogglePerformed(event) {
-      if (!isDistributorAdminFlag) return; // ulteriore sicurezza
-
       const span = event.currentTarget;
       const docId = span.dataset.docId;
       const currentVal = span.dataset.value === "true";
@@ -485,16 +401,10 @@
     const btnAggiornaFSA = document.getElementById("btnAggiornaFSA");
     const inputFSAFile = document.getElementById("inputFSAFile");
 
-    if (btnAggiornaFSA) {
-      btnAggiornaFSA.addEventListener("click", () => {
-        if (!isDistributorAdminFlag) {
-          alert("Solo l'admin del distributore può aggiornare la banca dati FSA.");
-          return;
-        }
-        inputFSAFile.value = "";
-        inputFSAFile.click();
-      });
-    }
+    btnAggiornaFSA.addEventListener("click", () => {
+      inputFSAFile.value = "";
+      inputFSAFile.click();
+    });
 
     inputFSAFile.addEventListener("change", async (event) => {
       const file = event.target.files[0];
