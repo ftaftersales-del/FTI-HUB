@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>FTFSA - Gestione FSA</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <!-- Libreria per leggere file Excel (XLS / XLSX) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background-color: #1976d2;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background-color: #9e9e9e;
+      color: #fff;
+    }
+
+    .btn[disabled] {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .search-section {
+      margin-bottom: 20px;
+      padding: 10px;
+      border-radius: 6px;
+      background: #fafafa;
+      border: 1px solid #ddd;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .search-row label {
+      font-weight: bold;
+    }
+
+    .search-row input[type="text"] {
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      min-width: 250px;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      text-align: left;
+    }
+
+    th {
+      background: #eeeeee;
+    }
+
+    td.center {
+      text-align: center;
+    }
+
+    .status-icon {
+      font-size: 20px;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    .status-icon.performed::before {
+      content: "✔";
+      color: #2e7d32; /* verde */
+    }
+
+    .status-icon.not-performed::before {
+      content: "✖";
+      color: #fbc02d; /* giallo */
+    }
+
+    .status-icon.disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
+
+    .pdf-icon {
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .pdf-icon::before {
+      content: "➜";
+    }
+
+    .pdf-icon.disabled {
+      opacity: 0.6;
+    }
+
+    .message {
+      margin-top: 10px;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .message.info {
+      background: #e3f2fd;
+      border: 1px solid #90caf9;
+    }
+
+    .message.error {
+      background: #ffebee;
+      border: 1px solid #ef9a9a;
+    }
+
+    .footer-buttons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <h1>Gestione FSA (FTFSA)</h1>
+      <div>
+        <!-- Bottone Aggiorna FSA: visibile solo ad admin del distributore -->
+        <button id="btnAggiornaFSA" class="btn btn-primary" style="display:none;">
+          Aggiorna FSA
+        </button>
+        <!-- input file nascosto -->
+        <input type="file" id="inputFSAFile" accept=".xls,.xlsx" style="display:none;">
+      </div>
+    </div>
+
+    <div class="search-section">
+      <div class="search-row">
+        <label for="searchTelaio">Telaio:</label>
+        <input type="text" id="searchTelaio" placeholder="Inserisci il telaio (VIN)">
+        <button id="btnCerca" class="btn btn-primary">Cerca</button>
+      </div>
+      <div id="searchStatus" class="status"></div>
+    </div>
+
+    <div id="messages"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Telaio</th>
+          <th>Codice FSA</th>
+          <th>Descrizione Campagna</th>
+          <th>Data Inizio</th>
+          <th>Data Fine</th>
+          <th>Tipologia</th>
+          <th>Campagna Eseguita</th>
+          <th>Documento</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody">
+        <!-- Risultati ricerca -->
+      </tbody>
+    </table>
+
+    <div class="footer-buttons">
+      <button class="btn btn-secondary" onclick="window.location.href='FTHUBAS.html'">
+        Torna alla Home
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================
+    // Inizializzazione Firebase
+    // ==========================
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUserDoc = null;
+    let isDistributorAdminFlag = false; // true solo per admin distributore (FT001 + ruolo Admin)
+
+    // Determina se l'utente è admin del distributore
+    function isDistributorAdmin(userDoc) {
+      if (!userDoc || !userDoc.exists) return false;
+      const data = userDoc.data() || {};
+
+      const dealerId = data.DealerID || data.dealerId || data.dealerID || "";
+      let roles = data.Type || data.role || "User";
+      if (!Array.isArray(roles)) roles = [roles];
+
+      // Convenzione: DealerID "FT001" = distributore; ruolo "Admin" = admin
+      const isFT001 = dealerId === "FT001";
+      const isAdminRole = roles.includes("Admin");
+
+      return isFT001 && isAdminRole;
+    }
+
+    // Mostra messaggi nella sezione messages
+    function showMessage(text, type = "info") {
+      const messagesDiv = document.getElementById("messages");
+      messagesDiv.innerHTML = "";
+      if (!text) return;
+
+      const p = document.createElement("div");
+      p.className = "message " + type;
+      p.textContent = text;
+      messagesDiv.appendChild(p);
+    }
+
+    // ==========================
+    // Gestione autenticazione
+    // ==========================
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        // Se non loggato, rimando alla login (adatta il nome se diverso)
+        window.location.href = "FTLOGIN.html";
+        return;
+      }
+
+      try {
+        // Documento utente in PersonaleDealers (adegua se usi un'altra collezione)
+        const doc = await db.collection("PersonaleDealers").doc(user.uid).get();
+        currentUserDoc = doc;
+        isDistributorAdminFlag = isDistributorAdmin(doc);
+
+        // Mostra il bottone Aggiorna FSA solo per admin distributore
+        if (isDistributorAdminFlag) {
+          document.getElementById("btnAggiornaFSA").style.display = "inline-block";
+        }
+      } catch (error) {
+        console.error("Errore nel recupero dati utente:", error);
+        showMessage("Errore nel recupero dati utente. Contattare l'amministratore.", "error");
+      }
+    });
+
+    // ==========================
+    // Ricerca per telaio
+    // ==========================
+    document.getElementById("btnCerca").addEventListener("click", () => {
+      eseguiRicerca();
+    });
+
+    document.getElementById("searchTelaio").addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        eseguiRicerca();
+      }
+    });
+
+    async function eseguiRicerca() {
+      const vinInput = document.getElementById("searchTelaio").value.trim();
+      const searchStatus = document.getElementById("searchStatus");
+      const tbody = document.getElementById("resultsBody");
+
+      tbody.innerHTML = "";
+      showMessage("");
+      if (!vinInput) {
+        searchStatus.textContent = "Inserire un telaio per la ricerca.";
+        return;
+      }
+
+      const telaio = vinInput.toUpperCase();
+      searchStatus.textContent = "Ricerca in corso...";
+
+      try {
+        const querySnap = await db
+          .collection("FTFSA")
+          .where("Telaio", "==", telaio)
+          .get();
+
+        if (querySnap.empty) {
+          searchStatus.textContent = "Nessuna FSA trovata per il telaio inserito.";
+          return;
+        }
+
+        searchStatus.textContent = `Trovate ${querySnap.size} campagne FSA per il telaio ${telaio}.`;
+        renderResults(querySnap.docs);
+      } catch (error) {
+        console.error("Errore nella ricerca FSA:", error);
+        searchStatus.textContent = "Errore durante la ricerca. Riprova.";
+        showMessage("Errore durante la ricerca FSA.", "error");
+      }
+    }
+
+    // ==========================
+    // Rendering tabella risultati
+    // ==========================
+    function renderResults(docs) {
+      const tbody = document.getElementById("resultsBody");
+      tbody.innerHTML = "";
+
+      docs.forEach((doc) => {
+        const data = doc.data();
+
+        const tr = document.createElement("tr");
+
+        const tdTelaio = document.createElement("td");
+        tdTelaio.textContent = data.Telaio || "";
+        tr.appendChild(tdTelaio);
+
+        const tdCodice = document.createElement("td");
+        tdCodice.textContent = data.CodiceFSA || data["Campaign Code"] || "";
+        tr.appendChild(tdCodice);
+
+        const tdDescr = document.createElement("td");
+        tdDescr.textContent = data.DescrizioneCampagna || data["Campaign Description"] || "";
+        tr.appendChild(tdDescr);
+
+        const tdDataInizio = document.createElement("td");
+        tdDataInizio.textContent = data.DataInizio || data["Starting Date"] || "";
+        tr.appendChild(tdDataInizio);
+
+        const tdDataFine = document.createElement("td");
+        tdDataFine.textContent = data.DataFine || data["End Date"] || "";
+        tr.appendChild(tdDataFine);
+
+        const tdTipo = document.createElement("td");
+        tdTipo.textContent = data.Tipologia || data["Fsa Type"] || "";
+        tr.appendChild(tdTipo);
+
+        // Campo booleano IsPerformed -> icona
+        const tdPerf = document.createElement("td");
+        tdPerf.className = "center";
+
+        const isPerformed = !!data.IsPerformed;
+        const statusSpan = document.createElement("span");
+        statusSpan.classList.add("status-icon");
+        statusSpan.classList.add(isPerformed ? "performed" : "not-performed");
+        statusSpan.dataset.docId = doc.id;
+        statusSpan.dataset.value = isPerformed ? "true" : "false";
+
+        // Se l'utente NON è admin del distributore, disabilito il click
+        if (!isDistributorAdminFlag) {
+          statusSpan.classList.add("disabled");
+        } else {
+          statusSpan.addEventListener("click", onTogglePerformed);
+        }
+
+        tdPerf.appendChild(statusSpan);
+        tr.appendChild(tdPerf);
+
+        // Icona documento (freccia)
+        const tdDoc = document.createElement("td");
+        tdDoc.className = "center";
+        const pdfSpan = document.createElement("span");
+        pdfSpan.classList.add("pdf-icon");
+        pdfSpan.dataset.pdfUrl = data.pdfUrl || ""; // campo opzionale dove potrai salvare il link al PDF
+
+        pdfSpan.addEventListener("click", () => {
+          const url = pdfSpan.dataset.pdfUrl;
+          if (url) {
+            window.open(url, "_blank");
+          } else {
+            alert("Nessun documento caricato: contattare il Reparto Garanzia per informazioni");
+          }
+        });
+
+        tdDoc.appendChild(pdfSpan);
+        tr.appendChild(tdDoc);
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ==========================
+    // Toggle campo IsPerformed (solo admin distributore)
+    // ==========================
+    async function onTogglePerformed(event) {
+      if (!isDistributorAdminFlag) return; // ulteriore sicurezza
+
+      const span = event.currentTarget;
+      const docId = span.dataset.docId;
+      const currentVal = span.dataset.value === "true";
+      const newVal = !currentVal;
+
+      try {
+        await db.collection("FTFSA").doc(docId).update({
+          IsPerformed: newVal
+        });
+
+        // Aggiorna icona
+        span.dataset.value = newVal ? "true" : "false";
+        span.classList.toggle("performed", newVal);
+        span.classList.toggle("not-performed", !newVal);
+      } catch (error) {
+        console.error("Errore nell'aggiornamento IsPerformed:", error);
+        alert("Errore nell'aggiornamento dello stato FSA.");
+      }
+    }
+
+    // ==========================
+    // Gestione upload Excel
+    // ==========================
+    const btnAggiornaFSA = document.getElementById("btnAggiornaFSA");
+    const inputFSAFile = document.getElementById("inputFSAFile");
+
+    if (btnAggiornaFSA) {
+      btnAggiornaFSA.addEventListener("click", () => {
+        if (!isDistributorAdminFlag) {
+          alert("Solo l'admin del distributore può aggiornare la banca dati FSA.");
+          return;
+        }
+        inputFSAFile.value = "";
+        inputFSAFile.click();
+      });
+    }
+
+    inputFSAFile.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      if (!confirm("Questa operazione sostituirà completamente la banca dati FSA. Vuoi continuare?")) {
+        return;
+      }
+
+      showMessage("Importazione FSA in corso, attendere...", "info");
+
+      try {
+        const data = await readExcelFile(file);
+        await replaceFSACollection(data);
+        showMessage("Banca dati FSA aggiornata correttamente.", "info");
+      } catch (error) {
+        console.error("Errore durante l'importazione FSA:", error);
+        showMessage("Errore durante l'importazione del file FSA.", "error");
+      }
+    });
+
+    // Legge il file Excel e restituisce un array di oggetti (righe)
+    function readExcelFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: "array" });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+            resolve(json);
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.onerror = reject;
+        reader.readAsArrayBuffer(file);
+      });
+    }
+
+    // Sostituisce completamente la collection FTFSA
+    async function replaceFSACollection(rows) {
+      // 1. Cancella tutti i documenti esistenti
+      await deleteAllDocsInCollection("FTFSA");
+
+      // 2. Inserisci i nuovi documenti
+      const batchSize = 400;
+      let batch = db.batch();
+      let countInBatch = 0;
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+
+        // Prende i campi dal file con i nomi indicati
+        const vinRaw = row["Vin No"] || row["VIN No"] || row["VIN"] || row["Vin"] || "";
+        const telaio = (vinRaw || "").toString().trim().toUpperCase();
+
+        const codiceFSA = (row["Campaign Code"] || "").toString().trim();
+        const descrCamp = (row["Campaign Description"] || "").toString().trim();
+        const dataInizio = (row["Starting Date"] || "").toString().trim();
+        const dataFine = (row["End Date"] || "").toString().trim();
+        const tipologia = (row["Fsa Type"] || "").toString().trim();
+
+        // Is Performed -> booleano
+        const performedRaw = (row["Is Performed"] || "").toString().trim().toLowerCase();
+        const isPerformed =
+          performedRaw === "performed" ||
+          performedRaw === "true" ||
+          performedRaw === "yes" ||
+          performedRaw === "si" ||
+          performedRaw === "sì";
+
+        // Se non c'è telaio e codice, salto la riga
+        if (!telaio && !codiceFSA) continue;
+
+        const docId = telaio && codiceFSA ? (telaio + "_" + codiceFSA) : undefined;
+        const docRef = docId
+          ? db.collection("FTFSA").doc(docId)
+          : db.collection("FTFSA").doc(); // fallback
+
+        const docData = {
+          Telaio: telaio,
+          CodiceFSA: codiceFSA,
+          DescrizioneCampagna: descrCamp,
+          DataInizio: dataInizio,
+          DataFine: dataFine,
+          Tipologia: tipologia,
+          IsPerformed: isPerformed,
+          // campo opzionale per il futuro link al PDF
+          pdfUrl: "",
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        batch.set(docRef, docData);
+        countInBatch++;
+
+        if (countInBatch >= batchSize) {
+          await batch.commit();
+          batch = db.batch();
+          countInBatch = 0;
+        }
+      }
+
+      if (countInBatch > 0) {
+        await batch.commit();
+      }
+    }
+
+    // Cancella tutti i documenti di una collection (lato client, a batch)
+    async function deleteAllDocsInCollection(collectionName) {
+      const snapshot = await db.collection(collectionName).get();
+      if (snapshot.empty) return;
+
+      const batchSize = 400;
+      let batch = db.batch();
+      let count = 0;
+
+      snapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+        count++;
+        if (count >= batchSize) {
+          batch.commit();
+          batch = db.batch();
+          count = 0;
+        }
+      });
+
+      if (count > 0) {
+        await batch.commit();
+      }
+    }
+  </script>
+</body>
+</html>
