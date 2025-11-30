@@ -10,6 +10,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
+  <!-- qui dentro hai già: const db = firebase.firestore(); -->
 
   <!-- Libreria per leggere file Excel (XLS / XLSX) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -173,7 +174,7 @@
     <div class="top-bar">
       <h1>Gestione FSA (FTFSA)</h1>
       <div>
-        <!-- 🔹 onclick diretto: apre SEMPRE il file chooser -->
+        <!-- onclick diretto: apre il file chooser -->
         <button id="btnAggiornaFSA" class="btn btn-primary"
                 onclick="document.getElementById('inputFSAFile').click()">
           Aggiorna FSA
@@ -219,16 +220,8 @@
   </div>
 
   <script>
-    // ==========================
-    // Firebase base
-    // ==========================
-    let db = null;
-    try {
-      db = firebase.firestore();
-      console.log("FTFSA - Firestore inizializzato");
-    } catch (err) {
-      console.error("Errore inizializzazione Firestore:", err);
-    }
+    // QUI USIAMO db DEFINITO IN firebase-config.js
+    // (non lo ridichiariamo!)
 
     // ==========================
     // Messaggi
