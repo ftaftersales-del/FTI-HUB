@@ -134,11 +134,6 @@
       color: #fbc02d; /* giallo */
     }
 
-    .status-icon.disabled {
-      cursor: default;
-      opacity: 0.6;
-    }
-
     .pdf-icon {
       font-size: 18px;
       cursor: pointer;
@@ -146,10 +141,6 @@
 
     .pdf-icon::before {
       content: "➜";
-    }
-
-    .pdf-icon.disabled {
-      opacity: 0.6;
     }
 
     .message {
@@ -182,7 +173,9 @@
     <div class="top-bar">
       <h1>Gestione FSA (FTFSA)</h1>
       <div>
-        <button id="btnAggiornaFSA" class="btn btn-primary">
+        <!-- 🔹 onclick diretto: apre SEMPRE il file chooser -->
+        <button id="btnAggiornaFSA" class="btn btn-primary"
+                onclick="document.getElementById('inputFSAFile').click()">
           Aggiorna FSA
         </button>
         <input type="file" id="inputFSAFile" accept=".xls,.xlsx" style="display:none;">
@@ -226,9 +219,20 @@
   </div>
 
   <script>
-    let db = null; // verrà inizializzato dopo
+    // ==========================
+    // Firebase base
+    // ==========================
+    let db = null;
+    try {
+      db = firebase.firestore();
+      console.log("FTFSA - Firestore inizializzato");
+    } catch (err) {
+      console.error("Errore inizializzazione Firestore:", err);
+    }
 
-    // Mostra messaggi nella sezione messages
+    // ==========================
+    // Messaggi
+    // ==========================
     function showMessage(text, type = "info") {
       const messagesDiv = document.getElementById("messages");
       messagesDiv.innerHTML = "";
@@ -240,7 +244,9 @@
       messagesDiv.appendChild(p);
     }
 
-    // Legge il file Excel e restituisce un array di oggetti (righe)
+    // ==========================
+    // Lettura Excel
+    // ==========================
     function readExcelFile(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -261,12 +267,39 @@
       });
     }
 
-    // Cancella tutti i documenti di una collection (lato client, a batch)
-    async function deleteAllDocsInCollection(collectionName) {
+    // ==========================
+    // Gestione upload Excel
+    // ==========================
+    const inputFSAFile = document.getElementById("inputFSAFile");
+    inputFSAFile.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
       if (!db) {
-        throw new Error("Firestore non inizializzato");
+        alert("Firestore non inizializzato. Controllare firebase-config.js.");
+        return;
       }
 
+      if (!confirm("Questa operazione sostituirà completamente la banca dati FSA. Vuoi continuare?")) {
+        return;
+      }
+
+      showMessage("Importazione FSA in corso, attendere...", "info");
+
+      try {
+        const data = await readExcelFile(file);
+        await replaceFSACollection(data);
+        showMessage("Banca dati FSA aggiornata correttamente.", "info");
+      } catch (error) {
+        console.error("Errore durante l'importazione FSA:", error);
+        showMessage("Errore durante l'importazione del file FSA.", "error");
+      }
+    });
+
+    // ==========================
+    // Cancella e riscrive collection FTFSA
+    // ==========================
+    async function deleteAllDocsInCollection(collectionName) {
       const snapshot = await db.collection(collectionName).get();
       if (snapshot.empty) return;
 
@@ -289,12 +322,7 @@
       }
     }
 
-    // Sostituisce completamente la collection FTFSA
     async function replaceFSACollection(rows) {
-      if (!db) {
-        throw new Error("Firestore non inizializzato");
-      }
-
       await deleteAllDocsInCollection("FTFSA");
 
       const batchSize = 400;
@@ -355,7 +383,65 @@
       }
     }
 
+    // ==========================
+    // Ricerca per telaio
+    // ==========================
+    const btnCerca = document.getElementById("btnCerca");
+    const searchTelaioInput = document.getElementById("searchTelaio");
+
+    btnCerca.addEventListener("click", () => {
+      eseguiRicerca();
+    });
+
+    searchTelaioInput.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") {
+        eseguiRicerca();
+      }
+    });
+
+    async function eseguiRicerca() {
+      if (!db) {
+        showMessage("Firestore non inizializzato. Controllare firebase-config.js.", "error");
+        return;
+      }
+
+      const vinInput = searchTelaioInput.value.trim();
+      const searchStatus = document.getElementById("searchStatus");
+      const tbody = document.getElementById("resultsBody");
+
+      tbody.innerHTML = "";
+      showMessage("");
+      if (!vinInput) {
+        searchStatus.textContent = "Inserire un telaio per la ricerca.";
+        return;
+      }
+
+      const telaio = vinInput.toUpperCase();
+      searchStatus.textContent = "Ricerca in corso...";
+
+      try {
+        const querySnap = await db
+          .collection("FTFSA")
+          .where("Telaio", "==", telaio)
+          .get();
+
+        if (querySnap.empty) {
+          searchStatus.textContent = "Nessuna FSA trovata per il telaio inserito.";
+          return;
+        }
+
+        searchStatus.textContent = `Trovate ${querySnap.size} campagne FSA per il telaio ${telaio}.`;
+        renderResults(querySnap.docs);
+      } catch (error) {
+        console.error("Errore nella ricerca FSA:", error);
+        searchStatus.textContent = "Errore durante la ricerca. Riprova.";
+        showMessage("Errore durante la ricerca FSA.", "error");
+      }
+    }
+
+    // ==========================
     // Rendering tabella risultati
+    // ==========================
     function renderResults(docs) {
       const tbody = document.getElementById("resultsBody");
       tbody.innerHTML = "";
@@ -426,7 +512,9 @@
       });
     }
 
+    // ==========================
     // Toggle campo IsPerformed
+    // ==========================
     async function onTogglePerformed(event) {
       if (!db) {
         alert("Firestore non inizializzato.");
@@ -451,108 +539,6 @@
         alert("Errore nell'aggiornamento dello stato FSA.");
       }
     }
-
-    // Ricerca per telaio
-    async function eseguiRicerca() {
-      if (!db) {
-        showMessage("Firestore non inizializzato. Controllare firebase-config.js.", "error");
-        return;
-      }
-
-      const vinInput = document.getElementById("searchTelaio").value.trim();
-      const searchStatus = document.getElementById("searchStatus");
-      const tbody = document.getElementById("resultsBody");
-
-      tbody.innerHTML = "";
-      showMessage("");
-      if (!vinInput) {
-        searchStatus.textContent = "Inserire un telaio per la ricerca.";
-        return;
-      }
-
-      const telaio = vinInput.toUpperCase();
-      searchStatus.textContent = "Ricerca in corso...";
-
-      try {
-        const querySnap = await db
-          .collection("FTFSA")
-          .where("Telaio", "==", telaio)
-          .get();
-
-        if (querySnap.empty) {
-          searchStatus.textContent = "Nessuna FSA trovata per il telaio inserito.";
-          return;
-        }
-
-        searchStatus.textContent = `Trovate ${querySnap.size} campagne FSA per il telaio ${telaio}.`;
-        renderResults(querySnap.docs);
-      } catch (error) {
-        console.error("Errore nella ricerca FSA:", error);
-        searchStatus.textContent = "Errore durante la ricerca. Riprova.";
-        showMessage("Errore durante la ricerca FSA.", "error");
-      }
-    }
-
-    // Inizializzazione dopo caricamento DOM
-    window.addEventListener("DOMContentLoaded", () => {
-      const btnAggiornaFSA = document.getElementById("btnAggiornaFSA");
-      const inputFSAFile = document.getElementById("inputFSAFile");
-      const btnCerca = document.getElementById("btnCerca");
-      const searchTelaioInput = document.getElementById("searchTelaio");
-
-      // Listener bottone Aggiorna FSA -> apre il selettore file SEMPRE
-      btnAggiornaFSA.addEventListener("click", () => {
-        if (!inputFSAFile) return;
-        inputFSAFile.value = "";
-        inputFSAFile.click();
-      });
-
-      // Listener cambio file
-      inputFSAFile.addEventListener("change", async (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        if (!db) {
-          alert("Firestore non inizializzato. Non posso aggiornare la banca dati.");
-          return;
-        }
-
-        if (!confirm("Questa operazione sostituirà completamente la banca dati FSA. Vuoi continuare?")) {
-          return;
-        }
-
-        showMessage("Importazione FSA in corso, attendere...", "info");
-
-        try {
-          const data = await readExcelFile(file);
-          await replaceFSACollection(data);
-          showMessage("Banca dati FSA aggiornata correttamente.", "info");
-        } catch (error) {
-          console.error("Errore durante l'importazione FSA:", error);
-          showMessage("Errore durante l'importazione del file FSA.", "error");
-        }
-      });
-
-      // Listener ricerca
-      btnCerca.addEventListener("click", () => {
-        eseguiRicerca();
-      });
-
-      searchTelaioInput.addEventListener("keyup", (e) => {
-        if (e.key === "Enter") {
-          eseguiRicerca();
-        }
-      });
-
-      // Inizializzo Firestore in try/catch (così, anche se fallisce, i listener restano attivi)
-      try {
-        db = firebase.firestore();
-        console.log("FTFSA - Firestore inizializzato");
-      } catch (err) {
-        console.error("Errore inizializzazione Firestore:", err);
-        showMessage("Errore inizializzazione Firestore. Controllare firebase-config.js.", "error");
-      }
-    });
   </script>
 </body>
 </html>
