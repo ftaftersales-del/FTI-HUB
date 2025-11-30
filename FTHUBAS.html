@@ -87,13 +87,21 @@
       <button onclick="goToFTCLAIMS()">Apri Reclamo di Garanzia</button>
     </div>
 
-    <!-- 🔹 NUOVA AREA FTHOTLINE -->
+    <!-- 🔹 NUOVA AREA FTFSA -->
+    <div id="ftfsa-section" class="section">
+      <h3>Verifica FSA (FTFSA)</h3>
+      <p>Verifica e gestisci le campagne FSA associate a un telaio.</p>
+      <button onclick="goToFTFSA()">Verifica FSA</button>
+    </div>
+    <!-- 🔹 FINE NUOVA AREA -->
+
+    <!-- 🔹 AREA FTHOTLINE -->
     <div id="fthotline-section" class="section">
       <h3>Hotline Tecnica (FTHOTLINE)</h3>
       <p>Gestisci i ticket di assistenza tra dealer e distributore.</p>
       <button onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
     </div>
-    <!-- 🔹 FINE NUOVA AREA -->
+    <!-- 🔹 FINE AREA -->
 
   </div>
 
@@ -183,10 +191,9 @@
         adminSection.style.display = 'none';
       }
 
-      // FTVIN e FTCLAIMS e FTHOTLINE:
+      // FTVIN, FTCLAIMS, FTFSA, FTHOTLINE
       // per ora accesso a tutti gli utenti loggati.
-      // In futuro, se vuoi, puoi legare FTHOTLINE ai permessi:
-      // if (!canRead('FTHOTLINE')) { document.getElementById('fthotline-section').style.display = 'none'; }
+      // In futuro puoi legare ogni sezione ai permessi se ti serve.
     }
 
     // Listener autenticazione
@@ -229,11 +236,17 @@
       window.location.href = "FTCLAIMS.html";
     }
 
-    // 🔹 NUOVA FUNZIONE NAVIGAZIONE HOTLINE
+    // 🔹 NAVIGAZIONE FSA
+    function goToFTFSA() {
+      window.location.href = "FTFSA.html";
+    }
+    // 🔹 FINE NAVIGAZIONE FSA
+
+    // 🔹 NAVIGAZIONE HOTLINE
     function goToFTHOTLINE() {
       window.location.href = "FTHOTLINE.html";
     }
-    // 🔹 FINE NUOVA FUNZIONE
+    // 🔹 FINE NAVIGAZIONE HOTLINE
 
   </script>
 </body>
