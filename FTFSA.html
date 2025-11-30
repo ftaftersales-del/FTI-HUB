@@ -222,7 +222,7 @@
 
     <div class="footer-buttons">
       <button class="btn btn-secondary" onclick="window.location.href='FTHUBAS.html'">
-        Torna alla Home
+        Torna a FTHUBAS
       </button>
     </div>
   </div>
@@ -242,11 +242,16 @@
       if (!userDoc || !userDoc.exists) return false;
       const data = userDoc.data() || {};
 
+      // dealerId può chiamarsi dealerId, DealerID, dealerID...
       const dealerId = data.DealerID || data.dealerId || data.dealerID || "";
-      let roles = data.Type || data.role || "User";
-      if (!Array.isArray(roles)) roles = [roles];
 
-      // Convenzione: DealerID "FT001" = distributore; ruolo "Admin" = admin
+      // ruolo può essere:
+      // - stringa in data.role
+      // - stringa in data.Role
+      // - oppure lista/stringa in data.Type (vecchia struttura)
+      let rawRole = data.role || data.Role || data.Type || "User";
+      let roles = Array.isArray(rawRole) ? rawRole : [rawRole];
+
       const isFT001 = dealerId === "FT001";
       const isAdminRole = roles.includes("Admin");
 
@@ -270,14 +275,14 @@
     // ==========================
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        // Se non loggato, rimando alla login (adatta il nome se diverso)
-        window.location.href = "FTLOGIN.html";
+        // stessa logica del portale: se non loggato torno alla index
+        window.location.href = "index.html";
         return;
       }
 
       try {
-        // Documento utente in PersonaleDealers (adegua se usi un'altra collezione)
-        const doc = await db.collection("PersonaleDealers").doc(user.uid).get();
+        // 🔹 PROFILO UTENTE DAL NUOVO MODELLO: collection "Users"
+        const doc = await db.collection("Users").doc(user.uid).get();
         currentUserDoc = doc;
         isDistributorAdminFlag = isDistributorAdmin(doc);
 
