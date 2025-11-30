@@ -39,7 +39,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
 
     .btn {
@@ -63,6 +63,12 @@
     .btn[disabled] {
       opacity: 0.6;
       cursor: default;
+    }
+
+    .debug-info {
+      font-size: 11px;
+      color: #666;
+      margin-bottom: 15px;
     }
 
     .search-section {
@@ -191,6 +197,11 @@
       </div>
     </div>
 
+    <!-- 🔎 DEBUG: info admin letta da Firestore -->
+    <div id="debugAdmin" class="debug-info">
+      DEBUG: caricamento dati utente...
+    </div>
+
     <div class="search-section">
       <div class="search-row">
         <label for="searchTelaio">Telaio:</label>
@@ -272,8 +283,10 @@
     // Gestione autenticazione
     // ==========================
     auth.onAuthStateChanged(async (user) => {
+      const debugDiv = document.getElementById("debugAdmin");
+
       if (!user) {
-        // stessa logica del portale: se non loggato torno alla index
+        debugDiv.textContent = "DEBUG: nessun utente loggato (redirect a index.html)";
         window.location.href = "index.html";
         return;
       }
@@ -281,11 +294,25 @@
       try {
         // Profilo utente nella collection Users
         const doc = await db.collection("Users").doc(user.uid).get();
+        const data = doc.data() || {};
+
+        const dealerId = (data.dealerId || data.DealerID || "").toString().toUpperCase();
+        const role = data.role || "";
+        const isAdminField = data.isAdmin === true;
+
         isDistributorAdminFlag = isDistributorAdmin(doc);
 
-        // DEBUG opzionale, se vuoi controllare
-        console.log("FTFSA - user data:", doc.data());
-        console.log("FTFSA - isDistributorAdminFlag:", isDistributorAdminFlag);
+        // DEBUG a schermo
+        debugDiv.textContent =
+          "DEBUG utente: dealerId=" + dealerId +
+          ", role=" + role +
+          ", isAdmin=" + isAdminField +
+          ", flagAdmin=" + isDistributorAdminFlag;
+
+        // DEBUG in console
+        console.log("FTFSA - user uid:", user.uid);
+        console.log("FTFSA - user data:", data);
+        console.log("FTFSA - computed isDistributorAdminFlag:", isDistributorAdminFlag);
 
         // Mostra il bottone Aggiorna FSA solo per admin distributore
         if (isDistributorAdminFlag) {
@@ -293,6 +320,7 @@
         }
       } catch (error) {
         console.error("Errore nel recupero dati utente:", error);
+        debugDiv.textContent = "DEBUG: errore nel recupero dati utente (" + error.message + ")";
         showMessage("Errore nel recupero dati utente. Contattare l'amministratore.", "error");
       }
     });
