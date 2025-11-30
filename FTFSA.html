@@ -234,28 +234,26 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let currentUserDoc = null;
-    let isDistributorAdminFlag = false; // true solo per admin distributore (FT001 + ruolo Admin)
+    let isDistributorAdminFlag = false; // true solo per admin distributore
 
-    // Determina se l'utente è admin del distributore
+    // -------- Regola admin distributore --------
+    // Admin distributore se:
+    // dealerId === "FT001"  E  (isAdmin === true  OPPURE  role === "Admin" case-insensitive)
     function isDistributorAdmin(userDoc) {
       if (!userDoc || !userDoc.exists) return false;
-      const data = userDoc.data() || {};
+      const d = userDoc.data() || {};
 
-      // dealerId può chiamarsi dealerId, DealerID, dealerID...
-      const dealerId = data.DealerID || data.dealerId || data.dealerID || "";
+      const dealerId = (d.dealerId || d.DealerID || "").toString().toUpperCase();
+      if (dealerId !== "FT001") return false;
 
-      // ruolo può essere:
-      // - stringa in data.role
-      // - stringa in data.Role
-      // - oppure lista/stringa in data.Type (vecchia struttura)
-      let rawRole = data.role || data.Role || data.Type || "User";
-      let roles = Array.isArray(rawRole) ? rawRole : [rawRole];
+      const isAdminFlag = d.isAdmin === true;
 
-      const isFT001 = dealerId === "FT001";
-      const isAdminRole = roles.includes("Admin");
+      let roleAdmin = false;
+      if (typeof d.role === "string") {
+        roleAdmin = d.role.toLowerCase() === "admin";
+      }
 
-      return isFT001 && isAdminRole;
+      return isAdminFlag || roleAdmin;
     }
 
     // Mostra messaggi nella sezione messages
@@ -281,10 +279,13 @@
       }
 
       try {
-        // 🔹 PROFILO UTENTE DAL NUOVO MODELLO: collection "Users"
+        // Profilo utente nella collection Users
         const doc = await db.collection("Users").doc(user.uid).get();
-        currentUserDoc = doc;
         isDistributorAdminFlag = isDistributorAdmin(doc);
+
+        // DEBUG opzionale, se vuoi controllare
+        console.log("FTFSA - user data:", doc.data());
+        console.log("FTFSA - isDistributorAdminFlag:", isDistributorAdminFlag);
 
         // Mostra il bottone Aggiorna FSA solo per admin distributore
         if (isDistributorAdminFlag) {
