@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>FTCLAIMS - Nuova pratica di garanzia</title>
+  <title>FTCLAIMS</title>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -69,18 +69,26 @@
       cursor: pointer;
       font-size: 14px;
     }
+    /* Pulsante controlla copertura */
     #btnCheckCoverage {
       background-color: #007bff;
       color: white;
     }
-    #btnNext {
+    /* Pulsante OK */
+    #btnOk {
       background-color: #28a745;
       color: white;
     }
+    /* Pulsante Annulla */
     #btnCancel {
       background-color: #dc3545;
       color: white;
       margin-left: auto;
+    }
+    /* Pulsante Home */
+    #btnHome {
+      background-color: #6c757d;
+      color: white;
     }
     button:disabled {
       opacity: 0.6;
@@ -104,12 +112,21 @@
       color: #155724;
       border: 1px solid #c3e6cb;
     }
+
+    #tipoPraticaDescrizione {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #333;
+      padding-left: 10px;
+      border-left: 3px solid #007bff;
+      display: none;
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <h2>Nuova pratica di garanzia – Verifica copertura</h2>
+    <h2>Nuova Claim Card – Dati iniziali</h2>
 
     <div id="userInfo">Verifica accesso in corso...</div>
 
@@ -123,18 +140,20 @@
       <input type="date" id="dataOrdineInput">
     </div>
 
-    <!-- NUOVO: selezione tipologia pratica -->
+    <!-- Selezione tipologia claim card -->
     <div class="field-group" id="tipoPraticaGroup" style="display:none;">
-      <label for="tipoPratica">Tipologia pratica</label>
+      <label for="tipoPratica">Tipologia claim card</label>
       <select id="tipoPratica">
         <!-- opzioni riempite via JavaScript -->
       </select>
+      <div id="tipoPraticaDescrizione"></div>
     </div>
 
     <div class="buttons">
-      <button id="btnCheckCoverage">Controlla copertura</button>
-      <button id="btnNext" style="display:none;" disabled>Avanti</button>
+      <button id="btnCheckCoverage">Controlla copertura / dati veicolo</button>
+      <button id="btnOk" style="display:none;" disabled>OK</button>
       <button id="btnCancel">Annulla</button>
+      <button id="btnHome">Home</button>
     </div>
 
     <div id="resultArea"></div>
@@ -142,7 +161,7 @@
 
   <script>
     (function () {
-      console.log("FTCLAIMS – file caricato con menu tipologia pratica");
+      console.log("FTCLAIMS – nuova logica Claim Card STEP1");
 
       const userInfoDiv = document.getElementById('userInfo');
 
@@ -163,7 +182,7 @@
       window.auth = auth;
       window.db   = db;
 
-      // ⚠️ NOME DELLA COLLEZIONE VIN (quella che ora funziona per te)
+      // ⚠️ Nome collezione VIN
       const VIN_COLLECTION = "DBVIN";
 
       let currentAccount = null;
@@ -222,92 +241,183 @@
         }
       });
 
-      // === GESTIONE BOTTONI E SELECT ===
-      const btnCancel = document.getElementById('btnCancel');
+      // === Elementi UI ===
       const btnCheckCoverage = document.getElementById('btnCheckCoverage');
-      const btnNext = document.getElementById('btnNext');
+      const btnOk = document.getElementById('btnOk');
+      const btnCancel = document.getElementById('btnCancel');
+      const btnHome = document.getElementById('btnHome');
+
       const tipoPraticaGroup = document.getElementById('tipoPraticaGroup');
       const tipoPraticaSelect = document.getElementById('tipoPratica');
+      const tipoPraticaDescrizione = document.getElementById('tipoPraticaDescrizione');
 
-      btnCancel.addEventListener('click', () => {
+      // === Pulsante HOME ===
+      btnHome.addEventListener('click', () => {
         window.location.href = "FTHUBAS.html";
       });
 
+      // === Pulsante ANNULLA (reset completo pagina) ===
+      btnCancel.addEventListener('click', () => {
+        resetAll();
+      });
+
+      // === Pulsante CONTROLLA COPERTURA ===
       btnCheckCoverage.addEventListener('click', async () => {
         await handleCheckCoverage();
       });
 
-      tipoPraticaSelect.addEventListener('change', () => {
-        btnNext.disabled = !tipoPraticaSelect.value;
-      });
-
-      btnNext.addEventListener('click', () => {
+      // === Pulsante OK (vai allo step 2) ===
+      btnOk.addEventListener('click', () => {
         const vin = document.getElementById('vinInput').value.trim().toUpperCase();
         const dataOrdineStr = document.getElementById('dataOrdineInput').value;
         const tipoPratica = tipoPraticaSelect.value;
 
         if (!tipoPratica) {
-          alert("Seleziona una tipologia di pratica.");
+          alert("Seleziona una tipologia di claim card.");
           return;
         }
 
-        const claimState = {
+        const claimCardHeader = {
           vin,
           dataOrdine: dataOrdineStr,
-          tipoPratica
+          tipoClaimCard: tipoPratica
         };
-        sessionStorage.setItem("currentClaimStep1", JSON.stringify(claimState));
+
+        sessionStorage.setItem("currentClaimStep1", JSON.stringify(claimCardHeader));
 
         window.location.href = "FTCLAIMS_STEP2.html";
+      });
+
+      // Cambio selezione tipologia → abilita OK + mostra descrizione
+      tipoPraticaSelect.addEventListener('change', () => {
+        btnOk.disabled = !tipoPraticaSelect.value;
+        updateTipoDescrizione(tipoPraticaSelect.value);
       });
 
       function resetTipoPratica() {
         tipoPraticaSelect.innerHTML = "";
         tipoPraticaGroup.style.display = "none";
-        btnNext.style.display = "none";
-        btnNext.disabled = true;
+        btnOk.style.display = "none";
+        btnOk.disabled = true;
+        tipoPraticaDescrizione.style.display = "none";
+        tipoPraticaDescrizione.textContent = "";
       }
 
-      function populateTipoPraticaOptions(hasWarrantyCoverage, hasMaintenanceCoverage) {
-        // hasWarrantyCoverage = FULL LINE o DRIVE LINE attiva
-        // hasMaintenanceCoverage = contratto manutenzione attivo
+      function showTipoPraticaUI() {
+        tipoPraticaGroup.style.display = "block";
+        btnOk.style.display = "inline-block";
+        btnOk.disabled = true;
+      }
 
+      function addOptionToSelect(value, label) {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = label;
+        tipoPraticaSelect.appendChild(opt);
+      }
+
+      // Menu quando VIN non trovato → solo PDI
+      function populateForVinNotFound() {
         tipoPraticaSelect.innerHTML = "";
 
-        const addOption = (value, label) => {
-          const opt = document.createElement("option");
-          opt.value = value;
-          opt.textContent = label;
-          tipoPraticaSelect.appendChild(opt);
-        };
-
-        // placeholder
         const placeholder = document.createElement("option");
         placeholder.value = "";
-        placeholder.textContent = "-- Seleziona tipologia pratica --";
+        placeholder.textContent = "-- Seleziona tipologia claim card --";
         placeholder.disabled = true;
         placeholder.selected = true;
         tipoPraticaSelect.appendChild(placeholder);
 
-        // voci sempre disponibili
-        addOption("PDI", "PDI");
-        addOption("FSA", "FSA");
-        addOption("GOODWILL", "Goodwill");
-        addOption("SOLO_RSA", "Solo RSA");
+        addOptionToSelect("PDI", "PDI");
 
-        // Reclamo di Garanzia solo se FULL o DRIVE attiva
-        if (hasWarrantyCoverage) {
-          addOption("RECLAMO_GARANZIA", "Reclamo di Garanzia");
+        showTipoPraticaUI();
+      }
+
+      // Menu quando NON c'è copertura attiva né contratto attivo → PDI, FSA, GOODWILL
+      function populateForNoActiveCoverage() {
+        tipoPraticaSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Seleziona tipologia claim card --";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        tipoPraticaSelect.appendChild(placeholder);
+
+        addOptionToSelect("PDI", "PDI");
+        addOptionToSelect("FSA", "FSA");
+        addOptionToSelect("GOODWILL", "GOODWILL");
+
+        showTipoPraticaUI();
+      }
+
+      // Menu quando è presente copertura attiva o contratto attivo → WARRANTY, FSA, GOODWILL
+      function populateForActiveCoverageOrContract() {
+        tipoPraticaSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Seleziona tipologia claim card --";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        tipoPraticaSelect.appendChild(placeholder);
+
+        addOptionToSelect("WARRANTY", "WARRANTY");
+        addOptionToSelect("FSA", "FSA");
+        addOptionToSelect("GOODWILL", "GOODWILL");
+
+        showTipoPraticaUI();
+      }
+
+      // Menu quando "nessun dato è presente" → FSA, PDI
+      function populateForNoDataAtAll() {
+        tipoPraticaSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Seleziona tipologia claim card --";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        tipoPraticaSelect.appendChild(placeholder);
+
+        addOptionToSelect("FSA", "FSA");
+        addOptionToSelect("PDI", "PDI");
+
+        showTipoPraticaUI();
+      }
+
+      // Descrizione dinamica in base al tipo
+      function updateTipoDescrizione(value) {
+        if (!value) {
+          tipoPraticaDescrizione.style.display = "none";
+          tipoPraticaDescrizione.textContent = "";
+          return;
         }
 
-        // Contratto di Manutenzione solo se copertura manutenzione attiva
-        if (hasMaintenanceCoverage) {
-          addOption("CONTRATTO_MANUTENZIONE", "Contratto di Manutenzione");
+        let text = "";
+        switch (value) {
+          case "WARRANTY":
+            text = "descrizione warranty";
+            break;
+          case "FSA":
+            text = "descrizione FSA";
+            break;
+          case "GOODWILL":
+            text = "descrizione goodwill";
+            break;
+          case "PDI":
+            text = "descrizione PDI";
+            break;
+          default:
+            text = "";
         }
 
-        tipoPraticaGroup.style.display = "block";
-        btnNext.style.display = "inline-block";
-        btnNext.disabled = true;
+        if (text) {
+          tipoPraticaDescrizione.style.display = "block";
+          tipoPraticaDescrizione.textContent = text;
+        } else {
+          tipoPraticaDescrizione.style.display = "none";
+          tipoPraticaDescrizione.textContent = "";
+        }
       }
 
       // === FUNZIONI SUPPORTO UI ===
@@ -360,7 +470,15 @@
         return t >= s && t <= e;
       }
 
-      // === LOGICA CONTROLLO COPERTURA ===
+      function resetAll() {
+        document.getElementById('vinInput').value = "";
+        document.getElementById('dataOrdineInput').value = "";
+        btnCheckCoverage.disabled = false;
+        clearMessage();
+        resetTipoPratica();
+      }
+
+      // === LOGICA CONTROLLO COPERTURA / DATI VEICOLO ===
       async function handleCheckCoverage() {
         clearMessage();
         resetTipoPratica();
@@ -396,7 +514,7 @@
         }
 
         if (dataOrdine < minDate) {
-          showMessage('error', "È possibile aprire una pratica solo entro 90 giorni dalla data dell'ordine di lavoro.");
+          showMessage('error', "È possibile aprire una claim card solo entro 90 giorni dalla data dell'ordine di lavoro.");
           return;
         }
 
@@ -411,80 +529,78 @@
 
           console.log("[FTCLAIMS] Query VIN su collezione", VIN_COLLECTION, " → docs:", snapshot.size);
 
+          // === CASO 1: TELAIO NON TROVATO ===
           if (snapshot.empty) {
-            showMessage(
-              'error',
-              "Telaio non trovato nella collezione Firestore '" + VIN_COLLECTION +
-              "' (campo 'vin')."
-            );
+            let html = `<strong>Telaio:</strong> ${vin}<br>`;
+            html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br><br>`;
+            html += `<strong>Attenzione:</strong> il telaio non è presente nella banca dati (collezione '${VIN_COLLECTION}').<br>`;
+            html += `Puoi comunque creare una claim card selezionando il tipo dal menu.`;
+
+            showMessage('error', html);
+
+            // In questo caso → solo PDI
+            populateForVinNotFound();
+
             btnCheckCoverage.disabled = false;
             return;
           }
 
+          // === CASO VIN TROVATO (anche se coperture scadute / dati incompleti) ===
           const doc = snapshot.docs[0];
           const data = doc.data();
           console.log("[FTCLAIMS] Documento VIN:", doc.id, data);
 
-          // Mappatura ai campi reali:
-          // COMPLETA -> FULL LINE
+          // Dati coperture
           const fullStart  = getDateFromField(data.completa_data_start);
           const fullEnd    = getDateFromField(data.completa_data_end);
 
-          // CATENA CINEMATICA -> DRIVE LINE
           const driveStart = getDateFromField(data.catcinematica_data_start);
           const driveEnd   = getDateFromField(data.catcinematica_data_end);
 
-          // CONTRATTO DI MANUTENZIONE
           const maintStart = getDateFromField(data.contratto_data_start);
           const maintEnd   = getDateFromField(data.contratto_data_end);
 
-          const hasFullCoverage  = isDateWithinRange(dataOrdine, fullStart, fullEnd);
-          const hasDriveCoverage = isDateWithinRange(dataOrdine, driveStart, driveEnd);
-          const hasMaintCoverage = isDateWithinRange(dataOrdine, maintStart, maintEnd);
+          const hasFullActive  = isDateWithinRange(dataOrdine, fullStart, fullEnd);
+          const hasDriveActive = isDateWithinRange(dataOrdine, driveStart, driveEnd);
+          const hasMaintActive = isDateWithinRange(dataOrdine, maintStart, maintEnd);
 
-          const hasWarrantyCoverage = hasFullCoverage || hasDriveCoverage;
-          const hasAnyCoverage = hasWarrantyCoverage || hasMaintCoverage;
+          const hasAnyActiveCoverageOrContract = hasFullActive || hasDriveActive || hasMaintActive;
 
-          // Prepariamo testo riepilogo
-          const formatDate = (d) => {
-            if (!d) return "-";
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, "0");
-            const dd = String(d.getDate()).padStart(2, "0");
-            return `${dd}/${mm}/${yyyy}`;
-          };
+          // "Nessun dato è presente" = nessuna data di copertura valorizzata
+          const hasAnyCoverageData =
+            (fullStart || fullEnd || driveStart || driveEnd || maintStart || maintEnd) ? true : false;
 
           let html = `<strong>Telaio:</strong> ${vin}<br>`;
-          html += `<strong>Data ordine di lavoro:</strong> ${formatDate(dataOrdine)}<br><br>`;
+          html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br><br>`;
 
-          if (hasAnyCoverage) {
-            html += `<strong>Coperture valide alla data selezionata:</strong><ul>`;
-            if (hasFullCoverage) {
-              html += `<li>FULL LINE (COMPLETA): dal ${formatDate(fullStart)} al ${formatDate(fullEnd)}</li>`;
-            }
-            if (hasDriveCoverage) {
-              html += `<li>DRIVE LINE (CAT. CINEMATICA): dal ${formatDate(driveStart)} al ${formatDate(driveEnd)}</li>`;
-            }
-            if (hasMaintCoverage) {
-              html += `<li>CONTRATTO DI MANUTENZIONE: dal ${formatDate(maintStart)} al ${formatDate(maintEnd)}</li>`;
-            }
-            html += `</ul>`;
-            html += `<br>Seleziona la tipologia di pratica dal menu sottostante.`;
+          if (!hasAnyCoverageData) {
+            // === CASO 3: Nessun dato è presente → FSA, PDI
+            html += `<strong>Informazioni:</strong> non risultano dati di copertura o contratto associati a questo telaio alla data selezionata.<br>`;
+            html += `Puoi comunque creare una claim card.`;
+            showMessage('success', html);
+
+            populateForNoDataAtAll();
+          } else if (hasAnyActiveCoverageOrContract) {
+            // === CASO 2a: presente copertura attiva o contratto attivo → WARRANTY, FSA, GOODWILL
+            html += `<strong>Informazioni:</strong> è presente almeno una copertura o un contratto di manutenzione <strong>attivo</strong> alla data selezionata.<br>`;
+            html += `Seleziona la tipologia di claim card dal menu.`;
+            showMessage('success', html);
+
+            populateForActiveCoverageOrContract();
           } else {
-            html += `<strong>Alla data selezionata non risulta alcuna copertura FULL LINE, DRIVE LINE o CONTRATTO DI MANUTENZIONE attiva per questo telaio.</strong>`;
-            html += `<br><br>Puoi comunque procedere selezionando una delle tipologie disponibili (PDI, FSA, Goodwill, Solo RSA).`;
+            // === CASO 2b: dati presenti ma nessuna copertura/contratto attivo → PDI, FSA, GOODWILL
+            html += `<strong>Informazioni:</strong> non risultano coperture o contratti di manutenzione <strong>attivi</strong> alla data selezionata.<br>`;
+            html += `Sono comunque presenti dati storici associati al veicolo. Puoi creare una claim card.`;
+            showMessage('success', html);
+
+            populateForNoActiveCoverage();
           }
-
-          showMessage('success', html);
-
-          // Popoliamo il menu a tendina in base alle coperture
-          populateTipoPraticaOptions(hasWarrantyCoverage, hasMaintCoverage);
 
           btnCheckCoverage.disabled = false;
 
         } catch (err) {
-          console.error("Errore durante il controllo copertura:", err);
-          showMessage('error', "Errore durante il controllo della copertura: " + err.message);
+          console.error("Errore durante il controllo copertura/dati veicolo:", err);
+          showMessage('error', "Errore durante il controllo: " + err.message);
           btnCheckCoverage.disabled = false;
           resetTipoPratica();
         }
