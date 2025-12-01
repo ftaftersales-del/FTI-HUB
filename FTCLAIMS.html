@@ -113,6 +113,26 @@
       border: 1px solid #c3e6cb;
     }
 
+    /* Box elenco FSA pendenti */
+    #fsaListContainer {
+      display: none;
+      margin-top: 15px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background-color: #e9f7fd;
+      border: 1px solid #bde0ff;
+      font-size: 13px;
+    }
+    #fsaListContainer strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+    #fsaList {
+      margin: 0;
+      margin-top: 5px;
+      padding-left: 18px;
+    }
+
     #tipoPraticaDescrizione {
       margin-top: 8px;
       font-size: 13px;
@@ -138,6 +158,12 @@
     <div class="field-group">
       <label for="dataOrdineInput">Data apertura ordine di lavoro</label>
       <input type="date" id="dataOrdineInput">
+    </div>
+
+    <!-- Elenco FSA pendenti (prima del menu tipologia) -->
+    <div id="fsaListContainer">
+      <strong>FSA da applicare su questo veicolo:</strong>
+      <ul id="fsaList"></ul>
     </div>
 
     <!-- Selezione tipologia claim card -->
@@ -184,6 +210,14 @@
 
       // ⚠️ Nome collezione VIN
       const VIN_COLLECTION = "DBVIN";
+
+      // ⚠️ Config FSA: adatta questi nomi alla tua collezione FSA
+      const FSA_COLLECTION       = "DBFSA";     // nome collezione FSA
+      const FSA_VIN_FIELD        = "vin";       // campo con il VIN
+      const FSA_APPLIED_FIELD    = "applied";   // boolean: false = FSA ancora da applicare
+      const FSA_CODE_FIELD       = "code";      // codice FSA
+      const FSA_DESCRIPTION_FIELD= "description"; // descrizione FSA
+      const FSA_DEADLINE_FIELD   = "deadline";  // data scadenza (timestamp / string / number)
 
       let currentAccount = null;
 
@@ -250,6 +284,9 @@
       const tipoPraticaGroup = document.getElementById('tipoPraticaGroup');
       const tipoPraticaSelect = document.getElementById('tipoPratica');
       const tipoPraticaDescrizione = document.getElementById('tipoPraticaDescrizione');
+
+      const fsaListContainer = document.getElementById('fsaListContainer');
+      const fsaList = document.getElementById('fsaList');
 
       // === Pulsante HOME ===
       btnHome.addEventListener('click', () => {
@@ -396,16 +433,16 @@
         let text = "";
         switch (value) {
           case "WARRANTY":
-            text = "descrizione warranty";
+            text = "Claim di garanzia su copertura attiva (FULL LINE o DRIVE LINE).";
             break;
           case "FSA":
-            text = "descrizione FSA";
+            text = "Claim relativo a FSA (Field Service Action) da applicare al veicolo.";
             break;
           case "GOODWILL":
-            text = "descrizione goodwill";
+            text = "Richiesta di partecipazione goodwill fuori copertura contrattuale.";
             break;
           case "PDI":
-            text = "descrizione PDI";
+            text = "Claim per controlli/attività di Pre-Delivery Inspection (PDI).";
             break;
           default:
             text = "";
@@ -462,6 +499,15 @@
         return null;
       }
 
+      function formatDateDDMMYYYY(value) {
+        const d = getDateFromField(value);
+        if (!d) return "";
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
       function isDateWithinRange(target, start, end) {
         if (!start || !end) return false;
         const t = startOfDay(target).getTime();
@@ -470,18 +516,75 @@
         return t >= s && t <= e;
       }
 
+      function clearFsaList() {
+        fsaListContainer.style.display = "none";
+        fsaList.innerHTML = "";
+      }
+
       function resetAll() {
         document.getElementById('vinInput').value = "";
         document.getElementById('dataOrdineInput').value = "";
         btnCheckCoverage.disabled = false;
         clearMessage();
         resetTipoPratica();
+        clearFsaList();
+      }
+
+      // === CARICAMENTO FSA PENDENTI PER VIN ===
+      async function loadPendingFsaForVin(vin) {
+        clearFsaList();
+
+        if (!vin) return;
+
+        try {
+          const snapshot = await db.collection(FSA_COLLECTION)
+            .where(FSA_VIN_FIELD, "==", vin)
+            .where(FSA_APPLIED_FIELD, "==", false)
+            .get();
+
+          console.log("[FTCLAIMS] FSA pendenti trovate:", snapshot.size);
+
+          if (snapshot.empty) {
+            // Mostro comunque il box con una frase esplicita
+            fsaListContainer.style.display = "block";
+            const li = document.createElement("li");
+            li.textContent = "Nessuna FSA da applicare per questo veicolo.";
+            fsaList.appendChild(li);
+            return;
+          }
+
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const codice = data[FSA_CODE_FIELD] || doc.id;
+            const descrizione = data[FSA_DESCRIPTION_FIELD] || "";
+            const scadStr = formatDateDDMMYYYY(data[FSA_DEADLINE_FIELD]);
+
+            let text = codice;
+            if (descrizione) text += " – " + descrizione;
+            if (scadStr) text += " (scadenza: " + scadStr + ")";
+
+            const li = document.createElement("li");
+            li.textContent = text;
+            fsaList.appendChild(li);
+          });
+
+          fsaListContainer.style.display = "block";
+        } catch (err) {
+          console.error("[FTCLAIMS] Errore caricando FSA pendenti:", err);
+          // In caso di errore, non blocco la claim; mostro solo un messaggio nel box
+          fsaListContainer.style.display = "block";
+          fsaList.innerHTML = "";
+          const li = document.createElement("li");
+          li.textContent = "Errore nel caricamento delle FSA. Riprova più tardi.";
+          fsaList.appendChild(li);
+        }
       }
 
       // === LOGICA CONTROLLO COPERTURA / DATI VEICOLO ===
       async function handleCheckCoverage() {
         clearMessage();
         resetTipoPratica();
+        clearFsaList();
 
         const vinInput = document.getElementById('vinInput');
         const dataOrdineInput = document.getElementById('dataOrdineInput');
@@ -489,12 +592,9 @@
         let vin = vinInput.value.trim().toUpperCase();
         const dataOrdineStr = dataOrdineInput.value;
 
-        if (!vin) {
-          showMessage('error', "Inserisci il numero di telaio (VIN).");
-          return;
-        }
-        if (!dataOrdineStr) {
-          showMessage('error', "Inserisci la data di apertura dell'ordine di lavoro.");
+        // 1) Entrambi i campi DEVONO essere compilati
+        if (!vin || !dataOrdineStr) {
+          showMessage('error', "Inserisci sia il numero di telaio (VIN) sia la data di apertura dell'ordine di lavoro.");
           return;
         }
 
@@ -521,6 +621,9 @@
         try {
           showMessage('success', "Ricerca del telaio in corso…");
           btnCheckCoverage.disabled = true;
+
+          // 2) Carico in parallelo: FSA pendenti + dati VIN
+          await loadPendingFsaForVin(vin);
 
           const snapshot = await db.collection(VIN_COLLECTION)
             .where("vin", "==", vin)
@@ -572,6 +675,23 @@
 
           let html = `<strong>Telaio:</strong> ${vin}<br>`;
           html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br><br>`;
+
+          // 3) Dettaglio coperture/contratti attivi con FULL LINE / DRIVE LINE / SERVICE CONTRACT
+          if (hasAnyActiveCoverageOrContract) {
+            html += `<strong>Coperture/contratti attivi alla data selezionata:</strong><br><ul>`;
+
+            if (hasFullActive) {
+              html += `<li><strong>FULL LINE</strong> (copertura completa): dal ${formatDateDDMMYYYY(fullStart)} al ${formatDateDDMMYYYY(fullEnd)}</li>`;
+            }
+            if (hasDriveActive) {
+              html += `<li><strong>DRIVE LINE</strong> (catena cinematica): dal ${formatDateDDMMYYYY(driveStart)} al ${formatDateDDMMYYYY(driveEnd)}</li>`;
+            }
+            if (hasMaintActive) {
+              html += `<li><strong>SERVICE CONTRACT</strong>: dal ${formatDateDDMMYYYY(maintStart)} al ${formatDateDDMMYYYY(maintEnd)}</li>`;
+            }
+
+            html += `</ul><br>`;
+          }
 
           if (!hasAnyCoverageData) {
             // === CASO 3: Nessun dato è presente → FSA, PDI
