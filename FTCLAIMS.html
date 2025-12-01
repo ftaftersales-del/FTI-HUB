@@ -209,16 +209,21 @@
       window.auth = auth;
       window.db   = db;
 
-      // ⚠️ Nome collezione VIN
+      // ================== CONFIG FIRESTORE ==================
+
+      // Collezione VIN
       const VIN_COLLECTION = "DBVIN";
 
-      // ⚠️ Config FSA: adatta questi nomi alla tua collezione FSA
-      const FSA_COLLECTION        = "DBFSA";         // nome collezione FSA
-      const FSA_VIN_FIELD         = "vin";           // campo con il VIN
-      const FSA_APPLIED_FIELD     = "applied";       // boolean: true = già applicata
-      const FSA_CODE_FIELD        = "code";          // codice FSA
-      const FSA_DESCRIPTION_FIELD = "description";   // descrizione FSA
-      const FSA_DEADLINE_FIELD    = "deadline";      // data scadenza (timestamp / string / number)
+      // ---- CONFIG FSA (stessa base dati di Gestione FSA / FTFSA) ----
+      // Cambia SOLO questi valori se in Firestore i nomi sono diversi.
+      const FSA_COLLECTION         = "FTFSA";      // collezione FSA
+      const FSA_VIN_FIELD          = "Telaio";     // campo VIN nella collezione FTFSA (es. "Telaio" o "vin")
+      const FSA_APPLIED_FIELD_HINT = "campagnaEseguita"; // nome campo più probabile per "eseguita"
+      const FSA_CODE_FIELD_HINT    = "CodiceFSA";       // campo codice FSA
+      const FSA_DESC_FIELD_HINT    = "DescrizioneCampagna"; // campo descrizione campagna
+      const FSA_START_FIELD_HINT   = "DataInizio";      // campo data inizio
+      const FSA_END_FIELD_HINT     = "DataFine";        // campo data fine
+      const FSA_TYPE_FIELD_HINT    = "Tipologia";       // campo tipologia (Next Service Visit, ecc.)
 
       let currentAccount = null;
 
@@ -580,24 +585,89 @@
           snapshot.forEach(doc => {
             const data = doc.data();
 
-            // applied: se non c'è o non è true => considerata NON applicata
-            const appliedValue = data[FSA_APPLIED_FIELD];
-            const isApplied = (appliedValue === true || appliedValue === "true" || appliedValue === "TRUE");
+            // --- determinazione campo "campagna eseguita" ---
+            const appliedValue =
+              data[FSA_APPLIED_FIELD_HINT] ??
+              data.campagnaEseguita ??
+              data.CampagnaEseguita ??
+              data.eseguita ??
+              data.Eseguita ??
+              data.executed ??
+              data.Executed ??
+              data.completed ??
+              data.Completed;
 
-            if (!isApplied) {
-              countPendenti++;
-              const codice = data[FSA_CODE_FIELD] || doc.id;
-              const descrizione = data[FSA_DESCRIPTION_FIELD] || "";
-              const scadStr = formatDateDDMMYYYY(data[FSA_DEADLINE_FIELD]);
+            const isApplied =
+              appliedValue === true  ||
+              appliedValue === "true" || appliedValue === "TRUE" ||
+              appliedValue === "SI"   || appliedValue === "S" ||
+              appliedValue === "YES"  || appliedValue === "Y";
 
-              let text = codice;
-              if (descrizione) text += " – " + descrizione;
-              if (scadStr) text += " (scadenza: " + scadStr + ")";
-
-              const li = document.createElement("li");
-              li.textContent = text;
-              fsaList.appendChild(li);
+            // Consideriamo "da applicare" solo le FSA NON eseguite
+            if (isApplied) {
+              return;
             }
+
+            countPendenti++;
+
+            // --- campi descrittivi: codici + descrizioni ---
+            const codice =
+              data[FSA_CODE_FIELD_HINT] ??
+              data.codiceFSA ??
+              data.CodiceFSA ??
+              data.code ??
+              data.Code ??
+              doc.id;
+
+            const descrizione =
+              data[FSA_DESC_FIELD_HINT] ??
+              data.descrizioneCampagna ??
+              data.DescrizioneCampagna ??
+              data.description ??
+              data.Description ??
+              "";
+
+            const dataInizio =
+              data[FSA_START_FIELD_HINT] ??
+              data.dataInizio ??
+              data.DataInizio ??
+              data.startDate ??
+              data.StartDate ??
+              null;
+
+            const dataFine =
+              data[FSA_END_FIELD_HINT] ??
+              data.dataFine ??
+              data.DataFine ??
+              data.endDate ??
+              data.EndDate ??
+              null;
+
+            const tipologia =
+              data[FSA_TYPE_FIELD_HINT] ??
+              data.tipologia ??
+              data.Tipologia ??
+              "";
+
+            const startStr = formatDateDDMMYYYY(dataInizio);
+            const endStr   = formatDateDDMMYYYY(dataFine);
+
+            let text = codice;
+            if (descrizione) text += " – " + descrizione;
+            let extra = [];
+            if (startStr || endStr) {
+              extra.push("Periodo: " + (startStr || "?") + " - " + (endStr || "?"));
+            }
+            if (tipologia) {
+              extra.push("Tipologia: " + tipologia);
+            }
+            if (extra.length > 0) {
+              text += " (" + extra.join(" | ") + ")";
+            }
+
+            const li = document.createElement("li");
+            li.textContent = text;
+            fsaList.appendChild(li);
           });
 
           fsaListContainer.style.display = "block";
@@ -628,7 +698,7 @@
         const vinInput        = document.getElementById('vinInput');
         const dataOrdineInput = document.getElementById('dataOrdineInput');
 
-        let vin            = vinInput.value.trim().toUpperCase();
+        let vin             = vinInput.value.trim().toUpperCase();
         const dataOrdineStr = dataOrdineInput.value;
 
         // Entrambi i campi DEVONO essere compilati
@@ -703,7 +773,7 @@
           let maintEndFs    = getDateFromField(data.contratto_data_end);
 
           // Dati eventualmente provenienti da backend (schema WARRANTY_*)
-          const warrantyTypeRaw  = data.WARRANTY_TYPE      || data.warranty_type;
+          const warrantyTypeRaw  = data.WARRANTY_TYPE       || data.warranty_type;
           const warrantyStartRaw = data.WARRANTY_START_DATE || data.warranty_start_date;
           const warrantyEndRaw   = data.WARRANTY_END_DATE   || data.warranty_end_date;
 
@@ -717,12 +787,14 @@
             fullEndFs   = warrantyEnd;
           }
 
-          if (!driveStartFs && warrantyStart && warrantyEnd && (warrantyType.includes("DRIVE") || warrantyType.includes("DRIVELINE"))) {
+          if (!driveStartFs && warrantyStart && warrantyEnd &&
+              (warrantyType.includes("DRIVE") || warrantyType.includes("DRIVELINE"))) {
             driveStartFs = warrantyStart;
             driveEndFs   = warrantyEnd;
           }
 
-          if (!maintStartFs && warrantyStart && warrantyEnd && (warrantyType.includes("SERVICE") || warrantyType.includes("SC"))) {
+          if (!maintStartFs && warrantyStart && warrantyEnd &&
+              (warrantyType.includes("SERVICE") || warrantyType.includes("SC"))) {
             maintStartFs = warrantyStart;
             maintEndFs   = warrantyEnd;
           }
@@ -739,11 +811,13 @@
           const hasDriveActive = isDateWithinRange(dataOrdine, driveStart, driveEnd);
           const hasMaintActive = isDateWithinRange(dataOrdine, maintStart, maintEnd);
 
-          const hasAnyActiveCoverageOrContract = hasFullActive || hasDriveActive || hasMaintActive;
+          const hasAnyActiveCoverageOrContract =
+            hasFullActive || hasDriveActive || hasMaintActive;
 
           // "Nessun dato è presente" = nessuna data di copertura valorizzata
           const hasAnyCoverageData =
-            (fullStart || fullEnd || driveStart || driveEnd || maintStart || maintEnd || warrantyStart || warrantyEnd)
+            (fullStart || fullEnd || driveStart || driveEnd ||
+             maintStart || maintEnd || warrantyStart || warrantyEnd)
               ? true
               : false;
 
