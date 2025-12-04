@@ -214,18 +214,18 @@
       // Collezione VIN
       const VIN_COLLECTION = "DBVIN";
 
-      // Endpoint backend verifica garanzia (adatta se diverso)
+      // Endpoint backend verifica garanzia (stesso che usi in FTVIN)
       const BACKEND_URL = "https://verifica-garanzia-backend.onrender.com/verifica";
 
-      // ---- CONFIG FSA (stessa base dati di Gestione FSA / FTFSA) ----
-      const FSA_COLLECTION         = "FTFSA";      // collezione FSA
-      const FSA_VIN_FIELD          = "Telaio";     // campo VIN nella collezione FTFSA
-      const FSA_APPLIED_FIELD_HINT = "campagnaEseguita"; // nome campo più probabile per "eseguita"
-      const FSA_CODE_FIELD_HINT    = "CodiceFSA";       // campo codice FSA
-      const FSA_DESC_FIELD_HINT    = "DescrizioneCampagna"; // campo descrizione campagna
-      const FSA_START_FIELD_HINT   = "DataInizio";      // campo data inizio
-      const FSA_END_FIELD_HINT     = "DataFine";        // campo data fine
-      const FSA_TYPE_FIELD_HINT    = "Tipologia";       // campo tipologia
+      // ---- CONFIG FSA ----
+      const FSA_COLLECTION         = "FTFSA";
+      const FSA_VIN_FIELD          = "Telaio";
+      const FSA_APPLIED_FIELD_HINT = "campagnaEseguita";
+      const FSA_CODE_FIELD_HINT    = "CodiceFSA";
+      const FSA_DESC_FIELD_HINT    = "DescrizioneCampagna";
+      const FSA_START_FIELD_HINT   = "DataInizio";
+      const FSA_END_FIELD_HINT     = "DataFine";
+      const FSA_TYPE_FIELD_HINT    = "Tipologia";
 
       let currentAccount = null;
 
@@ -565,11 +565,23 @@
         sessionStorage.removeItem("currentClaimStep1");
       }
 
-      // ===== CHIAMATA BACKEND GARANZIA =====
+      // ===== CHIAMATA BACKEND GARANZIA (MODIFICATA: POST JSON) =====
       async function fetchCoverageFromBackend(vin, dataOrdineStr) {
-        const url = `${BACKEND_URL}?vin=${encodeURIComponent(vin)}&data=${encodeURIComponent(dataOrdineStr)}`;
-        console.log("[FTCLAIMS] Chiamata backend garanzia:", url);
-        const resp = await fetch(url);
+        console.log("[FTCLAIMS] Chiamata backend garanzia (POST):", BACKEND_URL, { vin, data: dataOrdineStr });
+
+        const resp = await fetch(BACKEND_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            // usa esattamente le stesse chiavi che usi in FTVIN
+            vin: vin,
+            data: dataOrdineStr
+            // se nel backend usi "data_rif" o altro, cambia qui
+          })
+        });
+
         if (!resp.ok) {
           throw new Error("Backend HTTP " + resp.status);
         }
@@ -679,8 +691,8 @@
         const {
           vin,
           orderDateStr,
-          backend,          // oggetto da mapBackendData
-          firestoreData,    // doc DBVIN (se esiste)
+          backend,
+          firestoreData,
           hasFullActive,
           hasDriveActive,
           hasMaintActive,
@@ -808,7 +820,6 @@
           snapshot.forEach(doc => {
             const data = doc.data();
 
-            // --- determinazione campo "campagna eseguita" ---
             const appliedValue =
               data[FSA_APPLIED_FIELD_HINT] ??
               data.campagnaEseguita ??
@@ -826,14 +837,12 @@
               appliedValue === "SI"   || appliedValue === "S" ||
               appliedValue === "YES"  || appliedValue === "Y";
 
-            // Consideriamo "da applicare" solo le FSA NON eseguite
             if (isApplied) {
               return;
             }
 
             countPendenti++;
 
-            // --- campi descrittivi: codici + descrizioni ---
             const codice =
               data[FSA_CODE_FIELD_HINT] ??
               data.codiceFSA ??
@@ -924,7 +933,6 @@
         let vin             = vinInput.value.trim().toUpperCase();
         const dataOrdineStr = dataOrdineInput.value;
 
-        // Entrambi i campi DEVONO essere compilati
         if (!vin || !dataOrdineStr) {
           showMessage('error', "Inserisci sia il numero di telaio (VIN) sia la data di apertura dell'ordine di lavoro.");
           return;
@@ -954,10 +962,9 @@
           showMessage('success', "Ricerca del telaio in corso…");
           btnCheckCoverage.disabled = true;
 
-          // Carico in parallelo FSA pendenti
           await loadPendingFsaForVin(vin);
 
-          // ===== 1) CHIAMATA BACKEND GARANZIA =====
+          // ===== 1) BACKEND =====
           let backendMapped = null;
           try {
             const backendRaw = await fetchCoverageFromBackend(vin, dataOrdineStr);
@@ -966,7 +973,7 @@
             console.warn("[FTCLAIMS] Backend non disponibile o errore, procedo solo con Firestore:", e);
           }
 
-          // ===== 2) LETTURA DBVIN FIRESTORE =====
+          // ===== 2) DBVIN FIRESTORE =====
           const snapshot = await db.collection(VIN_COLLECTION)
             .where("vin", "==", vin)
             .limit(1)
@@ -974,7 +981,6 @@
 
           console.log("[FTCLAIMS] Query VIN su collezione", VIN_COLLECTION, " → docs:", snapshot.size);
 
-          // === CASO 1: TELAIO NON TROVATO IN DBVIN ===
           if (snapshot.empty) {
             let html = `<strong>Telaio:</strong> ${vin}<br>`;
             html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br><br>`;
@@ -983,7 +989,6 @@
 
             showMessage('error', html);
 
-            // Salvo contesto per STEP2, basato SOLO su backend (se disponibile)
             storeContextForStep2({
               vin,
               orderDateStr: dataOrdineStr,
@@ -991,21 +996,16 @@
               firestoreData: null
             });
 
-            // In questo caso → solo PDI
             populateForVinNotFound();
 
             btnCheckCoverage.disabled = false;
             return;
           }
 
-          // === CASO VIN TROVATO IN DBVIN ===
           const doc  = snapshot.docs[0];
           const data = doc.data();
           console.log("[FTCLAIMS] Documento VIN:", doc.id, data);
 
-          // ----- DATI COPERTURE / CONTRATTI (da DBVIN) -----
-
-          // Coperture da schema Firestore "classico"
           let fullStartFs   = getDateFromField(data.completa_data_start);
           let fullEndFs     = getDateFromField(data.completa_data_end);
           let driveStartFs  = getDateFromField(data.catcinematica_data_start);
@@ -1013,7 +1013,6 @@
           let maintStartFs  = getDateFromField(data.contratto_data_start);
           let maintEndFs    = getDateFromField(data.contratto_data_end);
 
-          // Dati eventualmente provenienti da backend / upload (schema WARRANTY_*)
           const warrantyTypeRaw  = data.WARRANTY_TYPE       || data.warranty_type;
           const warrantyStartRaw = data.WARRANTY_START_DATE || data.warranty_start_date;
           const warrantyEndRaw   = data.WARRANTY_END_DATE   || data.warranty_end_date;
@@ -1022,7 +1021,6 @@
           const warrantyEnd   = getDateFromField(warrantyEndRaw);
           const warrantyType  = warrantyTypeRaw ? String(warrantyTypeRaw).toUpperCase() : "";
 
-          // Fallback: se i campi Firestore non sono valorizzati, provo a usare WARRANTY_* in base al tipo
           if (!fullStartFs && warrantyStart && warrantyEnd && warrantyType.includes("FULL")) {
             fullStartFs = warrantyStart;
             fullEndFs   = warrantyEnd;
@@ -1040,7 +1038,6 @@
             maintEndFs   = warrantyEnd;
           }
 
-          // Variabili finali unificate
           const fullStart  = fullStartFs;
           const fullEnd    = fullEndFs;
           const driveStart = driveStartFs;
@@ -1055,7 +1052,6 @@
           const hasAnyActiveCoverageOrContract =
             hasFullActive || hasDriveActive || hasMaintActive;
 
-          // "Nessun dato è presente" = nessuna data di copertura valorizzata
           const hasAnyCoverageData =
             (fullStart || fullEnd || driveStart || driveEnd ||
              maintStart || maintEnd || warrantyStart || warrantyEnd)
@@ -1065,7 +1061,6 @@
           let html = `<strong>Telaio:</strong> ${vin}<br>`;
           html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br><br>`;
 
-          // Dettaglio coperture/contratti attivi con FULL LINE / DRIVE LINE / SERVICE CONTRACT
           if (hasAnyActiveCoverageOrContract) {
             html += `<strong>Coperture/contratti attivi alla data selezionata:</strong><br><ul>`;
 
@@ -1083,21 +1078,18 @@
           }
 
           if (!hasAnyCoverageData) {
-            // Nessun dato presente → FSA, PDI
             html += `<strong>Informazioni:</strong> non risultano dati di copertura o contratto associati a questo telaio alla data selezionata.<br>`;
             html += `Puoi comunque creare una claim card.`;
             showMessage('success', html);
 
             populateForNoDataAtAll();
           } else if (hasAnyActiveCoverageOrContract) {
-            // Presente almeno una copertura/contratto attivo → WARRANTY, FSA, GOODWILL
             html += `<strong>Informazioni:</strong> è presente almeno una copertura o un contratto di manutenzione <strong>attivo</strong> alla data selezionata.<br>`;
             html += `Seleziona la tipologia di claim card dal menu.`;
             showMessage('success', html);
 
             populateForActiveCoverageOrContract();
           } else {
-            // Dati presenti ma nessuna copertura/contratto attivo → PDI, FSA, GOODWILL
             html += `<strong>Informazioni:</strong> non risultano coperture o contratti di manutenzione <strong>attivi</strong> alla data selezionata.<br>`;
             html += `Sono comunque presenti dati storici associati al veicolo. Puoi creare una claim card.`;
             showMessage('success', html);
@@ -1105,7 +1097,6 @@
             populateForNoActiveCoverage();
           }
 
-          // Salvo contesto completo per STEP2 (vehicle + coperture + service contract)
           storeContextForStep2({
             vin,
             orderDateStr: dataOrdineStr,
