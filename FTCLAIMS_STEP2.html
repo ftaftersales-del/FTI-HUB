@@ -279,319 +279,320 @@
     </div>
   </div>
 
-  <script>
-    console.log("FTCLAIMS_STEP2 – script avviato");
+<script>
+  console.log("FTCLAIMS_STEP2 – script avviato");
 
-    // Riutilizzo auth/db globali se esistono (come in FTCLAIMS)
-    const auth = window.auth || firebase.auth();
-    const db   = window.db   || firebase.firestore();
-    window.auth = auth;
-    window.db   = db;
+  // Riutilizzo le istanze globali se esistono, altrimenti le creo
+  const appAuth = window.auth || firebase.auth();
+  const appDb   = window.db   || firebase.firestore();
+  window.auth = appAuth;
+  window.db   = appDb;
 
-    let currentUser = null;
-    let currentClaimId = null;
-    let currentClaimYear = null;
-    let currentClaimSequence = null;
-    let claimDocRef = null;
+  let currentUser = null;
+  let currentClaimId = null;
+  let currentClaimYear = null;
+  let currentClaimSequence = null;
+  let claimDocRef = null;
 
-    function showError(message) {
-      const box = document.getElementById('error-box');
-      box.textContent = message;
-      box.style.display = 'block';
-      console.error("[FTCLAIMS_STEP2] ERRORE:", message);
-    }
+  function showError(message) {
+    const box = document.getElementById('error-box');
+    box.textContent = message;
+    box.style.display = 'block';
+    console.error("[FTCLAIMS_STEP2] ERRORE:", message);
+  }
 
-    function setInfo(message) {
-      const box = document.getElementById('info-box');
-      box.textContent = message;
-      console.log("[FTCLAIMS_STEP2] INFO:", message);
-    }
+  function setInfo(message) {
+    const box = document.getElementById('info-box');
+    box.textContent = message;
+    console.log("[FTCLAIMS_STEP2] INFO:", message);
+  }
 
-    // ---- Lettura contesto dallo step 1 ----
-    function loadContextFromSession() {
-      const rawFull  = sessionStorage.getItem('ftclaims_context');
-      const rawStep1 = sessionStorage.getItem('currentClaimStep1');
+  // ---- Lettura contesto dallo step 1 ----
+  function loadContextFromSession() {
+    const rawFull  = sessionStorage.getItem('ftclaims_context');
+    const rawStep1 = sessionStorage.getItem('currentClaimStep1');
 
-      console.log("sessionStorage.ftclaims_context =", rawFull);
-      console.log("sessionStorage.currentClaimStep1 =", rawStep1);
+    console.log("sessionStorage.ftclaims_context =", rawFull);
+    console.log("sessionStorage.currentClaimStep1 =", rawStep1);
 
-      if (rawFull) {
-        try {
-          const ctx = JSON.parse(rawFull);
-          console.log("ftclaims_context (parsed):", ctx);
-          return ctx;
-        } catch (e) {
-          console.error("Errore parsing ftclaims_context:", e);
-        }
-      }
-
-      if (rawStep1) {
-        try {
-          const s1 = JSON.parse(rawStep1);
-          console.log("currentClaimStep1 (parsed, fallback):", s1);
-          return {
-            vin: s1.vin || "",
-            registrationPlate: "",
-            registrationDate: "",
-            customer: "",
-            orderDate: s1.dataOrdine || "",
-            warrantyCoverage: {
-              type: "",
-              startDate: "",
-              endDate: "",
-              notes: ""
-            },
-            serviceContract: {
-              startDate: "",
-              endDate: "",
-              options: ""
-            },
-            tipoClaimCard: s1.tipoClaimCard || ""
-          };
-        } catch (e) {
-          console.error("Errore parsing currentClaimStep1:", e);
-        }
-      }
-
-      return null;
-    }
-
-    function fillVehicleAndCoverageFields(context) {
-      console.log("Compilo campi con context:", context);
-
-      document.getElementById('vehicle-vin').value        = context.vin || '';
-      document.getElementById('vehicle-plate').value      = context.registrationPlate || '';
-      document.getElementById('vehicle-reg-date').value   = context.registrationDate || '';
-      document.getElementById('vehicle-customer').value   = context.customer || '';
-
-      const cov = context.warrantyCoverage || {};
-      document.getElementById('coverage-order-date').value = context.orderDate || '';
-      document.getElementById('coverage-type').value       = cov.type || '';
-      document.getElementById('coverage-start').value      = cov.startDate || '';
-      document.getElementById('coverage-end').value        = cov.endDate || '';
-      document.getElementById('coverage-notes').value      = cov.notes || '';
-
-      const sc = context.serviceContract || {};
-      document.getElementById('sc-start').value    = sc.startDate || '';
-      document.getElementById('sc-end').value      = sc.endDate || '';
-      document.getElementById('sc-options').value  = sc.options || '';
-    }
-
-    async function loadUserInfo(user) {
-      const userDocRef = db.collection('Users').doc(user.uid);
-      const snap = await userDocRef.get();
-      let dealer = '';
-      let fullName = '';
-
-      if (snap.exists) {
-        const data = snap.data();
-        dealer =
-          data.dealerId ||
-          data.dealerID ||
-          data.DealerID ||
-          '';
-        fullName =
-          data.fullName ||
-          data.name ||
-          data.displayName ||
-          user.email ||
-          user.uid;
-      } else {
-        fullName = user.email || user.uid;
-      }
-
-      document.getElementById('open-dealer').value = dealer;
-      document.getElementById('open-user').value   = fullName;
-
-      console.log("UserInfo:", { dealer, fullName });
-      return { dealer, fullName };
-    }
-
-    async function generateClaimCode(orderDateString) {
-      let year;
-      if (orderDateString) {
-        const d = new Date(orderDateString);
-        if (!isNaN(d.getTime())) year = d.getFullYear();
-      }
-      if (!year) year = new Date().getFullYear();
-
-      const counterDocId = `ClaimCardCounter_${year}`;
-      const counterRef   = db.collection('Settings').doc(counterDocId);
-
-      const sequence = await db.runTransaction(async (tx) => {
-        const snap = await tx.get(counterRef);
-        let current = 0;
-        if (snap.exists && typeof snap.data().current === 'number') {
-          current = snap.data().current;
-        }
-        const next = current + 1;
-        tx.set(counterRef, { current: next }, { merge: true });
-        return next;
-      });
-
-      const seqStr = String(sequence).padStart(6, '0');
-      const code   = `W${year}${seqStr}`;
-      console.log("Codice pratica generato:", code);
-      return { code, year, sequence };
-    }
-
-    async function createClaimDocument(userInfo, context, openDateStr) {
-      if (!currentClaimId) return;
-
-      claimDocRef = db.collection('ClaimCards').doc(currentClaimId);
-
-      const payload = {
-        code: currentClaimId,
-        year: currentClaimYear,
-        sequence: currentClaimSequence,
-
-        status: 'Aperta',
-        openDate: openDateStr || null,
-        openDealer: userInfo.dealer || null,
-        openUser: userInfo.fullName || null,
-        openUserUid: currentUser.uid,
-
-        vehicle: {
-          vin: context.vin || null,
-          registrationPlate: context.registrationPlate || null,
-          registrationDate: context.registrationDate || null,
-          customer: context.customer || null
-        },
-
-        coverage: {
-          orderDate: context.orderDate || null,
-          type: (context.warrantyCoverage && context.warrantyCoverage.type) || null,
-          startDate: (context.warrantyCoverage && context.warrantyCoverage.startDate) || null,
-          endDate: (context.warrantyCoverage && context.warrantyCoverage.endDate) || null,
-          notes: (context.warrantyCoverage && context.warrantyCoverage.notes) || null
-        },
-
-        maintenanceContract: {
-          startDate: (context.serviceContract && context.serviceContract.startDate) || null,
-          endDate: (context.serviceContract && context.serviceContract.endDate) || null,
-          options: (context.serviceContract && context.serviceContract.options) || null
-        },
-
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-
-      console.log("Creo documento ClaimCards con payload:", payload);
-      await claimDocRef.set(payload);
-    }
-
-    function attachOpenDateListener() {
-      if (!claimDocRef) return;
-      const openDateInput = document.getElementById('open-date');
-      openDateInput.addEventListener('change', async () => {
-        try {
-          await claimDocRef.update({
-            openDate: openDateInput.value || null
-          });
-        } catch (e) {
-          console.error('Errore aggiornamento data apertura:', e);
-          alert('Errore durante il salvataggio della data di apertura.');
-        }
-      });
-    }
-
-    async function initPage(user) {
-      console.log("initPage() – utente autenticato:", user.uid);
-      currentUser = user;
-
-      const context = loadContextFromSession();
-      if (!context) {
-        showError('Contesto pratica non trovato. Torna alla pagina FTCLAIMS e ripeti la ricerca.');
-        setInfo('Impossibile continuare: contesto mancante.');
-        return;
-      }
-
-      fillVehicleAndCoverageFields(context);
-
-      let userInfo = { dealer: '', fullName: '' };
+    if (rawFull) {
       try {
-        userInfo = await loadUserInfo(user);
+        const ctx = JSON.parse(rawFull);
+        console.log("ftclaims_context (parsed):", ctx);
+        return ctx;
       } catch (e) {
-        console.error("Errore lettura utente:", e);
-        showError('Errore nel caricamento dei dati utente: ' + e.message);
-      }
-
-      const openDateInput = document.getElementById('open-date');
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      openDateInput.value = `${yyyy}-${mm}-${dd}`;
-
-      try {
-        setInfo('Generazione codice pratica in corso...');
-        const { code, year, sequence } = await generateClaimCode(context.orderDate);
-        currentClaimId      = code;
-        currentClaimYear    = year;
-        currentClaimSequence = sequence;
-        document.getElementById('claim-code').value = code;
-
-        setInfo('Creazione pratica su Firestore...');
-        await createClaimDocument(userInfo, context, openDateInput.value);
-        attachOpenDateListener();
-
-        setInfo('Pratica creata. Puoi procedere con la gestione dei claim interni o cancellare la richiesta.');
-      } catch (e) {
-        console.error('Errore creazione pratica:', e);
-        showError('Errore durante la creazione della pratica: ' + e.message);
-        setInfo('I dati sono stati caricati a video. Il salvataggio della pratica non è riuscito.');
+        console.error("Errore parsing ftclaims_context:", e);
       }
     }
 
-    auth.onAuthStateChanged(async (user) => {
-      console.log("onAuthStateChanged:", user ? user.uid : "NESSUN UTENTE");
-      if (!user) {
-        window.location.href = 'FTLOGIN.html';
-        return;
-      }
+    if (rawStep1) {
       try {
-        await initPage(user);
+        const s1 = JSON.parse(rawStep1);
+        console.log("currentClaimStep1 (parsed, fallback):", s1);
+        return {
+          vin: s1.vin || "",
+          registrationPlate: "",
+          registrationDate: "",
+          customer: "",
+          orderDate: s1.dataOrdine || "",
+          warrantyCoverage: {
+            type: "",
+            startDate: "",
+            endDate: "",
+            notes: ""
+          },
+          serviceContract: {
+            startDate: "",
+            endDate: "",
+            options: ""
+          },
+          tipoClaimCard: s1.tipoClaimCard || ""
+        };
       } catch (e) {
-        console.error(e);
-        showError('Errore durante l\'inizializzazione della pagina: ' + e.message);
-        setInfo('Si è verificato un errore.');
+        console.error("Errore parsing currentClaimStep1:", e);
       }
+    }
+
+    return null;
+  }
+
+  function fillVehicleAndCoverageFields(context) {
+    console.log("Compilo campi con context:", context);
+
+    document.getElementById('vehicle-vin').value      = context.vin || '';
+    document.getElementById('vehicle-plate').value    = context.registrationPlate || '';
+    document.getElementById('vehicle-reg-date').value = context.registrationDate || '';
+    document.getElementById('vehicle-customer').value = context.customer || '';
+
+    const cov = context.warrantyCoverage || {};
+    document.getElementById('coverage-order-date').value = context.orderDate || '';
+    document.getElementById('coverage-type').value       = cov.type || '';
+    document.getElementById('coverage-start').value      = cov.startDate || '';
+    document.getElementById('coverage-end').value        = cov.endDate || '';
+    document.getElementById('coverage-notes').value      = cov.notes || '';
+
+    const sc = context.serviceContract || {};
+    document.getElementById('sc-start').value    = sc.startDate || '';
+    document.getElementById('sc-end').value      = sc.endDate || '';
+    document.getElementById('sc-options').value  = sc.options || '';
+  }
+
+  async function loadUserInfo(user) {
+    const userDocRef = appDb.collection('Users').doc(user.uid);
+    const snap = await userDocRef.get();
+    let dealer = '';
+    let fullName = '';
+
+    if (snap.exists) {
+      const data = snap.data();
+      dealer =
+        data.dealerId ||
+        data.dealerID ||
+        data.DealerID ||
+        '';
+      fullName =
+        data.fullName ||
+        data.name ||
+        data.displayName ||
+        user.email ||
+        user.uid;
+    } else {
+      fullName = user.email || user.uid;
+    }
+
+    document.getElementById('open-dealer').value = dealer;
+    document.getElementById('open-user').value   = fullName;
+
+    console.log("UserInfo:", { dealer, fullName });
+    return { dealer, fullName };
+  }
+
+  async function generateClaimCode(orderDateString) {
+    let year;
+    if (orderDateString) {
+      const d = new Date(orderDateString);
+      if (!isNaN(d.getTime())) year = d.getFullYear();
+    }
+    if (!year) year = new Date().getFullYear();
+
+    const counterDocId = `ClaimCardCounter_${year}`;
+    const counterRef   = appDb.collection('Settings').doc(counterDocId);
+
+    const sequence = await appDb.runTransaction(async (tx) => {
+      const snap = await tx.get(counterRef);
+      let current = 0;
+      if (snap.exists && typeof snap.data().current === 'number') {
+        current = snap.data().current;
+      }
+      const next = current + 1;
+      tx.set(counterRef, { current: next }, { merge: true });
+      return next;
     });
 
-    document.getElementById('btn-home').addEventListener('click', () => {
-      window.location.href = 'FTHUBAS.html';
-    });
+    const seqStr = String(sequence).padStart(6, '0');
+    const code   = `W${year}${seqStr}`;
+    console.log("Codice pratica generato:", code);
+    return { code, year, sequence };
+  }
 
-    document.getElementById('btn-logout').addEventListener('click', async () => {
-      try {
-        await auth.signOut();
-        window.location.href = 'FTLOGIN.html';
-      } catch (e) {
-        console.error(e);
-        alert('Errore durante il logout.');
-      }
-    });
+  async function createClaimDocument(userInfo, context, openDateStr) {
+    if (!currentClaimId) return;
 
-    document.getElementById('btn-cancel-claim').addEventListener('click', async () => {
-      if (!claimDocRef || !currentClaimId) {
-        alert('Nessuna richiesta da cancellare (pratica non salvata o errore precedente).');
-        return;
-      }
-      if (!confirm('Sei sicuro di voler cancellare definitivamente questa richiesta?')) {
-        return;
-      }
+    claimDocRef = appDb.collection('ClaimCards').doc(currentClaimId);
+
+    const payload = {
+      code: currentClaimId,
+      year: currentClaimYear,
+      sequence: currentClaimSequence,
+
+      status: 'Aperta',
+      openDate: openDateStr || null,
+      openDealer: userInfo.dealer || null,
+      openUser: userInfo.fullName || null,
+      openUserUid: currentUser.uid,
+
+      vehicle: {
+        vin: context.vin || null,
+        registrationPlate: context.registrationPlate || null,
+        registrationDate: context.registrationDate || null,
+        customer: context.customer || null
+      },
+
+      coverage: {
+        orderDate: context.orderDate || null,
+        type: (context.warrantyCoverage && context.warrantyCoverage.type) || null,
+        startDate: (context.warrantyCoverage && context.warrantyCoverage.startDate) || null,
+        endDate: (context.warrantyCoverage && context.warrantyCoverage.endDate) || null,
+        notes: (context.warrantyCoverage && context.warrantyCoverage.notes) || null
+      },
+
+      maintenanceContract: {
+        startDate: (context.serviceContract && context.serviceContract.startDate) || null,
+        endDate: (context.serviceContract && context.serviceContract.endDate) || null,
+        options: (context.serviceContract && context.serviceContract.options) || null
+      },
+
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    console.log("Creo documento ClaimCards con payload:", payload);
+    await claimDocRef.set(payload);
+  }
+
+  function attachOpenDateListener() {
+    if (!claimDocRef) return;
+    const openDateInput = document.getElementById('open-date');
+    openDateInput.addEventListener('change', async () => {
       try {
         await claimDocRef.update({
-          status: 'Cancellata',
-          cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
-          cancelledByUid: currentUser ? currentUser.uid : null
+          openDate: openDateInput.value || null
         });
-        document.getElementById('claim-status-value').textContent = 'Cancellata (definitivamente chiusa)';
-        alert('Richiesta cancellata con successo.');
       } catch (e) {
-        console.error(e);
-        alert('Errore durante la cancellazione della richiesta.');
+        console.error('Errore aggiornamento data apertura:', e);
+        alert('Errore durante il salvataggio della data di apertura.');
       }
     });
-  </script>
+  }
+
+  async function initPage(user) {
+    console.log("initPage() – utente autenticato:", user.uid);
+    currentUser = user;
+
+    const context = loadContextFromSession();
+    if (!context) {
+      showError('Contesto pratica non trovato. Torna alla pagina FTCLAIMS e ripeti la ricerca.');
+      setInfo('Impossibile continuare: contesto mancante.');
+      return;
+    }
+
+    fillVehicleAndCoverageFields(context);
+
+    let userInfo = { dealer: '', fullName: '' };
+    try {
+      userInfo = await loadUserInfo(user);
+    } catch (e) {
+      console.error("Errore lettura utente:", e);
+      showError('Errore nel caricamento dei dati utente: ' + e.message);
+    }
+
+    const openDateInput = document.getElementById('open-date');
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    openDateInput.value = `${yyyy}-${mm}-${dd}`;
+
+    try {
+      setInfo('Generazione codice pratica in corso...');
+      const { code, year, sequence } = await generateClaimCode(context.orderDate);
+      currentClaimId       = code;
+      currentClaimYear     = year;
+      currentClaimSequence = sequence;
+      document.getElementById('claim-code').value = code;
+
+      setInfo('Creazione pratica su Firestore...');
+      await createClaimDocument(userInfo, context, openDateInput.value);
+      attachOpenDateListener();
+
+      setInfo('Pratica creata. Puoi procedere con la gestione dei claim interni o cancellare la richiesta.');
+    } catch (e) {
+      console.error('Errore creazione pratica:', e);
+      showError('Errore durante la creazione della pratica: ' + e.message);
+      setInfo('I dati sono stati caricati a video. Il salvataggio della pratica non è riuscito.');
+    }
+  }
+
+  appAuth.onAuthStateChanged(async (user) => {
+    console.log("onAuthStateChanged:", user ? user.uid : "NESSUN UTENTE");
+    if (!user) {
+      window.location.href = 'FTLOGIN.html';
+      return;
+    }
+    try {
+      await initPage(user);
+    } catch (e) {
+      console.error(e);
+      showError('Errore durante l\'inizializzazione della pagina: ' + e.message);
+      setInfo('Si è verificato un errore.');
+    }
+  });
+
+  document.getElementById('btn-home').addEventListener('click', () => {
+    window.location.href = 'FTHUBAS.html';
+  });
+
+  document.getElementById('btn-logout').addEventListener('click', async () => {
+    try {
+      await appAuth.signOut();
+      window.location.href = 'FTLOGIN.html';
+    } catch (e) {
+      console.error(e);
+      alert('Errore durante il logout.');
+    }
+  });
+
+  document.getElementById('btn-cancel-claim').addEventListener('click', async () => {
+    if (!claimDocRef || !currentClaimId) {
+      alert('Nessuna richiesta da cancellare (pratica non salvata o errore precedente).');
+      return;
+    }
+    if (!confirm('Sei sicuro di voler cancellare definitivamente questa richiesta?')) {
+      return;
+    }
+    try {
+      await claimDocRef.update({
+        status: 'Cancellata',
+        cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+        cancelledByUid: currentUser ? currentUser.uid : null
+      });
+      document.getElementById('claim-status-value').textContent = 'Cancellata (definitivamente chiusa)';
+      alert('Richiesta cancellata con successo.');
+    } catch (e) {
+      console.error(e);
+      alert('Errore durante la cancellazione della richiesta.');
+    }
+  });
+</script>
+
 </body>
 </html>
