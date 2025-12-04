@@ -215,17 +215,20 @@
       const VIN_COLLECTION = "DBVIN";
 
       // ---- CONFIG FSA (stessa base dati di Gestione FSA / FTFSA) ----
-      // Cambia SOLO questi valori se in Firestore i nomi sono diversi.
-      const FSA_COLLECTION         = "FTFSA";      // collezione FSA
-      const FSA_VIN_FIELD          = "Telaio";     // campo VIN nella collezione FTFSA (es. "Telaio" o "vin")
-      const FSA_APPLIED_FIELD_HINT = "campagnaEseguita"; // nome campo più probabile per "eseguita"
-      const FSA_CODE_FIELD_HINT    = "CodiceFSA";       // campo codice FSA
-      const FSA_DESC_FIELD_HINT    = "DescrizioneCampagna"; // campo descrizione campagna
-      const FSA_START_FIELD_HINT   = "DataInizio";      // campo data inizio
-      const FSA_END_FIELD_HINT     = "DataFine";        // campo data fine
-      const FSA_TYPE_FIELD_HINT    = "Tipologia";       // campo tipologia (Next Service Visit, ecc.)
+      const FSA_COLLECTION         = "FTFSA";
+      const FSA_VIN_FIELD          = "Telaio";
+      const FSA_APPLIED_FIELD_HINT = "campagnaEseguita";
+      const FSA_CODE_FIELD_HINT    = "CodiceFSA";
+      const FSA_DESC_FIELD_HINT    = "DescrizioneCampagna";
+      const FSA_START_FIELD_HINT   = "DataInizio";
+      const FSA_END_FIELD_HINT     = "DataFine";
+      const FSA_TYPE_FIELD_HINT    = "Tipologia";
 
       let currentAccount = null;
+
+      // >>> VARIABILI GLOBALI PER PASSARE I DATI ALLO STEP 2
+      let lastVinDocData = null;
+      let lastComputedCoverage = null;
 
       async function loadCurrentUserInfo(user) {
         const userRef = db.collection('Users').doc(user.uid);
@@ -320,13 +323,44 @@
           return;
         }
 
+        // Header semplice (se ti serve in futuro)
         const claimCardHeader = {
           vin,
           dataOrdine: dataOrdineStr,
           tipoClaimCard: tipoPratica
         };
-
         sessionStorage.setItem("currentClaimStep1", JSON.stringify(claimCardHeader));
+
+        // >>> CONTENUTO COMPLETO PER FTCLAIMS_STEP2
+        // Lettura sicura dei campi veicolo dal documento VIN (se presente)
+        const vinData = lastVinDocData || {};
+        const registrationPlate = getRegistrationPlate(vinData);
+        const registrationDate  = getRegistrationDate(vinData);
+        const customer          = getCustomerName(vinData);
+
+        // Coperture/contratto calcolati in handleCheckCoverage
+        const cov = lastComputedCoverage || {};
+        const context = {
+          vin: vin,
+          registrationPlate: registrationPlate || "",
+          registrationDate: registrationDate || "",
+          customer: customer || "",
+          orderDate: dataOrdineStr || "",
+          warrantyCoverage: {
+            type: cov.warrantyType || "",
+            startDate: cov.warrantyStart || "",
+            endDate: cov.warrantyEnd || "",
+            notes: cov.warrantyNotes || ""
+          },
+          serviceContract: {
+            startDate: cov.scStart || "",
+            endDate: cov.scEnd || "",
+            options: cov.scOptions || ""
+          },
+          tipoClaimCard: tipoPratica
+        };
+
+        sessionStorage.setItem("ftclaims_context", JSON.stringify(context));
 
         window.location.href = "FTCLAIMS_STEP2.html";
       });
@@ -367,17 +401,14 @@
       function getDateFromField(value) {
         if (!value) return null;
 
-        // Firestore Timestamp
         if (value && value.toDate && typeof value.toDate === "function") {
           return startOfDay(value.toDate());
         }
 
-        // Date
         if (value instanceof Date) {
           return startOfDay(value);
         }
 
-        // Stringa o numero (millisecondi)
         if (typeof value === "string" || typeof value === "number") {
           const d = new Date(value);
           if (!isNaN(d.getTime())) {
@@ -558,6 +589,8 @@
         clearMessage();
         resetTipoPratica();
         clearFsaList();
+        lastVinDocData = null;
+        lastComputedCoverage = null;
       }
 
       // ===== CARICAMENTO FSA PENDENTI PER VIN =====
@@ -585,7 +618,6 @@
           snapshot.forEach(doc => {
             const data = doc.data();
 
-            // --- determinazione campo "campagna eseguita" ---
             const appliedValue =
               data[FSA_APPLIED_FIELD_HINT] ??
               data.campagnaEseguita ??
@@ -603,14 +635,12 @@
               appliedValue === "SI"   || appliedValue === "S" ||
               appliedValue === "YES"  || appliedValue === "Y";
 
-            // Consideriamo "da applicare" solo le FSA NON eseguite
             if (isApplied) {
               return;
             }
 
             countPendenti++;
 
-            // --- campi descrittivi: codici + descrizioni ---
             const codice =
               data[FSA_CODE_FIELD_HINT] ??
               data.codiceFSA ??
@@ -701,7 +731,6 @@
         let vin             = vinInput.value.trim().toUpperCase();
         const dataOrdineStr = dataOrdineInput.value;
 
-        // Entrambi i campi DEVONO essere compilati
         if (!vin || !dataOrdineStr) {
           showMessage('error', "Inserisci sia il numero di telaio (VIN) sia la data di apertura dell'ordine di lavoro.");
           return;
@@ -731,7 +760,11 @@
           showMessage('success', "Ricerca del telaio in corso…");
           btnCheckCoverage.disabled = true;
 
-          // Carico in parallelo FSA pendenti
+          // reset variabili globali
+          lastVinDocData = null;
+          lastComputedCoverage = null;
+
+          // Carico FSA pendenti
           await loadPendingFsaForVin(vin);
 
           const snapshot = await db.collection(VIN_COLLECTION)
@@ -750,7 +783,19 @@
 
             showMessage('error', html);
 
-            // In questo caso → solo PDI
+            // Per Step2: contesto vuoto ma con VIN e OrderDate
+            lastVinDocData = null;
+            lastComputedCoverage = {
+              orderDate: dataOrdineStr,
+              warrantyType: "",
+              warrantyStart: "",
+              warrantyEnd: "",
+              warrantyNotes: "",
+              scStart: "",
+              scEnd: "",
+              scOptions: ""
+            };
+
             populateForVinNotFound();
 
             btnCheckCoverage.disabled = false;
@@ -762,9 +807,9 @@
           const data = doc.data();
           console.log("[FTCLAIMS] Documento VIN:", doc.id, data);
 
-          // ----- DATI COPERTURE / CONTRATTI -----
+          lastVinDocData = data;
 
-          // Coperture da schema Firestore "classico"
+          // ----- DATI COPERTURE / CONTRATTI -----
           let fullStartFs   = getDateFromField(data.completa_data_start);
           let fullEndFs     = getDateFromField(data.completa_data_end);
           let driveStartFs  = getDateFromField(data.catcinematica_data_start);
@@ -772,7 +817,6 @@
           let maintStartFs  = getDateFromField(data.contratto_data_start);
           let maintEndFs    = getDateFromField(data.contratto_data_end);
 
-          // Dati eventualmente provenienti da backend (schema WARRANTY_*)
           const warrantyTypeRaw  = data.WARRANTY_TYPE       || data.warranty_type;
           const warrantyStartRaw = data.WARRANTY_START_DATE || data.warranty_start_date;
           const warrantyEndRaw   = data.WARRANTY_END_DATE   || data.warranty_end_date;
@@ -781,7 +825,6 @@
           const warrantyEnd   = getDateFromField(warrantyEndRaw);
           const warrantyType  = warrantyTypeRaw ? String(warrantyTypeRaw).toUpperCase() : "";
 
-          // Fallback: se i campi Firestore non sono valorizzati, provo a usare WARRANTY_* in base al tipo
           if (!fullStartFs && warrantyStart && warrantyEnd && warrantyType.includes("FULL")) {
             fullStartFs = warrantyStart;
             fullEndFs   = warrantyEnd;
@@ -799,7 +842,6 @@
             maintEndFs   = warrantyEnd;
           }
 
-          // Variabili finali unificate
           const fullStart  = fullStartFs;
           const fullEnd    = fullEndFs;
           const driveStart = driveStartFs;
@@ -814,7 +856,6 @@
           const hasAnyActiveCoverageOrContract =
             hasFullActive || hasDriveActive || hasMaintActive;
 
-          // "Nessun dato è presente" = nessuna data di copertura valorizzata
           const hasAnyCoverageData =
             (fullStart || fullEnd || driveStart || driveEnd ||
              maintStart || maintEnd || warrantyStart || warrantyEnd)
@@ -824,7 +865,6 @@
           let html = `<strong>Telaio:</strong> ${vin}<br>`;
           html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br><br>`;
 
-          // Dettaglio coperture/contratti attivi con FULL LINE / DRIVE LINE / SERVICE CONTRACT
           if (hasAnyActiveCoverageOrContract) {
             html += `<strong>Coperture/contratti attivi alla data selezionata:</strong><br><ul>`;
 
@@ -841,22 +881,76 @@
             html += `</ul><br>`;
           }
 
+          // >>> COSTRUZIONE lastComputedCoverage PER STEP2
+          let warrantyTypeForStep2 = "";
+          let warrantyStartForStep2 = "";
+          let warrantyEndForStep2   = "";
+          let warrantyNotesForStep2 = "";
+
+          if (hasFullActive) {
+            warrantyTypeForStep2  = "FULL LINE";
+            warrantyStartForStep2 = formatDateDDMMYYYY(fullStart);
+            warrantyEndForStep2   = formatDateDDMMYYYY(fullEnd);
+            warrantyNotesForStep2 =
+              data.completa_note ||
+              data.CompletaNote ||
+              data.warranty_notes ||
+              data.WARRANTY_NOTES ||
+              "";
+          } else if (hasDriveActive) {
+            warrantyTypeForStep2  = "DRIVE LINE";
+            warrantyStartForStep2 = formatDateDDMMYYYY(driveStart);
+            warrantyEndForStep2   = formatDateDDMMYYYY(driveEnd);
+            warrantyNotesForStep2 =
+              data.catcinematica_note ||
+              data.CatcinematicaNote ||
+              data.warranty_notes ||
+              data.WARRANTY_NOTES ||
+              "";
+          } else {
+            // nessuna attiva → vuoto (ma i campi ci sono comunque)
+            warrantyTypeForStep2  = "";
+            warrantyStartForStep2 = "";
+            warrantyEndForStep2   = "";
+            warrantyNotesForStep2 =
+              data.warranty_notes ||
+              data.WARRANTY_NOTES ||
+              "";
+          }
+
+          const scStartForStep2 = hasMaintActive ? formatDateDDMMYYYY(maintStart) : formatDateDDMMYYYY(maintStart || "");
+          const scEndForStep2   = hasMaintActive ? formatDateDDMMYYYY(maintEnd)   : formatDateDDMMYYYY(maintEnd   || "");
+          const scOptionsForStep2 =
+            data.contratto_opzioni ||
+            data.contratto_options ||
+            data.service_contract_options ||
+            data.ServiceContractOptions ||
+            "";
+
+          lastComputedCoverage = {
+            orderDate: dataOrdineStr,
+            warrantyType: warrantyTypeForStep2,
+            warrantyStart: warrantyStartForStep2,
+            warrantyEnd: warrantyEndForStep2,
+            warrantyNotes: warrantyNotesForStep2,
+            scStart: scStartForStep2,
+            scEnd: scEndForStep2,
+            scOptions: scOptionsForStep2
+          };
+
           if (!hasAnyCoverageData) {
-            // Nessun dato presente → FSA, PDI
             html += `<strong>Informazioni:</strong> non risultano dati di copertura o contratto associati a questo telaio alla data selezionata.<br>`;
             html += `Puoi comunque creare una claim card.`;
             showMessage('success', html);
 
             populateForNoDataAtAll();
           } else if (hasAnyActiveCoverageOrContract) {
-            // Presente almeno una copertura/contratto attivo → WARRANTY, FSA, GOODWILL
             html += `<strong>Informazioni:</strong> è presente almeno una copertura o un contratto di manutenzione <strong>attivo</strong> alla data selezionata.<br>`;
             html += `Seleziona la tipologia di claim card dal menu.`;
             showMessage('success', html);
 
             populateForActiveCoverageOrContract();
           } else {
-            // Dati presenti ma nessuna copertura/contratto attivo → PDI, FSA, GOODWILL
             html += `<strong>Informazioni:</strong> non risultano coperture o contratti di manutenzione <strong>attivi</strong> alla data selezionata.<br>`;
             html += `Sono comunque presenti dati storici associati al veicolo. Puoi creare una claim card.`;
             showMessage('success', html);
@@ -871,8 +965,55 @@
           showMessage('error', "Errore durante il controllo: " + err.message);
           btnCheckCoverage.disabled = false;
           resetTipoPratica();
+          lastVinDocData = null;
+          lastComputedCoverage = null;
         }
       }
+
+      // ===== HELPER PER ESTRARRE I CAMPI VEICOLO DAL DOCUMENTO VIN =====
+
+      function getRegistrationPlate(data) {
+        return (
+          data.registration_plate ||
+          data.Registration_Plate ||
+          data.registrationPlate ||
+          data.RegistrationPlate ||
+          data.plate ||
+          data.Plate ||
+          data.targa ||
+          data.Targa ||
+          ""
+        );
+      }
+
+      function getRegistrationDate(data) {
+        const val =
+          data.registration_date ||
+          data.Registration_Date ||
+          data.registrationDate ||
+          data.RegistrationDate ||
+          data.data_immatricolazione ||
+          data.dataImmatricolazione ||
+          data.DataImmatricolazione ||
+          null;
+
+        const d = getDateFromField(val);
+        return d ? formatDateDDMMYYYY(d) : (val || "");
+      }
+
+      function getCustomerName(data) {
+        return (
+          data.customer_name ||
+          data.customerName ||
+          data.CustomerName ||
+          data.customer ||
+          data.Customer ||
+          data.intestatario ||
+          data.Intestatario ||
+          ""
+        );
+      }
+
     })();
   </script>
 </body>
