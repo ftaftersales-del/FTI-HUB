@@ -286,13 +286,12 @@
     const db = firebase.firestore();
 
     let currentUser = null;
-    let currentClaimId = null;     // es: "W2026000001"
-    let currentClaimYear = null;   // es: 2026
+    let currentClaimId = null;       // es: "W2026000001"
+    let currentClaimYear = null;     // es: 2026
     let currentClaimSequence = null; // es: 1
     let claimDocRef = null;
-    let claimAlreadySaved = false;
 
-    // Gestione UI semplice
+    // Gestione messaggi
     function showError(message) {
       const box = document.getElementById('error-box');
       box.textContent = message;
@@ -304,20 +303,51 @@
       box.textContent = message;
     }
 
-    // Lettura dati dal sessionStorage
-    // FTCLAIMS dovrà scrivere un oggetto JSON in:
-    // sessionStorage.setItem("ftclaims_context", JSON.stringify({ ... }))
+    // --- Lettura contesto da sessionStorage ---
     function loadContextFromSession() {
-      const raw = sessionStorage.getItem('ftclaims_context');
-      if (!raw) {
-        return null;
+      // 1) Provo il contesto completo
+      const rawFull = sessionStorage.getItem('ftclaims_context');
+      if (rawFull) {
+        try {
+          const ctx = JSON.parse(rawFull);
+          console.log("ftclaims_context:", ctx);
+          return ctx;
+        } catch (e) {
+          console.error("Errore parsing ftclaims_context:", e);
+        }
       }
-      try {
-        return JSON.parse(raw);
-      } catch (e) {
-        console.error('Errore parsing ftclaims_context:', e);
-        return null;
+
+      // 2) Fallback: solo step1 (vin + data ordine + tipo)
+      const rawStep1 = sessionStorage.getItem('currentClaimStep1');
+      if (rawStep1) {
+        try {
+          const s1 = JSON.parse(rawStep1);
+          console.log("currentClaimStep1 (fallback):", s1);
+          return {
+            vin: s1.vin || "",
+            registrationPlate: "",
+            registrationDate: "",
+            customer: "",
+            orderDate: s1.dataOrdine || "",
+            warrantyCoverage: {
+              type: "",
+              startDate: "",
+              endDate: "",
+              notes: ""
+            },
+            serviceContract: {
+              startDate: "",
+              endDate: "",
+              options: ""
+            },
+            tipoClaimCard: s1.tipoClaimCard || ""
+          };
+        } catch (e) {
+          console.error("Errore parsing currentClaimStep1:", e);
+        }
       }
+
+      return null;
     }
 
     // Compila i campi veicolo/copertura/contratto in pagina
@@ -382,7 +412,6 @@
           year = d.getFullYear();
         }
       }
-      // Se la data ordine non è valida, uso anno corrente
       if (!year) {
         year = new Date().getFullYear();
       }
@@ -408,9 +437,7 @@
 
     // Crea il documento della pratica (ClaimCard) su Firestore
     async function createClaimDocument(userInfo, context, openDateStr) {
-      if (!currentClaimId) {
-        throw new Error('Codice pratica non generato.');
-      }
+      if (!currentClaimId) return;
 
       claimDocRef = db.collection('ClaimCards').doc(currentClaimId);
 
@@ -453,11 +480,10 @@
       };
 
       await claimDocRef.set(payload);
-      claimAlreadySaved = true;
     }
 
-    // Aggiorna solo la data di apertura sul documento
-    async function updateOpenDateOnChange() {
+    // Listener per aggiornare la data di apertura
+    function attachOpenDateListener() {
       if (!claimDocRef) return;
       const openDateInput = document.getElementById('open-date');
       openDateInput.addEventListener('change', async () => {
@@ -476,7 +502,7 @@
     async function initPage(user) {
       currentUser = user;
 
-      // 1) Carico contesto da sessionStorage
+      // 1) Contesto
       const context = loadContextFromSession();
       if (!context) {
         showError('Contesto pratica non trovato. Torna alla pagina FTCLAIMS e ripeti la ricerca.');
@@ -484,13 +510,19 @@
         return;
       }
 
-      // 2) Compilo campi veicolo/copertura/contratto
+      // 2) Compilo subito i campi a video (anche se Firestore fallisce)
       fillVehicleAndCoverageFields(context);
 
-      // 3) Carico info utente (Dealer + Nome)
-      const userInfo = await loadUserInfo(user);
+      // 3) Info utente
+      let userInfo = { dealer: '', fullName: '' };
+      try {
+        userInfo = await loadUserInfo(user);
+      } catch (e) {
+        console.error("Errore lettura utente:", e);
+        showError('Errore nel caricamento dei dati utente: ' + e.message);
+      }
 
-      // 4) Imposto data apertura di default (oggi)
+      // 4) Data apertura di default = oggi
       const openDateInput = document.getElementById('open-date');
       const today = new Date();
       const yyyy = today.getFullYear();
@@ -498,23 +530,25 @@
       const dd = String(today.getDate()).padStart(2, '0');
       openDateInput.value = `${yyyy}-${mm}-${dd}`;
 
-      // 5) Genero codice pratica
-      setInfo('Generazione codice pratica in corso...');
-      const { code, year, sequence } = await generateClaimCode(context.orderDate);
-      currentClaimId = code;
-      currentClaimYear = year;
-      currentClaimSequence = sequence;
-      document.getElementById('claim-code').value = code;
+      // 5) Generazione codice pratica + creazione documento
+      try {
+        setInfo('Generazione codice pratica in corso...');
+        const { code, year, sequence } = await generateClaimCode(context.orderDate);
+        currentClaimId = code;
+        currentClaimYear = year;
+        currentClaimSequence = sequence;
+        document.getElementById('claim-code').value = code;
 
-      // 6) Creo il documento su Firestore
-      setInfo('Creazione pratica su Firestore...');
-      await createClaimDocument(userInfo, context, openDateInput.value);
+        setInfo('Creazione pratica su Firestore...');
+        await createClaimDocument(userInfo, context, openDateInput.value);
+        attachOpenDateListener();
 
-      // 7) Aggancio listener per aggiornare la data apertura
-      await updateOpenDateOnChange();
-
-      // 8) Fine
-      setInfo('Pratica creata. Puoi procedere con la gestione dei claim interni o cancellare la richiesta.');
+        setInfo('Pratica creata. Puoi procedere con la gestione dei claim interni o cancellare la richiesta.');
+      } catch (e) {
+        console.error('Errore creazione pratica:', e);
+        showError('Errore durante la creazione della pratica: ' + e.message);
+        setInfo('I dati sono stati caricati a video. Il salvataggio della pratica non è riuscito.');
+      }
     }
 
     // Auth
@@ -551,7 +585,7 @@
     // Pulsante "Cancella Richiesta"
     document.getElementById('btn-cancel-claim').addEventListener('click', async () => {
       if (!claimDocRef || !currentClaimId) {
-        alert('Nessuna richiesta da cancellare.');
+        alert('Nessuna richiesta da cancellare (pratica non salvata o errore precedente).');
         return;
       }
       if (!confirm('Sei sicuro di voler cancellare definitivamente questa richiesta?')) {
