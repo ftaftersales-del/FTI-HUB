@@ -47,8 +47,8 @@
     }
     input[type="text"],
     input[type="date"],
-    select,
-    input[type="number"] {
+    input[type="number"],
+    select {
       width: 100%;
       padding: 8px;
       box-sizing: border-box;
@@ -57,10 +57,10 @@
       font-size: 14px;
     }
 
-    .inline-group {
+    .inline-fields {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 10px 16px;
+      gap: 12px;
     }
 
     .buttons {
@@ -149,6 +149,20 @@
       border-left: 3px solid #007bff;
       display: none;
     }
+
+    .loader-inline {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+      border-top-color: #007bff;
+      animation: spin 0.7s linear infinite;
+      margin-left: 6px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 
@@ -159,31 +173,29 @@
     <div id="userInfo">Verifica accesso in corso...</div>
 
     <div class="field-group">
-      <label for="vinInput">Telaio (VIN)</label>
+      <label for="vinInput">Telaio (VIN) *</label>
       <input type="text" id="vinInput" placeholder="Inserisci il numero di telaio">
     </div>
 
-    <div class="inline-group">
+    <div class="inline-fields">
       <div class="field-group">
-        <label for="dataOrdineInput">Data apertura ordine di lavoro</label>
+        <label for="dataOrdineInput">Data apertura ordine di lavoro *</label>
         <input type="date" id="dataOrdineInput">
       </div>
-
       <div class="field-group">
-        <label for="ordineLavoroInput">Numero ordine di lavoro</label>
-        <input type="text" id="ordineLavoroInput" placeholder="Es. 123456">
+        <label for="ordineLavoroInput">Numero ordine di lavoro *</label>
+        <input type="text" id="ordineLavoroInput" placeholder="Es. WO123456">
       </div>
     </div>
 
-    <div class="inline-group">
+    <div class="inline-fields">
       <div class="field-group">
-        <label for="kmInput">KM veicolo</label>
-        <input type="number" id="kmInput" min="0" step="1" placeholder="Es. 123456">
+        <label for="kmInput">KM veicolo *</label>
+        <input type="number" id="kmInput" min="0" step="1">
       </div>
-
       <div class="field-group">
-        <label for="oreMotoreInput">Ore motore</label>
-        <input type="number" id="oreMotoreInput" min="0" step="1" placeholder="Es. 1234">
+        <label for="oreMotoreInput">Ore motore *</label>
+        <input type="number" id="oreMotoreInput" min="0" step="1">
       </div>
     </div>
 
@@ -214,7 +226,7 @@
 
   <script>
     (function () {
-      console.log("FTCLAIMS – Claim Card STEP1 con controlli KM/ORE/ordine lavoro + backend");
+      console.log("FTCLAIMS – Claim Card STEP1 con controlli ClaimCards + backend");
 
       const userInfoDiv = document.getElementById('userInfo');
 
@@ -237,19 +249,24 @@
 
       // ================== CONFIG FIRESTORE / BACKEND ==================
 
-      const VIN_COLLECTION    = "DBVIN";        // collezione VIN
-      const CLAIMS_COLLECTION = "ClaimCards";   // ✅ collezione delle claim card
-      const WARRANTY_BACKEND_URL = "https://verifica-garanzia-backend.onrender.com/verifica";
+      // Collezione VIN
+      const VIN_COLLECTION = "DBVIN";
 
-      // ---- CONFIG FSA (stessa base dati di Gestione FSA / FTFSA) ----
-      const FSA_COLLECTION         = "FTFSA";
-      const FSA_VIN_FIELD          = "Telaio";
-      const FSA_APPLIED_FIELD_HINT = "campagnaEseguita";
-      const FSA_CODE_FIELD_HINT    = "CodiceFSA";
-      const FSA_DESC_FIELD_HINT    = "DescrizioneCampagna";
-      const FSA_START_FIELD_HINT   = "DataInizio";
-      const FSA_END_FIELD_HINT     = "DataFine";
-      const FSA_TYPE_FIELD_HINT    = "Tipologia";
+      // Collezione ClaimCards (pratiche)
+      const CLAIM_CARDS_COLLECTION = "ClaimCards";
+
+      // CONFIG FSA (tabella campagne FSA, come da codice originale)
+      const FSA_COLLECTION         = "FTFSA";      // collezione FSA
+      const FSA_VIN_FIELD          = "Telaio";     // campo VIN nella collezione FTFSA
+      const FSA_APPLIED_FIELD_HINT = "campagnaEseguita"; // nome campo più probabile per "eseguita"
+      const FSA_CODE_FIELD_HINT    = "CodiceFSA";       // campo codice FSA
+      const FSA_DESC_FIELD_HINT    = "DescrizioneCampagna"; // campo descrizione campagna
+      const FSA_START_FIELD_HINT   = "DataInizio";      // campo data inizio
+      const FSA_END_FIELD_HINT     = "DataFine";        // campo data fine
+      const FSA_TYPE_FIELD_HINT    = "Tipologia";       // campo tipologia (Next Service Visit, ecc.)
+
+      // Endpoint backend verifica garanzia (già usato in FTVIN)
+      const BACKEND_URL = "https://verifica-garanzia-backend.onrender.com/verifica";
 
       let currentAccount = null;
 
@@ -313,18 +330,18 @@
       const btnCancel        = document.getElementById('btnCancel');
       const btnHome          = document.getElementById('btnHome');
 
+      const vinInput         = document.getElementById('vinInput');
+      const dataOrdineInput  = document.getElementById('dataOrdineInput');
+      const ordineLavoroInput= document.getElementById('ordineLavoroInput');
+      const kmInput          = document.getElementById('kmInput');
+      const oreMotoreInput   = document.getElementById('oreMotoreInput');
+
       const tipoPraticaGroup       = document.getElementById('tipoPraticaGroup');
       const tipoPraticaSelect      = document.getElementById('tipoPratica');
       const tipoPraticaDescrizione = document.getElementById('tipoPraticaDescrizione');
 
       const fsaListContainer = document.getElementById('fsaListContainer');
       const fsaList          = document.getElementById('fsaList');
-
-      const vinInput          = document.getElementById('vinInput');
-      const dataOrdineInput   = document.getElementById('dataOrdineInput');
-      const kmInput           = document.getElementById('kmInput');
-      const oreMotoreInput    = document.getElementById('oreMotoreInput');
-      const ordineLavoroInput = document.getElementById('ordineLavoroInput');
 
       // === Pulsante HOME ===
       btnHome.addEventListener('click', () => {
@@ -345,26 +362,27 @@
       btnOk.addEventListener('click', () => {
         const vin            = vinInput.value.trim().toUpperCase();
         const dataOrdineStr  = dataOrdineInput.value;
-        const tipoPratica    = tipoPraticaSelect.value;
+        const ordineLavoro   = ordineLavoroInput.value.trim();
         const kmStr          = kmInput.value.trim();
         const oreStr         = oreMotoreInput.value.trim();
-        const ordineLavoro   = ordineLavoroInput.value.trim();
+        const tipoPratica    = tipoPraticaSelect.value;
 
         if (!tipoPratica) {
           alert("Seleziona una tipologia di claim card.");
           return;
         }
 
-        const kmVal  = kmStr === ""  ? null : parseInt(kmStr, 10);
-        const oreVal = oreStr === "" ? null : parseInt(oreStr, 10);
+        const kmVal  = parseInt(kmStr, 10);
+        const oreVal = parseInt(oreStr, 10);
 
+        // Salviamo intestazione + info base per lo STEP2
         const claimCardHeader = {
           vin,
           dataOrdine: dataOrdineStr,
           tipoClaimCard: tipoPratica,
-          km: kmVal,
-          oreMotore: oreVal,
-          numeroOrdineLavoro: ordineLavoro
+          ordineLavoro,
+          kmVeicolo: isNaN(kmVal) ? null : kmVal,
+          oreMotore: isNaN(oreVal) ? null : oreVal
         };
 
         sessionStorage.setItem("currentClaimStep1", JSON.stringify(claimCardHeader));
@@ -593,11 +611,11 @@
       }
 
       function resetAll() {
-        vinInput.value          = "";
-        dataOrdineInput.value   = "";
-        kmInput.value           = "";
-        oreMotoreInput.value    = "";
+        vinInput.value = "";
+        dataOrdineInput.value = "";
         ordineLavoroInput.value = "";
+        kmInput.value = "";
+        oreMotoreInput.value = "";
         btnCheckCoverage.disabled = false;
         clearMessage();
         resetTipoPratica();
@@ -629,6 +647,7 @@
           snapshot.forEach(doc => {
             const data = doc.data();
 
+            // --- determinazione campo "campagna eseguita" ---
             const appliedValue =
               data[FSA_APPLIED_FIELD_HINT] ??
               data.campagnaEseguita ??
@@ -646,12 +665,14 @@
               appliedValue === "SI"   || appliedValue === "S" ||
               appliedValue === "YES"  || appliedValue === "Y";
 
+            // Consideriamo "da applicare" solo le FSA NON eseguite
             if (isApplied) {
               return;
             }
 
             countPendenti++;
 
+            // --- campi descrittivi: codici + descrizioni ---
             const codice =
               data[FSA_CODE_FIELD_HINT] ??
               data.codiceFSA ??
@@ -730,12 +751,12 @@
         }
       }
 
-      // ===== BACKEND WARRANTY =====
+      // ===== CHIAMATA BACKEND COPERTURA (come in FTVIN) =====
       async function fetchBackendCoverage(vin) {
-        const resp = await fetch(WARRANTY_BACKEND_URL, {
+        const resp = await fetch(BACKEND_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ telaio: vin }),
+          body: JSON.stringify({ telaio: vin })
         });
         if (!resp.ok) {
           throw new Error("Errore HTTP backend: " + resp.status);
@@ -743,98 +764,102 @@
         return await resp.json();
       }
 
-      // ===== CONTROLLI SU PRATICHE ESISTENTI (KM / ORE / ORDINE) =====
-      async function validateClaimConsistency(vin, dataOrdineStr, kmVal, oreVal, ordineLavoro) {
-        const dataOrdine = startOfDay(new Date(dataOrdineStr));
+      // ===== CONTROLLI SU ClaimCards (ordine lavoro, KM, ore) =====
+      async function checkClaimCardsConsistency(vin, dataOrdineStr, kmVal, oreVal, ordineLavoro) {
+        // 1) Numero ordine di lavoro unico
+        const sameOrderSnap = await db.collection(CLAIM_CARDS_COLLECTION)
+          .where("ordineLavoro", "==", ordineLavoro)
+          .limit(1)
+          .get();
 
-        // --- 1) Numero ordine di lavoro univoco su TUTTE le pratiche ---
-        if (ordineLavoro) {
-          const sameOrderSnap = await db.collection(CLAIMS_COLLECTION)
-            .where("numeroOrdineLavoro", "==", ordineLavoro)
-            .limit(1)
-            .get();
-
-          if (!sameOrderSnap.empty) {
-            throw new Error(
-              "Esiste già una pratica con lo stesso <strong>numero di ordine di lavoro</strong>.<br>" +
-              "Non è possibile creare una nuova claim card con questo numero."
-            );
-          }
+        if (!sameOrderSnap.empty) {
+          const msg = `
+            È già presente una pratica con lo stesso <strong>numero ordine di lavoro</strong> (${ordineLavoro}).<br>
+            Non è possibile creare un'altra claim card con lo stesso numero di ordine di lavoro.
+          `;
+          return { ok: false, message: msg };
         }
 
-        // Se non abbiamo KM/ORE, gli altri controlli non hanno senso
-        if (kmVal == null || isNaN(kmVal) || oreVal == null || isNaN(oreVal)) {
-          return;
+        // 2) Stesso VIN + stessa data: KM e ore DEVONO coincidere
+        const sameDateSnap = await db.collection(CLAIM_CARDS_COLLECTION)
+          .where("vin", "==", vin)
+          .where("dataOrdineLavoro", "==", dataOrdineStr)
+          .get();
+
+        let sameDateError = false;
+        sameDateSnap.forEach(doc => {
+          const d = doc.data() || {};
+          const oldKm  = d.kmVeicolo;
+          const oldOre = d.oreMotore;
+          if (oldKm != null && oldKm !== kmVal) sameDateError = true;
+          if (oldOre != null && oldOre !== oreVal) sameDateError = true;
+        });
+
+        if (sameDateError) {
+          const msg = `
+            Esiste già una pratica per questo <strong>VIN</strong> e la stessa
+            <strong>data ordine di lavoro</strong> (${dataOrdineStr}) con chilometraggio/ore motore diversi.<br>
+            I valori di <strong>KM</strong> e <strong>ore motore</strong> devono coincidere con le pratiche già registrate per la stessa data.
+          `;
+          return { ok: false, message: msg };
         }
 
-        // --- 2) Controlli su tutte le pratiche con lo stesso VIN ---
-        const sameVinSnap = await db.collection(CLAIMS_COLLECTION)
+        // 3) Vin + date precedenti/successive: controlli cronologici su KM/ore
+        //    nota: si assume che dataOrdineLavoro sia memorizzata come stringa "YYYY-MM-DD"
+        const allSnap = await db.collection(CLAIM_CARDS_COLLECTION)
           .where("vin", "==", vin)
           .get();
 
-        if (sameVinSnap.empty) return;
+        let chronoErrorMessages = [];
 
-        let errorMsg = null;
-
-        sameVinSnap.forEach(doc => {
-          if (errorMsg) return; // già trovato un errore
-
-          const d = doc.data();
-          const dDateStr = d.dataOrdineLavoro || d.dataOrdine || null;
+        allSnap.forEach(doc => {
+          const d = doc.data() || {};
+          const dDateStr = d.dataOrdineLavoro;
           if (!dDateStr) return;
 
-          const dDate = startOfDay(new Date(dDateStr));
-          if (isNaN(dDate.getTime())) return;
+          const oldKm  = d.kmVeicolo;
+          const oldOre = d.oreMotore;
 
-          const dKm  = (d.km != null)        ? Number(d.km)        : null;
-          const dOre = (d.oreMotore != null) ? Number(d.oreMotore) : null;
-
-          // Se non ci sono km/ore salvati in quella pratica, saltiamo i controlli
-          if (dKm == null || isNaN(dKm) || dOre == null || isNaN(dOre)) {
-            return;
-          }
-
-          const sameDay = dDate.getTime() === dataOrdine.getTime();
-          const older   = dDate.getTime() <  dataOrdine.getTime();
-          const newer   = dDate.getTime() >  dataOrdine.getTime();
-
-          // 2A. stessa data ordine + stesso VIN → KM e ORE DEVONO coincidere
-          if (sameDay) {
-            if (kmVal !== dKm || oreVal !== dOre) {
-              errorMsg =
-                "Esiste già una pratica per questo <strong>telaio</strong> con la stessa <strong>data ordine di lavoro</strong>.<br>" +
-                "In questo caso i <strong>KM</strong> e le <strong>ore motore</strong> devono coincidere con quelli già registrati " +
-                "(<strong>KM: " + dKm + "</strong>, <strong>Ore motore: " + dOre + "</strong>).";
-              return;
+          // pratica precedente (data < dataOrdineStr)
+          if (dDateStr < dataOrdineStr) {
+            if (oldKm != null && kmVal < oldKm) {
+              chronoErrorMessages.push(
+                `I <strong>KM</strong> inseriti (${kmVal}) sono <strong>inferiori</strong> a quelli di una pratica precedente (${oldKm}) allo stesso VIN.`
+              );
+            }
+            if (oldOre != null && oreVal < oldOre) {
+              chronoErrorMessages.push(
+                `Le <strong>ore motore</strong> inserite (${oreVal}) sono <strong>inferiori</strong> a quelle di una pratica precedente (${oldOre}) allo stesso VIN.`
+              );
             }
           }
 
-          // 2B. pratica PRECEDENTE nel tempo → KM/ORE non possono essere inferiori
-          if (older) {
-            if (kmVal < dKm || oreVal < dOre) {
-              errorMsg =
-                "Per questo telaio esiste una pratica precedente con data ordine di lavoro <strong>" + dDateStr + "</strong> " +
-                "e valori <strong>KM: " + dKm + "</strong>, <strong>Ore motore: " + dOre + "</strong>.<br>" +
-                "La nuova pratica non può avere KM o ore motore <strong>inferiori</strong> rispetto a una pratica precedente.";
-              return;
+          // pratica successiva (data > dataOrdineStr)
+          if (dDateStr > dataOrdineStr) {
+            if (oldKm != null && kmVal > oldKm) {
+              chronoErrorMessages.push(
+                `I <strong>KM</strong> inseriti (${kmVal}) sono <strong>superiori</strong> a quelli di una pratica successiva (${oldKm}) allo stesso VIN.`
+              );
             }
-          }
-
-          // 2C. pratica SUCCESSIVA nel tempo → KM/ORE non possono essere superiori
-          if (newer) {
-            if (kmVal > dKm || oreVal > dOre) {
-              errorMsg =
-                "Per questo telaio esiste una pratica successiva con data ordine di lavoro <strong>" + dDateStr + "</strong> " +
-                "e valori <strong>KM: " + dKm + "</strong>, <strong>Ore motore: " + dOre + "</strong>.<br>" +
-                "La nuova pratica non può avere KM o ore motore <strong>superiori</strong> rispetto a una pratica successiva.";
-              return;
+            if (oldOre != null && oreVal > oldOre) {
+              chronoErrorMessages.push(
+                `Le <strong>ore motore</strong> inserite (${oreVal}) sono <strong>superiori</strong> a quelle di una pratica successiva (${oldOre}) allo stesso VIN.`
+              );
             }
           }
         });
 
-        if (errorMsg) {
-          throw new Error(errorMsg);
+        if (chronoErrorMessages.length > 0) {
+          const msg = `
+            I valori di <strong>KM veicolo</strong> e/o <strong>ore motore</strong> non sono coerenti
+            con le altre pratiche presenti per questo VIN.<br><br>
+            Dettaglio:<br>
+            - ${chronoErrorMessages.join("<br>- ")}
+          `;
+          return { ok: false, message: msg };
         }
+
+        return { ok: true };
       }
 
       // ===== LOGICA CONTROLLO COPERTURA / DATI VEICOLO =====
@@ -843,40 +868,38 @@
         resetTipoPratica();
         clearFsaList();
 
-        let vin             = vinInput.value.trim().toUpperCase();
-        const dataOrdineStr = dataOrdineInput.value;
-        const kmStr         = kmInput.value.trim();
-        const oreStr        = oreMotoreInput.value.trim();
-        const ordineLavoro  = ordineLavoroInput.value.trim();
+        let vin            = vinInput.value.trim().toUpperCase();
+        const dataOrdineStr= dataOrdineInput.value;
+        const ordineLavoro = ordineLavoroInput.value.trim();
+        const kmStr        = kmInput.value.trim();
+        const oreStr       = oreMotoreInput.value.trim();
 
-        // Entrambi i campi DEVONO essere compilati
-        if (!vin || !dataOrdineStr) {
-          showMessage('error', "Inserisci il <strong>numero di telaio (VIN)</strong> e la <strong>data di apertura dell'ordine di lavoro</strong>.");
+        // ✅ Controllo unico: tutti i campi obbligatori
+        if (!vin || !dataOrdineStr || !ordineLavoro || kmStr === "" || oreStr === "") {
+          showMessage(
+            'error',
+            "Compila tutti i campi obbligatori: <strong>VIN</strong>, " +
+            "<strong>data ordine di lavoro</strong>, <strong>numero ordine di lavoro</strong>, " +
+            "<strong>KM veicolo</strong> e <strong>ore motore</strong>."
+          );
           return;
         }
 
-        // Numero ordine di lavoro obbligatorio (serve per i controlli)
-        if (!ordineLavoro) {
-          showMessage('error', "Inserisci il <strong>numero di ordine di lavoro</strong>.");
-          return;
-        }
-
-        // KM / ORE obbligatori e numerici >= 0
-        const kmVal  = kmStr === ""  ? NaN : parseInt(kmStr, 10);
-        const oreVal = oreStr === "" ? NaN : parseInt(oreStr, 10);
+        const kmVal  = parseInt(kmStr, 10);
+        const oreVal = parseInt(oreStr, 10);
 
         if (isNaN(kmVal) || kmVal < 0) {
-          showMessage('error', "Inserisci un valore valido (>= 0) per i <strong>KM veicolo</strong>.");
+          showMessage('error', "Inserisci un valore valido (≥ 0) per i <strong>KM veicolo</strong>.");
           return;
         }
         if (isNaN(oreVal) || oreVal < 0) {
-          showMessage('error', "Inserisci un valore valido (>= 0) per le <strong>ore motore</strong>.");
+          showMessage('error', "Inserisci un valore valido (≥ 0) per le <strong>ore motore</strong>.");
           return;
         }
 
         const dataOrdine = startOfDay(new Date(dataOrdineStr));
         if (isNaN(dataOrdine.getTime())) {
-          showMessage('error', "La <strong>data dell'ordine di lavoro</strong> non è valida.");
+          showMessage('error', "La data inserita non è valida.");
           return;
         }
 
@@ -885,172 +908,206 @@
         minDate.setDate(minDate.getDate() - 90);
 
         if (dataOrdine > oggi) {
-          showMessage('error', "La data dell'ordine di lavoro non può essere <strong>futura</strong>.");
+          showMessage('error', "La data dell'ordine di lavoro non può essere futura.");
           return;
         }
 
         if (dataOrdine < minDate) {
-          showMessage('error', "È possibile aprire una claim card solo entro <strong>90 giorni</strong> dalla data dell'ordine di lavoro.");
+          showMessage('error', "È possibile aprire una claim card solo entro 90 giorni dalla data dell'ordine di lavoro.");
           return;
         }
 
         try {
-          showMessage('success', "Ricerca del telaio e verifica coerenza dati in corso…");
+          // 1) Controlli su ClaimCards (ordine lavoro / KM / ore)
+          showMessage('success', 'Verifica coerenza dati pratica in corso… <span class="loader-inline"></span>');
           btnCheckCoverage.disabled = true;
 
-          // --- 1) Controlli su pratiche esistenti (KM/ORE/ordine) ---
-          await validateClaimConsistency(vin, dataOrdineStr, kmVal, oreVal, ordineLavoro);
+          const ccResult = await checkClaimCardsConsistency(
+            vin,
+            dataOrdineStr,
+            kmVal,
+            oreVal,
+            ordineLavoro
+          );
 
-          // --- 2) Carico FSA pendenti in parallelo ---
-          await loadPendingFsaForVin(vin);
-
-          // --- 3) Ricerca copertura: prima DBVIN, poi backend Ford ---
-          let data = null;
-          let fromBackend = false;
-
-          const vinDocRef  = db.collection(VIN_COLLECTION).doc(vin);
-          const vinDocSnap = await vinDocRef.get();
-
-          if (vinDocSnap.exists) {
-            data = vinDocSnap.data();
-            console.log("[FTCLAIMS] VIN trovato in DBVIN:", vin, data);
-          } else {
-            console.log("[FTCLAIMS] VIN non trovato in DBVIN, verifico backend...");
-            try {
-              const backendData = await fetchBackendCoverage(vin);
-              console.log("[FTCLAIMS] Risposta backend:", backendData);
-
-              if (backendData && backendData.success && backendData.copertura && backendData.copertura.HAS_WARRANTY) {
-                const c = backendData.copertura;
-
-                data = {
-                  VIN: c.VIN,
-                  WARRANTY_TYPE: c.WARRANTY_TYPE || null,
-                  WARRANTY_START_DATE: c.WARRANTY_START_DATE || null,
-                  WARRANTY_END_DATE: c.WARRANTY_END_DATE || null,
-                  contratto_data_start: c.SC_DT_START_DATE || null,
-                  contratto_data_end:   c.SC_DT_END_DATE   || null
-                };
-
-                fromBackend = true;
-              } else {
-                data = null;
-              }
-            } catch (be) {
-              console.error("[FTCLAIMS] Errore backend verifica garanzia:", be);
-              data = null;
-            }
-          }
-
-          // === Nessun dato di copertura (né DBVIN né backend) ===
-          if (!data) {
-            let html = `<strong>Telaio:</strong> ${vin}<br>`;
-            html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br>`;
-            html += `<strong>Km:</strong> ${kmVal} – <strong>Ore motore:</strong> ${oreVal}<br><br>`;
-            html += `<strong>Informazioni:</strong> non risultano dati di copertura o contratto associati a questo telaio alla data selezionata.<br>`;
-            html += `Puoi comunque creare una claim card.`;
-
-            showMessage('success', html);
-            populateForNoDataAtAll();
+          if (!ccResult.ok) {
+            showMessage('error', ccResult.message);
             btnCheckCoverage.disabled = false;
             return;
           }
 
-          // ----- DATI COPERTURE / CONTRATTI -----
-          let fullStartFs   = getDateFromField(data.completa_data_start);
-          let fullEndFs     = getDateFromField(data.completa_data_end);
-          let driveStartFs  = getDateFromField(data.catcinematica_data_start);
-          let driveEndFs    = getDateFromField(data.catcinematica_data_end);
-          let maintStartFs  = getDateFromField(data.contratto_data_start);
-          let maintEndFs    = getDateFromField(data.contratto_data_end);
+          // 2) Carico in parallelo FSA pendenti
+          await loadPendingFsaForVin(vin);
 
-          const warrantyTypeRaw  = data.WARRANTY_TYPE       || data.warranty_type;
-          const warrantyStartRaw = data.WARRANTY_START_DATE || data.warranty_start_date;
-          const warrantyEndRaw   = data.WARRANTY_END_DATE   || data.warranty_end_date;
+          // 3) Ricerca copertura: prima DBVIN, poi backend
+          showMessage('success', 'Ricerca del telaio e delle coperture in corso… <span class="loader-inline"></span>');
 
-          const warrantyStart = getDateFromField(warrantyStartRaw);
-          const warrantyEnd   = getDateFromField(warrantyEndRaw);
-          const warrantyType  = warrantyTypeRaw ? String(warrantyTypeRaw).toUpperCase() : "";
+          let vinData = null;
+          let coverageSource = null; // "dbvin" | "backend" | "none"
 
-          if (!fullStartFs && warrantyStart && warrantyEnd && warrantyType.includes("FULL")) {
-            fullStartFs = warrantyStart;
-            fullEndFs   = warrantyEnd;
+          // Provo da Firestore (DBVIN) – uso doc(vin) per allinearmi a FTVIN
+          const vinDocRef = db.collection(VIN_COLLECTION).doc(vin);
+          const vinSnap   = await vinDocRef.get();
+
+          if (vinSnap.exists) {
+            vinData = vinSnap.data() || {};
+            coverageSource = "dbvin";
+            console.log("[FTCLAIMS] VIN trovato in DBVIN:", vin, vinData);
+          } else {
+            // Se non esiste in DBVIN, provo il backend Ford
+            try {
+              const backendData = await fetchBackendCoverage(vin);
+              console.log("[FTCLAIMS] Risposta backend:", backendData);
+
+              if (backendData &&
+                  backendData.success &&
+                  backendData.copertura &&
+                  backendData.copertura.HAS_WARRANTY) {
+                vinData = backendData;
+                coverageSource = "backend";
+              } else {
+                coverageSource = "none";
+              }
+            } catch (errBack) {
+              console.error("[FTCLAIMS] Errore backend:", errBack);
+              coverageSource = "none";
+            }
           }
-          if (!driveStartFs && warrantyStart && warrantyEnd &&
-              (warrantyType.includes("DRIVE") || warrantyType.includes("DRIVELINE"))) {
-            driveStartFs = warrantyStart;
-            driveEndFs   = warrantyEnd;
-          }
 
-          const fullStart  = fullStartFs;
-          const fullEnd    = fullEndFs;
-          const driveStart = driveStartFs;
-          const driveEnd   = driveEndFs;
-          const maintStart = maintStartFs;
-          const maintEnd   = maintEndFs;
-
-          const hasFullActive  = isDateWithinRange(dataOrdine, fullStart,  fullEnd);
-          const hasDriveActive = isDateWithinRange(dataOrdine, driveStart, driveEnd);
-          const hasMaintActive = isDateWithinRange(dataOrdine, maintStart, maintEnd);
-
-          const hasAnyActiveCoverageOrContract =
-            hasFullActive || hasDriveActive || hasMaintActive;
-
-          const hasAnyCoverageData =
-            (fullStart || fullEnd || driveStart || driveEnd ||
-             maintStart || maintEnd || warrantyStart || warrantyEnd)
-              ? true
-              : false;
-
+          // 4) Calcolo coperture / contratto manutenzione alla data scelta
           let html = `<strong>Telaio:</strong> ${vin}<br>`;
           html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br>`;
-          html += `<strong>Km:</strong> ${kmVal} – <strong>Ore motore:</strong> ${oreVal}<br><br>`;
+          html += `<strong>Numero ordine di lavoro:</strong> ${ordineLavoro}<br>`;
+          html += `<strong>KM veicolo:</strong> ${kmVal} – <strong>Ore motore:</strong> ${oreVal}<br><br>`;
 
-          if (fromBackend) {
-            html += `<em>Dati copertura caricati dal portale Ford (backend).</em><br><br>`;
+          let hasAnyCoverageData = false;
+          let hasAnyActiveCoverageOrContract = false;
+
+          if (coverageSource === "dbvin" && vinData) {
+            // ----- DATI COPERTURE / CONTRATTI da DBVIN (+ eventuale schema WARRANTY_*) -----
+            let fullStartFs   = getDateFromField(vinData.completa_data_start);
+            let fullEndFs     = getDateFromField(vinData.completa_data_end);
+            let driveStartFs  = getDateFromField(vinData.catcinematica_data_start);
+            let driveEndFs    = getDateFromField(vinData.catcinematica_data_end);
+            let maintStartFs  = getDateFromField(vinData.contratto_data_start);
+            let maintEndFs    = getDateFromField(vinData.contratto_data_end);
+
+            const warrantyTypeRaw  = vinData.WARRANTY_TYPE       || vinData.warranty_type;
+            const warrantyStartRaw = vinData.WARRANTY_START_DATE || vinData.warranty_start_date;
+            const warrantyEndRaw   = vinData.WARRANTY_END_DATE   || vinData.warranty_end_date;
+
+            const warrantyStart = getDateFromField(warrantyStartRaw);
+            const warrantyEnd   = getDateFromField(warrantyEndRaw);
+            const warrantyType  = warrantyTypeRaw ? String(warrantyTypeRaw).toUpperCase() : "";
+
+            // Fallback: se i campi Firestore non sono valorizzati, provo a usare WARRANTY_* in base al tipo
+            if (!fullStartFs && warrantyStart && warrantyEnd && warrantyType.includes("FULL")) {
+              fullStartFs = warrantyStart;
+              fullEndFs   = warrantyEnd;
+            }
+
+            if (!driveStartFs && warrantyStart && warrantyEnd &&
+                (warrantyType.includes("DRIVE") || warrantyType.includes("DRIVELINE"))) {
+              driveStartFs = warrantyStart;
+              driveEndFs   = warrantyEnd;
+            }
+
+            if (!maintStartFs && warrantyStart && warrantyEnd &&
+                (warrantyType.includes("SERVICE") || warrantyType.includes("SC"))) {
+              maintStartFs = warrantyStart;
+              maintEndFs   = warrantyEnd;
+            }
+
+            const fullStart  = fullStartFs;
+            const fullEnd    = fullEndFs;
+            const driveStart = driveStartFs;
+            const driveEnd   = driveEndFs;
+            const maintStart = maintStartFs;
+            const maintEnd   = maintEndFs;
+
+            const hasFullActive  = isDateWithinRange(dataOrdine, fullStart,  fullEnd);
+            const hasDriveActive = isDateWithinRange(dataOrdine, driveStart, driveEnd);
+            const hasMaintActive = isDateWithinRange(dataOrdine, maintStart, maintEnd);
+
+            hasAnyActiveCoverageOrContract =
+              hasFullActive || hasDriveActive || hasMaintActive;
+
+            hasAnyCoverageData =
+              !!(fullStart || fullEnd || driveStart || driveEnd ||
+                 maintStart || maintEnd || warrantyStart || warrantyEnd);
+
+            if (hasAnyActiveCoverageOrContract) {
+              html += `<strong>Coperture/contratti attivi alla data selezionata:</strong><br><ul>`;
+              if (hasFullActive) {
+                html += `<li><strong>FULL LINE</strong> (copertura completa): dal ${formatDateDDMMYYYY(fullStart)} al ${formatDateDDMMYYYY(fullEnd)}</li>`;
+              }
+              if (hasDriveActive) {
+                html += `<li><strong>DRIVE LINE</strong> (catena cinematica): dal ${formatDateDDMMYYYY(driveStart)} al ${formatDateDDMMYYYY(driveEnd)}</li>`;
+              }
+              if (hasMaintActive) {
+                html += `<li><strong>SERVICE CONTRACT</strong>: dal ${formatDateDDMMYYYY(maintStart)} al ${formatDateDDMMYYYY(maintEnd)}</li>`;
+              }
+              html += `</ul><br>`;
+            }
+          } else if (coverageSource === "backend" && vinData) {
+            // ----- Copertura direttamente dal backend Ford -----
+            const cop = vinData.copertura || {};
+
+            const fullStart  = getDateFromField(cop.WARRANTY_START_DATE);
+            const fullEnd    = getDateFromField(cop.WARRANTY_END_DATE);
+            const maintStart = getDateFromField(cop.SC_DT_START_DATE);
+            const maintEnd   = getDateFromField(cop.SC_DT_END_DATE);
+
+            const hasFullActive  = isDateWithinRange(dataOrdine, fullStart,  fullEnd);
+            const hasMaintActive = isDateWithinRange(dataOrdine, maintStart, maintEnd);
+
+            hasAnyActiveCoverageOrContract = hasFullActive || hasMaintActive;
+            hasAnyCoverageData = !!(fullStart || fullEnd || maintStart || maintEnd);
+
+            if (hasAnyActiveCoverageOrContract) {
+              html += `<strong>Coperture attive (backend Ford) alla data selezionata:</strong><br><ul>`;
+              if (hasFullActive) {
+                html += `<li><strong>FULL LINE</strong>: dal ${formatDateDDMMYYYY(fullStart)} al ${formatDateDDMMYYYY(fullEnd)}</li>`;
+              }
+              if (hasMaintActive) {
+                html += `<li><strong>SERVICE CONTRACT</strong>: dal ${formatDateDDMMYYYY(maintStart)} al ${formatDateDDMMYYYY(maintEnd)}</li>`;
+              }
+              html += `</ul><br>`;
+            }
+          } else {
+            coverageSource = "none";
+            hasAnyCoverageData = false;
+            hasAnyActiveCoverageOrContract = false;
           }
 
-          if (hasAnyActiveCoverageOrContract) {
-            html += `<strong>Coperture/contratti attivi alla data selezionata:</strong><br><ul>`;
-
-            if (hasFullActive) {
-              html += `<li><strong>FULL LINE</strong> (copertura completa): dal ${formatDateDDMMYYYY(fullStart)} al ${formatDateDDMMYYYY(fullEnd)}</li>`;
-            }
-            if (hasDriveActive) {
-              html += `<li><strong>DRIVE LINE</strong> (catena cinematica): dal ${formatDateDDMMYYYY(driveStart)} al ${formatDateDDMMYYYY(driveEnd)}</li>`;
-            }
-            if (hasMaintActive) {
-              html += `<li><strong>SERVICE CONTRACT</strong>: dal ${formatDateDDMMYYYY(maintStart)} al ${formatDateDDMMYYYY(maintEnd)}</li>`;
-            }
-
-            html += `</ul><br>`;
-          }
-
-          if (!hasAnyCoverageData) {
+          // 5) Messaggio finale + popolamento menu tipo claim
+          if (coverageSource === "none") {
+            html += `<strong>Attenzione:</strong> il telaio non è presente nelle banche dati di copertura.<br>`;
+            html += `Puoi comunque creare una claim card (es. FSA o PDI).`;
+            showMessage('error', html);
+            populateForNoDataAtAll();
+          } else if (!hasAnyCoverageData) {
             html += `<strong>Informazioni:</strong> non risultano dati di copertura o contratto associati a questo telaio alla data selezionata.<br>`;
             html += `Puoi comunque creare una claim card.`;
             showMessage('success', html);
-
             populateForNoDataAtAll();
           } else if (hasAnyActiveCoverageOrContract) {
             html += `<strong>Informazioni:</strong> è presente almeno una copertura o un contratto di manutenzione <strong>attivo</strong> alla data selezionata.<br>`;
             html += `Seleziona la tipologia di claim card dal menu.`;
             showMessage('success', html);
-
             populateForActiveCoverageOrContract();
           } else {
             html += `<strong>Informazioni:</strong> non risultano coperture o contratti di manutenzione <strong>attivi</strong> alla data selezionata.<br>`;
             html += `Sono comunque presenti dati storici associati al veicolo. Puoi creare una claim card.`;
             showMessage('success', html);
-
             populateForNoActiveCoverage();
           }
 
           btnCheckCoverage.disabled = false;
 
         } catch (err) {
-          console.error("Errore durante il controllo copertura/dati veicolo o nella verifica delle pratiche:", err);
-          showMessage('error', "Impossibile procedere: " + err.message);
+          console.error("Errore durante il controllo copertura/dati veicolo:", err);
+          showMessage('error', "Errore durante il controllo: " + err.message);
           btnCheckCoverage.disabled = false;
           resetTipoPratica();
         }
