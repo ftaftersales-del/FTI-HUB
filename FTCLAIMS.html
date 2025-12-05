@@ -70,26 +70,22 @@
       font-size: 14px;
     }
 
-    /* Pulsante controlla copertura */
     #btnCheckCoverage {
       background-color: #007bff;
-      color: white;
+      color: #fff;
     }
-    /* Pulsante OK */
     #btnOk {
       background-color: #28a745;
-      color: white;
+      color: #fff;
     }
-    /* Pulsante Annulla */
     #btnCancel {
       background-color: #dc3545;
-      color: white;
+      color: #fff;
       margin-left: auto;
     }
-    /* Pulsante Home */
     #btnHome {
       background-color: #6c757d;
-      color: white;
+      color: #fff;
     }
     button:disabled {
       opacity: 0.6;
@@ -114,7 +110,6 @@
       border: 1px solid #c3e6cb;
     }
 
-    /* Box elenco FSA pendenti */
     #fsaListContainer {
       display: none;
       margin-top: 15px;
@@ -170,9 +165,7 @@
     <!-- Selezione tipologia claim card -->
     <div class="field-group" id="tipoPraticaGroup" style="display:none;">
       <label for="tipoPratica">Tipologia claim card</label>
-      <select id="tipoPratica">
-        <!-- opzioni riempite via JavaScript -->
-      </select>
+      <select id="tipoPratica"></select>
       <div id="tipoPraticaDescrizione"></div>
     </div>
 
@@ -211,13 +204,10 @@
 
       // ================== CONFIG FIRESTORE / BACKEND ==================
 
-      // Collezione VIN
       const VIN_COLLECTION = "DBVIN";
 
-      // Endpoint backend verifica garanzia (stesso che usi in FTVIN)
       const BACKEND_URL = "https://verifica-garanzia-backend.onrender.com/verifica";
 
-      // ---- CONFIG FSA ----
       const FSA_COLLECTION         = "FTFSA";
       const FSA_VIN_FIELD          = "Telaio";
       const FSA_APPLIED_FIELD_HINT = "campagnaEseguita";
@@ -328,7 +318,6 @@
           tipoClaimCard: tipoPratica
         };
 
-        // info minime per eventuale fallback
         sessionStorage.setItem("currentClaimStep1", JSON.stringify(claimCardHeader));
 
         window.location.href = "FTCLAIMS_STEP2.html";
@@ -370,17 +359,14 @@
       function getDateFromField(value) {
         if (!value) return null;
 
-        // Firestore Timestamp
         if (value && value.toDate && typeof value.toDate === "function") {
           return startOfDay(value.toDate());
         }
 
-        // Date
         if (value instanceof Date) {
           return startOfDay(value);
         }
 
-        // Stringa o numero (millisecondi)
         if (typeof value === "string" || typeof value === "number") {
           const d = new Date(value);
           if (!isNaN(d.getTime())) {
@@ -445,7 +431,6 @@
         tipoPraticaSelect.appendChild(opt);
       }
 
-      // Menu quando VIN non trovato → solo PDI
       function populateForVinNotFound() {
         tipoPraticaSelect.innerHTML = "";
 
@@ -461,7 +446,6 @@
         showTipoPraticaUI();
       }
 
-      // Menu quando NON c'è copertura attiva né contratto attivo → PDI, FSA, GOODWILL
       function populateForNoActiveCoverage() {
         tipoPraticaSelect.innerHTML = "";
 
@@ -479,7 +463,6 @@
         showTipoPraticaUI();
       }
 
-      // Menu quando è presente copertura attiva o contratto attivo → WARRANTY, FSA, GOODWILL
       function populateForActiveCoverageOrContract() {
         tipoPraticaSelect.innerHTML = "";
 
@@ -497,7 +480,6 @@
         showTipoPraticaUI();
       }
 
-      // Menu quando "nessun dato è presente" → FSA, PDI
       function populateForNoDataAtAll() {
         tipoPraticaSelect.innerHTML = "";
 
@@ -514,7 +496,6 @@
         showTipoPraticaUI();
       }
 
-      // Descrizione dinamica in base al tipo
       function updateTipoDescrizione(value) {
         if (!value) {
           tipoPraticaDescrizione.style.display = "none";
@@ -565,108 +546,125 @@
         sessionStorage.removeItem("currentClaimStep1");
       }
 
-      // ===== CHIAMATA BACKEND GARANZIA (MODIFICATA: POST JSON) =====
+      // ===== CHIAMATA BACKEND GARANZIA (POST) =====
       async function fetchCoverageFromBackend(vin, dataOrdineStr) {
-        console.log("[FTCLAIMS] Chiamata backend garanzia (POST):", BACKEND_URL, { vin, data: dataOrdineStr });
+        // Costruisco payload "robusto" per essere compatibile con il backend
+        let dataIso = dataOrdineStr;           // es. 2025-12-05
+        let dataIt  = "";
+        if (dataOrdineStr && dataOrdineStr.includes("-")) {
+          const [y, m, d] = dataOrdineStr.split("-");
+          dataIt = `${d}/${m}/${y}`;          // es. 05/12/2025
+        }
+
+        const payload = {
+          vin: vin,
+          data: dataIso,
+          data_rif: dataIso,
+          data_it: dataIt
+        };
+
+        console.log("[FTCLAIMS] Chiamata backend garanzia (POST):", BACKEND_URL, payload);
 
         const resp = await fetch(BACKEND_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
           },
-          body: JSON.stringify({
-            // usa esattamente le stesse chiavi che usi in FTVIN
-            vin: vin,
-            data: dataOrdineStr
-            // se nel backend usi "data_rif" o altro, cambia qui
-          })
+          body: JSON.stringify(payload)
         });
 
         if (!resp.ok) {
           throw new Error("Backend HTTP " + resp.status);
         }
+
         const json = await resp.json();
         console.log("[FTCLAIMS] Risposta backend grezza:", json);
         return json;
       }
 
-      // Mappa la risposta backend in un formato uniforme per STEP2
+      // ===== MAPPATURA RISPOSTA BACKEND =====
       function mapBackendData(raw) {
         if (!raw) return null;
 
+        // Se la risposta è annidata (es. {result: {...}} o {data:[...]} ), provo a estrarre
+        let src = raw;
+        if (raw.result) src = raw.result;
+        if (raw.data)   src = raw.data;
+        if (Array.isArray(src)) src = src[0] || {};
+
         const regPlate =
-          raw.registrationPlate ??
-          raw.registration_plate ??
-          raw.REGISTRATION_PLATE ??
-          raw.targa ??
-          raw.Targa ??
+          src.registrationPlate ??
+          src.registration_plate ??
+          src.REGISTRATION_PLATE ??
+          src.targa ??
+          src.Targa ??
           "";
 
         const regDateRaw =
-          raw.registrationDate ??
-          raw.registration_date ??
-          raw.REGISTRATION_DATE ??
-          raw.dataImmatricolazione ??
-          raw.DataImmatricolazione ??
+          src.registrationDate ??
+          src.registration_date ??
+          src.REGISTRATION_DATE ??
+          src.dataImmatricolazione ??
+          src.DataImmatricolazione ??
           null;
 
         const registrationDate = regDateRaw ? formatDateDDMMYYYY(regDateRaw) : "";
 
         const customer =
-          raw.customer ??
-          raw.customerName ??
-          raw.CUSTOMER ??
-          raw.Customer ??
-          raw.intestatario ??
-          raw.Intestatario ??
+          src.customer ??
+          src.customerName ??
+          src.CUSTOMER ??
+          src.Customer ??
+          src.intestatario ??
+          src.Intestatario ??
           "";
 
         const wType =
-          (raw.warrantyType ??
-           raw.WARRANTY_TYPE ??
-           raw.warranty_type ??
+          (src.warrantyType ??
+           src.WARRANTY_TYPE ??
+           src.warranty_type ??
            "").toString();
 
         const wStartRaw =
-          raw.warrantyStartDate ??
-          raw.WARRANTY_START_DATE ??
-          raw.warranty_start_date ??
+          src.warrantyStartDate ??
+          src.WARRANTY_START_DATE ??
+          src.warranty_start_date ??
           null;
 
         const wEndRaw =
-          raw.warrantyEndDate ??
-          raw.WARRANTY_END_DATE ??
-          raw.warranty_end_date ??
+          src.warrantyEndDate ??
+          src.WARRANTY_END_DATE ??
+          src.warranty_end_date ??
           null;
 
         const wStart = wStartRaw ? formatDateDDMMYYYY(wStartRaw) : "";
         const wEnd   = wEndRaw   ? formatDateDDMMYYYY(wEndRaw)   : "";
 
         const wNotes =
-          raw.warrantyNotes ??
-          raw.noteCopertura ??
-          raw.NOTE_COPERTURA ??
+          src.warrantyNotes ??
+          src.noteCopertura ??
+          src.NOTE_COPERTURA ??
           "";
 
         const scStartRaw =
-          raw.serviceContractStartDate ??
-          raw.SC_DT_START_DATE ??
-          raw.sc_start_date ??
+          src.serviceContractStartDate ??
+          src.SC_DT_START_DATE ??
+          src.sc_start_date ??
           null;
 
         const scEndRaw =
-          raw.serviceContractEndDate ??
-          raw.SC_DT_END_DATE ??
-          raw.sc_end_date ??
+          src.serviceContractEndDate ??
+          src.SC_DT_END_DATE ??
+          src.sc_end_date ??
           null;
 
         const scStart = scStartRaw ? formatDateDDMMYYYY(scStartRaw) : "";
         const scEnd   = scEndRaw   ? formatDateDDMMYYYY(scEndRaw)   : "";
 
         const scOptions =
-          raw.serviceContractOptions ??
-          raw.sc_options ??
-          raw.SC_OPTIONS ??
+          src.serviceContractOptions ??
+          src.sc_options ??
+          src.SC_OPTIONS ??
           "";
 
         const mapped = {
@@ -686,7 +684,7 @@
         return mapped;
       }
 
-      // Costruisce e salva il contesto per FTCLAIMS_STEP2
+      // ===== SALVATAGGIO CONTESTO PER STEP2 =====
       function storeContextForStep2(params) {
         const {
           vin,
@@ -795,7 +793,7 @@
         sessionStorage.setItem("ftclaims_context", JSON.stringify(context));
       }
 
-      // ===== CARICAMENTO FSA PENDENTI PER VIN =====
+      // ===== CARICAMENTO FSA PENDENTI =====
       async function loadPendingFsaForVin(vin) {
         clearFsaList();
         if (!vin) return;
@@ -837,9 +835,7 @@
               appliedValue === "SI"   || appliedValue === "S" ||
               appliedValue === "YES"  || appliedValue === "Y";
 
-            if (isApplied) {
-              return;
-            }
+            if (isApplied) return;
 
             countPendenti++;
 
@@ -887,15 +883,9 @@
             let text = codice;
             if (descrizione) text += " – " + descrizione;
             let extra = [];
-            if (startStr || endStr) {
-              extra.push("Periodo: " + (startStr || "?") + " - " + (endStr || "?"));
-            }
-            if (tipologia) {
-              extra.push("Tipologia: " + tipologia);
-            }
-            if (extra.length > 0) {
-              text += " (" + extra.join(" | ") + ")";
-            }
+            if (startStr || endStr) extra.push("Periodo: " + (startStr || "?") + " - " + (endStr || "?"));
+            if (tipologia) extra.push("Tipologia: " + tipologia);
+            if (extra.length > 0) text += " (" + extra.join(" | ") + ")";
 
             const li = document.createElement("li");
             li.textContent = text;
@@ -921,7 +911,7 @@
         }
       }
 
-      // ===== LOGICA CONTROLLO COPERTURA / DATI VEICOLO =====
+      // ===== LOGICA PRINCIPALE CONTROLLO COPERTURA =====
       async function handleCheckCoverage() {
         clearMessage();
         resetTipoPratica();
