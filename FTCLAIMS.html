@@ -70,22 +70,26 @@
       font-size: 14px;
     }
 
+    /* Pulsante controlla copertura */
     #btnCheckCoverage {
       background-color: #007bff;
-      color: #fff;
+      color: white;
     }
+    /* Pulsante OK */
     #btnOk {
       background-color: #28a745;
-      color: #fff;
+      color: white;
     }
+    /* Pulsante Annulla */
     #btnCancel {
       background-color: #dc3545;
-      color: #fff;
+      color: white;
       margin-left: auto;
     }
+    /* Pulsante Home */
     #btnHome {
       background-color: #6c757d;
-      color: #fff;
+      color: white;
     }
     button:disabled {
       opacity: 0.6;
@@ -110,6 +114,7 @@
       border: 1px solid #c3e6cb;
     }
 
+    /* Box elenco FSA pendenti */
     #fsaListContainer {
       display: none;
       margin-top: 15px;
@@ -165,7 +170,9 @@
     <!-- Selezione tipologia claim card -->
     <div class="field-group" id="tipoPraticaGroup" style="display:none;">
       <label for="tipoPratica">Tipologia claim card</label>
-      <select id="tipoPratica"></select>
+      <select id="tipoPratica">
+        <!-- opzioni riempite via JavaScript -->
+      </select>
       <div id="tipoPraticaDescrizione"></div>
     </div>
 
@@ -202,20 +209,18 @@
       window.auth = auth;
       window.db   = db;
 
-      // ================== CONFIG FIRESTORE / BACKEND ==================
+      // ================== CONFIG FIRESTORE ==================
 
+      // Collezione VIN
       const VIN_COLLECTION = "DBVIN";
 
-      const BACKEND_URL = "https://verifica-garanzia-backend.onrender.com/verifica";
-
-      const FSA_COLLECTION         = "FTFSA";
-      const FSA_VIN_FIELD          = "Telaio";
-      const FSA_APPLIED_FIELD_HINT = "campagnaEseguita";
-      const FSA_CODE_FIELD_HINT    = "CodiceFSA";
-      const FSA_DESC_FIELD_HINT    = "DescrizioneCampagna";
-      const FSA_START_FIELD_HINT   = "DataInizio";
-      const FSA_END_FIELD_HINT     = "DataFine";
-      const FSA_TYPE_FIELD_HINT    = "Tipologia";
+      // Config FSA (DBFSA per veicolo)
+      const FSA_COLLECTION        = "DBFSA";
+      const FSA_VIN_FIELD         = "vin";
+      const FSA_APPLIED_FIELD     = "applied";
+      const FSA_CODE_FIELD        = "code";
+      const FSA_DESCRIPTION_FIELD = "description";
+      const FSA_DEADLINE_FIELD    = "deadline";
 
       let currentAccount = null;
 
@@ -359,14 +364,17 @@
       function getDateFromField(value) {
         if (!value) return null;
 
+        // Firestore Timestamp
         if (value && value.toDate && typeof value.toDate === "function") {
           return startOfDay(value.toDate());
         }
 
+        // Date
         if (value instanceof Date) {
           return startOfDay(value);
         }
 
+        // Stringa o numero (millisecondi)
         if (typeof value === "string" || typeof value === "number") {
           const d = new Date(value);
           if (!isNaN(d.getTime())) {
@@ -431,6 +439,7 @@
         tipoPraticaSelect.appendChild(opt);
       }
 
+      // Menu quando VIN non trovato → solo PDI
       function populateForVinNotFound() {
         tipoPraticaSelect.innerHTML = "";
 
@@ -446,6 +455,7 @@
         showTipoPraticaUI();
       }
 
+      // Menu quando NON c'è copertura attiva né contratto attivo → PDI, FSA, GOODWILL
       function populateForNoActiveCoverage() {
         tipoPraticaSelect.innerHTML = "";
 
@@ -463,6 +473,7 @@
         showTipoPraticaUI();
       }
 
+      // Menu quando è presente copertura attiva o contratto attivo → WARRANTY, FSA, GOODWILL
       function populateForActiveCoverageOrContract() {
         tipoPraticaSelect.innerHTML = "";
 
@@ -480,6 +491,7 @@
         showTipoPraticaUI();
       }
 
+      // Menu quando "nessun dato è presente" → FSA, PDI
       function populateForNoDataAtAll() {
         tipoPraticaSelect.innerHTML = "";
 
@@ -496,6 +508,7 @@
         showTipoPraticaUI();
       }
 
+      // Descrizione dinamica in base al tipo
       function updateTipoDescrizione(value) {
         if (!value) {
           tipoPraticaDescrizione.style.display = "none";
@@ -542,258 +555,9 @@
         clearMessage();
         resetTipoPratica();
         clearFsaList();
-        sessionStorage.removeItem("ftclaims_context");
-        sessionStorage.removeItem("currentClaimStep1");
       }
 
-      // ===== CHIAMATA BACKEND GARANZIA (POST) =====
-      async function fetchCoverageFromBackend(vin, dataOrdineStr) {
-        // Costruisco payload "robusto" per essere compatibile con il backend
-        let dataIso = dataOrdineStr;           // es. 2025-12-05
-        let dataIt  = "";
-        if (dataOrdineStr && dataOrdineStr.includes("-")) {
-          const [y, m, d] = dataOrdineStr.split("-");
-          dataIt = `${d}/${m}/${y}`;          // es. 05/12/2025
-        }
-
-        const payload = {
-          vin: vin,
-          data: dataIso,
-          data_rif: dataIso,
-          data_it: dataIt
-        };
-
-        console.log("[FTCLAIMS] Chiamata backend garanzia (POST):", BACKEND_URL, payload);
-
-        const resp = await fetch(BACKEND_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        if (!resp.ok) {
-          throw new Error("Backend HTTP " + resp.status);
-        }
-
-        const json = await resp.json();
-        console.log("[FTCLAIMS] Risposta backend grezza:", json);
-        return json;
-      }
-
-      // ===== MAPPATURA RISPOSTA BACKEND =====
-      function mapBackendData(raw) {
-        if (!raw) return null;
-
-        // Se la risposta è annidata (es. {result: {...}} o {data:[...]} ), provo a estrarre
-        let src = raw;
-        if (raw.result) src = raw.result;
-        if (raw.data)   src = raw.data;
-        if (Array.isArray(src)) src = src[0] || {};
-
-        const regPlate =
-          src.registrationPlate ??
-          src.registration_plate ??
-          src.REGISTRATION_PLATE ??
-          src.targa ??
-          src.Targa ??
-          "";
-
-        const regDateRaw =
-          src.registrationDate ??
-          src.registration_date ??
-          src.REGISTRATION_DATE ??
-          src.dataImmatricolazione ??
-          src.DataImmatricolazione ??
-          null;
-
-        const registrationDate = regDateRaw ? formatDateDDMMYYYY(regDateRaw) : "";
-
-        const customer =
-          src.customer ??
-          src.customerName ??
-          src.CUSTOMER ??
-          src.Customer ??
-          src.intestatario ??
-          src.Intestatario ??
-          "";
-
-        const wType =
-          (src.warrantyType ??
-           src.WARRANTY_TYPE ??
-           src.warranty_type ??
-           "").toString();
-
-        const wStartRaw =
-          src.warrantyStartDate ??
-          src.WARRANTY_START_DATE ??
-          src.warranty_start_date ??
-          null;
-
-        const wEndRaw =
-          src.warrantyEndDate ??
-          src.WARRANTY_END_DATE ??
-          src.warranty_end_date ??
-          null;
-
-        const wStart = wStartRaw ? formatDateDDMMYYYY(wStartRaw) : "";
-        const wEnd   = wEndRaw   ? formatDateDDMMYYYY(wEndRaw)   : "";
-
-        const wNotes =
-          src.warrantyNotes ??
-          src.noteCopertura ??
-          src.NOTE_COPERTURA ??
-          "";
-
-        const scStartRaw =
-          src.serviceContractStartDate ??
-          src.SC_DT_START_DATE ??
-          src.sc_start_date ??
-          null;
-
-        const scEndRaw =
-          src.serviceContractEndDate ??
-          src.SC_DT_END_DATE ??
-          src.sc_end_date ??
-          null;
-
-        const scStart = scStartRaw ? formatDateDDMMYYYY(scStartRaw) : "";
-        const scEnd   = scEndRaw   ? formatDateDDMMYYYY(scEndRaw)   : "";
-
-        const scOptions =
-          src.serviceContractOptions ??
-          src.sc_options ??
-          src.SC_OPTIONS ??
-          "";
-
-        const mapped = {
-          registrationPlate: regPlate || "",
-          registrationDate,
-          customer,
-          warrantyType: wType,
-          warrantyStart: wStart,
-          warrantyEnd: wEnd,
-          warrantyNotes: wNotes,
-          scStart,
-          scEnd,
-          scOptions
-        };
-
-        console.log("[FTCLAIMS] Dati backend mappati:", mapped);
-        return mapped;
-      }
-
-      // ===== SALVATAGGIO CONTESTO PER STEP2 =====
-      function storeContextForStep2(params) {
-        const {
-          vin,
-          orderDateStr,
-          backend,
-          firestoreData,
-          hasFullActive,
-          hasDriveActive,
-          hasMaintActive,
-          fullStart,
-          fullEnd,
-          driveStart,
-          driveEnd,
-          maintStart,
-          maintEnd
-        } = params;
-
-        const data = firestoreData || {};
-
-        const registrationPlate =
-          (backend && backend.registrationPlate) ||
-          data.targa ||
-          data.Targa ||
-          data.registrationPlate ||
-          data.REGISTRATION_PLATE ||
-          "";
-
-        const regDateRaw =
-          (backend && backend.registrationDate) ||
-          data.registration_date ||
-          data.REGISTRATION_DATE ||
-          data.dataImmatricolazione ||
-          data.DataImmatricolazione ||
-          "";
-
-        const registrationDate =
-          backend && backend.registrationDate
-            ? backend.registrationDate
-            : regDateRaw
-              ? formatDateDDMMYYYY(regDateRaw)
-              : "";
-
-        const customer =
-          (backend && backend.customer) ||
-          data.customer ||
-          data.CUSTOMER ||
-          data.intestatario ||
-          data.Intestatario ||
-          "";
-
-        let warrantyType  = "";
-        let warrantyStart = "";
-        let warrantyEnd   = "";
-        let warrantyNotes = "";
-
-        if (backend) {
-          warrantyType  = backend.warrantyType  || "";
-          warrantyStart = backend.warrantyStart || "";
-          warrantyEnd   = backend.warrantyEnd   || "";
-          warrantyNotes = backend.warrantyNotes || "";
-        } else {
-          if (hasFullActive) {
-            warrantyType  = "FULL LINE";
-            warrantyStart = formatDateDDMMYYYY(fullStart);
-            warrantyEnd   = formatDateDDMMYYYY(fullEnd);
-          } else if (hasDriveActive) {
-            warrantyType  = "DRIVE LINE";
-            warrantyStart = formatDateDDMMYYYY(driveStart);
-            warrantyEnd   = formatDateDDMMYYYY(driveEnd);
-          }
-        }
-
-        let scStart   = "";
-        let scEnd     = "";
-        let scOptions = "";
-
-        if (backend) {
-          scStart   = backend.scStart   || "";
-          scEnd     = backend.scEnd     || "";
-          scOptions = backend.scOptions || "";
-        } else {
-          scStart = maintStart ? formatDateDDMMYYYY(maintStart) : "";
-          scEnd   = maintEnd   ? formatDateDDMMYYYY(maintEnd)   : "";
-        }
-
-        const context = {
-          vin,
-          registrationPlate,
-          registrationDate,
-          customer,
-          orderDate: orderDateStr,
-          warrantyCoverage: {
-            type: warrantyType,
-            startDate: warrantyStart,
-            endDate: warrantyEnd,
-            notes: warrantyNotes
-          },
-          serviceContract: {
-            startDate: scStart,
-            endDate: scEnd,
-            options: scOptions
-          }
-        };
-
-        console.log("[FTCLAIMS] Salvo ftclaims_context per STEP2:", context);
-        sessionStorage.setItem("ftclaims_context", JSON.stringify(context));
-      }
-
-      // ===== CARICAMENTO FSA PENDENTI =====
+      // ===== CARICAMENTO FSA PENDENTI PER VIN =====
       async function loadPendingFsaForVin(vin) {
         clearFsaList();
         if (!vin) return;
@@ -818,78 +582,25 @@
           snapshot.forEach(doc => {
             const data = doc.data();
 
-            const appliedValue =
-              data[FSA_APPLIED_FIELD_HINT] ??
-              data.campagnaEseguita ??
-              data.CampagnaEseguita ??
-              data.eseguita ??
-              data.Eseguita ??
-              data.executed ??
-              data.Executed ??
-              data.completed ??
-              data.Completed;
-
+            const appliedValue = data[FSA_APPLIED_FIELD];
             const isApplied =
               appliedValue === true  ||
-              appliedValue === "true" || appliedValue === "TRUE" ||
-              appliedValue === "SI"   || appliedValue === "S" ||
-              appliedValue === "YES"  || appliedValue === "Y";
+              appliedValue === "true" || appliedValue === "TRUE";
 
-            if (isApplied) return;
+            if (!isApplied) {
+              countPendenti++;
+              const codice = data[FSA_CODE_FIELD] || doc.id;
+              const descrizione = data[FSA_DESCRIPTION_FIELD] || "";
+              const scadStr = formatDateDDMMYYYY(data[FSA_DEADLINE_FIELD]);
 
-            countPendenti++;
+              let text = codice;
+              if (descrizione) text += " – " + descrizione;
+              if (scadStr) text += " (scadenza: " + scadStr + ")";
 
-            const codice =
-              data[FSA_CODE_FIELD_HINT] ??
-              data.codiceFSA ??
-              data.CodiceFSA ??
-              data.code ??
-              data.Code ??
-              doc.id;
-
-            const descrizione =
-              data[FSA_DESC_FIELD_HINT] ??
-              data.descrizioneCampagna ??
-              data.DescrizioneCampagna ??
-              data.description ??
-              data.Description ??
-              "";
-
-            const dataInizio =
-              data[FSA_START_FIELD_HINT] ??
-              data.dataInizio ??
-              data.DataInizio ??
-              data.startDate ??
-              data.StartDate ??
-              null;
-
-            const dataFine =
-              data[FSA_END_FIELD_HINT] ??
-              data.dataFine ??
-              data.DataFine ??
-              data.endDate ??
-              data.EndDate ??
-              null;
-
-            const tipologia =
-              data[FSA_TYPE_FIELD_HINT] ??
-              data.tipologia ??
-              data.Tipologia ??
-              "";
-
-            const startStr = formatDateDDMMYYYY(dataInizio);
-            const endStr   = formatDateDDMMYYYY(dataFine);
-
-            let text = codice;
-            if (descrizione) text += " – " + descrizione;
-            let extra = [];
-            if (startStr || endStr) extra.push("Periodo: " + (startStr || "?") + " - " + (endStr || "?"));
-            if (tipologia) extra.push("Tipologia: " + tipologia);
-            if (extra.length > 0) text += " (" + extra.join(" | ") + ")";
-
-            const li = document.createElement("li");
-            li.textContent = text;
-            fsaList.appendChild(li);
+              const li = document.createElement("li");
+              li.textContent = text;
+              fsaList.appendChild(li);
+            }
           });
 
           fsaListContainer.style.display = "block";
@@ -911,7 +622,119 @@
         }
       }
 
-      // ===== LOGICA PRINCIPALE CONTROLLO COPERTURA =====
+      // ===== FUNZIONI DI SUPPORTO PER LA COPERTURA =====
+
+      // Copertura calcolata dai campi di DBVIN
+      function computeCoverageFromFirestoreData(data) {
+        let fullStartFs   = getDateFromField(data.completa_data_start);
+        let fullEndFs     = getDateFromField(data.completa_data_end);
+        let driveStartFs  = getDateFromField(data.catcinematica_data_start);
+        let driveEndFs    = getDateFromField(data.catcinematica_data_end);
+        let maintStartFs  = getDateFromField(data.contratto_data_start);
+        let maintEndFs    = getDateFromField(data.contratto_data_end);
+
+        const warrantyTypeRaw  = data.WARRANTY_TYPE       || data.warranty_type;
+        const warrantyStartRaw = data.WARRANTY_START_DATE || data.warranty_start_date;
+        const warrantyEndRaw   = data.WARRANTY_END_DATE   || data.warranty_end_date;
+
+        const warrantyStart = getDateFromField(warrantyStartRaw);
+        const warrantyEnd   = getDateFromField(warrantyEndRaw);
+        const warrantyType  = warrantyTypeRaw ? String(warrantyTypeRaw).toUpperCase() : "";
+
+        if (!fullStartFs && warrantyStart && warrantyEnd && warrantyType.includes("FULL")) {
+          fullStartFs = warrantyStart;
+          fullEndFs   = warrantyEnd;
+        }
+
+        if (!driveStartFs && warrantyStart && warrantyEnd &&
+            (warrantyType.includes("DRIVE") || warrantyType.includes("DRIVELINE"))) {
+          driveStartFs = warrantyStart;
+          driveEndFs   = warrantyEnd;
+        }
+
+        if (!maintStartFs && warrantyStart && warrantyEnd &&
+            (warrantyType.includes("SERVICE") || warrantyType.includes("SC"))) {
+          maintStartFs = warrantyStart;
+          maintEndFs   = warrantyEnd;
+        }
+
+        const fullStart  = fullStartFs;
+        const fullEnd    = fullEndFs;
+        const driveStart = driveStartFs;
+        const driveEnd   = driveEndFs;
+        const maintStart = maintStartFs;
+        const maintEnd   = maintEndFs;
+
+        const hasAnyCoverageData =
+          (fullStart || fullEnd || driveStart || driveEnd ||
+           maintStart || maintEnd || warrantyStart || warrantyEnd)
+            ? true
+            : false;
+
+        return { fullStart, fullEnd, driveStart, driveEnd, maintStart, maintEnd, hasAnyCoverageData };
+      }
+
+      // Copertura calcolata dai dati del backend
+      function computeCoverageFromBackendData(c) {
+        c = c || {};
+
+        const warrantyStart = getDateFromField(c.WARRANTY_START_DATE);
+        const warrantyEnd   = getDateFromField(c.WARRANTY_END_DATE);
+        const warrantyType  = c.WARRANTY_TYPE ? String(c.WARRANTY_TYPE).toUpperCase() : "";
+
+        let fullStart  = null;
+        let fullEnd    = null;
+        let driveStart = null;
+        let driveEnd   = null;
+
+        if (warrantyStart && warrantyEnd) {
+          if (warrantyType.includes("FULL")) {
+            fullStart = warrantyStart;
+            fullEnd   = warrantyEnd;
+          } else if (warrantyType.includes("DRIVE") || warrantyType.includes("DRIVELINE")) {
+            driveStart = warrantyStart;
+            driveEnd   = warrantyEnd;
+          } else {
+            // se il tipo non è chiaro, consideriamo come FULL LINE generica
+            fullStart = warrantyStart;
+            fullEnd   = warrantyEnd;
+          }
+        }
+
+        const maintStart = getDateFromField(c.SC_DT_START_DATE);
+        const maintEnd   = getDateFromField(c.SC_DT_END_DATE);
+
+        const hasAnyCoverageData =
+          (fullStart || fullEnd || driveStart || driveEnd ||
+           maintStart || maintEnd || warrantyStart || warrantyEnd)
+            ? true
+            : false;
+
+        return { fullStart, fullEnd, driveStart, driveEnd, maintStart, maintEnd, hasAnyCoverageData };
+      }
+
+      // Chiamata backend (stessa logica di FTVIN)
+      async function fetchCoverageFromBackend(vin) {
+        const url = "https://verifica-garanzia-backend.onrender.com/verifica";
+        const payload = { telaio: vin };
+        console.log("[FTCLAIMS] Chiamata backend garanzia (POST):", url, payload);
+
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) {
+          throw new Error("Errore HTTP backend: " + resp.status);
+        }
+
+        const data = await resp.json();
+        console.log("[FTCLAIMS] Risposta backend:", data);
+        return data;
+      }
+
+      // ===== LOGICA CONTROLLO COPERTURA / DATI VEICOLO =====
       async function handleCheckCoverage() {
         clearMessage();
         resetTipoPratica();
@@ -923,6 +746,7 @@
         let vin             = vinInput.value.trim().toUpperCase();
         const dataOrdineStr = dataOrdineInput.value;
 
+        // Entrambi i campi DEVONO essere compilati
         if (!vin || !dataOrdineStr) {
           showMessage('error', "Inserisci sia il numero di telaio (VIN) sia la data di apertura dell'ordine di lavoro.");
           return;
@@ -952,18 +776,13 @@
           showMessage('success', "Ricerca del telaio in corso…");
           btnCheckCoverage.disabled = true;
 
+          // Carico in parallelo FSA pendenti (solo Firestore)
           await loadPendingFsaForVin(vin);
 
-          // ===== 1) BACKEND =====
-          let backendMapped = null;
-          try {
-            const backendRaw = await fetchCoverageFromBackend(vin, dataOrdineStr);
-            backendMapped = mapBackendData(backendRaw);
-          } catch (e) {
-            console.warn("[FTCLAIMS] Backend non disponibile o errore, procedo solo con Firestore:", e);
-          }
+          let coverageInfo = null;   // { fullStart, fullEnd, ... }
+          let coverageSource = null; // "firestore" | "backend"
 
-          // ===== 2) DBVIN FIRESTORE =====
+          // 1) Provo DBVIN
           const snapshot = await db.collection(VIN_COLLECTION)
             .where("vin", "==", vin)
             .limit(1)
@@ -971,69 +790,54 @@
 
           console.log("[FTCLAIMS] Query VIN su collezione", VIN_COLLECTION, " → docs:", snapshot.size);
 
-          if (snapshot.empty) {
+          if (!snapshot.empty) {
+            // VIN trovato in Firestore
+            const doc  = snapshot.docs[0];
+            const data = doc.data();
+            console.log("[FTCLAIMS] Documento VIN (Firestore):", doc.id, data);
+
+            coverageInfo   = computeCoverageFromFirestoreData(data);
+            coverageSource = "firestore";
+          } else {
+            // 2) Se NON c'è in DBVIN, provo il backend
+            console.log("[FTCLAIMS] VIN non presente in DBVIN, provo backend…");
+            try {
+              const backendData = await fetchCoverageFromBackend(vin);
+
+              // stesso controllo di FTVIN
+              if (backendData &&
+                  backendData.success &&
+                  backendData.copertura &&
+                  backendData.copertura.HAS_WARRANTY) {
+
+                console.log("[FTCLAIMS] Copertura trovata da backend.");
+                coverageInfo   = computeCoverageFromBackendData(backendData.copertura);
+                coverageSource = "backend";
+              } else {
+                console.log("[FTCLAIMS] Nessuna copertura dal backend per questo VIN.");
+              }
+            } catch (backendErr) {
+              console.error("[FTCLAIMS] Errore backend:", backendErr);
+            }
+          }
+
+          // Se non abbiamo trovato NULLA né in Firestore né in backend
+          if (!coverageInfo) {
             let html = `<strong>Telaio:</strong> ${vin}<br>`;
             html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br><br>`;
-            html += `<strong>Attenzione:</strong> il telaio non è presente nella banca dati (collezione '${VIN_COLLECTION}').<br>`;
+            html += `<strong>Attenzione:</strong> il telaio non è presente nella banca dati (collezione '${VIN_COLLECTION}') né sul portale Ford.<br>`;
             html += `Puoi comunque creare una claim card selezionando il tipo dal menu.`;
 
             showMessage('error', html);
 
-            storeContextForStep2({
-              vin,
-              orderDateStr: dataOrdineStr,
-              backend: backendMapped,
-              firestoreData: null
-            });
-
+            // In questo caso → solo PDI
             populateForVinNotFound();
 
             btnCheckCoverage.disabled = false;
             return;
           }
 
-          const doc  = snapshot.docs[0];
-          const data = doc.data();
-          console.log("[FTCLAIMS] Documento VIN:", doc.id, data);
-
-          let fullStartFs   = getDateFromField(data.completa_data_start);
-          let fullEndFs     = getDateFromField(data.completa_data_end);
-          let driveStartFs  = getDateFromField(data.catcinematica_data_start);
-          let driveEndFs    = getDateFromField(data.catcinematica_data_end);
-          let maintStartFs  = getDateFromField(data.contratto_data_start);
-          let maintEndFs    = getDateFromField(data.contratto_data_end);
-
-          const warrantyTypeRaw  = data.WARRANTY_TYPE       || data.warranty_type;
-          const warrantyStartRaw = data.WARRANTY_START_DATE || data.warranty_start_date;
-          const warrantyEndRaw   = data.WARRANTY_END_DATE   || data.warranty_end_date;
-
-          const warrantyStart = getDateFromField(warrantyStartRaw);
-          const warrantyEnd   = getDateFromField(warrantyEndRaw);
-          const warrantyType  = warrantyTypeRaw ? String(warrantyTypeRaw).toUpperCase() : "";
-
-          if (!fullStartFs && warrantyStart && warrantyEnd && warrantyType.includes("FULL")) {
-            fullStartFs = warrantyStart;
-            fullEndFs   = warrantyEnd;
-          }
-
-          if (!driveStartFs && warrantyStart && warrantyEnd &&
-              (warrantyType.includes("DRIVE") || warrantyType.includes("DRIVELINE"))) {
-            driveStartFs = warrantyStart;
-            driveEndFs   = warrantyEnd;
-          }
-
-          if (!maintStartFs && warrantyStart && warrantyEnd &&
-              (warrantyType.includes("SERVICE") || warrantyType.includes("SC"))) {
-            maintStartFs = warrantyStart;
-            maintEndFs   = warrantyEnd;
-          }
-
-          const fullStart  = fullStartFs;
-          const fullEnd    = fullEndFs;
-          const driveStart = driveStartFs;
-          const driveEnd   = driveEndFs;
-          const maintStart = maintStartFs;
-          const maintEnd   = maintEndFs;
+          const { fullStart, fullEnd, driveStart, driveEnd, maintStart, maintEnd, hasAnyCoverageData } = coverageInfo;
 
           const hasFullActive  = isDateWithinRange(dataOrdine, fullStart,  fullEnd);
           const hasDriveActive = isDateWithinRange(dataOrdine, driveStart, driveEnd);
@@ -1042,15 +846,10 @@
           const hasAnyActiveCoverageOrContract =
             hasFullActive || hasDriveActive || hasMaintActive;
 
-          const hasAnyCoverageData =
-            (fullStart || fullEnd || driveStart || driveEnd ||
-             maintStart || maintEnd || warrantyStart || warrantyEnd)
-              ? true
-              : false;
-
           let html = `<strong>Telaio:</strong> ${vin}<br>`;
           html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br><br>`;
 
+          // Dettaglio coperture/contratti attivi
           if (hasAnyActiveCoverageOrContract) {
             html += `<strong>Coperture/contratti attivi alla data selezionata:</strong><br><ul>`;
 
@@ -1068,40 +867,36 @@
           }
 
           if (!hasAnyCoverageData) {
+            // Nessun dato presente → FSA, PDI
             html += `<strong>Informazioni:</strong> non risultano dati di copertura o contratto associati a questo telaio alla data selezionata.<br>`;
             html += `Puoi comunque creare una claim card.`;
+            if (coverageSource === "backend") {
+              html += `<br><em>Dati verificati tramite portale Ford (backend).</em>`;
+            }
             showMessage('success', html);
 
             populateForNoDataAtAll();
           } else if (hasAnyActiveCoverageOrContract) {
+            // Presente almeno una copertura/contratto attivo → WARRANTY, FSA, GOODWILL
             html += `<strong>Informazioni:</strong> è presente almeno una copertura o un contratto di manutenzione <strong>attivo</strong> alla data selezionata.<br>`;
             html += `Seleziona la tipologia di claim card dal menu.`;
+            if (coverageSource === "backend") {
+              html += `<br><em>Dati reperiti dal portale Ford (backend).</em>`;
+            }
             showMessage('success', html);
 
             populateForActiveCoverageOrContract();
           } else {
+            // Dati presenti ma nessuna copertura/contratto attivo → PDI, FSA, GOODWILL
             html += `<strong>Informazioni:</strong> non risultano coperture o contratti di manutenzione <strong>attivi</strong> alla data selezionata.<br>`;
             html += `Sono comunque presenti dati storici associati al veicolo. Puoi creare una claim card.`;
+            if (coverageSource === "backend") {
+              html += `<br><em>Dati reperiti dal portale Ford (backend).</em>`;
+            }
             showMessage('success', html);
 
             populateForNoActiveCoverage();
           }
-
-          storeContextForStep2({
-            vin,
-            orderDateStr: dataOrdineStr,
-            backend: backendMapped,
-            firestoreData: data,
-            hasFullActive,
-            hasDriveActive,
-            hasMaintActive,
-            fullStart,
-            fullEnd,
-            driveStart,
-            driveEnd,
-            maintStart,
-            maintEnd
-          });
 
           btnCheckCoverage.disabled = false;
 
