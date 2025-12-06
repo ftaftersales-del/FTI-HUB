@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>FTCLAIMS - Creazione Pratica (Step 1)</title>
+  <title>FTCLAIMS</title>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -14,672 +14,1194 @@
     body {
       font-family: Arial, sans-serif;
       background: #f5f5f5;
-      margin: 0;
-      padding: 0;
+      margin: 20px;
     }
-
-    .top-bar {
-      background: #003366;
-      color: #fff;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .top-bar h1 {
-      margin: 0;
-      font-size: 20px;
-    }
-
-    .top-bar .top-actions button {
-      margin-left: 10px;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .top-bar .home-btn {
-      background: #ffffff;
-      color: #003366;
-      font-weight: bold;
-    }
-
-    .top-bar .logout-btn {
-      background: #cc0000;
-      color: #ffffff;
-    }
-
     .container {
-      max-width: 1200px;
-      margin: 20px auto;
-      background: #ffffff;
-      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+      background: white;
+      padding: 20px 25px 30px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+    h2 {
+      margin-top: 0;
+    }
 
-    .error-box {
-      padding: 10px;
-      border-radius: 6px;
-      background: #ffe5e5;
-      color: #990000;
-      border: 1px solid #ffcccc;
+    #userInfo {
+      font-size: 13px;
+      color: #555;
       margin-bottom: 15px;
-      display: none;
+    }
+    #userInfo p {
+      margin: 0;
     }
 
-    .info-box {
-      padding: 8px;
-      border-radius: 6px;
-      background: #e6f2ff;
-      color: #003366;
-      border: 1px solid #b3d1ff;
-      margin-bottom: 10px;
-      font-size: 13px;
+    .field-group {
+      margin-bottom: 15px;
     }
-
-    .section {
-      margin-bottom: 20px;
-      padding: 15px;
-      border-radius: 8px;
-      background: #fafafa;
-      border: 1px solid #e0e0e0;
-    }
-
-    .section-title {
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #003366;
-    }
-
-    .form-grid-3 {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px 20px;
-    }
-
-    .form-grid-2 {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px 20px;
-    }
-
-    .form-group {
+    .field-row {
       display: flex;
-      flex-direction: column;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .field-row .field {
+      flex: 1;
+      min-width: 160px;
     }
 
-    .form-group label {
-      font-size: 13px;
-      margin-bottom: 3px;
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 5px;
     }
-
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-      padding: 6px 8px;
+    input[type="text"],
+    input[type="date"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
       border-radius: 4px;
       border: 1px solid #ccc;
-      font-size: 13px;
+      font-size: 14px;
     }
 
-    .form-group input[readonly],
-    .form-group textarea[readonly] {
-      background: #f0f0f0;
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 60px;
-    }
-
-    .buttons-row {
-      margin-top: 15px;
+    .buttons {
+      margin-top: 20px;
       display: flex;
-      justify-content: flex-end;
       gap: 10px;
+      flex-wrap: wrap;
     }
-
-    .btn {
+    button {
       padding: 8px 16px;
-      border-radius: 4px;
       border: none;
+      border-radius: 4px;
       cursor: pointer;
       font-size: 14px;
     }
 
-    .btn-primary {
-      background: #0066cc;
-      color: #fff;
+    /* Pulsante controlla copertura */
+    #btnCheckCoverage {
+      background-color: #007bff;
+      color: white;
+    }
+    /* Pulsante OK */
+    #btnOk {
+      background-color: #28a745;
+      color: white;
+    }
+    /* Pulsante Annulla */
+    #btnCancel {
+      background-color: #dc3545;
+      color: white;
+      margin-left: auto;
+    }
+    /* Pulsante Home */
+    #btnHome {
+      background-color: #6c757d;
+      color: white;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
-    .btn-secondary {
-      background: #cccccc;
-      color: #000;
+    #resultArea {
+      margin-top: 20px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+    #resultArea.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    #resultArea.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
     }
 
-    .btn-danger {
-      background: #cc0000;
-      color: #fff;
+    /* Box elenco FSA pendenti */
+    #fsaListContainer {
+      display: none;
+      margin-top: 15px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      background-color: #e9f7fd;
+      border: 1px solid #bde0ff;
+      font-size: 13px;
+    }
+    #fsaListContainer strong {
+      display: block;
+      margin-bottom: 5px;
+    }
+    #fsaList {
+      margin: 0;
+      margin-top: 5px;
+      padding-left: 18px;
     }
 
-    .small {
-      font-size: 12px;
-      color: #666;
+    #tipoPraticaDescrizione {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #333;
+      padding-left: 10px;
+      border-left: 3px solid #007bff;
+      display: none;
     }
   </style>
 </head>
+
 <body>
-
-  <div class="top-bar">
-    <h1>FTCLAIMS - Creazione Pratica (Step 1)</h1>
-    <div class="top-actions">
-      <button class="top-bar home-btn" id="btn-home">Home</button>
-      <button class="top-bar logout-btn" id="btn-logout">Logout</button>
-    </div>
-  </div>
-
   <div class="container">
-    <div id="error-box" class="error-box"></div>
-    <div id="info-box" class="info-box">
-      Inserisci VIN, data ordine di lavoro e chilometraggio, quindi premi "Ricerca veicolo".
+    <h2>Nuova Claim Card – Dati iniziali</h2>
+
+    <div id="userInfo">Verifica accesso in corso...</div>
+
+    <div class="field-group">
+      <label for="vinInput">Telaio (VIN)</label>
+      <input type="text" id="vinInput" placeholder="Inserisci il numero di telaio">
     </div>
 
-    <!-- DATI ORDINE DI LAVORO -->
-    <div class="section">
-      <div class="section-title">Dati Ordine di Lavoro</div>
-      <div class="form-grid-3">
-        <div class="form-group">
-          <label for="vin-input">VIN</label>
-          <input type="text" id="vin-input" maxlength="17">
-        </div>
-        <div class="form-group">
-          <label for="order-date-input">Data Ordine di Lavoro</label>
-          <input type="date" id="order-date-input">
-        </div>
-        <div class="form-group">
-          <label for="order-number-input">Numero Ordine di Lavoro</label>
-          <input type="text" id="order-number-input">
-        </div>
-        <div class="form-group">
-          <label for="km-input">Km attuali</label>
-          <input type="number" id="km-input" min="0">
-        </div>
-        <div class="form-group">
-          <label for="engine-hours-input">Ore motore</label>
-          <input type="number" id="engine-hours-input" min="0">
-        </div>
-        <div class="form-group">
-          <label for="claim-type-input">Tipo pratica</label>
-          <select id="claim-type-input">
-            <option value="WARRANTY" selected>Reclamo di Garanzia (WARRANTY)</option>
-          </select>
-        </div>
-      </div>
-      <div class="buttons-row" style="margin-top:15px;">
-        <button class="btn btn-secondary" id="btn-reset">Annulla / Pulisci</button>
-        <button class="btn btn-primary" id="btn-search-vehicle">Ricerca veicolo</button>
-      </div>
-      <div class="small">
-        Nota: anche in assenza di copertura attiva, sarà comunque possibile creare la pratica.
-      </div>
+    <div class="field-group">
+      <label for="dataOrdineInput">Data apertura ordine di lavoro</label>
+      <input type="date" id="dataOrdineInput">
     </div>
 
-    <!-- DATI VEICOLO -->
-    <div class="section">
-      <div class="section-title">Dati veicolo</div>
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label for="vehicle-customer">Customer</label>
-          <input type="text" id="vehicle-customer" readonly>
+    <div class="field-group">
+      <div class="field-row">
+        <div class="field">
+          <label for="orderNumberInput">Numero ordine di lavoro</label>
+          <input type="text" id="orderNumberInput" placeholder="Es. 501">
         </div>
-        <div class="form-group">
-          <label for="vehicle-plate">Registration Plate</label>
-          <input type="text" id="vehicle-plate" readonly>
+        <div class="field">
+          <label for="kmInput">KM veicolo</label>
+          <input type="number" id="kmInput" min="0" step="1" placeholder="Es. 100000">
         </div>
-        <div class="form-group">
-          <label for="vehicle-reg-date">Registration Date</label>
-          <input type="text" id="vehicle-reg-date" readonly>
+        <div class="field">
+          <label for="oreMotoreInput">Ore motore</label>
+          <input type="number" id="oreMotoreInput" min="0" step="1" placeholder="Es. 500">
         </div>
       </div>
     </div>
 
-    <!-- COPERTURA GARANZIA -->
-    <div class="section">
-      <div class="section-title">Copertura Garanzia alla data dell'Ordine di Lavoro</div>
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label for="coverage-type">Tipo copertura (FULL LINE / DRIVE LINE)</label>
-          <input type="text" id="coverage-type" readonly>
-        </div>
-        <div class="form-group">
-          <label for="coverage-start">Data inizio</label>
-          <input type="text" id="coverage-start" readonly>
-        </div>
-        <div class="form-group">
-          <label for="coverage-end">Data fine</label>
-          <input type="text" id="coverage-end" readonly>
-        </div>
-        <div class="form-group">
-          <label for="coverage-notes">Note copertura</label>
-          <textarea id="coverage-notes" readonly></textarea>
-        </div>
-      </div>
+    <!-- Elenco FSA pendenti (prima del menu tipologia) -->
+    <div id="fsaListContainer">
+      <strong>FSA da applicare su questo veicolo:</strong>
+      <ul id="fsaList"></ul>
     </div>
 
-    <!-- CONTRATTO DI MANUTENZIONE -->
-    <div class="section">
-      <div class="section-title">Contratto di Manutenzione (se presente)</div>
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label for="sc-start">Data inizio</label>
-          <input type="text" id="sc-start" readonly>
-        </div>
-        <div class="form-group">
-          <label for="sc-end">Data fine</label>
-          <input type="text" id="sc-end" readonly>
-        </div>
-        <div class="form-group">
-          <label for="sc-options">Opzioni presenti</label>
-          <textarea id="sc-options" readonly></textarea>
-        </div>
-      </div>
+    <!-- Selezione tipologia claim card -->
+    <div class="field-group" id="tipoPraticaGroup" style="display:none;">
+      <label for="tipoPratica">Tipologia claim card</label>
+      <select id="tipoPratica">
+        <!-- opzioni riempite via JavaScript -->
+      </select>
+      <div id="tipoPraticaDescrizione"></div>
     </div>
 
-    <!-- CREAZIONE CLAIM CARD -->
-    <div class="section">
-      <div class="section-title">Creazione Claim Card</div>
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label for="open-date-input">Data apertura pratica</label>
-          <input type="date" id="open-date-input">
-        </div>
-        <div class="form-group">
-          <label>Dealer / Utente apertura</label>
-          <input type="text" id="open-dealer-user" readonly>
-        </div>
-      </div>
-      <div class="buttons-row">
-        <button class="btn btn-danger" id="btn-cancel">Torna a Home</button>
-        <button class="btn btn-primary" id="btn-create-claim" disabled>
-          Crea pratica e vai allo Step 2
-        </button>
-      </div>
-      <div class="small">
-        Il pulsante "Crea pratica" si abilita dopo la ricerca veicolo.
-      </div>
+    <div class="buttons">
+      <button id="btnCheckCoverage">Controlla copertura / dati veicolo</button>
+      <button id="btnOk" style="display:none;" disabled>OK</button>
+      <button id="btnCancel">Annulla</button>
+      <button id="btnHome">Home</button>
     </div>
+
+    <div id="resultArea"></div>
   </div>
 
-<script>
-  console.log("FTCLAIMS Step1 – script avviato");
+  <script>
+    (function () {
+      console.log("FTCLAIMS – STEP1 con controlli ClaimCards + salvataggio");
 
-  const appAuth = window.auth || firebase.auth();
-  const appDb   = window.db   || firebase.firestore();
-  window.auth = appAuth;
-  window.db   = appDb;
+      const userInfoDiv = document.getElementById('userInfo');
 
-  let currentUser = null;
-  let currentUserInfo = { dealer: '', fullName: '' };
-  let currentContext = null; // conterrà tutti i dati da salvare
-
-  const WARRANTY_API_URL = 'https://verifica-garanzia-backend.onrender.com/verifica'; // adattalo se serve
-
-  function showError(message) {
-    const box = document.getElementById('error-box');
-    box.textContent = message;
-    box.style.display = 'block';
-    console.error("[FTCLAIMS_STEP1] ERRORE:", message);
-  }
-
-  function clearError() {
-    const box = document.getElementById('error-box');
-    box.textContent = '';
-    box.style.display = 'none';
-  }
-
-  function setInfo(message) {
-    const box = document.getElementById('info-box');
-    box.textContent = message;
-    console.log("[FTCLAIMS_STEP1] INFO:", message);
-  }
-
-  async function loadUserInfo(user) {
-    const userDocRef = appDb.collection('Users').doc(user.uid);
-    const snap = await userDocRef.get();
-
-    let dealer = '';
-    let fullName = '';
-
-    if (snap.exists) {
-      const data = snap.data();
-      dealer =
-        data.dealerId ||
-        data.dealerID ||
-        data.DealerID ||
-        '';
-      fullName =
-        data.fullName ||
-        data.name ||
-        data.displayName ||
-        user.email ||
-        user.uid;
-    } else {
-      fullName = user.email || user.uid;
-    }
-
-    currentUserInfo = { dealer, fullName };
-    document.getElementById('open-dealer-user').value =
-      (dealer ? dealer + ' - ' : '') + fullName;
-  }
-
-  function resetForm() {
-    clearError();
-    setInfo('Inserisci VIN, data ordine di lavoro e chilometraggio, quindi premi "Ricerca veicolo".');
-
-    document.getElementById('vin-input').value = '';
-    document.getElementById('order-date-input').value = '';
-    document.getElementById('order-number-input').value = '';
-    document.getElementById('km-input').value = '';
-    document.getElementById('engine-hours-input').value = '';
-    document.getElementById('claim-type-input').value = 'WARRANTY';
-
-    document.getElementById('vehicle-customer').value = '';
-    document.getElementById('vehicle-plate').value = '';
-    document.getElementById('vehicle-reg-date').value = '';
-
-    document.getElementById('coverage-type').value = '';
-    document.getElementById('coverage-start').value = '';
-    document.getElementById('coverage-end').value = '';
-    document.getElementById('coverage-notes').value = '';
-
-    document.getElementById('sc-start').value = '';
-    document.getElementById('sc-end').value = '';
-    document.getElementById('sc-options').value = '';
-
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const dd = String(today.getDate()).padStart(2, '0');
-    document.getElementById('open-date-input').value = `${yyyy}-${mm}-${dd}`;
-
-    currentContext = null;
-    document.getElementById('btn-create-claim').disabled = true;
-  }
-
-  // Carica dati veicolo/coperture dal tuo backend
-  async function fetchWarrantyData(vin, orderDate, km, engineHours) {
-    // ATTENZIONE: adatta questa chiamata alla tua API reale.
-    const url = `${WARRANTY_API_URL}?vin=${encodeURIComponent(vin)}&date=${encodeURIComponent(orderDate)}&km=${encodeURIComponent(km || 0)}&engineHours=${encodeURIComponent(engineHours || 0)}`;
-    console.log('Chiamata warranty API:', url);
-
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error('Errore HTTP ' + response.status);
-    }
-    const data = await response.json();
-    console.log('Risposta API:', data);
-
-    // Qui faccio assunzioni minime sulla struttura; adattale se serve.
-    const vehicle = {
-      vin: data.vin || vin,
-      customer: data.customer || (data.vehicle && data.vehicle.customer) || '',
-      registrationPlate: data.registrationPlate || (data.vehicle && data.vehicle.registrationPlate) || null,
-      registrationDate: data.registrationDate || (data.vehicle && data.vehicle.registrationDate) || null
-    };
-
-    const coverageSrc = data.warrantyCoverage || data.coverage || {};
-    const serviceContractSrc = data.serviceContract || {};
-
-    const coverage = {
-      type: coverageSrc.type || '',
-      startDate: coverageSrc.startDate || '',
-      endDate: coverageSrc.endDate || '',
-      notes: coverageSrc.notes || ''
-    };
-
-    const serviceContract = {
-      startDate: serviceContractSrc.startDate || '',
-      endDate: serviceContractSrc.endDate || '',
-      options: serviceContractSrc.options || '',
-      notes: serviceContractSrc.notes || ''
-    };
-
-    return { vehicle, coverage, serviceContract };
-  }
-
-  async function handleSearchVehicle() {
-    clearError();
-
-    const vin = document.getElementById('vin-input').value.trim().toUpperCase();
-    const orderDate = document.getElementById('order-date-input').value;
-    const orderNumber = document.getElementById('order-number-input').value.trim();
-    const km = document.getElementById('km-input').value;
-    const engineHours = document.getElementById('engine-hours-input').value;
-
-    if (!vin || vin.length < 5) {
-      showError('Inserisci un VIN valido.');
-      return;
-    }
-    if (!orderDate) {
-      showError('Inserisci la data dell\'ordine di lavoro.');
-      return;
-    }
-
-    setInfo('Ricerca veicolo e coperture in corso...');
-    document.getElementById('btn-create-claim').disabled = true;
-
-    try {
-      const result = await fetchWarrantyData(vin, orderDate, km, engineHours);
-
-      // Popola i campi in sola lettura
-      document.getElementById('vehicle-customer').value = result.vehicle.customer || '';
-      document.getElementById('vehicle-plate').value    = result.vehicle.registrationPlate || '';
-      document.getElementById('vehicle-reg-date').value = result.vehicle.registrationDate || '';
-
-      document.getElementById('coverage-type').value  = result.coverage.type || '';
-      document.getElementById('coverage-start').value = result.coverage.startDate || '';
-      document.getElementById('coverage-end').value   = result.coverage.endDate || '';
-      document.getElementById('coverage-notes').value = result.coverage.notes || '';
-
-      document.getElementById('sc-start').value   = result.serviceContract.startDate || '';
-      document.getElementById('sc-end').value     = result.serviceContract.endDate || '';
-      document.getElementById('sc-options').value = result.serviceContract.options || '';
-
-      // Prepara il contesto da salvare
-      currentContext = {
-        vin: result.vehicle.vin || vin,
-        customer: result.vehicle.customer || '',
-        registrationPlate: result.vehicle.registrationPlate || null,
-        registrationDate: result.vehicle.registrationDate || null,
-
-        orderDate: orderDate,
-        orderNumber: orderNumber || null,
-        km: km ? Number(km) : null,
-        engineHours: engineHours ? Number(engineHours) : null,
-
-        coverage: result.coverage,
-        serviceContract: result.serviceContract,
-        type: document.getElementById('claim-type-input').value || 'WARRANTY'
-      };
-
-      setInfo('Dati veicolo e coperture caricati. Puoi creare la pratica.');
-      document.getElementById('btn-create-claim').disabled = false;
-
-    } catch (e) {
-      console.error(e);
-      showError('Errore durante la ricerca veicolo / coperture: ' + e.message);
-      setInfo('Si è verificato un errore durante la ricerca.');
-    }
-  }
-
-  async function generateClaimCode(orderDateString) {
-    let year;
-    if (orderDateString) {
-      const d = new Date(orderDateString);
-      if (!isNaN(d.getTime())) year = d.getFullYear();
-    }
-    if (!year) year = new Date().getFullYear();
-
-    const counterDocId = `ClaimCardCounter_${year}`;
-    const counterRef   = appDb.collection('Settings').doc(counterDocId);
-
-    const sequence = await appDb.runTransaction(async (tx) => {
-      const snap = await tx.get(counterRef);
-      let current = 0;
-      if (snap.exists && typeof snap.data().current === 'number') {
-        current = snap.data().current;
+      // --- Controlli base su Firebase / auth / db ---
+      try {
+        if (typeof firebase === 'undefined') {
+          userInfoDiv.textContent = "Errore: Firebase non è caricato (controlla gli script in <head>).";
+          return;
+        }
+      } catch (e) {
+        userInfoDiv.textContent = "Errore JS iniziale: " + e.message;
+        console.error(e);
+        return;
       }
-      const next = current + 1;
-      tx.set(counterRef, { current: next }, { merge: true });
-      return next;
-    });
 
-    const seqStr = String(sequence).padStart(6, '0');
-    const code   = `W${year}${seqStr}`;
-    console.log("Codice pratica generato:", code);
-    return { code, year, sequence };
-  }
+      const auth = window.auth || firebase.auth();
+      const db   = window.db   || firebase.firestore();
+      window.auth = auth;
+      window.db   = db;
 
-  async function handleCreateClaim() {
-    clearError();
+      // ================== CONFIG FIRESTORE ==================
 
-    if (!currentContext) {
-      showError('Prima esegui la ricerca veicolo.');
-      return;
-    }
-    if (!currentUser) {
-      showError('Utente non autenticato.');
-      return;
-    }
+      const VIN_COLLECTION    = "DBVIN";
+      const FSA_COLLECTION    = "FTFSA";
+      const CLAIMS_COLLECTION = "ClaimCards";
 
-    const openDate = document.getElementById('open-date-input').value;
-    if (!openDate) {
-      showError('Inserisci la data di apertura pratica.');
-      return;
-    }
+      // Config FSA (come in FTCLAIMS precedente funzionante)
+      const FSA_VIN_FIELD          = "Telaio";
+      const FSA_APPLIED_FIELD_HINT = "campagnaEseguita";
+      const FSA_CODE_FIELD_HINT    = "CodiceFSA";
+      const FSA_DESC_FIELD_HINT    = "DescrizioneCampagna";
+      const FSA_START_FIELD_HINT   = "DataInizio";
+      const FSA_END_FIELD_HINT     = "DataFine";
+      const FSA_TYPE_FIELD_HINT    = "Tipologia";
 
-    setInfo('Generazione codice pratica e salvataggio su Firestore...');
-    document.getElementById('btn-create-claim').disabled = true;
+      let currentAccount = null;
+      let lastCheckData  = null; // snapshot di tutto ciò che serve allo STEP2 / ClaimCard
 
-    try {
-      const { code, year, sequence } = await generateClaimCode(currentContext.orderDate);
+      async function loadCurrentUserInfo(user) {
+        const userRef = db.collection('Users').doc(user.uid);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) {
+          throw new Error("Profilo utente non trovato nel database (collezione 'Users').");
+        }
 
-      const payload = {
-        code: code,
-        year: year,
-        sequence: sequence,
+        const userData = userSnap.data();
+        const roleId   = userData.role || "User";
 
-        type: currentContext.type || 'WARRANTY',
-        status: 'Aperta',
+        currentAccount = { firebaseUser: user, userData, roleId };
+        return currentAccount;
+      }
 
-        orderDate: currentContext.orderDate || null,
-        orderNumber: currentContext.orderNumber || null,
-        openDate: openDate || null,
+      function renderUserInfo() {
+        if (!currentAccount) return;
+        const { firebaseUser, userData, roleId } = currentAccount;
 
-        openDealer: currentUserInfo.dealer || null,
-        openUser: currentUserInfo.fullName || null,
-        openUserUid: currentUser.uid,
+        userInfoDiv.innerHTML = `
+          <p><strong>Utente:</strong> ${userData.displayName || firebaseUser.email}</p>
+          <p><strong>Dealer ID:</strong> ${userData.dealerId || userData.DealerID || '-'}</p>
+          <p><strong>Ruolo:</strong> ${roleId}</p>
+        `;
+      }
 
-        km: currentContext.km != null ? currentContext.km : null,
-        engineHours: currentContext.engineHours != null ? currentContext.engineHours : null,
+      // === Controllo accesso: solo Admin e User ===
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          userInfoDiv.textContent = "Utente non autenticato. Verrai reindirizzato…";
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 1500);
+          return;
+        }
 
-        vehicle: {
-          vin: currentContext.vin || null,
-          customer: currentContext.customer || null,
-          registrationPlate: currentContext.registrationPlate || null,
-          registrationDate: currentContext.registrationDate || null
-        },
+        try {
+          await loadCurrentUserInfo(user);
 
-        coverage: {
-          type: currentContext.coverage.type || null,
-          startDate: currentContext.coverage.startDate || null,
-          endDate: currentContext.coverage.endDate || null,
-          notes: currentContext.coverage.notes || null
-        },
+          const roleId = currentAccount.roleId;
+          if (!(roleId === 'Admin' || roleId === 'User')) {
+            userInfoDiv.textContent = "Non hai i permessi per accedere a questa pagina.";
+            setTimeout(() => {
+              window.location.href = "FTHUBAS.html";
+            }, 1500);
+            return;
+          }
 
-        maintenanceContract: {
-          startDate: currentContext.serviceContract.startDate || null,
-          endDate: currentContext.serviceContract.endDate || null,
-          options: currentContext.serviceContract.options || null,
-          notes: currentContext.serviceContract.notes || null
-        },
+          renderUserInfo();
+        } catch (err) {
+          console.error("Errore caricamento utente:", err);
+          userInfoDiv.textContent = "Errore nel controllo dei permessi: " + err.message;
+        }
+      });
 
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
+      // === Elementi UI ===
+      const btnCheckCoverage    = document.getElementById('btnCheckCoverage');
+      const btnOk               = document.getElementById('btnOk');
+      const btnCancel           = document.getElementById('btnCancel');
+      const btnHome             = document.getElementById('btnHome');
+      const tipoPraticaGroup    = document.getElementById('tipoPraticaGroup');
+      const tipoPraticaSelect   = document.getElementById('tipoPratica');
+      const tipoPraticaDesc     = document.getElementById('tipoPraticaDescrizione');
+      const fsaListContainer    = document.getElementById('fsaListContainer');
+      const fsaList             = document.getElementById('fsaList');
 
-      console.log('Payload ClaimCard da salvare:', payload);
+      const vinInput        = document.getElementById('vinInput');
+      const dataOrdineInput = document.getElementById('dataOrdineInput');
+      const orderNumberInput= document.getElementById('orderNumberInput');
+      const kmInput         = document.getElementById('kmInput');
+      const oreMotoreInput  = document.getElementById('oreMotoreInput');
 
-      // *** QUI usiamo il codice pratica come ID documento ***
-      await appDb.collection('ClaimCards').doc(code).set(payload);
+      // === Pulsante HOME ===
+      btnHome.addEventListener('click', () => {
+        window.location.href = "FTHUBAS.html";
+      });
 
-      // Salvo codice pratica e contesto per lo step 2
-      sessionStorage.setItem('ftclaims_claimCode', code);
-      sessionStorage.setItem('ftclaims_context', JSON.stringify({
-        vin: payload.vehicle.vin,
-        customer: payload.vehicle.customer,
-        registrationPlate: payload.vehicle.registrationPlate,
-        registrationDate: payload.vehicle.registrationDate,
-        orderDate: payload.orderDate,
-        warrantyCoverage: payload.coverage,
-        serviceContract: payload.maintenanceContract
-      }));
+      // === Pulsante ANNULLA (reset completo pagina) ===
+      btnCancel.addEventListener('click', () => {
+        resetAll();
+      });
 
-      setInfo('Pratica creata correttamente. Passo allo Step 2...');
-      window.location.href = 'FTCLAIMS_step2.html';
+      // === Pulsante CONTROLLA COPERTURA ===
+      btnCheckCoverage.addEventListener('click', async () => {
+        await handleCheckCoverage();
+      });
 
-    } catch (e) {
-      console.error('Errore durante la creazione della pratica:', e);
-      showError('Errore durante la creazione della pratica: ' + e.message);
-      setInfo('Si è verificato un errore nel salvataggio della pratica.');
-      document.getElementById('btn-create-claim').disabled = false;
-    }
-  }
+      // === Pulsante OK (salva ClaimCard + vai allo STEP2) ===
+      btnOk.addEventListener('click', async () => {
+        const tipoPratica = tipoPraticaSelect.value;
+        if (!tipoPratica) {
+          alert("Seleziona una tipologia di claim card.");
+          return;
+        }
+        if (!lastCheckData) {
+          alert("Prima devi eseguire il controllo copertura.");
+          return;
+        }
 
-  async function initPage(user) {
-    currentUser = user;
-    await loadUserInfo(user);
-    resetForm();
-  }
+        try {
+          btnOk.disabled = true;
+          const claimId = await createClaimCard(tipoPratica);
 
-  appAuth.onAuthStateChanged(async (user) => {
-    console.log("onAuthStateChanged FTCLAIMS Step1:", user ? user.uid : "NESSUN UTENTE");
-    if (!user) {
-      window.location.href = 'FTLOGIN.html';
-      return;
-    }
-    try {
-      await initPage(user);
-    } catch (e) {
-      console.error(e);
-      showError('Errore inizializzazione pagina: ' + e.message);
-    }
-  });
+          // Salvo header per STEP2 (claimId = codice pratica)
+          const header = {
+            claimId,
+            vin: lastCheckData.vin,
+            orderDateStr: lastCheckData.orderDateStr,
+            tipoClaimCard: tipoPratica
+          };
+          sessionStorage.setItem("currentClaimStep1", JSON.stringify(header));
+          // salviamo anche direttamente il codice pratica
+          sessionStorage.setItem("ftclaims_claimCode", claimId);
 
-  // Eventi UI
-  document.getElementById('btn-home').addEventListener('click', () => {
-    window.location.href = 'FTHUBAS.html';
-  });
+          window.location.href = "FTCLAIMS_STEP2.html";
+        } catch (err) {
+          console.error("Errore creazione ClaimCard:", err);
+          alert("Errore durante la creazione della claim card: " + err.message);
+          btnOk.disabled = false;
+        }
+      });
 
-  document.getElementById('btn-logout').addEventListener('click', async () => {
-    try {
-      await appAuth.signOut();
-      window.location.href = 'FTLOGIN.html';
-    } catch (e) {
-      console.error(e);
-      alert('Errore durante il logout.');
-    }
-  });
+      // Cambio selezione tipologia → abilita OK + mostra descrizione
+      tipoPraticaSelect.addEventListener('change', () => {
+        btnOk.disabled = !tipoPraticaSelect.value;
+        updateTipoDescrizione(tipoPraticaSelect.value);
+      });
 
-  document.getElementById('btn-reset').addEventListener('click', resetForm);
-  document.getElementById('btn-cancel').addEventListener('click', () => {
-    window.location.href = 'FTHUBAS.html';
-  });
-  document.getElementById('btn-search-vehicle').addEventListener('click', handleSearchVehicle);
-  document.getElementById('btn-create-claim').addEventListener('click', handleCreateClaim);
-</script>
+      // ===== FUNZIONI SUPPORTO GENERALI =====
 
+      function showMessage(type, text) {
+        const area = document.getElementById('resultArea');
+        area.style.display = 'block';
+        area.className = '';
+        if (type === 'error') {
+          area.classList.add('error');
+        } else if (type === 'success') {
+          area.classList.add('success');
+        }
+        area.innerHTML = text;
+      }
+
+      function clearMessage() {
+        const area = document.getElementById('resultArea');
+        area.style.display = 'none';
+        area.className = '';
+        area.textContent = '';
+      }
+
+      function startOfDay(date) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+
+      function getDateFromField(value) {
+        if (!value) return null;
+
+        // Firestore Timestamp
+        if (value && value.toDate && typeof value.toDate === "function") {
+          return startOfDay(value.toDate());
+        }
+
+        // Date
+        if (value instanceof Date) {
+          return startOfDay(value);
+        }
+
+        // Stringa o numero (millisecondi)
+        if (typeof value === "string" || typeof value === "number") {
+          const d = new Date(value);
+          if (!isNaN(d.getTime())) {
+            return startOfDay(d);
+          }
+        }
+
+        return null;
+      }
+
+      function formatDateDDMMYYYY(value) {
+        if (!value) return "";
+
+        let d = null;
+
+        if (value instanceof Date) {
+          d = startOfDay(value);
+        } else if (value && value.toDate && typeof value.toDate === "function") {
+          d = startOfDay(value.toDate());
+        } else if (typeof value === "string" || typeof value === "number") {
+          const tmp = new Date(value);
+          if (!isNaN(tmp.getTime())) {
+            d = startOfDay(tmp);
+          }
+        }
+
+        if (!d) return "";
+
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      function isDateWithinRange(target, start, end) {
+        if (!start || !end) return false;
+        const t = startOfDay(target).getTime();
+        const s = startOfDay(start).getTime();
+        const e = startOfDay(end).getTime();
+        return t >= s && t <= e;
+      }
+
+      function resetTipoPratica() {
+        tipoPraticaSelect.innerHTML = "";
+        tipoPraticaGroup.style.display = "none";
+        btnOk.style.display = "none";
+        btnOk.disabled = true;
+        tipoPraticaDesc.style.display = "none";
+        tipoPraticaDesc.textContent = "";
+      }
+
+      function showTipoPraticaUI() {
+        tipoPraticaGroup.style.display = "block";
+        btnOk.style.display = "inline-block";
+        btnOk.disabled = true;
+      }
+
+      function addOptionToSelect(value, label) {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = label;
+        tipoPraticaSelect.appendChild(opt);
+      }
+
+      // Menu quando VIN non trovato → solo PDI
+      function populateForVinNotFound() {
+        tipoPraticaSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Seleziona tipologia claim card --";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        tipoPraticaSelect.appendChild(placeholder);
+
+        addOptionToSelect("PDI", "PDI");
+
+        showTipoPraticaUI();
+      }
+
+      // Menu quando NON c'è copertura attiva né contratto attivo → PDI, FSA, GOODWILL
+      function populateForNoActiveCoverage() {
+        tipoPraticaSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Seleziona tipologia claim card --";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        tipoPraticaSelect.appendChild(placeholder);
+
+        addOptionToSelect("PDI", "PDI");
+        addOptionToSelect("FSA", "FSA");
+        addOptionToSelect("GOODWILL", "GOODWILL");
+
+        showTipoPraticaUI();
+      }
+
+      // Menu quando è presente copertura attiva o contratto attivo → WARRANTY, FSA, GOODWILL
+      function populateForActiveCoverageOrContract() {
+        tipoPraticaSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Seleziona tipologia claim card --";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        tipoPraticaSelect.appendChild(placeholder);
+
+        addOptionToSelect("WARRANTY", "WARRANTY");
+        addOptionToSelect("FSA", "FSA");
+        addOptionToSelect("GOODWILL", "GOODWILL");
+
+        showTipoPraticaUI();
+      }
+
+      // Menu quando "nessun dato è presente" → FSA, PDI
+      function populateForNoDataAtAll() {
+        tipoPraticaSelect.innerHTML = "";
+
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Seleziona tipologia claim card --";
+        placeholder.disabled = true;
+        placeholder.selected = true;
+        tipoPraticaSelect.appendChild(placeholder);
+
+        addOptionToSelect("FSA", "FSA");
+        addOptionToSelect("PDI", "PDI");
+
+        showTipoPraticaUI();
+      }
+
+      // Descrizione dinamica in base al tipo
+      function updateTipoDescrizione(value) {
+        if (!value) {
+          tipoPraticaDesc.style.display = "none";
+          tipoPraticaDesc.textContent = "";
+          return;
+        }
+
+        let text = "";
+        switch (value) {
+          case "WARRANTY":
+            text = "Claim di garanzia su copertura attiva (FULL LINE o DRIVE LINE).";
+            break;
+          case "FSA":
+            text = "Claim relativo a FSA (Field Service Action) da applicare al veicolo.";
+            break;
+          case "GOODWILL":
+            text = "Richiesta di partecipazione goodwill fuori copertura contrattuale.";
+            break;
+          case "PDI":
+            text = "Claim per controlli/attività di Pre-Delivery Inspection (PDI).";
+            break;
+          default:
+            text = "";
+        }
+
+        if (text) {
+          tipoPraticaDesc.style.display = "block";
+          tipoPraticaDesc.textContent = text;
+        } else {
+          tipoPraticaDesc.style.display = "none";
+          tipoPraticaDesc.textContent = "";
+        }
+      }
+
+      function clearFsaList() {
+        fsaListContainer.style.display = "none";
+        fsaList.innerHTML = "";
+      }
+
+      function resetAll() {
+        vinInput.value = "";
+        dataOrdineInput.value = "";
+        orderNumberInput.value = "";
+        kmInput.value = "";
+        oreMotoreInput.value = "";
+        btnCheckCoverage.disabled = false;
+        btnOk.disabled = true;
+        btnOk.style.display = "none";
+        clearMessage();
+        resetTipoPratica();
+        clearFsaList();
+        lastCheckData = null;
+      }
+
+      // ===== CARICAMENTO FSA PENDENTI PER VIN =====
+      async function loadPendingFsaForVin(vin) {
+        clearFsaList();
+        if (!vin) return;
+
+        try {
+          const snapshot = await db.collection(FSA_COLLECTION)
+            .where(FSA_VIN_FIELD, "==", vin)
+            .get();
+
+          console.log("[FTCLAIMS] FSA trovate per VIN:", snapshot.size);
+
+          if (snapshot.empty) {
+            fsaListContainer.style.display = "block";
+            const li = document.createElement("li");
+            li.textContent = "Nessuna FSA da applicare per questo veicolo.";
+            fsaList.appendChild(li);
+            return;
+          }
+
+          let countPendenti = 0;
+
+          snapshot.forEach(doc => {
+            const data = doc.data();
+
+            const appliedValue =
+              data[FSA_APPLIED_FIELD_HINT] ??
+
+
+              data.campagnaEseguita ?? data.CampagnaEseguita ??
+              data.eseguita ?? data.Eseguita ??
+              data.executed ?? data.Executed ??
+              data.completed ?? data.Completed;
+
+            const isApplied =
+              appliedValue === true ||
+              appliedValue === "true" || appliedValue === "TRUE" ||
+              appliedValue === "SI"   || appliedValue === "S"   ||
+              appliedValue === "YES"  || appliedValue === "Y";
+
+            if (isApplied) {
+              return;
+            }
+
+            countPendenti++;
+
+            const codice =
+              data[FSA_CODE_FIELD_HINT] ??
+              data.codiceFSA ?? data.CodiceFSA ??
+              data.code ?? data.Code ?? doc.id;
+
+            const descrizione =
+              data[FSA_DESC_FIELD_HINT] ??
+              data.descrizioneCampagna ?? data.DescrizioneCampagna ??
+              data.description ?? data.Description ?? "";
+
+            const dataInizio =
+              data[FSA_START_FIELD_HINT] ??
+              data.dataInizio ?? data.DataInizio ??
+              data.startDate ?? data.StartDate ?? null;
+
+            const dataFine =
+              data[FSA_END_FIELD_HINT] ??
+              data.dataFine ?? data.DataFine ??
+              data.endDate ?? data.EndDate ?? null;
+
+            const tipologia =
+              data[FSA_TYPE_FIELD_HINT] ??
+              data.tipologia ?? data.Tipologia ?? "";
+
+            const startStr = formatDateDDMMYYYY(dataInizio);
+            const endStr   = formatDateDDMMYYYY(dataFine);
+
+            let text = codice;
+            if (descrizione) text += " – " + descrizione;
+            let extra = [];
+            if (startStr || endStr) {
+              extra.push("Periodo: " + (startStr || "?") + " - " + (endStr || "?"));
+            }
+            if (tipologia) {
+              extra.push("Tipologia: " + tipologia);
+            }
+            if (extra.length > 0) {
+              text += " (" + extra.join(" | ") + ")";
+            }
+
+            const li = document.createElement("li");
+            li.textContent = text;
+            fsaList.appendChild(li);
+          });
+
+          fsaListContainer.style.display = "block";
+
+          if (countPendenti === 0) {
+            fsaList.innerHTML = "";
+            const li = document.createElement("li");
+            li.textContent = "Nessuna FSA da applicare per questo veicolo.";
+            fsaList.appendChild(li);
+          }
+
+        } catch (err) {
+          console.error("[FTCLAIMS] Errore caricando FSA pendenti:", err);
+          fsaListContainer.style.display = "block";
+          fsaList.innerHTML = "";
+          const li = document.createElement("li");
+          li.textContent = "Errore nel caricamento delle FSA: " + (err.message || err);
+          fsaList.appendChild(li);
+        }
+      }
+
+      // ===== CONTROLLI SU CLAIMCARDS (ordine + KM/ORE) =====
+      function parseDateYMD(str) {
+        if (!str) return null;
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return null;
+        return startOfDay(d);
+      }
+
+      async function checkClaimCardsCoerenza(vin, dataOrdineStr, km, oreMotore, orderNumberStr) {
+        const dataOrdine = parseDateYMD(dataOrdineStr);
+        if (!dataOrdine) return "Data ordine non valida.";
+
+        // 1) Controllo numero ordine duplicato (su tutte le pratiche non Cancellate)
+        const orderSnap = await db.collection(CLAIMS_COLLECTION)
+          .where("orderNumber", "==", orderNumberStr)
+          .get();
+
+        let hasActiveSameOrder = false;
+        orderSnap.forEach(doc => {
+          const d = doc.data() || {};
+          const status = d.status || "";
+          if (status !== "Cancellata") {
+            hasActiveSameOrder = true;
+          }
+        });
+
+        if (hasActiveSameOrder) {
+          return "Esiste già una pratica (non cancellata) con lo stesso numero di ordine di lavoro. Non è possibile procedere.";
+        }
+
+        // 2) Coerenza KM / ORE con altre pratiche dello stesso VIN
+        const claimsSnap = await db.collection(CLAIMS_COLLECTION)
+          .where("vehicle.vin", "==", vin)
+          .get();
+
+        let errorMessages = [];
+
+        claimsSnap.forEach(doc => {
+          const d = doc.data() || {};
+          const status = d.status || "";
+          if (status === "Cancellata") return;
+
+          const otherOrderDateStr = d.orderDate;
+          const otherOrderDate    = parseDateYMD(otherOrderDateStr);
+          if (!otherOrderDate) return;
+
+          const otherKm   = (typeof d.km === "number") ? d.km : null;
+          const otherOre  = (typeof d.engineHours === "number") ? d.engineHours : null;
+
+          // Se i vecchi record non hanno km/ore, non facciamo controlli
+          const hasOtherKm  = otherKm !== null;
+          const hasOtherOre = otherOre !== null;
+
+          const sameDay   = otherOrderDate.getTime() === dataOrdine.getTime();
+          const older     = otherOrderDate.getTime() <  dataOrdine.getTime();
+          const newer     = otherOrderDate.getTime() >  dataOrdine.getTime();
+
+          if (sameDay) {
+            if (hasOtherKm && km !== null && km !== otherKm) {
+              errorMessages.push(
+                `Per il telaio ${vin} esiste già una pratica con la stessa data ordine (${otherOrderDateStr}) ma KM diversi (esistenti: ${otherKm}, nuovi: ${km}).`
+              );
+            }
+            if (hasOtherOre && oreMotore !== null && oreMotore !== otherOre) {
+              errorMessages.push(
+                `Per il telaio ${vin} esiste già una pratica con la stessa data ordine (${otherOrderDateStr}) ma ore motore diverse (esistenti: ${otherOre}, nuove: ${oreMotore}).`
+              );
+            }
+          } else if (older) {
+            // Pratica precedente nel tempo → i nuovi KM/ORE non possono essere inferiori
+            if (hasOtherKm && km !== null && km < otherKm) {
+              errorMessages.push(
+                `Per il telaio ${vin} esiste una pratica precedente (data ordine ${otherOrderDateStr}) con KM ${otherKm}. I nuovi KM (${km}) non possono essere inferiori.`
+              );
+            }
+            if (hasOtherOre && oreMotore !== null && oreMotore < otherOre) {
+              errorMessages.push(
+                `Per il telaio ${vin} esiste una pratica precedente (data ordine ${otherOrderDateStr}) con ore motore ${otherOre}. Le nuove ore (${oreMotore}) non possono essere inferiori.`
+              );
+            }
+          } else if (newer) {
+            // Pratica successiva nel tempo → i nuovi KM/ORE non possono essere superiori
+            if (hasOtherKm && km !== null && km > otherKm) {
+              errorMessages.push(
+                `Per il telaio ${vin} esiste una pratica successiva (data ordine ${otherOrderDateStr}) con KM ${otherKm}. I nuovi KM (${km}) non possono essere superiori.`
+              );
+            }
+            if (hasOtherOre && oreMotore !== null && oreMotore > otherOre) {
+              errorMessages.push(
+                `Per il telaio ${vin} esiste una pratica successiva (data ordine ${otherOrderDateStr}) con ore motore ${otherOre}. Le nuove ore (${oreMotore}) non possono essere superiori.`
+              );
+            }
+          }
+        });
+
+        if (errorMessages.length > 0) {
+          return errorMessages.join("<br>");
+        }
+
+        return null; // nessun errore
+      }
+
+      // ===== LOGICA CONTROLLO COPERTURA / DATI VEICOLO + SALVATAGGIO SNAPSHOT =====
+      async function handleCheckCoverage() {
+        clearMessage();
+        resetTipoPratica();
+        clearFsaList();
+        lastCheckData = null;
+
+        let vin             = vinInput.value.trim().toUpperCase();
+        const dataOrdineStr = dataOrdineInput.value;
+        const orderNumberStr= orderNumberInput.value.trim();
+        const kmStr         = kmInput.value.trim();
+        const oreStr        = oreMotoreInput.value.trim();
+
+        // Tutti i campi obbligatori
+        if (!vin || !dataOrdineStr || !orderNumberStr || !kmStr || !oreStr) {
+          showMessage('error', "Compila tutti i campi (VIN, data ordine, numero ordine, KM e ore motore) prima di procedere.");
+          return;
+        }
+
+        const dataOrdine = startOfDay(new Date(dataOrdineStr));
+        if (isNaN(dataOrdine.getTime())) {
+          showMessage('error', "La data inserita non è valida.");
+          return;
+        }
+
+        // KM / ORE: interi >= 0
+        const kmVal  = parseInt(kmStr, 10);
+        const oreVal = parseInt(oreStr, 10);
+
+        if (isNaN(kmVal) || kmVal < 0) {
+          showMessage('error', "I KM veicolo devono essere un numero intero maggiore o uguale a 0.");
+          return;
+        }
+        if (isNaN(oreVal) || oreVal < 0) {
+          showMessage('error', "Le ore motore devono essere un numero intero maggiore o uguale a 0.");
+          return;
+        }
+
+        const oggi = startOfDay(new Date());
+        const minDate = startOfDay(new Date());
+        minDate.setDate(minDate.getDate() - 90);
+
+        if (dataOrdine > oggi) {
+          showMessage('error', "La data dell'ordine di lavoro non può essere futura.");
+          return;
+        }
+
+        if (dataOrdine < minDate) {
+          showMessage('error', "È possibile aprire una claim card solo entro 90 giorni dalla data dell'ordine di lavoro.");
+          return;
+        }
+
+        try {
+          showMessage('success', "Controlli in corso (ClaimCards + coperture)…");
+          btnCheckCoverage.disabled = true;
+
+          // 1) Controlli su ClaimCards (ordine doppio, coerenza KM/ORE)
+          const errClaims = await checkClaimCardsCoerenza(vin, dataOrdineStr, kmVal, oreVal, orderNumberStr);
+          if (errClaims) {
+            showMessage('error', errClaims);
+            btnCheckCoverage.disabled = false;
+            return;
+          }
+
+          // 2) Carico FSA pendenti (in parallelo)
+          await loadPendingFsaForVin(vin);
+
+          // 3) Ricerca VIN in DBVIN
+          const snapshot = await db.collection(VIN_COLLECTION)
+            .where("vin", "==", vin)
+            .limit(1)
+            .get();
+
+          console.log("[FTCLAIMS] Query VIN su collezione", VIN_COLLECTION, " → docs:", snapshot.size);
+
+          // ================= CASO 1: TELAIO NON TROVATO =================
+          if (snapshot.empty) {
+            let html = `<strong>Telaio:</strong> ${vin}<br>`;
+            html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br>`;
+            html += `<strong>Numero ordine di lavoro:</strong> ${orderNumberStr}<br>`;
+            html += `<strong>KM veicolo:</strong> ${kmVal} – <strong>Ore motore:</strong> ${oreVal}<br><br>`;
+            html += `<strong>Attenzione:</strong> il telaio non è presente nella banca dati (collezione '${VIN_COLLECTION}').<br>`;
+            html += `Puoi comunque creare una claim card selezionando il tipo dal menu.`;
+
+            showMessage('error', html);
+
+            populateForVinNotFound();
+
+            // Salvo snapshot minimo per ClaimCard (senza copertura)
+            lastCheckData = {
+              vin,
+              orderDateStr: dataOrdineStr,
+              km: kmVal,
+              engineHours: oreVal,
+              orderNumber: orderNumberStr,
+              hasCoverageData: false,
+              coverageSummary: {
+                hasAnyCoverageData: false,
+                hasActiveCoverage: false,
+                type: null,
+                startDate: null,
+                endDate: null,
+                maintenanceStartDate: null,
+                maintenanceEndDate: null,
+                maintenanceOptions: null,
+                notes: "Nessun dato copertura presente alla data dell'ordine di lavoro."
+              },
+              vehicle: {
+                registrationPlate: null,
+                registrationDate: null,
+                customer: null
+              }
+            };
+
+            btnCheckCoverage.disabled = false;
+            return;
+          }
+
+          // ================= CASO 2: TELAIO TROVATO =================
+          const doc  = snapshot.docs[0];
+          const data = doc.data();
+          console.log("[FTCLAIMS] Documento VIN:", doc.id, data);
+
+          // Dati di veicolo (se disponibili)
+          const vehicleSnapshot = {
+            registrationPlate: data.registrationPlate || data.targa || null,
+            registrationDate:  data.registrationDate  || data.dataImm || null,
+            customer:          data.customer          || data.cliente || null
+          };
+
+          // ----- DATI COPERTURE / CONTRATTI -----
+          let fullStartFs   = getDateFromField(data.completa_data_start);
+          let fullEndFs     = getDateFromField(data.completa_data_end);
+          let driveStartFs  = getDateFromField(data.catcinematica_data_start);
+          let driveEndFs    = getDateFromField(data.catcinematica_data_end);
+          let maintStartFs  = getDateFromField(data.contratto_data_start);
+          let maintEndFs    = getDateFromField(data.contratto_data_end);
+
+          // Eventuali dati provenienti da backend (schema WARRANTY_*)
+          const warrantyTypeRaw  = data.WARRANTY_TYPE       || data.warranty_type;
+          const warrantyStartRaw = data.WARRANTY_START_DATE || data.warranty_start_date;
+          const warrantyEndRaw   = data.WARRANTY_END_DATE   || data.warranty_end_date;
+
+          const warrantyStart = getDateFromField(warrantyStartRaw);
+          const warrantyEnd   = getDateFromField(warrantyEndRaw);
+          const warrantyType  = warrantyTypeRaw ? String(warrantyTypeRaw).toUpperCase() : "";
+
+          if (!fullStartFs && warrantyStart && warrantyEnd && warrantyType.includes("FULL")) {
+            fullStartFs = warrantyStart;
+            fullEndFs   = warrantyEnd;
+          }
+
+          if (!driveStartFs && warrantyStart && warrantyEnd &&
+              (warrantyType.includes("DRIVE") || warrantyType.includes("DRIVELINE"))) {
+            driveStartFs = warrantyStart;
+            driveEndFs   = warrantyEnd;
+          }
+
+          if (!maintStartFs && warrantyStart && warrantyEnd &&
+              (warrantyType.includes("SERVICE") || warrantyType.includes("SC"))) {
+            maintStartFs = warrantyStart;
+            maintEndFs   = warrantyEnd;
+          }
+
+          const fullStart  = fullStartFs;
+          const fullEnd    = fullEndFs;
+          const driveStart = driveStartFs;
+          const driveEnd   = driveEndFs;
+          const maintStart = maintStartFs;
+          const maintEnd   = maintEndFs;
+
+          const hasFullActive  = isDateWithinRange(dataOrdine, fullStart,  fullEnd);
+          const hasDriveActive = isDateWithinRange(dataOrdine, driveStart, driveEnd);
+          const hasMaintActive = isDateWithinRange(dataOrdine, maintStart, maintEnd);
+
+          const hasAnyActiveCoverageOrContract =
+            hasFullActive || hasDriveActive || hasMaintActive;
+
+          const hasAnyCoverageData =
+            (fullStart || fullEnd || driveStart || driveEnd ||
+             maintStart || maintEnd || warrantyStart || warrantyEnd)
+              ? true : false;
+
+          let html = `<strong>Telaio:</strong> ${vin}<br>`;
+          html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br>`;
+          html += `<strong>Numero ordine di lavoro:</strong> ${orderNumberStr}<br>`;
+          html += `<strong>KM veicolo:</strong> ${kmVal} – <strong>Ore motore:</strong> ${oreVal}<br><br>`;
+
+          // Dettaglio coperture attive
+          if (hasAnyActiveCoverageOrContract) {
+            html += `<strong>Coperture/contratti attivi alla data selezionata:</strong><br><ul>`;
+
+            if (hasFullActive) {
+              html += `<li><strong>FULL LINE</strong> (copertura completa): dal ${formatDateDDMMYYYY(fullStart)} al ${formatDateDDMMYYYY(fullEnd)}</li>`;
+            }
+            if (hasDriveActive) {
+              html += `<li><strong>DRIVE LINE</strong> (catena cinematica): dal ${formatDateDDMMYYYY(driveStart)} al ${formatDateDDMMYYYY(driveEnd)}</li>`;
+            }
+            if (hasMaintActive) {
+              html += `<li><strong>SERVICE CONTRACT</strong>: dal ${formatDateDDMMYYYY(maintStart)} al ${formatDateDDMMYYYY(maintEnd)}</li>`;
+            }
+
+            html += `</ul><br>`;
+          }
+
+          let coverageTypeForClaim = null;
+          let coverageStartForClaim = null;
+          let coverageEndForClaim   = null;
+
+          if (!hasAnyCoverageData) {
+            html += `<strong>Informazioni:</strong> non risultano dati di copertura o contratto associati a questo telaio alla data selezionata.<br>`;
+            html += `Puoi comunque creare una claim card.`;
+            showMessage('success', html);
+
+            populateForNoDataAtAll();
+          } else if (hasAnyActiveCoverageOrContract) {
+            html += `<strong>Informazioni:</strong> è presente almeno una copertura o un contratto di manutenzione <strong>attivo</strong> alla data selezionata.<br>`;
+            html += `Seleziona la tipologia di claim card dal menu.`;
+            showMessage('success', html);
+
+            populateForActiveCoverageOrContract();
+
+            // Per la ClaimCard: priorità FULL > DRIVE > SERVICE
+            if (hasFullActive) {
+              coverageTypeForClaim = "FULL LINE";
+              coverageStartForClaim = fullStart;
+              coverageEndForClaim   = fullEnd;
+            } else if (hasDriveActive) {
+              coverageTypeForClaim = "DRIVE LINE";
+              coverageStartForClaim = driveStart;
+              coverageEndForClaim   = driveEnd;
+            } else if (hasMaintActive) {
+              coverageTypeForClaim = "SERVICE CONTRACT";
+              coverageStartForClaim = maintStart;
+              coverageEndForClaim   = maintEnd;
+            }
+          } else {
+            html += `<strong>Informazioni:</strong> non risultano coperture o contratti di manutenzione <strong>attivi</strong> alla data selezionata.<br>`;
+            html += `Sono comunque presenti dati storici associati al veicolo. Puoi creare una claim card.`;
+            showMessage('success', html);
+
+            populateForNoActiveCoverage();
+          }
+
+          // Snapshot copertura per ClaimCard / STEP2
+          const coverageSummary = {
+            hasAnyCoverageData,
+            hasActiveCoverage: hasAnyActiveCoverageOrContract,
+            type: coverageTypeForClaim,
+            startDate: coverageStartForClaim ? coverageStartForClaim.toISOString().slice(0,10) : null,
+            endDate:   coverageEndForClaim   ? coverageEndForClaim.toISOString().slice(0,10)   : null,
+            maintenanceStartDate: maintStart ? maintStart.toISOString().slice(0,10) : null,
+            maintenanceEndDate:   maintEnd   ? maintEnd.toISOString().slice(0,10)   : null,
+            maintenanceOptions: null,
+            notes: hasAnyCoverageData
+              ? "Copertura ricavata dai dati DBVIN / WARRANTY_* alla data dell'ordine di lavoro."
+              : "Nessun dato copertura presente alla data dell'ordine di lavoro."
+          };
+
+          lastCheckData = {
+            vin,
+            orderDateStr: dataOrdineStr,
+            km: kmVal,
+            engineHours: oreVal,
+            orderNumber: orderNumberStr,
+            hasCoverageData: hasAnyCoverageData,
+            coverageSummary,
+            vehicle: vehicleSnapshot
+          };
+
+          btnCheckCoverage.disabled = false;
+
+        } catch (err) {
+          console.error("Errore durante il controllo copertura/dati veicolo:", err);
+          showMessage('error', "Errore durante il controllo: " + err.message);
+          btnCheckCoverage.disabled = false;
+          resetTipoPratica();
+          lastCheckData = null;
+        }
+      }
+
+      // ===== GENERAZIONE CODICE GARANZIA / SALVATAGGIO CLAIM =====
+
+      async function getNextSequenceForYear(year) {
+        // Usa campo "year" nella collezione ClaimCards per calcolare la sequence
+        const snap = await db.collection(CLAIMS_COLLECTION)
+          .where("year", "==", year)
+          .orderBy("sequence", "desc")
+          .limit(1)
+          .get();
+
+        if (snap.empty) return 1;
+
+        const last = snap.docs[0].data();
+        const lastSeq = typeof last.sequence === "number" ? last.sequence : 0;
+        return lastSeq + 1;
+      }
+
+      function pad6(num) {
+        return String(num).padStart(6, "0");
+      }
+
+      // *** QUESTA È LA PARTE MODIFICATA ***
+      async function createClaimCard(tipoPratica) {
+        if (!lastCheckData) {
+          throw new Error("Dati di controllo non presenti.");
+        }
+        if (!currentAccount) {
+          throw new Error("Utente non caricato.");
+        }
+
+        const user = currentAccount.firebaseUser;
+        const userData = currentAccount.userData || {};
+        const dealerId = userData.dealerId || userData.DealerID || null;
+        const displayName = userData.displayName || user.email || user.uid;
+
+        const orderDateStr = lastCheckData.orderDateStr;
+        const year = orderDateStr ? new Date(orderDateStr).getFullYear() : new Date().getFullYear();
+        const sequence = await getNextSequenceForYear(year);
+        const code = "W" + year + pad6(sequence);
+
+        const today = new Date();
+        const openDateStr = today.toISOString().slice(0,10);
+
+        const cov = lastCheckData.coverageSummary || {};
+        const veh = lastCheckData.vehicle || {};
+
+        const docData = {
+          code,
+          year,                 // <--- campo root "year" (serve per getNextSequenceForYear)
+          sequence,
+          status: "Aperta",
+
+          openDate: openDateStr,
+          openDealer: dealerId,
+          openUser: displayName,
+          openUserUid: user.uid,
+
+          orderDate: lastCheckData.orderDateStr,
+          orderNumber: lastCheckData.orderNumber,
+          km: lastCheckData.km,
+          engineHours: lastCheckData.engineHours,
+
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+
+          coverage: {
+            type: cov.type || null,
+            startDate: cov.startDate || null,
+            endDate: cov.endDate || null,
+            notes: cov.notes || null
+          },
+
+          maintenanceContract: {
+            startDate: cov.maintenanceStartDate || null,
+            endDate: cov.maintenanceEndDate || null,
+            options: cov.maintenanceOptions || null
+          },
+
+          vehicle: {
+            vin: lastCheckData.vin,
+            registrationPlate: veh.registrationPlate || null,
+            registrationDate: veh.registrationDate || null,
+            customer: veh.customer || null,
+            year: year
+          },
+
+          type: tipoPratica,
+          notes: null
+        };
+
+        // >>>> QUI USIAMO IL CODICE COME ID DOCUMENTO <<<<
+        await db.collection(CLAIMS_COLLECTION).doc(code).set(docData);
+        console.log("ClaimCard creata con ID (code):", code, docData);
+
+        // Ritorniamo il codice, che è anche l'ID del documento
+        return code;
+      }
+
+    })();
+  </script>
 </body>
 </html>
