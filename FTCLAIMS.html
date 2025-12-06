@@ -260,7 +260,7 @@
       let currentAccount = null;
 
       // Variabili di stato per lo STEP1
-      let lastCheckData = null;            // dati inseriti e validati (vin, date, km, ore, orderNumber, tipoPratica ancora no)
+      let lastCheckData = null;            // dati inseriti e validati
       let lastCoverageSummary = null;      // mappa coverage per ClaimCards
       let lastMaintenanceSummary = null;   // mappa maintenanceContract per ClaimCards
       let lastVehicleSnapshot = null;      // dati veicolo da DBVIN (se presenti)
@@ -815,13 +815,13 @@
         lastMaintenanceSummary = null;
         lastVehicleSnapshot    = null;
 
-        let vin            = vinInput.value.trim().toUpperCase();
+        let vin             = vinInput.value.trim().toUpperCase();
         const dataOrdineStr = dataOrdineInput.value;
         const orderNumber   = orderNumberInput.value.trim();
         const kmValStr      = kmInput.value;
         const oreValStr     = oreInput.value;
 
-        // Entrambi i campi DEVONO essere compilati
+        // Tutti i campi obbligatori
         if (!vin || !dataOrdineStr || !orderNumber || kmValStr === "" || oreValStr === "") {
           showMessage(
             'error',
@@ -974,10 +974,10 @@
           }
 
           // Variabili finali unificate
-          const fullStart  = fullStartFs;
-          const fullEnd    = fullEndFs;
-          const driveStart = driveStartFs;
-          const driveEnd   = driveEndFs;
+          const fullStart    = fullStartFs;
+          const fullEnd      = fullEndFs;
+          const driveStart   = driveStartFs;
+          const driveEnd     = driveEndFs;
           const maintStartDb = maintStartFs;
           const maintEndDb   = maintEndFs;
 
@@ -994,7 +994,7 @@
               ? true
               : false;
 
-          // Dettaglio coperture/contratti attivi con FULL LINE / DRIVE LINE / SERVICE CONTRACT
+          // Dettaglio coperture/contratti attivi
           if (hasAnyActiveCoverageOrContract) {
             html += `<strong>Coperture/contratti attivi alla data selezionata:</strong><br><ul>`;
 
@@ -1004,7 +1004,7 @@
               coverageStart = fullStart;
               coverageEnd   = fullEnd;
             }
-            if (!coverageType && hasDriveActive) { // se non già FULL
+            if (!coverageType && hasDriveActive) {
               coverageType  = "DRIVE LINE";
               coverageStart = driveStart;
               coverageEnd   = driveEnd;
@@ -1048,7 +1048,7 @@
             orderNumber,
             km: kmVal,
             engineHours: oreVal,
-            hasCoverageData,
+            hasCoverageData: hasAnyCoverageData,
             hasAnyActiveCoverageOrContract
           };
 
@@ -1122,7 +1122,7 @@
 
         const code = "W" + claimYear + String(nextSeq).padStart(6, "0");
 
-        // Dati veicolo di base (quello certo è solo VIN, il resto potrà essere aggiornato in STEP2)
+        // Dati veicolo di base
         const vehicle = {
           vin: vin,
           registrationPlate: null,
@@ -1131,7 +1131,7 @@
           year: claimYear
         };
 
-        // Se in DBVIN ci sono già targa / data / cliente, possiamo pre-compilarli (non obbligatorio)
+        // Se in DBVIN ci sono già targa / data / cliente, li pre-compiliamo
         if (lastVehicleSnapshot) {
           if (lastVehicleSnapshot.targa) {
             vehicle.registrationPlate = String(lastVehicleSnapshot.targa);
@@ -1192,11 +1192,10 @@
 
         const docRef = await claimRef.add(payload);
 
-        // Manteniamo qualche info in sessionStorage per lo STEP2
+        // Manteniamo info in sessionStorage per lo STEP2
         sessionStorage.setItem("currentClaimId", docRef.id);
         sessionStorage.setItem("currentClaimCode", code);
 
-        // Passiamo anche l'header minimale (se vuoi continuare ad usarlo)
         const claimCardHeader = {
           vin: vin,
           dataOrdine: orderDateStr,
