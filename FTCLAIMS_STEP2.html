@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>FTCLAIMS - Creazione Pratica (Step 2)</title>
+  <title>FTCLAIMS - Dettaglio Claim Card (Step 2)</title>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -26,12 +26,7 @@
       justify-content: space-between;
       align-items: center;
     }
-
-    .top-bar h1 {
-      margin: 0;
-      font-size: 20px;
-    }
-
+    .top-bar h1 { margin: 0; font-size: 20px; }
     .top-bar .top-actions button {
       margin-left: 10px;
       padding: 6px 12px;
@@ -39,23 +34,14 @@
       border-radius: 4px;
       cursor: pointer;
     }
-
-    .top-bar .home-btn {
-      background: #ffffff;
-      color: #003366;
-      font-weight: bold;
-    }
-
-    .top-bar .logout-btn {
-      background: #cc0000;
-      color: #ffffff;
-    }
+    .home-btn   { background: #ffffff; color: #003366; font-weight: bold; }
+    .logout-btn { background: #cc0000; color: #ffffff; }
 
     .container {
-      max-width: 1200px;
+      max-width: 1000px;
       margin: 20px auto;
       background: #ffffff;
-      padding: 20px;
+      padding: 20px 25px 30px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
@@ -63,11 +49,12 @@
     .error-box {
       padding: 10px;
       border-radius: 6px;
-      background: #ffe5e5;
-      color: #990000;
-      border: 1px solid #ffcccc;
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
       margin-bottom: 15px;
       display: none;
+      font-size: 14px;
     }
 
     .info-box {
@@ -104,12 +91,10 @@
       display: flex;
       flex-direction: column;
     }
-
     .form-group label {
       font-size: 13px;
       margin-bottom: 3px;
     }
-
     .form-group input,
     .form-group textarea {
       padding: 6px 8px;
@@ -117,7 +102,6 @@
       border: 1px solid #ccc;
       font-size: 13px;
     }
-
     .form-group input[readonly],
     .form-group textarea[readonly] {
       background: #f0f0f0;
@@ -126,6 +110,13 @@
     textarea {
       resize: vertical;
       min-height: 60px;
+    }
+
+    .status-label {
+      font-size: 13px;
+      font-style: italic;
+      color: #666;
+      margin-top: 5px;
     }
 
     .buttons-row {
@@ -142,27 +133,19 @@
       cursor: pointer;
       font-size: 14px;
     }
-
     .btn-cancel {
       background: #cc0000;
       color: #fff;
-    }
-
-    .status-label {
-      font-size: 13px;
-      font-style: italic;
-      color: #666;
-      margin-top: 5px;
     }
   </style>
 </head>
 <body>
 
   <div class="top-bar">
-    <h1>FTCLAIMS - Creazione Pratica (Step 2)</h1>
+    <h1>FTCLAIMS - Dettaglio Claim Card (Step 2)</h1>
     <div class="top-actions">
-      <button class="top-bar home-btn" id="btn-home">Home</button>
-      <button class="top-bar logout-btn" id="btn-logout">Logout</button>
+      <button class="home-btn" id="btn-home">Home</button>
+      <button class="logout-btn" id="btn-logout">Logout</button>
     </div>
   </div>
 
@@ -174,15 +157,27 @@
 
     <!-- DATI PRATICA -->
     <div class="section">
-      <div class="section-title">Dati Pratica</div>
+      <div class="section-title">Dati pratica</div>
       <div class="form-grid-2">
         <div class="form-group">
           <label for="claim-code">Codice pratica</label>
           <input type="text" id="claim-code" readonly>
         </div>
         <div class="form-group">
+          <label for="claim-type">Tipologia</label>
+          <input type="text" id="claim-type" readonly>
+        </div>
+        <div class="form-group">
           <label for="open-date">Data apertura</label>
           <input type="date" id="open-date">
+        </div>
+        <div class="form-group">
+          <label for="order-date">Data ordine di lavoro</label>
+          <input type="text" id="order-date" readonly>
+        </div>
+        <div class="form-group">
+          <label for="order-number">Numero ordine di lavoro</label>
+          <input type="text" id="order-number" readonly>
         </div>
         <div class="form-group">
           <label for="open-dealer">Dealer apertura</label>
@@ -221,14 +216,10 @@
       </div>
     </div>
 
-    <!-- COPERTURA GARANZIA -->
+    <!-- COPERTURA -->
     <div class="section">
-      <div class="section-title">Copertura Garanzia alla data dell'Ordine di Lavoro</div>
+      <div class="section-title">Copertura garanzia alla data dell'ordine di lavoro</div>
       <div class="form-grid-2">
-        <div class="form-group">
-          <label for="coverage-order-date">Data Ordine di Lavoro</label>
-          <input type="text" id="coverage-order-date" readonly>
-        </div>
         <div class="form-group">
           <label for="coverage-type">Tipo copertura</label>
           <input type="text" id="coverage-type" readonly>
@@ -250,7 +241,7 @@
 
     <!-- CONTRATTO MANUTENZIONE -->
     <div class="section">
-      <div class="section-title">Contratto di Manutenzione (se presente)</div>
+      <div class="section-title">Contratto di manutenzione (se presente)</div>
       <div class="form-grid-2">
         <div class="form-group">
           <label for="sc-start">Data inizio</label>
@@ -269,10 +260,10 @@
 
     <!-- KM / ORE -->
     <div class="section">
-      <div class="section-title">Dati chilometraggio / ore motore</div>
+      <div class="section-title">Chilometraggio / ore motore</div>
       <div class="form-grid-2">
         <div class="form-group">
-          <label for="km-field">Km alla data ordine</label>
+          <label for="km-field">KM veicolo</label>
           <input type="text" id="km-field" readonly>
         </div>
         <div class="form-group">
@@ -284,7 +275,7 @@
 
     <!-- AZIONI -->
     <div class="buttons-row">
-      <button class="btn btn-cancel" id="btn-cancel-claim">Cancella Richiesta</button>
+      <button class="btn btn-cancel" id="btn-cancel-claim">Cancella richiesta</button>
     </div>
   </div>
 
@@ -298,32 +289,47 @@
 
   let currentUser = null;
   let claimDocRef = null;
-  let currentClaimCode = null;
+  let currentClaimId = null;
 
-  function showError(message) {
+  function showError(msg) {
     const box = document.getElementById('error-box');
-    box.textContent = message;
+    box.textContent = msg;
     box.style.display = 'block';
-    console.error("[FTCLAIMS_STEP2] ERRORE:", message);
+    console.error("[FTCLAIMS_STEP2] ERRORE:", msg);
   }
 
-  function setInfo(message) {
+  function setInfo(msg) {
     const box = document.getElementById('info-box');
-    box.textContent = message;
-    console.log("[FTCLAIMS_STEP2] INFO:", message);
+    box.textContent = msg;
+    console.log("[FTCLAIMS_STEP2] INFO:", msg);
   }
 
-  function loadClaimCodeFromSession() {
-    const code = sessionStorage.getItem('ftclaims_claimCode');
-    console.log('ftclaims_claimCode =', code);
-    return code || null;
+  function loadClaimIdFromSession() {
+    const rawHeader = sessionStorage.getItem('currentClaimStep1');
+    const codeFromSimple = sessionStorage.getItem('ftclaims_claimCode');
+    if (rawHeader) {
+      try {
+        const header = JSON.parse(rawHeader);
+        if (header && header.claimId) {
+          console.log("ClaimId da currentClaimStep1:", header.claimId);
+          return header.claimId;
+        }
+      } catch (e) {
+        console.warn("Errore parse currentClaimStep1:", e);
+      }
+    }
+    console.log("ClaimId da ftclaims_claimCode:", codeFromSimple);
+    return codeFromSimple || null;
   }
 
-  function fillFormFromData(data) {
-    document.getElementById('claim-code').value = data.code || '';
-    document.getElementById('open-date').value  = data.openDate || '';
-    document.getElementById('open-dealer').value = data.openDealer || '';
-    document.getElementById('open-user').value   = data.openUser || '';
+  function fillForm(data) {
+    document.getElementById('claim-code').value   = data.code || currentClaimId || '';
+    document.getElementById('claim-type').value   = data.type || '';
+    document.getElementById('open-date').value    = data.openDate || '';
+    document.getElementById('order-date').value   = data.orderDate || '';
+    document.getElementById('order-number').value = data.orderNumber || '';
+    document.getElementById('open-dealer').value  = data.openDealer || '';
+    document.getElementById('open-user').value    = data.openUser || '';
     document.getElementById('claim-status-value').textContent = data.status || '';
 
     const v = data.vehicle || {};
@@ -333,19 +339,18 @@
     document.getElementById('vehicle-reg-date').value = v.registrationDate || '';
 
     const c = data.coverage || {};
-    document.getElementById('coverage-order-date').value = data.orderDate || '';
-    document.getElementById('coverage-type').value       = c.type || '';
-    document.getElementById('coverage-start').value      = c.startDate || '';
-    document.getElementById('coverage-end').value        = c.endDate || '';
-    document.getElementById('coverage-notes').value      = c.notes || '';
+    document.getElementById('coverage-type').value  = c.type || '';
+    document.getElementById('coverage-start').value = c.startDate || '';
+    document.getElementById('coverage-end').value   = c.endDate || '';
+    document.getElementById('coverage-notes').value = c.notes || '';
 
     const sc = data.maintenanceContract || {};
     document.getElementById('sc-start').value   = sc.startDate || '';
     document.getElementById('sc-end').value     = sc.endDate || '';
     document.getElementById('sc-options').value = sc.options || '';
 
-    document.getElementById('km-field').value = data.km != null ? data.km : '';
-    document.getElementById('eh-field').value = data.engineHours != null ? data.engineHours : '';
+    document.getElementById('km-field').value = (data.km != null) ? data.km : '';
+    document.getElementById('eh-field').value = (data.engineHours != null) ? data.engineHours : '';
   }
 
   function attachOpenDateListener() {
@@ -355,48 +360,44 @@
 
     openDateInput.addEventListener('change', async () => {
       try {
-        await claimDocRef.update({
-          openDate: openDateInput.value || null
-        });
-        console.log('OpenDate aggiornata:', openDateInput.value);
+        await claimDocRef.update({ openDate: openDateInput.value || null });
+        console.log("OpenDate aggiornata:", openDateInput.value);
       } catch (e) {
-        console.error('Errore aggiornamento data apertura:', e);
-        alert('Errore durante il salvataggio della data di apertura.');
+        console.error("Errore aggiornando openDate:", e);
+        alert("Errore durante il salvataggio della data di apertura.");
       }
     });
   }
 
-  async function loadClaim(claimCode) {
-    setInfo('Carico pratica da Firestore...');
-
-    // 1) tentativo diretto con ID = codice pratica (nuova logica)
-    let snap;
+  async function loadClaimData(claimId) {
+    setInfo("Carico pratica da Firestore...");
+    // 1) nuovo metodo: ID = code
     try {
-      const directRef = appDb.collection('ClaimCards').doc(claimCode);
-      snap = await directRef.get();
+      const ref = appDb.collection('ClaimCards').doc(claimId);
+      const snap = await ref.get();
       if (snap.exists) {
-        claimDocRef = directRef;
-        console.log('Pratica trovata con ID = codice pratica');
+        claimDocRef = ref;
+        console.log("Pratica trovata con docId =", claimId);
         return snap.data();
       }
     } catch (e) {
-      console.warn('Errore get ID codice pratica:', e);
+      console.warn("Errore get docId:", e);
     }
 
-    // 2) fallback: vecchi documenti con ID random ma campo code = claimCode
+    // 2) fallback: vecchie pratiche con ID random ma campo code = claimId
     try {
       const q = await appDb.collection('ClaimCards')
-        .where('code', '==', claimCode)
+        .where('code', '==', claimId)
         .limit(1)
         .get();
       if (!q.empty) {
         const doc = q.docs[0];
         claimDocRef = doc.ref;
-        console.log('Pratica trovata tramite code == claimCode, docId =', doc.id);
+        console.log("Pratica trovata tramite code == claimId, docId =", doc.id);
         return doc.data();
       }
     } catch (e) {
-      console.error('Errore query ClaimCards per code:', e);
+      console.error("Errore query code==claimId:", e);
       throw e;
     }
 
@@ -405,47 +406,44 @@
 
   async function initPage(user) {
     currentUser = user;
-
-    const claimCode = loadClaimCodeFromSession();
-    if (!claimCode) {
-      showError('Codice pratica non trovato. Torna a FTCLAIMS e ripeti la procedura.');
-      setInfo('Impossibile continuare: codice mancante.');
+    const claimId = loadClaimIdFromSession();
+    if (!claimId) {
+      showError("Codice pratica non trovato. Torna alla pagina FTCLAIMS e ripeti la procedura.");
+      setInfo("Impossibile continuare: codice mancante.");
       return;
     }
 
-    currentClaimCode = claimCode;
-    document.getElementById('claim-code').value = claimCode;
+    currentClaimId = claimId;
+    document.getElementById('claim-code').value = claimId;
 
     try {
-      const data = await loadClaim(claimCode);
+      const data = await loadClaimData(claimId);
       if (!data) {
-        showError('Nessuna pratica trovata per il codice ' + claimCode);
-        setInfo('Impossibile continuare: pratica inesistente.');
+        showError("Nessuna pratica trovata per il codice " + claimId);
+        setInfo("Impossibile continuare: pratica inesistente.");
         return;
       }
-
-      fillFormFromData(data);
+      fillForm(data);
       attachOpenDateListener();
-      setInfo('Pratica caricata correttamente.');
+      setInfo("Pratica caricata correttamente.");
     } catch (e) {
       console.error(e);
-      showError('Errore durante il caricamento della pratica: ' + e.message);
-      setInfo('Si è verificato un errore nel caricamento.');
+      showError("Errore durante il caricamento della pratica: " + e.message);
+      setInfo("Si è verificato un errore.");
     }
   }
 
   appAuth.onAuthStateChanged(async (user) => {
     console.log("onAuthStateChanged FTCLAIMS Step2:", user ? user.uid : "NESSUN UTENTE");
     if (!user) {
-      window.location.href = 'FTLOGIN.html';
+      window.location.href = "index.html";
       return;
     }
     try {
       await initPage(user);
     } catch (e) {
       console.error(e);
-      showError('Errore inizializzazione pagina: ' + e.message);
-      setInfo('Si è verificato un errore.');
+      showError("Errore inizializzazione pagina: " + e.message);
     }
   });
 
@@ -464,7 +462,7 @@
   });
 
   document.getElementById('btn-cancel-claim').addEventListener('click', async () => {
-    if (!claimDocRef || !currentClaimCode) {
+    if (!claimDocRef || !currentClaimId) {
       alert('Nessuna richiesta da cancellare (pratica non caricata).');
       return;
     }
