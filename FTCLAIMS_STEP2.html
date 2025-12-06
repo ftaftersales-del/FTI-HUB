@@ -282,7 +282,7 @@
 <script>
   console.log("FTCLAIMS_STEP2 – script avviato");
 
-  // Riutilizzo le istanze globali se esistono, altrimenti le creo
+  // Riutilizzo istanze globali se esistono
   const appAuth = window.auth || firebase.auth();
   const appDb   = window.db   || firebase.firestore();
   window.auth = appAuth;
@@ -438,6 +438,7 @@
   async function createClaimDocument(userInfo, context, openDateStr) {
     if (!currentClaimId) return;
 
+    // In questa versione usiamo l'ID = codice pratica
     claimDocRef = appDb.collection('ClaimCards').doc(currentClaimId);
 
     const payload = {
@@ -482,6 +483,11 @@
   function attachOpenDateListener() {
     if (!claimDocRef) return;
     const openDateInput = document.getElementById('open-date');
+
+    // rimuovo eventuali listener precedenti semplicemente
+    // azzerando e rimettendo l'handler (pattern semplice)
+    openDateInput.onchange = null;
+
     openDateInput.addEventListener('change', async () => {
       try {
         await claimDocRef.update({
@@ -492,6 +498,111 @@
         alert('Errore durante il salvataggio della data di apertura.');
       }
     });
+  }
+
+  // Prova a caricare una pratica già esistente
+  async function tryLoadExistingClaimCard(context) {
+    // 1) Tentativo da sessionStorage (se in futuro lo userai dallo step1)
+    try {
+      const rawStored = sessionStorage.getItem('ftclaims_currentClaim');
+      if (rawStored) {
+        const stored = JSON.parse(rawStored);
+        if (stored && stored.code) {
+          console.log('Provo a caricare pratica da codice in sessionStorage:', stored.code);
+          const docRef = appDb.collection('ClaimCards').doc(stored.code);
+          const snap = await docRef.get();
+          if (snap.exists) {
+            console.log('Pratica trovata da sessionStorage:', snap.data());
+            claimDocRef = docRef;
+            return snap;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Errore lettura ftclaims_currentClaim da sessionStorage:', e);
+    }
+
+    // 2) Query per VIN + data ordine + utente
+    if (!context.vin || !context.orderDate) {
+      console.log('Impossibile fare query VIN+orderDate: dati mancanti.');
+      return null;
+    }
+
+    try {
+      console.log('Query ClaimCards per VIN + orderDate + openUserUid...');
+      const q = await appDb.collection('ClaimCards')
+        .where('vehicle.vin', '==', context.vin)
+        .where('coverage.orderDate', '==', context.orderDate)
+        .where('openUserUid', '==', currentUser.uid)
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get();
+
+      if (!q.empty) {
+        const doc = q.docs[0];
+        claimDocRef = doc.ref;
+        console.log('Pratica esistente trovata da query:', doc.id, doc.data());
+        return doc;
+      }
+    } catch (e) {
+      console.error('Errore query ClaimCards VIN+orderDate:', e);
+    }
+
+    return null;
+  }
+
+  async function ensureClaimCard(userInfo, context, defaultOpenDate) {
+    setInfo('Ricerca eventuale pratica già esistente...');
+
+    const existingSnap = await tryLoadExistingClaimCard(context);
+
+    if (existingSnap && existingSnap.exists) {
+      const data = existingSnap.data();
+
+      currentClaimId       = data.code || existingSnap.id;
+      currentClaimYear     = data.year || null;
+      currentClaimSequence = data.sequence || null;
+
+      document.getElementById('claim-code').value = currentClaimId;
+      document.getElementById('open-date').value  = data.openDate || defaultOpenDate || '';
+      document.getElementById('open-dealer').value = data.openDealer || userInfo.dealer || '';
+      document.getElementById('open-user').value   = data.openUser || userInfo.fullName || '';
+
+      document.getElementById('claim-status-value').textContent =
+        data.status || 'Aperta (in creazione)';
+
+      setInfo('Pratica caricata da Firestore.');
+      attachOpenDateListener();
+      return;
+    }
+
+    // Nessuna pratica trovata: ne creo una nuova
+    setInfo('Nessuna pratica esistente trovata. Generazione nuovo codice...');
+    const { code, year, sequence } = await generateClaimCode(context.orderDate);
+    currentClaimId       = code;
+    currentClaimYear     = year;
+    currentClaimSequence = sequence;
+
+    document.getElementById('claim-code').value = code;
+    document.getElementById('open-date').value  = defaultOpenDate || '';
+
+    setInfo('Creazione pratica su Firestore...');
+    await createClaimDocument(userInfo, context, defaultOpenDate);
+    document.getElementById('claim-status-value').textContent = 'Aperta (in creazione)';
+
+    // Salvo un riferimento minimo in sessionStorage (per usos futuri)
+    try {
+      sessionStorage.setItem('ftclaims_currentClaim', JSON.stringify({
+        code,
+        year,
+        sequence
+      }));
+    } catch (e) {
+      console.warn('Impossibile salvare ftclaims_currentClaim in sessionStorage:', e);
+    }
+
+    setInfo('Pratica creata su Firestore.');
+    attachOpenDateListener();
   }
 
   async function initPage(user) {
@@ -516,29 +627,24 @@
     }
 
     const openDateInput = document.getElementById('open-date');
+
+    // Data di default: oggi (se la pratica non ha già una data)
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
-    openDateInput.value = `${yyyy}-${mm}-${dd}`;
+    const defaultOpenDate = `${yyyy}-${mm}-${dd}`;
+
+    // Nota: se carichiamo una pratica esistente e ha già openDate,
+    // ensureClaimCard la sovrascrive nel campo input.
+    openDateInput.value = defaultOpenDate;
 
     try {
-      setInfo('Generazione codice pratica in corso...');
-      const { code, year, sequence } = await generateClaimCode(context.orderDate);
-      currentClaimId       = code;
-      currentClaimYear     = year;
-      currentClaimSequence = sequence;
-      document.getElementById('claim-code').value = code;
-
-      setInfo('Creazione pratica su Firestore...');
-      await createClaimDocument(userInfo, context, openDateInput.value);
-      attachOpenDateListener();
-
-      setInfo('Pratica creata. Puoi procedere con la gestione dei claim interni o cancellare la richiesta.');
+      await ensureClaimCard(userInfo, context, defaultOpenDate);
     } catch (e) {
-      console.error('Errore creazione pratica:', e);
-      showError('Errore durante la creazione della pratica: ' + e.message);
-      setInfo('I dati sono stati caricati a video. Il salvataggio della pratica non è riuscito.');
+      console.error('Errore creazione/caricamento pratica:', e);
+      showError('Errore durante la creazione/caricamento della pratica: ' + e.message);
+      setInfo('I dati sono stati caricati a video. Il salvataggio della pratica potrebbe non essere riuscito.');
     }
   }
 
