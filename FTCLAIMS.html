@@ -8,7 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
-  <script src="="firebase-config.js"></script>
+  <script src="firebase-config.js"></script>
 
   <style>
     body {
@@ -60,6 +60,26 @@
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
+    .error-box {
+      padding: 10px;
+      border-radius: 6px;
+      background: #ffe5e5;
+      color: #990000;
+      border: 1px solid #ffcccc;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    .info-box {
+      padding: 8px;
+      border-radius: 6px;
+      background: #e6f2ff;
+      color: #003366;
+      border: 1px solid #b3d1ff;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
     .section {
       margin-bottom: 20px;
       padding: 15px;
@@ -74,7 +94,7 @@
       color: #003366;
     }
 
-    .form-grid {
+    .form-grid-3 {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 10px 20px;
@@ -145,33 +165,9 @@
       color: #fff;
     }
 
-    .error-box {
-      padding: 10px;
-      border-radius: 6px;
-      background: #ffe5e5;
-      color: #990000;
-      border: 1px solid #ffcccc;
-      margin-bottom: 15px;
-      display: none;
-    }
-
-    .info-box {
-      padding: 8px;
-      border-radius: 6px;
-      background: #e6f2ff;
-      color: #003366;
-      border: 1px solid #b3d1ff;
-      margin-bottom: 10px;
-      font-size: 13px;
-    }
-
     .small {
       font-size: 12px;
       color: #666;
-    }
-
-    .readonly-highlight {
-      background: #f0f7ff;
     }
   </style>
 </head>
@@ -191,10 +187,10 @@
       Inserisci VIN, data ordine di lavoro e chilometraggio, quindi premi "Ricerca veicolo".
     </div>
 
-    <!-- DATI INPUT BASE -->
+    <!-- DATI ORDINE DI LAVORO -->
     <div class="section">
       <div class="section-title">Dati Ordine di Lavoro</div>
-      <div class="form-grid">
+      <div class="form-grid-3">
         <div class="form-group">
           <label for="vin-input">VIN</label>
           <input type="text" id="vin-input" maxlength="17">
@@ -219,11 +215,9 @@
           <label for="claim-type-input">Tipo pratica</label>
           <select id="claim-type-input">
             <option value="WARRANTY" selected>Reclamo di Garanzia (WARRANTY)</option>
-            <!-- In futuro potrai aggiungere altri tipi -->
           </select>
         </div>
       </div>
-
       <div class="buttons-row" style="margin-top:15px;">
         <button class="btn btn-secondary" id="btn-reset">Annulla / Pulisci</button>
         <button class="btn btn-primary" id="btn-search-vehicle">Ricerca veicolo</button>
@@ -238,20 +232,16 @@
       <div class="section-title">Dati veicolo</div>
       <div class="form-grid-2">
         <div class="form-group">
-          <label for="vehicle-vin">VIN</label>
-          <input type="text" id="vehicle-vin" readonly class="readonly-highlight">
-        </div>
-        <div class="form-group">
           <label for="vehicle-customer">Customer</label>
-          <input type="text" id="vehicle-customer" readonly class="readonly-highlight">
+          <input type="text" id="vehicle-customer" readonly>
         </div>
         <div class="form-group">
           <label for="vehicle-plate">Registration Plate</label>
-          <input type="text" id="vehicle-plate" readonly class="readonly-highlight">
+          <input type="text" id="vehicle-plate" readonly>
         </div>
         <div class="form-group">
           <label for="vehicle-reg-date">Registration Date</label>
-          <input type="text" id="vehicle-reg-date" readonly class="readonly-highlight">
+          <input type="text" id="vehicle-reg-date" readonly>
         </div>
       </div>
     </div>
@@ -262,19 +252,19 @@
       <div class="form-grid-2">
         <div class="form-group">
           <label for="coverage-type">Tipo copertura (FULL LINE / DRIVE LINE)</label>
-          <input type="text" id="coverage-type" readonly class="readonly-highlight">
+          <input type="text" id="coverage-type" readonly>
         </div>
         <div class="form-group">
           <label for="coverage-start">Data inizio</label>
-          <input type="text" id="coverage-start" readonly class="readonly-highlight">
+          <input type="text" id="coverage-start" readonly>
         </div>
         <div class="form-group">
           <label for="coverage-end">Data fine</label>
-          <input type="text" id="coverage-end" readonly class="readonly-highlight">
+          <input type="text" id="coverage-end" readonly>
         </div>
         <div class="form-group">
           <label for="coverage-notes">Note copertura</label>
-          <textarea id="coverage-notes" readonly class="readonly-highlight"></textarea>
+          <textarea id="coverage-notes" readonly></textarea>
         </div>
       </div>
     </div>
@@ -285,23 +275,22 @@
       <div class="form-grid-2">
         <div class="form-group">
           <label for="sc-start">Data inizio</label>
-          <input type="text" id="sc-start" readonly class="readonly-highlight">
+          <input type="text" id="sc-start" readonly>
         </div>
         <div class="form-group">
           <label for="sc-end">Data fine</label>
-          <input type="text" id="sc-end" readonly class="readonly-highlight">
+          <input type="text" id="sc-end" readonly>
         </div>
         <div class="form-group">
           <label for="sc-options">Opzioni presenti</label>
-          <textarea id="sc-options" readonly class="readonly-highlight"></textarea>
+          <textarea id="sc-options" readonly></textarea>
         </div>
       </div>
     </div>
 
-    <!-- CREAZIONE PRATICA -->
+    <!-- CREAZIONE CLAIM CARD -->
     <div class="section">
       <div class="section-title">Creazione Claim Card</div>
-
       <div class="form-grid-2">
         <div class="form-group">
           <label for="open-date-input">Data apertura pratica</label>
@@ -309,13 +298,14 @@
         </div>
         <div class="form-group">
           <label>Dealer / Utente apertura</label>
-          <input type="text" id="open-dealer-user" readonly class="readonly-highlight">
+          <input type="text" id="open-dealer-user" readonly>
         </div>
       </div>
-
       <div class="buttons-row">
         <button class="btn btn-danger" id="btn-cancel">Torna a Home</button>
-        <button class="btn btn-primary" id="btn-create-claim" disabled>Crea pratica e vai allo Step 2</button>
+        <button class="btn btn-primary" id="btn-create-claim" disabled>
+          Crea pratica e vai allo Step 2
+        </button>
       </div>
       <div class="small">
         Il pulsante "Crea pratica" si abilita dopo la ricerca veicolo.
@@ -324,9 +314,8 @@
   </div>
 
 <script>
-  console.log("FTCLAIMS (Step 1) – script avviato");
+  console.log("FTCLAIMS Step1 – script avviato");
 
-  // Firebase
   const appAuth = window.auth || firebase.auth();
   const appDb   = window.db   || firebase.firestore();
   window.auth = appAuth;
@@ -334,9 +323,9 @@
 
   let currentUser = null;
   let currentUserInfo = { dealer: '', fullName: '' };
-  let currentContext = null;   // oggetto con tutti i dati calcolati per la pratica
+  let currentContext = null; // conterrà tutti i dati da salvare
 
-  const WARRANTY_API_URL = 'https://verifica-garanzia-backend.onrender.com/verifica'; // adattalo se necessario
+  const WARRANTY_API_URL = 'https://verifica-garanzia-backend.onrender.com/verifica'; // adattalo se serve
 
   function showError(message) {
     const box = document.getElementById('error-box');
@@ -360,6 +349,7 @@
   async function loadUserInfo(user) {
     const userDocRef = appDb.collection('Users').doc(user.uid);
     const snap = await userDocRef.get();
+
     let dealer = '';
     let fullName = '';
 
@@ -396,7 +386,6 @@
     document.getElementById('engine-hours-input').value = '';
     document.getElementById('claim-type-input').value = 'WARRANTY';
 
-    document.getElementById('vehicle-vin').value = '';
     document.getElementById('vehicle-customer').value = '';
     document.getElementById('vehicle-plate').value = '';
     document.getElementById('vehicle-reg-date').value = '';
@@ -420,21 +409,20 @@
     document.getElementById('btn-create-claim').disabled = true;
   }
 
-  // === CARICAMENTO DATI VEICOLO / GARANZIA ===
-  async function loadWarrantyDataForVin(vin, orderDate, km, engineHours) {
-    // Adatta questo blocco se il tuo backend ha parametri diversi
-    const url = `${WARRANTY_API_URL}?vin=${encodeURIComponent(vin)}&orderDate=${encodeURIComponent(orderDate)}&km=${encodeURIComponent(km || 0)}&engineHours=${encodeURIComponent(engineHours || 0)}`;
+  // Carica dati veicolo/coperture dal tuo backend
+  async function fetchWarrantyData(vin, orderDate, km, engineHours) {
+    // ATTENZIONE: adatta questa chiamata alla tua API reale.
+    const url = `${WARRANTY_API_URL}?vin=${encodeURIComponent(vin)}&date=${encodeURIComponent(orderDate)}&km=${encodeURIComponent(km || 0)}&engineHours=${encodeURIComponent(engineHours || 0)}`;
     console.log('Chiamata warranty API:', url);
 
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error('Errore HTTP: ' + response.status);
+      throw new Error('Errore HTTP ' + response.status);
     }
     const data = await response.json();
     console.log('Risposta API:', data);
 
-    // Qui faccio ASSUNZIONI sulla struttura.
-    // Modifica se il tuo JSON è diverso.
+    // Qui faccio assunzioni minime sulla struttura; adattale se serve.
     const vehicle = {
       vin: data.vin || vin,
       customer: data.customer || (data.vehicle && data.vehicle.customer) || '',
@@ -442,24 +430,24 @@
       registrationDate: data.registrationDate || (data.vehicle && data.vehicle.registrationDate) || null
     };
 
-    const coverage = data.warrantyCoverage || data.coverage || {};
-    const serviceContract = data.serviceContract || {};
+    const coverageSrc = data.warrantyCoverage || data.coverage || {};
+    const serviceContractSrc = data.serviceContract || {};
 
-    const coverageNormalized = {
-      type: coverage.type || '',
-      startDate: coverage.startDate || '',
-      endDate: coverage.endDate || '',
-      notes: coverage.notes || ''
+    const coverage = {
+      type: coverageSrc.type || '',
+      startDate: coverageSrc.startDate || '',
+      endDate: coverageSrc.endDate || '',
+      notes: coverageSrc.notes || ''
     };
 
-    const scNormalized = {
-      startDate: serviceContract.startDate || '',
-      endDate: serviceContract.endDate || '',
-      options: serviceContract.options || '',
-      notes: serviceContract.notes || ''
+    const serviceContract = {
+      startDate: serviceContractSrc.startDate || '',
+      endDate: serviceContractSrc.endDate || '',
+      options: serviceContractSrc.options || '',
+      notes: serviceContractSrc.notes || ''
     };
 
-    return { vehicle, coverage: coverageNormalized, serviceContract: scNormalized };
+    return { vehicle, coverage, serviceContract };
   }
 
   async function handleSearchVehicle() {
@@ -484,24 +472,23 @@
     document.getElementById('btn-create-claim').disabled = true;
 
     try {
-      const result = await loadWarrantyDataForVin(vin, orderDate, km, engineHours);
+      const result = await fetchWarrantyData(vin, orderDate, km, engineHours);
 
-      // Popolo la maschera
-      document.getElementById('vehicle-vin').value       = result.vehicle.vin || vin;
-      document.getElementById('vehicle-customer').value  = result.vehicle.customer || '';
-      document.getElementById('vehicle-plate').value     = result.vehicle.registrationPlate || '';
-      document.getElementById('vehicle-reg-date').value  = result.vehicle.registrationDate || '';
+      // Popola i campi in sola lettura
+      document.getElementById('vehicle-customer').value = result.vehicle.customer || '';
+      document.getElementById('vehicle-plate').value    = result.vehicle.registrationPlate || '';
+      document.getElementById('vehicle-reg-date').value = result.vehicle.registrationDate || '';
 
-      document.getElementById('coverage-type').value     = result.coverage.type || '';
-      document.getElementById('coverage-start').value    = result.coverage.startDate || '';
-      document.getElementById('coverage-end').value      = result.coverage.endDate || '';
-      document.getElementById('coverage-notes').value    = result.coverage.notes || '';
+      document.getElementById('coverage-type').value  = result.coverage.type || '';
+      document.getElementById('coverage-start').value = result.coverage.startDate || '';
+      document.getElementById('coverage-end').value   = result.coverage.endDate || '';
+      document.getElementById('coverage-notes').value = result.coverage.notes || '';
 
-      document.getElementById('sc-start').value          = result.serviceContract.startDate || '';
-      document.getElementById('sc-end').value            = result.serviceContract.endDate || '';
-      document.getElementById('sc-options').value        = result.serviceContract.options || '';
+      document.getElementById('sc-start').value   = result.serviceContract.startDate || '';
+      document.getElementById('sc-end').value     = result.serviceContract.endDate || '';
+      document.getElementById('sc-options').value = result.serviceContract.options || '';
 
-      // Preparo il contesto che useremo per salvare la pratica
+      // Prepara il contesto da salvare
       currentContext = {
         vin: result.vehicle.vin || vin,
         customer: result.vehicle.customer || '',
@@ -528,7 +515,6 @@
     }
   }
 
-  // === GENERAZIONE CODICE PRATICA ===
   async function generateClaimCode(orderDateString) {
     let year;
     if (orderDateString) {
@@ -557,7 +543,6 @@
     return { code, year, sequence };
   }
 
-  // === CREAZIONE DOCUMENTO CLAIMCARDS ===
   async function handleCreateClaim() {
     clearError();
 
@@ -587,7 +572,7 @@
         year: year,
         sequence: sequence,
 
-        type: currentContext.type || 'WARRANTY',   // "WARRANTY"
+        type: currentContext.type || 'WARRANTY',
         status: 'Aperta',
 
         orderDate: currentContext.orderDate || null,
@@ -625,15 +610,13 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       };
 
-      console.log('Payload ClaimCard che sarà salvato:', payload);
+      console.log('Payload ClaimCard da salvare:', payload);
 
-      // >>> QUI usiamo il codice pratica come ID DOCUMENTO <<<
+      // *** QUI usiamo il codice pratica come ID documento ***
       await appDb.collection('ClaimCards').doc(code).set(payload);
 
-      // salviamo il codice pratica per lo step 2
+      // Salvo codice pratica e contesto per lo step 2
       sessionStorage.setItem('ftclaims_claimCode', code);
-
-      // opzionale: salviamo anche un contesto minimo
       sessionStorage.setItem('ftclaims_context', JSON.stringify({
         vin: payload.vehicle.vin,
         customer: payload.vehicle.customer,
@@ -644,7 +627,7 @@
         serviceContract: payload.maintenanceContract
       }));
 
-      setInfo('Pratica creata correttamente. Reindirizzamento allo Step 2...');
+      setInfo('Pratica creata correttamente. Passo allo Step 2...');
       window.location.href = 'FTCLAIMS_step2.html';
 
     } catch (e) {
@@ -655,7 +638,6 @@
     }
   }
 
-  // === INIT PAGE / EVENTI ===
   async function initPage(user) {
     currentUser = user;
     await loadUserInfo(user);
@@ -663,7 +645,7 @@
   }
 
   appAuth.onAuthStateChanged(async (user) => {
-    console.log("onAuthStateChanged (FTCLAIMS Step1):", user ? user.uid : "NESSUN UTENTE");
+    console.log("onAuthStateChanged FTCLAIMS Step1:", user ? user.uid : "NESSUN UTENTE");
     if (!user) {
       window.location.href = 'FTLOGIN.html';
       return;
@@ -672,11 +654,11 @@
       await initPage(user);
     } catch (e) {
       console.error(e);
-      showError('Errore during init: ' + e.message);
+      showError('Errore inizializzazione pagina: ' + e.message);
     }
   });
 
-  // Bottoni barra in alto
+  // Eventi UI
   document.getElementById('btn-home').addEventListener('click', () => {
     window.location.href = 'FTHUBAS.html';
   });
@@ -691,7 +673,6 @@
     }
   });
 
-  // Bottoni sezione
   document.getElementById('btn-reset').addEventListener('click', resetForm);
   document.getElementById('btn-cancel').addEventListener('click', () => {
     window.location.href = 'FTHUBAS.html';
