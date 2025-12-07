@@ -14,11 +14,12 @@
     body {
       font-family: Arial, sans-serif;
       background: #f5f5f5;
-      margin: 0;
+      margin: 0; /* niente bordo bianco del browser */
     }
 
     .container {
       width: 100%;
+      margin: 0;
       box-sizing: border-box;
       background: #ffffff;
       padding: 20px 30px 25px;
@@ -172,7 +173,6 @@
       color: #fff;
     }
 
-    /* Pannello destra (claim) */
     .right-panel {
       border: 1px solid #ddd;
       border-radius: 6px;
@@ -415,323 +415,331 @@
   </div>
 
   <script>
-    const auth = firebase.auth();
-    const db   = firebase.firestore();
+    window.addEventListener('load', function () {
+      if (typeof firebase === 'undefined') {
+        console.error('Firebase non è definito. Controlla gli script nel <head>.');
+        return;
+      }
 
-    let currentUser = null;
-    let currentClaimId = null;
-    let isDistributor = false;
+      const auth = firebase.auth();
+      const db   = firebase.firestore();
 
-    function showMessage(text, type) {
-      const area = document.getElementById('messageArea');
-      area.textContent = text;
-      area.className = 'alert';
-      if (type === 'error') area.classList.add('alert-error');
-      else if (type === 'success') area.classList.add('alert-success');
-      else area.classList.add('alert-info');
-      area.style.display = 'block';
-    }
+      let currentUser = null;
+      let currentClaimId = null;
+      let isDistributor = false;
 
-    function clearMessage() {
-      const area = document.getElementById('messageArea');
-      area.style.display = 'none';
-      area.textContent = '';
-    }
+      const messageArea = document.getElementById('messageArea');
 
-    function getQueryParam(name) {
-      const params = new URLSearchParams(window.location.search);
-      return params.get(name);
-    }
+      function showMessage(text, type) {
+        messageArea.textContent = text;
+        messageArea.className = 'alert';
+        if (type === 'error') messageArea.classList.add('alert-error');
+        else if (type === 'success') messageArea.classList.add('alert-success');
+        else messageArea.classList.add('alert-info');
+        messageArea.style.display = 'block';
+      }
 
-    async function loadUserInfo(user) {
-      try {
-        const doc = await db.collection('Users').doc(user.uid).get();
-        if (doc.exists) {
-          const data = doc.data() || {};
-          const role = data.role || '';
-          if (typeof role === 'string' && role.toLowerCase().includes('distributor')) {
-            isDistributor = true;
+      function clearMessage() {
+        messageArea.style.display = 'none';
+        messageArea.textContent = '';
+      }
+
+      function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      }
+
+      async function loadUserInfo(user) {
+        try {
+          const doc = await db.collection('Users').doc(user.uid).get();
+          if (doc.exists) {
+            const data = doc.data() || {};
+            const role = data.role || '';
+            if (typeof role === 'string' && role.toLowerCase().includes('distributor')) {
+              isDistributor = true;
+            }
           }
+        } catch (err) {
+          console.error('Errore caricamento utente', err);
         }
-      } catch (err) {
-        console.error('Errore caricamento utente', err);
+
+        const notesRow = document.getElementById('coverageNotesRow');
+        if (!isDistributor && notesRow) {
+          notesRow.style.display = 'none';
+        }
       }
 
-      const notesRow = document.getElementById('coverageNotesRow');
-      if (!isDistributor && notesRow) {
-        notesRow.style.display = 'none';
-      }
-    }
+      async function loadClaimCard() {
+        clearMessage();
+        currentClaimId = getQueryParam('id');
 
-    async function loadClaimCard() {
-      clearMessage();
-      currentClaimId = getQueryParam('id');
-
-      if (!currentClaimId) {
-        showMessage('Errore: nessuna pratica specificata (parametro "id" mancante).', 'error');
-        return;
-      }
-
-      try {
-        const ref = db.collection('ClaimCards').doc(currentClaimId);
-        const snap = await ref.get();
-
-        if (!snap.exists) {
-          showMessage('Pratica non trovata.', 'error');
+        if (!currentClaimId) {
+          showMessage('Errore: nessuna pratica specificata (parametro "id" mancante).', 'error');
           return;
         }
 
-        const data = snap.data() || {};
+        try {
+          const ref = db.collection('ClaimCards').doc(currentClaimId);
+          const snap = await ref.get();
 
-        document.getElementById('claimCode').value  = data.code || '';
-        document.getElementById('claimType').value  = data.type || '';
-
-        if (data.openDate)  document.getElementById('openDate').value  = data.openDate;
-        if (data.orderDate) document.getElementById('orderDate').value = data.orderDate;
-
-        document.getElementById('openUser').value   = data.openUserName || '';
-        document.getElementById('openDealer').value = data.openDealerId || data.dealerId || '';
-
-        let status = data.status || 'Aperto';
-        document.getElementById('claimStatus').value = status;
-        if (!data.status) {
-          await ref.update({ status: status });
-        }
-
-        document.getElementById('vin').value      = data.vin || data.vehicleVin || '';
-        document.getElementById('customer').value = data.customer || data.customerName || '';
-
-        const regPlate = data.registrationPlate || data.plateNumber || '';
-        const regDate  = data.registrationDate   || data.plateDate   || '';
-
-        document.getElementById('registrationPlate').value = regPlate;
-        if (regDate) document.getElementById('registrationDate').value = regDate;
-
-        const coverage = data.coverage || {};
-        document.getElementById('coverageType').value = coverage.type || '';
-        if (coverage.startDate) document.getElementById('coverageStart').value = coverage.startDate;
-        if (coverage.endDate)   document.getElementById('coverageEnd').value   = coverage.endDate;
-        document.getElementById('coverageNotes').value = coverage.notes || '';
-
-        const mc = data.maintenanceContract || {};
-        if (mc.startDate) document.getElementById('mcStart').value = mc.startDate;
-        if (mc.endDate)   document.getElementById('mcEnd').value   = mc.endDate;
-        document.getElementById('mcOptions').value = mc.options || '';
-
-        const km    = data.vehicleKm   ?? data.kmVehicle   ?? data.km   ?? '';
-        const hours = data.engineHours ?? data.vehicleHours ?? data.hours ?? '';
-
-        if (km !== undefined && km !== null) {
-          document.getElementById('vehicleKm').value = km;
-        }
-        if (hours !== undefined && hours !== null) {
-          document.getElementById('engineHours').value = hours;
-        }
-
-        showMessage('Pratica caricata correttamente.', 'success');
-
-      } catch (err) {
-        console.error(err);
-        showMessage('Errore nel caricamento della pratica: ' + err.message, 'error');
-      }
-    }
-
-    async function loadClaims() {
-      const list = document.getElementById('claimsList');
-      const placeholder = document.getElementById('claimsPlaceholder');
-      list.innerHTML = '';
-
-      if (!currentClaimId) return;
-
-      try {
-        const snap = await db
-          .collection('ClaimCards')
-          .doc(currentClaimId)
-          .collection('Claims')
-          .orderBy('code')
-          .get();
-
-        if (snap.empty) {
-          placeholder.style.display = 'block';
-          return;
-        }
-
-        placeholder.style.display = 'none';
-
-        snap.forEach(docSnap => {
-          const data = docSnap.data() || {};
-          const code = data.code || docSnap.id;
-
-          const div = document.createElement('div');
-          div.className = 'claim-card';
-
-          const title = document.createElement('div');
-          title.className = 'claim-title';
-          title.textContent = 'Riparazione ' + code;
-
-          const btn = document.createElement('button');
-          btn.className = 'btn btn-danger btn-delete-claim';
-          btn.textContent = 'Elimina riparazione';
-          btn.addEventListener('click', () => deleteRepair(code));
-
-          div.appendChild(title);
-          div.appendChild(btn);
-
-          list.appendChild(div);
-        });
-
-      } catch (err) {
-        console.error(err);
-        showMessage('Errore nel caricamento delle riparazioni: ' + err.message, 'error');
-      }
-    }
-
-    async function saveChanges() {
-      clearMessage();
-      if (!currentClaimId) {
-        showMessage('Impossibile salvare: nessuna pratica caricata.', 'error');
-        return;
-      }
-
-      const btnSave = document.getElementById('btnSave');
-      btnSave.disabled = true;
-
-      try {
-        const regPlate = document.getElementById('registrationPlate').value.trim();
-        const regDate  = document.getElementById('registrationDate').value || null;
-
-        const kmRaw = document.getElementById('vehicleKm').value;
-        const hRaw  = document.getElementById('engineHours').value;
-
-        const kmVal = kmRaw === '' ? null : Number(kmRaw);
-        const hVal  = hRaw === '' ? null : Number(hRaw);
-
-        const updates = {
-          registrationPlate: regPlate || null,
-          plateNumber:       regPlate || null,
-          registrationDate:  regDate,
-          plateDate:         regDate,
-          vehicleKm:   kmVal,
-          kmVehicle:   kmVal,
-          vehicleHours: hVal,
-          engineHours: hVal
-        };
-
-        await db.collection('ClaimCards').doc(currentClaimId).update(updates);
-        showMessage('Salvataggio completato.', 'success');
-      } catch (err) {
-        console.error(err);
-        showMessage('Errore nel salvataggio: ' + err.message, 'error');
-      } finally {
-        btnSave.disabled = false;
-      }
-    }
-
-    async function cancelRequest() {
-      clearMessage();
-      if (!currentClaimId) {
-        showMessage('Impossibile cancellare: nessuna pratica caricata.', 'error');
-        return;
-      }
-
-      if (!confirm('Sei sicuro di voler cancellare questa richiesta?')) {
-        return;
-      }
-
-      try {
-        const ref = db.collection('ClaimCards').doc(currentClaimId);
-        await ref.update({ status: 'Cancellato' });
-        document.getElementById('claimStatus').value = 'Cancellato';
-        showMessage('Richiesta cancellata (stato impostato su "Cancellato").', 'success');
-      } catch (err) {
-        console.error(err);
-        showMessage('Errore durante la cancellazione della richiesta: ' + err.message, 'error');
-      }
-    }
-
-    function goHome() {
-      window.location.href = 'FTHUBAS.html';
-    }
-
-    async function addRepair() {
-      clearMessage();
-      if (!currentClaimId) {
-        showMessage('Impossibile aggiungere: nessuna pratica caricata.', 'error');
-        return;
-      }
-
-      const btn = document.getElementById('btnAddRepair');
-      btn.disabled = true;
-
-      try {
-        const cardRef = db.collection('ClaimCards').doc(currentClaimId);
-
-        const newCode = await db.runTransaction(async (tx) => {
-          const snap = await tx.get(cardRef);
           if (!snap.exists) {
-            throw new Error('Pratica non trovata.');
+            showMessage('Pratica non trovata.', 'error');
+            return;
           }
+
           const data = snap.data() || {};
-          let lastNum = data.lastClaimNumber || 0;
-          const nextNum = lastNum + 1;
-          const code = String(nextNum).padStart(3, '0');
 
-          tx.update(cardRef, { lastClaimNumber: nextNum });
+          document.getElementById('claimCode').value  = data.code || '';
+          document.getElementById('claimType').value  = data.type || '';
 
-          const claimRef = cardRef.collection('Claims').doc(code);
-          tx.set(claimRef, {
-            code: code,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          if (data.openDate)  document.getElementById('openDate').value  = data.openDate;
+          if (data.orderDate) document.getElementById('orderDate').value = data.orderDate;
+
+          document.getElementById('openUser').value   = data.openUserName || '';
+          document.getElementById('openDealer').value = data.openDealerId || data.dealerId || '';
+
+          let status = data.status || 'Aperto';
+          document.getElementById('claimStatus').value = status;
+          if (!data.status) {
+            await ref.update({ status: status });
+          }
+
+          document.getElementById('vin').value      = data.vin || data.vehicleVin || '';
+          document.getElementById('customer').value = data.customer || data.customerName || '';
+
+          const regPlate = data.registrationPlate || data.plateNumber || '';
+          const regDate  = data.registrationDate   || data.plateDate   || '';
+
+          document.getElementById('registrationPlate').value = regPlate;
+          if (regDate) document.getElementById('registrationDate').value = regDate;
+
+          const coverage = data.coverage || {};
+          document.getElementById('coverageType').value = coverage.type || '';
+          if (coverage.startDate) document.getElementById('coverageStart').value = coverage.startDate;
+          if (coverage.endDate)   document.getElementById('coverageEnd').value   = coverage.endDate;
+          document.getElementById('coverageNotes').value = coverage.notes || '';
+
+          const mc = data.maintenanceContract || {};
+          if (mc.startDate) document.getElementById('mcStart').value = mc.startDate;
+          if (mc.endDate)   document.getElementById('mcEnd').value   = mc.endDate;
+          document.getElementById('mcOptions').value = mc.options || '';
+
+          const km    = data.vehicleKm   ?? data.kmVehicle    ?? data.km    ?? '';
+          const hours = data.engineHours ?? data.vehicleHours ?? data.hours ?? '';
+
+          if (km !== undefined && km !== null) {
+            document.getElementById('vehicleKm').value = km;
+          }
+          if (hours !== undefined && hours !== null) {
+            document.getElementById('engineHours').value = hours;
+          }
+
+          showMessage('Pratica caricata correttamente.', 'success');
+
+        } catch (err) {
+          console.error(err);
+          showMessage('Errore nel caricamento della pratica: ' + err.message, 'error');
+        }
+      }
+
+      async function loadClaims() {
+        const list = document.getElementById('claimsList');
+        const placeholder = document.getElementById('claimsPlaceholder');
+        list.innerHTML = '';
+
+        if (!currentClaimId) return;
+
+        try {
+          const snap = await db
+            .collection('ClaimCards')
+            .doc(currentClaimId)
+            .collection('Claims')
+            .orderBy('code')
+            .get();
+
+          if (snap.empty) {
+            placeholder.style.display = 'block';
+            return;
+          }
+
+          placeholder.style.display = 'none';
+
+          snap.forEach(docSnap => {
+            const data = docSnap.data() || {};
+            const code = data.code || docSnap.id;
+
+            const div = document.createElement('div');
+            div.className = 'claim-card';
+
+            const title = document.createElement('div');
+            title.className = 'claim-title';
+            title.textContent = 'Riparazione ' + code;
+
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-danger btn-delete-claim';
+            btn.textContent = 'Elimina riparazione';
+            btn.addEventListener('click', () => deleteRepair(code));
+
+            div.appendChild(title);
+            div.appendChild(btn);
+
+            list.appendChild(div);
           });
 
-          return code;
-        });
-
-        showMessage('Riparazione ' + newCode + ' creata.', 'success');
-        await loadClaims();
-      } catch (err) {
-        console.error(err);
-        showMessage('Errore nella creazione della riparazione: ' + err.message, 'error');
-      } finally {
-        btn.disabled = false;
-      }
-    }
-
-    async function deleteRepair(code) {
-      clearMessage();
-      if (!currentClaimId || !code) return;
-
-      if (!confirm('Vuoi davvero eliminare la riparazione ' + code + '?')) {
-        return;
+        } catch (err) {
+          console.error(err);
+          showMessage('Errore nel caricamento delle riparazioni: ' + err.message, 'error');
+        }
       }
 
-      try {
-        const cardRef = db.collection('ClaimCards').doc(currentClaimId);
-        await cardRef.collection('Claims').doc(code).delete();
-        showMessage('Riparazione ' + code + ' eliminata.', 'success');
-        await loadClaims();
-      } catch (err) {
-        console.error(err);
-        showMessage('Errore durante l\'eliminazione della riparazione: ' + err.message, 'error');
-      }
-    }
+      async function saveChanges() {
+        clearMessage();
+        if (!currentClaimId) {
+          showMessage('Impossibile salvare: nessuna pratica caricata.', 'error');
+          return;
+        }
 
-    // INIT
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) {
+        const btnSave = document.getElementById('btnSave');
+        btnSave.disabled = true;
+
+        try {
+          const regPlate = document.getElementById('registrationPlate').value.trim();
+          const regDate  = document.getElementById('registrationDate').value || null;
+
+          const kmRaw = document.getElementById('vehicleKm').value;
+          const hRaw  = document.getElementById('engineHours').value;
+
+          const kmVal = kmRaw === '' ? null : Number(kmRaw);
+          const hVal  = hRaw === '' ? null : Number(hRaw);
+
+          const updates = {
+            registrationPlate: regPlate || null,
+            plateNumber:       regPlate || null,
+            registrationDate:  regDate,
+            plateDate:         regDate,
+            vehicleKm:   kmVal,
+            kmVehicle:   kmVal,
+            vehicleHours: hVal,
+            engineHours: hVal
+          };
+
+          await db.collection('ClaimCards').doc(currentClaimId).update(updates);
+          showMessage('Salvataggio completato.', 'success');
+        } catch (err) {
+          console.error(err);
+          showMessage('Errore nel salvataggio: ' + err.message, 'error');
+        } finally {
+          btnSave.disabled = false;
+        }
+      }
+
+      async function cancelRequest() {
+        clearMessage();
+        if (!currentClaimId) {
+          showMessage('Impossibile cancellare: nessuna pratica caricata.', 'error');
+          return;
+        }
+
+        if (!confirm('Sei sicuro di voler cancellare questa richiesta?')) {
+          return;
+        }
+
+        try {
+          const ref = db.collection('ClaimCards').doc(currentClaimId);
+          await ref.update({ status: 'Cancellato' });
+          document.getElementById('claimStatus').value = 'Cancellato';
+          showMessage('Richiesta cancellata (stato impostato su "Cancellato").', 'success');
+        } catch (err) {
+          console.error(err);
+          showMessage('Errore durante la cancellazione della richiesta: ' + err.message, 'error');
+        }
+      }
+
+      function goHome() {
         window.location.href = 'FTHUBAS.html';
-        return;
       }
-      currentUser = user;
-      await loadUserInfo(user);
-      await loadClaimCard();
-      await loadClaims();
-    });
 
-    document.getElementById('btnSave').addEventListener('click', saveChanges);
-    document.getElementById('btnDelete').addEventListener('click', cancelRequest);
-    document.getElementById('btnHome').addEventListener('click', goHome);
-    document.getElementById('btnAddRepair').addEventListener('click', addRepair);
+      async function addRepair() {
+        clearMessage();
+        if (!currentClaimId) {
+          showMessage('Impossibile aggiungere: nessuna pratica caricata.', 'error');
+          return;
+        }
+
+        const btn = document.getElementById('btnAddRepair');
+        btn.disabled = true;
+
+        try {
+          const cardRef = db.collection('ClaimCards').doc(currentClaimId);
+
+          const newCode = await db.runTransaction(async (tx) => {
+            const snap = await tx.get(cardRef);
+            if (!snap.exists) {
+              throw new Error('Pratica non trovata.');
+            }
+            const data = snap.data() || {};
+            let lastNum = data.lastClaimNumber || 0;
+            const nextNum = lastNum + 1;
+            const code = String(nextNum).padStart(3, '0');
+
+            tx.update(cardRef, { lastClaimNumber: nextNum });
+
+            const claimRef = cardRef.collection('Claims').doc(code);
+            tx.set(claimRef, {
+              code: code,
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            return code;
+          });
+
+          showMessage('Riparazione ' + newCode + ' creata.', 'success');
+          await loadClaims();
+        } catch (err) {
+          console.error(err);
+          showMessage('Errore nella creazione della riparazione: ' + err.message, 'error');
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      async function deleteRepair(code) {
+        clearMessage();
+        if (!currentClaimId || !code) return;
+
+        if (!confirm('Vuoi davvero eliminare la riparazione ' + code + '?')) {
+          return;
+        }
+
+        try {
+          const cardRef = db.collection('ClaimCards').doc(currentClaimId);
+          await cardRef.collection('Claims').doc(code).delete();
+          showMessage('Riparazione ' + code + ' eliminata.', 'success');
+          await loadClaims();
+        } catch (err) {
+          console.error(err);
+          showMessage('Errore durante l\'eliminazione della riparazione: ' + err.message, 'error');
+        }
+      }
+
+      // INIT AUTH
+      auth.onAuthStateChanged(async (user) => {
+        if (!user) {
+          window.location.href = 'FTHUBAS.html';
+          return;
+        }
+        currentUser = user;
+        await loadUserInfo(user);
+        await loadClaimCard();
+        await loadClaims();
+      });
+
+      // LISTENER BOTTONI
+      document.getElementById('btnSave').addEventListener('click', saveChanges);
+      document.getElementById('btnDelete').addEventListener('click', cancelRequest);
+      document.getElementById('btnHome').addEventListener('click', goHome);
+      document.getElementById('btnAddRepair').addEventListener('click', addRepair);
+    });
   </script>
 </body>
 </html>
