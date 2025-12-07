@@ -1,19 +1,22 @@
 // ===============================
 // ftclaims-claims.js
-// Logica riutilizzabile per la TIPOLGIA dei claims
+// Logica riutilizzabile per la TIPOLOGIA dei claims
 // ===============================
+
+function normalizeCardType(cardType) {
+  return (cardType || '').toString().trim().toUpperCase();
+}
 
 /**
  * Inizializza i controlli per la tipologia claim in base
  * al tipo di ClaimCard:
  *
- *  - Warranty   -> combobox con: RSA, Garanzia, Garanzia Ricambio
- *  - Maintenance -> tipologia fissa: Manutenzione
+ *  - WARRANTY    -> combobox con: RSA, Garanzia, Garanzia Ricambio
+ *  - MAINTENANCE -> tipologia fissa: Manutenzione
  *  - FSA         -> tipologia fissa: FSA
- *  - Goodwill    -> tipologia fissa: Goodwill
+ *  - GOODWILL    -> tipologia fissa: Goodwill
  *
- * @param {string} cardType - Tipo di claim card ("Warranty" | "Maintenance" | "FSA" | "Goodwill")
- * @param {object} ids - (opzionale) Override degli ID HTML
+ * Accetta indifferentemente "Warranty" / "WARRANTY" ecc.
  */
 function initClaimTypeControls(cardType, ids = {}) {
   const containerId = ids.containerId || "claimTypeContainer";
@@ -33,13 +36,15 @@ function initClaimTypeControls(cardType, ids = {}) {
     return;
   }
 
+  const type = normalizeCardType(cardType);
+
   // Reset di base
   container.style.display = "none";
   select.innerHTML = "";
   fixed.value = "";
 
-  switch (cardType) {
-    case "Warranty": {
+  switch (type) {
+    case "WARRANTY": {
       // Mostro la combobox
       container.style.display = "block";
 
@@ -59,7 +64,7 @@ function initClaimTypeControls(cardType, ids = {}) {
       break;
     }
 
-    case "Maintenance":
+    case "MAINTENANCE":
       fixed.value = "Manutenzione";
       break;
 
@@ -67,7 +72,7 @@ function initClaimTypeControls(cardType, ids = {}) {
       fixed.value = "FSA";
       break;
 
-    case "Goodwill":
+    case "GOODWILL":
       fixed.value = "Goodwill";
       break;
 
@@ -80,7 +85,7 @@ function initClaimTypeControls(cardType, ids = {}) {
  * Restituisce la tipologia di claim da salvare,
  * in base al tipo di ClaimCard.
  *
- * @param {string} cardType - Tipo di ClaimCard ("Warranty" | "Maintenance" | "FSA" | "Goodwill")
+ * @param {string} cardType - Tipo di ClaimCard ("WARRANTY" | "MAINTENANCE" | "FSA" | "GOODWILL", anche in minuscolo/misto)
  * @param {object} ids - (opzionale) Override degli ID HTML
  * @returns {string|null} tipologia da salvare sul claim
  */
@@ -102,7 +107,9 @@ function getCurrentClaimType(cardType, ids = {}) {
     return null;
   }
 
-  if (cardType === "Warranty") {
+  const type = normalizeCardType(cardType);
+
+  if (type === "WARRANTY") {
     return select.value || null;
   } else {
     return fixed.value || null;
