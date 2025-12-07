@@ -14,15 +14,14 @@
     body {
       font-family: Arial, sans-serif;
       background: #f5f5f5;
-      margin: 20px;
+      margin: 0;
     }
 
     .container {
-      max-width: 1400px;
-      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
       background: #ffffff;
-      padding: 20px 25px 25px;
-      border-radius: 10px;
+      padding: 20px 30px 25px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
@@ -61,7 +60,6 @@
       color: #247a3a;
     }
 
-    /* Layout principale: colonna sinistra stretta, destra ampia */
     .main-layout {
       display: flex;
       align-items: flex-start;
@@ -174,7 +172,7 @@
       color: #fff;
     }
 
-    /* Pannello destra (per i singoli claim) */
+    /* Pannello destra (claim) */
     .right-panel {
       border: 1px solid #ddd;
       border-radius: 6px;
@@ -183,9 +181,15 @@
       min-height: 400px;
     }
 
-    .right-panel h3 {
-      margin-top: 0;
+    .right-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 8px;
+    }
+
+    .right-panel h3 {
+      margin: 0;
       font-size: 15px;
     }
 
@@ -195,11 +199,40 @@
       margin-top: 8px;
     }
 
+    .btn-small {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    .claims-list {
+      margin-top: 8px;
+    }
+
+    .claim-card {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 6px 8px;
+      margin-bottom: 6px;
+      background: #ffffff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .claim-title {
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    .btn-delete-claim {
+      padding: 4px 8px;
+      font-size: 11px;
+    }
+
     @media (max-width: 992px) {
       .main-layout {
         flex-direction: column;
       }
-
       .left-column {
         max-width: 100%;
         flex: 1;
@@ -215,7 +248,7 @@
     <div id="messageArea" class="alert alert-info"></div>
 
     <div class="main-layout">
-      <!-- COLONNA SINISTRA: dati sintetici della pratica -->
+      <!-- COLONNA SINISTRA -->
       <div class="left-column">
 
         <!-- Dati pratica -->
@@ -235,7 +268,6 @@
           <div class="form-row">
             <div class="form-group">
               <label for="openDate">Data apertura</label>
-              <!-- MAI modificabile -->
               <input type="date" id="openDate" readonly>
             </div>
             <div class="form-group">
@@ -257,10 +289,9 @@
 
           <div class="form-group">
             <label for="claimStatus">Stato pratica</label>
-            <!-- Stato non modificabile -->
             <input type="text" id="claimStatus" readonly>
             <div class="small-text">
-              Stati possibili: Aperto, Inviato, Sospeso, In Valutazione, Concluso, Chiuso.
+              Stati possibili: Aperto, Inviato, Sospeso, In Valutazione, Concluso, Chiuso, Cancellato.
             </div>
           </div>
         </div>
@@ -282,12 +313,10 @@
           <div class="form-row">
             <div class="form-group">
               <label for="registrationPlate">Registration Plate</label>
-              <!-- MODIFICABILE -->
               <input type="text" id="registrationPlate">
             </div>
             <div class="form-group">
               <label for="registrationDate">Registration Date</label>
-              <!-- MODIFICABILE -->
               <input type="date" id="registrationDate">
             </div>
           </div>
@@ -315,7 +344,6 @@
             <div class="form-group"></div>
           </div>
 
-          <!-- Note copertura: solo distributore -->
           <div class="form-group" id="coverageNotesRow">
             <label for="coverageNotes">Note copertura (visibili solo al distributore)</label>
             <textarea id="coverageNotes" disabled></textarea>
@@ -348,12 +376,10 @@
           <div class="form-row">
             <div class="form-group">
               <label for="vehicleKm">KM veicolo</label>
-              <!-- MODIFICABILE -->
               <input type="number" id="vehicleKm" min="0" step="1">
             </div>
             <div class="form-group">
               <label for="engineHours">Ore motore</label>
-              <!-- MODIFICABILE -->
               <input type="number" id="engineHours" min="0" step="1">
             </div>
           </div>
@@ -361,7 +387,7 @@
 
         <!-- Azioni -->
         <div class="actions">
-          <button id="btnBack" class="btn btn-secondary">Torna alla lista</button>
+          <button id="btnHome" class="btn btn-secondary">Home Page</button>
           <div>
             <button id="btnSave" class="btn btn-primary">Salva modifiche</button>
             <button id="btnDelete" class="btn btn-danger">Cancella richiesta</button>
@@ -370,14 +396,18 @@
 
       </div>
 
-      <!-- COLONNA DESTRA: area (libera) per i singoli claim -->
+      <!-- COLONNA DESTRA -->
       <div class="right-column">
         <div class="right-panel">
-          <h3>Gestione claim collegati alla claim card</h3>
-          <div class="right-panel-placeholder">
-            In questa area verranno gestiti i singoli claim (FSA, Reclamo di Garanzia, Contratto di
-            Manutenzione, ecc.) collegati alla stessa claim card.
-            <br>Per il momento l'area è lasciata libera per lo sviluppo dei passi successivi.
+          <div class="right-panel-header">
+            <h3>Gestione claim collegati alla claim card</h3>
+            <button id="btnAddRepair" class="btn btn-primary btn-small">Aggiungi riparazione</button>
+          </div>
+          <div id="claimsList" class="claims-list"></div>
+          <div class="right-panel-placeholder" id="claimsPlaceholder">
+            In questa area verranno gestiti i singoli claim (FSA, Reclamo di Garanzia,
+            Contratto di Manutenzione, ecc.) collegati alla stessa claim card.
+            <br>Per il momento sono visibili solo il codice riparazione e il tasto di eliminazione.
           </div>
         </div>
       </div>
@@ -453,56 +483,42 @@
 
         const data = snap.data() || {};
 
-        // DATI PRATICA
         document.getElementById('claimCode').value  = data.code || '';
         document.getElementById('claimType').value  = data.type || '';
 
-        if (data.openDate) {
-          document.getElementById('openDate').value = data.openDate;
-        }
-        if (data.orderDate) {
-          document.getElementById('orderDate').value = data.orderDate;
-        }
+        if (data.openDate)  document.getElementById('openDate').value  = data.openDate;
+        if (data.orderDate) document.getElementById('orderDate').value = data.orderDate;
 
         document.getElementById('openUser').value   = data.openUserName || '';
         document.getElementById('openDealer').value = data.openDealerId || data.dealerId || '';
 
-        // Stato pratica: default "Aperto" se mancante
         let status = data.status || 'Aperto';
         document.getElementById('claimStatus').value = status;
         if (!data.status) {
           await ref.update({ status: status });
         }
 
-        // DATI VEICOLO
         document.getElementById('vin').value      = data.vin || data.vehicleVin || '';
         document.getElementById('customer').value = data.customer || data.customerName || '';
 
         const regPlate = data.registrationPlate || data.plateNumber || '';
-        const regDate  = data.registrationDate || data.plateDate || '';
+        const regDate  = data.registrationDate   || data.plateDate   || '';
 
         document.getElementById('registrationPlate').value = regPlate;
         if (regDate) document.getElementById('registrationDate').value = regDate;
 
-        // COPERTURA
         const coverage = data.coverage || {};
         document.getElementById('coverageType').value = coverage.type || '';
-        if (coverage.startDate) {
-          document.getElementById('coverageStart').value = coverage.startDate;
-        }
-        if (coverage.endDate) {
-          document.getElementById('coverageEnd').value = coverage.endDate;
-        }
+        if (coverage.startDate) document.getElementById('coverageStart').value = coverage.startDate;
+        if (coverage.endDate)   document.getElementById('coverageEnd').value   = coverage.endDate;
         document.getElementById('coverageNotes').value = coverage.notes || '';
 
-        // CONTRATTO MANUTENZIONE
         const mc = data.maintenanceContract || {};
         if (mc.startDate) document.getElementById('mcStart').value = mc.startDate;
         if (mc.endDate)   document.getElementById('mcEnd').value   = mc.endDate;
         document.getElementById('mcOptions').value = mc.options || '';
 
-        // KM / ORE
-        const km = data.vehicleKm ?? data.kmVehicle ?? data.km ?? '';
+        const km    = data.vehicleKm   ?? data.kmVehicle   ?? data.km   ?? '';
         const hours = data.engineHours ?? data.vehicleHours ?? data.hours ?? '';
 
         if (km !== undefined && km !== null) {
@@ -517,6 +533,56 @@
       } catch (err) {
         console.error(err);
         showMessage('Errore nel caricamento della pratica: ' + err.message, 'error');
+      }
+    }
+
+    async function loadClaims() {
+      const list = document.getElementById('claimsList');
+      const placeholder = document.getElementById('claimsPlaceholder');
+      list.innerHTML = '';
+
+      if (!currentClaimId) return;
+
+      try {
+        const snap = await db
+          .collection('ClaimCards')
+          .doc(currentClaimId)
+          .collection('Claims')
+          .orderBy('code')
+          .get();
+
+        if (snap.empty) {
+          placeholder.style.display = 'block';
+          return;
+        }
+
+        placeholder.style.display = 'none';
+
+        snap.forEach(docSnap => {
+          const data = docSnap.data() || {};
+          const code = data.code || docSnap.id;
+
+          const div = document.createElement('div');
+          div.className = 'claim-card';
+
+          const title = document.createElement('div');
+          title.className = 'claim-title';
+          title.textContent = 'Riparazione ' + code;
+
+          const btn = document.createElement('button');
+          btn.className = 'btn btn-danger btn-delete-claim';
+          btn.textContent = 'Elimina riparazione';
+          btn.addEventListener('click', () => deleteRepair(code));
+
+          div.appendChild(title);
+          div.appendChild(btn);
+
+          list.appendChild(div);
+        });
+
+      } catch (err) {
+        console.error(err);
+        showMessage('Errore nel caricamento delle riparazioni: ' + err.message, 'error');
       }
     }
 
@@ -542,46 +608,112 @@
 
         const updates = {
           registrationPlate: regPlate || null,
-          plateNumber: regPlate || null,
-          registrationDate: regDate,
-          plateDate: regDate,
-          vehicleKm: kmVal,
-          kmVehicle: kmVal,
+          plateNumber:       regPlate || null,
+          registrationDate:  regDate,
+          plateDate:         regDate,
+          vehicleKm:   kmVal,
+          kmVehicle:   kmVal,
           vehicleHours: hVal,
           engineHours: hVal
         };
 
         await db.collection('ClaimCards').doc(currentClaimId).update(updates);
-        showMessage('Modifiche salvate correttamente.', 'success');
+        showMessage('Salvataggio completato.', 'success');
       } catch (err) {
         console.error(err);
-        showMessage('Errore durante il salvataggio delle modifiche: ' + err.message, 'error');
+        showMessage('Errore nel salvataggio: ' + err.message, 'error');
       } finally {
         btnSave.disabled = false;
       }
     }
 
-    async function deleteClaim() {
+    async function cancelRequest() {
       clearMessage();
       if (!currentClaimId) {
         showMessage('Impossibile cancellare: nessuna pratica caricata.', 'error');
         return;
       }
 
-      if (!confirm('Sei sicuro di voler cancellare questa richiesta?')) return;
+      if (!confirm('Sei sicuro di voler cancellare questa richiesta?')) {
+        return;
+      }
 
       try {
-        await db.collection('ClaimCards').doc(currentClaimId).delete();
-        alert('Pratica cancellata.');
-        window.location.href = 'FTCLAIMS.html';
+        const ref = db.collection('ClaimCards').doc(currentClaimId);
+        await ref.update({ status: 'Cancellato' });
+        document.getElementById('claimStatus').value = 'Cancellato';
+        showMessage('Richiesta cancellata (stato impostato su "Cancellato").', 'success');
       } catch (err) {
         console.error(err);
-        showMessage('Errore durante la cancellazione della pratica: ' + err.message, 'error');
+        showMessage('Errore durante la cancellazione della richiesta: ' + err.message, 'error');
       }
     }
 
-    function goBackToList() {
-      window.location.href = 'FTCLAIMS.html';
+    function goHome() {
+      window.location.href = 'FTHUBAS.html';
+    }
+
+    async function addRepair() {
+      clearMessage();
+      if (!currentClaimId) {
+        showMessage('Impossibile aggiungere: nessuna pratica caricata.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnAddRepair');
+      btn.disabled = true;
+
+      try {
+        const cardRef = db.collection('ClaimCards').doc(currentClaimId);
+
+        const newCode = await db.runTransaction(async (tx) => {
+          const snap = await tx.get(cardRef);
+          if (!snap.exists) {
+            throw new Error('Pratica non trovata.');
+          }
+          const data = snap.data() || {};
+          let lastNum = data.lastClaimNumber || 0;
+          const nextNum = lastNum + 1;
+          const code = String(nextNum).padStart(3, '0');
+
+          tx.update(cardRef, { lastClaimNumber: nextNum });
+
+          const claimRef = cardRef.collection('Claims').doc(code);
+          tx.set(claimRef, {
+            code: code,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          return code;
+        });
+
+        showMessage('Riparazione ' + newCode + ' creata.', 'success');
+        await loadClaims();
+      } catch (err) {
+        console.error(err);
+        showMessage('Errore nella creazione della riparazione: ' + err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function deleteRepair(code) {
+      clearMessage();
+      if (!currentClaimId || !code) return;
+
+      if (!confirm('Vuoi davvero eliminare la riparazione ' + code + '?')) {
+        return;
+      }
+
+      try {
+        const cardRef = db.collection('ClaimCards').doc(currentClaimId);
+        await cardRef.collection('Claims').doc(code).delete();
+        showMessage('Riparazione ' + code + ' eliminata.', 'success');
+        await loadClaims();
+      } catch (err) {
+        console.error(err);
+        showMessage('Errore durante l\'eliminazione della riparazione: ' + err.message, 'error');
+      }
     }
 
     // INIT
@@ -593,11 +725,13 @@
       currentUser = user;
       await loadUserInfo(user);
       await loadClaimCard();
+      await loadClaims();
     });
 
     document.getElementById('btnSave').addEventListener('click', saveChanges);
-    document.getElementById('btnDelete').addEventListener('click', deleteClaim);
-    document.getElementById('btnBack').addEventListener('click', goBackToList);
+    document.getElementById('btnDelete').addEventListener('click', cancelRequest);
+    document.getElementById('btnHome').addEventListener('click', goHome);
+    document.getElementById('btnAddRepair').addEventListener('click', addRepair);
   </script>
 </body>
 </html>
