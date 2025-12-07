@@ -4,7 +4,9 @@
 // ===============================
 
 function normalizeCardType(cardType) {
-  return (cardType || '').toString().trim().toUpperCase();
+  const normalized = (cardType || '').toString().trim().toUpperCase();
+  console.log('[ftclaims-claims] normalizeCardType:', cardType, '=>', normalized);
+  return normalized;
 }
 
 /**
@@ -15,10 +17,10 @@ function normalizeCardType(cardType) {
  *  - MAINTENANCE -> tipologia fissa: Manutenzione
  *  - FSA         -> tipologia fissa: FSA
  *  - GOODWILL    -> tipologia fissa: Goodwill
- *
- * Accetta indifferentemente "Warranty" / "WARRANTY" ecc.
  */
 function initClaimTypeControls(cardType, ids = {}) {
+  console.log('[ftclaims-claims] initClaimTypeControls chiamata con:', cardType);
+
   const containerId = ids.containerId || "claimTypeContainer";
   const selectId = ids.selectId || "claimType";
   const fixedId = ids.fixedId || "fixedClaimType";
@@ -37,6 +39,7 @@ function initClaimTypeControls(cardType, ids = {}) {
   }
 
   const type = normalizeCardType(cardType);
+  console.log('[ftclaims-claims] tipo normalizzato:', type);
 
   // Reset di base
   container.style.display = "none";
@@ -45,7 +48,6 @@ function initClaimTypeControls(cardType, ids = {}) {
 
   switch (type) {
     case "WARRANTY": {
-      // Mostro la combobox
       container.style.display = "block";
 
       const warrantyOptions = [
@@ -61,33 +63,33 @@ function initClaimTypeControls(cardType, ids = {}) {
         select.appendChild(o);
       });
 
+      console.log('[ftclaims-claims] opzioni WARRANTY impostate');
       break;
     }
 
     case "MAINTENANCE":
       fixed.value = "Manutenzione";
+      console.log('[ftclaims-claims] tipo fisso: Manutenzione');
       break;
 
     case "FSA":
       fixed.value = "FSA";
+      console.log('[ftclaims-claims] tipo fisso: FSA');
       break;
 
     case "GOODWILL":
       fixed.value = "Goodwill";
+      console.log('[ftclaims-claims] tipo fisso: Goodwill');
       break;
 
     default:
-      console.error("Tipo di ClaimCard non riconosciuto in initClaimTypeControls:", cardType);
+      console.error("Tipo di ClaimCard non riconosciuto in initClaimTypeControls:", cardType, '=> normalizzato:', type);
   }
 }
 
 /**
  * Restituisce la tipologia di claim da salvare,
  * in base al tipo di ClaimCard.
- *
- * @param {string} cardType - Tipo di ClaimCard ("WARRANTY" | "MAINTENANCE" | "FSA" | "GOODWILL", anche in minuscolo/misto)
- * @param {object} ids - (opzionale) Override degli ID HTML
- * @returns {string|null} tipologia da salvare sul claim
  */
 function getCurrentClaimType(cardType, ids = {}) {
   const containerId = ids.containerId || "claimTypeContainer";
@@ -110,8 +112,10 @@ function getCurrentClaimType(cardType, ids = {}) {
   const type = normalizeCardType(cardType);
 
   if (type === "WARRANTY") {
+    console.log('[ftclaims-claims] getCurrentClaimType (WARRANTY):', select.value);
     return select.value || null;
   } else {
+    console.log('[ftclaims-claims] getCurrentClaimType (fisso):', fixed.value);
     return fixed.value || null;
   }
 }
