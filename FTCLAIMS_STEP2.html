@@ -405,20 +405,18 @@
             <button id="btnAddRepair" class="btn btn-primary btn-small">Aggiungi riparazione</button>
           </div>
 
-          <!-- NUOVO BOX: selezione tipologia claim -->
+          <!-- BOX NUOVO CLAIM: tipologia -->
           <div class="card" style="margin-bottom: 10px;">
             <h3>Nuovo claim</h3>
             <div class="form-group">
               <label for="claimType"><strong>Tipologia claim</strong></label>
-              <!-- Questo container verrà gestito da ftclaims-claims.js -->
               <div id="claimTypeContainer" style="margin-top: 5px; display:none;">
                 <select id="claimType"></select>
               </div>
-              <!-- Per tipi fissi (Maintenance, FSA, Goodwill) -->
               <input type="hidden" id="fixedClaimType">
               <div class="small-text">
                 La lista varia in base alla tipologia della claim card
-                (Warranty, Maintenance, FSA, Goodwill).
+                (WARRANTY, MAINTENANCE, FSA, GOODWILL).
                 Seleziona la tipologia e poi premi "Aggiungi riparazione".
               </div>
             </div>
@@ -426,8 +424,7 @@
 
           <div id="claimsList" class="claims-list"></div>
           <div class="right-panel-placeholder" id="claimsPlaceholder">
-            In questa area verranno gestiti i singoli claim (FSA, Reclamo di Garanzia,
-            Contratto di Manutenzione, ecc.) collegati alla stessa claim card.
+            In questa area verranno gestiti i singoli claim collegati alla stessa claim card.
             <br>
             Per il momento sono visibili solo il codice riparazione, la tipologia (se impostata)
             e il tasto di eliminazione.
@@ -438,7 +435,7 @@
   </div>
 
   <!-- Logica riutilizzabile per la tipologia claim -->
-  <script src="ftclaims-claims.js"></script>
+  <script src="ftclaims-claims.js?v=3"></script>
 
   <!-- Logica specifica della pagina -->
   <script>
@@ -452,8 +449,8 @@
       const db   = firebase.firestore();
 
       let currentUser = null;
-      let currentClaimId = null;        // ID documento ClaimCards
-      let currentClaimCardType = null;  // Tipo claim card ("Warranty", "Maintenance", "FSA", "Goodwill")
+      let currentClaimId = null;          // ID documento ClaimCards
+      let currentClaimCardType = null;    // Tipo claim card normalizzato (WARRANTY, MAINTENANCE, FSA, GOODWILL)
       let isDistributor = false;
 
       const messageArea = document.getElementById('messageArea');
@@ -472,7 +469,7 @@
         messageArea.textContent = '';
       }
 
-      // Recupero ID pratica: prima da sessionStorage (FTCLAIMS), poi eventualmente da URL
+      // Recupero ID pratica dal contesto (sessionStorage o URL)
       function getClaimIdFromContext() {
         let id = null;
 
@@ -541,8 +538,9 @@
 
           const data = snap.data() || {};
 
-          // Tipo claim card
-          currentClaimCardType = data.type || '';
+          // Tipo claim card normalizzato in MAIUSCOLO
+          const rawType = data.type || '';
+          currentClaimCardType = rawType.toString().trim().toUpperCase();
 
           // DATI PRATICA
           document.getElementById('claimCode').value      = data.code || currentClaimId;
@@ -554,7 +552,7 @@
           document.getElementById('openUser').value   = data.openUser || '';
           document.getElementById('openDealer').value = data.openDealer || data.dealerId || '';
 
-          let status = data.status || 'Aperto';
+          const status = data.status || 'Aperto';
           document.getElementById('claimStatus').value = status;
 
           // DATI VEICOLO
@@ -588,7 +586,7 @@
           document.getElementById('vehicleKm').value   = km;
           document.getElementById('engineHours').value = hours;
 
-          // Inizializza la UI della tipologia claim per i singoli claims
+          // Inizializza la UI della tipologia claim per i singoli claim
           if (typeof initClaimTypeControls === 'function') {
             initClaimTypeControls(currentClaimCardType, {
               containerId: 'claimTypeContainer',
@@ -732,8 +730,8 @@
         btn.disabled = true;
 
         try {
-          // Ricavo la tipologia claim scelta in base al tipo di ClaimCard
           let claimTypeValue = null;
+
           if (typeof getCurrentClaimType === 'function') {
             claimTypeValue = getCurrentClaimType(currentClaimCardType, {
               containerId: 'claimTypeContainer',
