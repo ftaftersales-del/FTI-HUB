@@ -91,6 +91,13 @@
       font-size: 15px;
     }
 
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -183,9 +190,6 @@
     }
 
     .right-panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       margin-bottom: 8px;
     }
 
@@ -402,12 +406,15 @@
         <div class="right-panel">
           <div class="right-panel-header">
             <h3>Gestione claim collegati alla claim card</h3>
-            <button id="btnAddRepair" class="btn btn-primary btn-small">Aggiungi riparazione</button>
           </div>
 
-          <!-- BOX NUOVO CLAIM: tipologia -->
+          <!-- BOX NUOVO CLAIM -->
           <div class="card" style="margin-bottom: 10px;">
-            <h3>Nuovo claim</h3>
+            <div class="card-header-row">
+              <h3>Nuovo claim</h3>
+              <button id="btnAddRepair" class="btn btn-primary btn-small">Crea claim</button>
+            </div>
+
             <div class="form-group">
               <label for="claimType"><strong>Tipologia claim</strong></label>
               <div id="claimTypeContainer" style="margin-top: 5px; display:none;">
@@ -417,7 +424,59 @@
               <div class="small-text">
                 La lista varia in base alla tipologia della claim card
                 (WARRANTY, MAINTENANCE, FSA, GOODWILL).
-                Seleziona la tipologia e poi premi "Aggiungi riparazione".
+              </div>
+            </div>
+
+            <!-- Sezione specifica per RSA -->
+            <div id="rsaSection" style="display:none; margin-top: 10px;">
+              <hr>
+              <h4 style="margin: 5px 0 8px; font-size: 13px;">Dati RSA</h4>
+
+              <div class="form-group">
+                <label>
+                  <input type="checkbox" id="rsaOnlyTow">
+                  Solo Traino
+                </label>
+                <div class="small-text">
+                  Se selezionato, si compilano solo "Caso RSA n." e "Traino, costi correlati".
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>DAYSHIFT - Ore</label>
+                  <input type="number" id="rsaDayHours" min="0" step="1">
+                </div>
+                <div class="form-group">
+                  <label>DAYSHIFT - Minuti</label>
+                  <input type="number" id="rsaDayMinutes" min="0" step="1">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>NIGHTSHIFT - Ore</label>
+                  <input type="number" id="rsaNightHours" min="0" step="1">
+                </div>
+                <div class="form-group">
+                  <label>NIGHTSHIFT - Minuti</label>
+                  <input type="number" id="rsaNightMinutes" min="0" step="1">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>PERCORRENZA - Km</label>
+                <input type="number" id="rsaKm" min="0" step="1">
+              </div>
+
+              <div class="form-group">
+                <label for="rsaCaseNumber">Caso RSA n.</label>
+                <input type="text" id="rsaCaseNumber">
+              </div>
+
+              <div class="form-group">
+                <label for="rsaTowCosts">Traino, costi correlati</label>
+                <textarea id="rsaTowCosts" rows="2"></textarea>
               </div>
             </div>
           </div>
@@ -469,7 +528,6 @@
         messageArea.textContent = '';
       }
 
-      // Recupero ID pratica dal contesto (sessionStorage o URL)
       function getClaimIdFromContext() {
         let id = null;
 
@@ -538,11 +596,9 @@
 
           const data = snap.data() || {};
 
-          // Tipo claim card normalizzato in MAIUSCOLO
           const rawType = data.type || '';
           currentClaimCardType = rawType.toString().trim().toUpperCase();
 
-          // DATI PRATICA
           document.getElementById('claimCode').value      = data.code || currentClaimId;
           document.getElementById('claimCardType').value  = currentClaimCardType;
 
@@ -555,7 +611,6 @@
           const status = data.status || 'Aperto';
           document.getElementById('claimStatus').value = status;
 
-          // DATI VEICOLO
           const veh = data.vehicle || {};
           document.getElementById('vin').value      = veh.vin || data.vin || '';
           document.getElementById('customer').value = veh.customer || data.customer || '';
@@ -566,27 +621,23 @@
           document.getElementById('registrationPlate').value = regPlate;
           if (regDate) document.getElementById('registrationDate').value = regDate;
 
-          // COPERTURA
           const coverage = data.coverage || {};
           document.getElementById('coverageType').value = coverage.type || '';
           if (coverage.startDate) document.getElementById('coverageStart').value = coverage.startDate;
           if (coverage.endDate)   document.getElementById('coverageEnd').value   = coverage.endDate;
           document.getElementById('coverageNotes').value = coverage.notes || '';
 
-          // CONTRATTO MANUTENZIONE
           const mc = data.maintenanceContract || {};
           if (mc.startDate) document.getElementById('mcStart').value = mc.startDate;
           if (mc.endDate)   document.getElementById('mcEnd').value   = mc.endDate;
           document.getElementById('mcOptions').value = mc.options || '';
 
-          // KM / ORE
           const km    = data.km ?? '';
           const hours = data.engineHours ?? '';
 
           document.getElementById('vehicleKm').value   = km;
           document.getElementById('engineHours').value = hours;
 
-          // Inizializza la UI della tipologia claim per i singoli claim
           if (typeof initClaimTypeControls === 'function') {
             initClaimTypeControls(currentClaimCardType, {
               containerId: 'claimTypeContainer',
@@ -597,11 +648,53 @@
             console.warn('initClaimTypeControls non è definita. Controlla ftclaims-claims.js.');
           }
 
+          updateClaimTypeUI();
+
           showMessage('Pratica caricata correttamente.', 'success');
 
         } catch (err) {
           console.error(err);
           showMessage('Errore nel caricamento della pratica: ' + err.message, 'error');
+        }
+      }
+
+      function getSelectedClaimTypeForUI() {
+        if (!currentClaimCardType) return null;
+        const upper = currentClaimCardType;
+        if (upper === 'WARRANTY') {
+          const sel = document.getElementById('claimType');
+          return sel ? sel.value : null;
+        } else {
+          const fixed = document.getElementById('fixedClaimType');
+          return fixed ? fixed.value : null;
+        }
+      }
+
+      function updateRSAOnlyTowUI() {
+        const chk = document.getElementById('rsaOnlyTow');
+        const onlyTow = chk && chk.checked;
+
+        const toToggle = ['rsaDayHours','rsaDayMinutes','rsaNightHours','rsaNightMinutes','rsaKm'];
+        toToggle.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.disabled = !!onlyTow;
+            if (onlyTow) el.value = '';
+          }
+        });
+      }
+
+      function updateClaimTypeUI() {
+        const rsaSection = document.getElementById('rsaSection');
+        if (!rsaSection) return;
+
+        const selType = getSelectedClaimTypeForUI();
+        const isRSA = (selType === 'RSA');
+
+        rsaSection.style.display = isRSA ? 'block' : 'none';
+
+        if (isRSA) {
+          updateRSAOnlyTowUI();
         }
       }
 
@@ -741,7 +834,7 @@
           }
 
           if (!claimTypeValue) {
-            showMessage('Seleziona una tipologia di claim valida prima di aggiungere la riparazione.', 'error');
+            showMessage('Seleziona una tipologia di claim valida prima di creare il claim.', 'error');
             btn.disabled = false;
             return;
           }
@@ -761,13 +854,42 @@
             tx.update(cardRef, { lastClaimNumber: nextNum });
 
             const claimRef = cardRef.collection('Claims').doc(code);
-            tx.set(claimRef, {
+
+            const claimData = {
               code: code,
               claimType: claimTypeValue,
               status: 'Aperto',
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
+            };
 
+            if (claimTypeValue === 'RSA') {
+              const chk = document.getElementById('rsaOnlyTow');
+              const onlyTow = !!(chk && chk.checked);
+
+              function readInt(id) {
+                const el = document.getElementById(id);
+                if (!el) return null;
+                const v = el.value.trim();
+                if (v === '') return null;
+                const n = Number(v);
+                return isNaN(n) ? null : n;
+              }
+
+              const rsaData = {
+                onlyTow: onlyTow,
+                dayShiftHours:  onlyTow ? null : readInt('rsaDayHours'),
+                dayShiftMinutes:onlyTow ? null : readInt('rsaDayMinutes'),
+                nightShiftHours:onlyTow ? null : readInt('rsaNightHours'),
+                nightShiftMinutes:onlyTow ? null : readInt('rsaNightMinutes'),
+                km:             onlyTow ? null : readInt('rsaKm'),
+                caseNumber: (document.getElementById('rsaCaseNumber')?.value.trim() || null),
+                towCosts:  (document.getElementById('rsaTowCosts')?.value.trim() || null)
+              };
+
+              claimData.rsa = rsaData;
+            }
+
+            tx.set(claimRef, claimData);
             return code;
           });
 
@@ -817,6 +939,16 @@
       document.getElementById('btnDelete').addEventListener('click', cancelRequest);
       document.getElementById('btnHome').addEventListener('click', goHome);
       document.getElementById('btnAddRepair').addEventListener('click', addRepair);
+
+      // LISTENER CAMBI TIPOLGIA / SOLO TRAINO
+      const claimTypeSelect = document.getElementById('claimType');
+      if (claimTypeSelect) {
+        claimTypeSelect.addEventListener('change', updateClaimTypeUI);
+      }
+      const rsaOnlyTowCheckbox = document.getElementById('rsaOnlyTow');
+      if (rsaOnlyTowCheckbox) {
+        rsaOnlyTowCheckbox.addEventListener('change', updateRSAOnlyTowUI);
+      }
     });
   </script>
 </body>
