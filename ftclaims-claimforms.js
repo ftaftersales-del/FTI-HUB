@@ -14,24 +14,34 @@ function getClaimTypeSpecificContainer() {
 }
 
 /**
- * Funzione principale: genera il form specifico per la tipologia scelta
- * (per ora, RSA; le altre tipologie arriveranno dopo).
+ * Funzione principale: gestisce il form specifico in base alla tipologia scelta.
+ * - Per RSA: se il form non esiste, lo crea.
+ * - Per altre tipologie: NON cancella un form RSA già creato; al massimo,
+ *   se il container è ancora vuoto, mostra solo una nota.
  */
 function renderClaimTypeSpecificForm(claimType) {
   const container = getClaimTypeSpecificContainer();
   if (!container) return;
 
-  container.innerHTML = "";
-
   const type = normalizeClaimType(claimType);
+
   if (type === "RSA") {
-    renderRSAForm(container);
+    // Se non è ancora stato renderizzato nulla, disegniamo il form RSA.
+    if (!container.dataset.hasRSAForm) {
+      container.innerHTML = "";
+      renderRSAForm(container);
+      container.dataset.hasRSAForm = "1";
+    }
   } else {
-    // Per le altre tipologie, per ora nessun campo extra
-    const info = document.createElement("div");
-    info.className = "small-text";
-    info.textContent = "Per questa tipologia non sono ancora previsti campi aggiuntivi.";
-    container.appendChild(info);
+    // Non RSA: se non è mai stato creato niente, mostriamo solo un messaggio.
+    if (!container.dataset.hasRSAForm && !container.innerHTML.trim()) {
+      const info = document.createElement("div");
+      info.className = "small-text";
+      info.textContent = "Per questa tipologia non sono ancora previsti campi aggiuntivi.";
+      container.appendChild(info);
+    }
+    // Se il form RSA è già stato creato, NON lo tocchiamo:
+    // deve rimanere visibile anche se la combo viene cambiata.
   }
 }
 
