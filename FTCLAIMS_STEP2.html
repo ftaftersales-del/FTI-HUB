@@ -217,12 +217,16 @@
     .claim-card {
       border: 1px solid #ddd;
       border-radius: 4px;
-      padding: 6px 8px;
+      padding: 6px 8px 10px;
       margin-bottom: 6px;
       background: #ffffff;
+    }
+
+    .claim-card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      margin-bottom: 6px;
     }
 
     .claim-title {
@@ -235,16 +239,24 @@
       font-size: 11px;
     }
 
-    /* Layout DAYSHIFT / NIGHTSHIFT */
+    .claim-details {
+      border-top: 1px solid #eee;
+      margin-top: 6px;
+      padding-top: 6px;
+      font-size: 12px;
+    }
+
+    /* Layout DAYSHIFT / NIGHTSHIFT nei claim */
     .shift-box {
       border: 1px solid #ccc;
       border-radius: 4px;
       padding: 6px 8px;
       margin-bottom: 6px;
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
       font-size: 12px;
+      margin-right: 10px;
     }
 
     .shift-label {
@@ -458,30 +470,27 @@
                 (WARRANTY, MAINTENANCE, FSA, GOODWILL).
               </div>
             </div>
-
-            <!-- Qui viene inserito il form specifico (RSA, Garanzia, ...) -->
-            <div id="claimTypeSpecificContainer"></div>
+            <!-- Nessun campo specifico qui: i dettagli stanno DENTRO ogni claim -->
           </div>
 
           <div id="claimsList" class="claims-list"></div>
           <div class="right-panel-placeholder" id="claimsPlaceholder">
             In questa area verranno gestiti i singoli claim collegati alla stessa claim card.
             <br>
-            Per il momento sono visibili solo il codice riparazione, la tipologia (se impostata)
-            e il tasto di eliminazione.
+            Ogni claim ha al suo interno i campi specifici (RSA, Garanzia, ecc.).
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Logica combobox tipologia claim -->
+  <!-- Combobox tipologia claim -->
   <script src="ftclaims-claims.js?v=3"></script>
 
-  <!-- Form specifici (RSA, Garanzia, ...) -->
-  <script src="ftclaims-claimforms.js?v=2"></script>
+  <!-- Form dei singoli claim (RSA ecc.) -->
+  <script src="ftclaims-claimforms.js?v=3"></script>
 
-  <!-- Logica della pagina -->
+  <!-- Logica pagina -->
   <script>
     window.addEventListener('load', function () {
       if (typeof firebase === 'undefined') {
@@ -493,8 +502,8 @@
       const db   = firebase.firestore();
 
       let currentUser = null;
-      let currentClaimId = null;          // ID documento ClaimCards
-      let currentClaimCardType = null;    // Tipo claim card (WARRANTY, MAINTENANCE, FSA, GOODWILL)
+      let currentClaimId = null;
+      let currentClaimCardType = null;
       let isDistributor = false;
 
       const messageArea = document.getElementById('messageArea');
@@ -634,32 +643,11 @@
             console.warn('initClaimTypeControls non è definita. Controlla ftclaims-claims.js.');
           }
 
-          updateClaimTypeUI();
-
           showMessage('Pratica caricata correttamente.', 'success');
 
         } catch (err) {
           console.error(err);
           showMessage('Errore nel caricamento della pratica: ' + err.message, 'error');
-        }
-      }
-
-      function getSelectedClaimTypeForUI() {
-        if (!currentClaimCardType) return null;
-        const upper = currentClaimCardType;
-        if (upper === 'WARRANTY') {
-          const sel = document.getElementById('claimType');
-          return sel ? sel.value : null;
-        } else {
-          const fixed = document.getElementById('fixedClaimType');
-          return fixed ? fixed.value : null;
-        }
-      }
-
-      function updateClaimTypeUI() {
-        const selectedType = getSelectedClaimTypeForUI();
-        if (typeof renderClaimTypeSpecificForm === 'function') {
-          renderClaimTypeSpecificForm(selectedType);
         }
       }
 
@@ -690,22 +678,38 @@
             const code = data.code || docSnap.id;
             const type = data.claimType || '';
 
-            const div = document.createElement('div');
-            div.className = 'claim-card';
+            const card = document.createElement('div');
+            card.className = 'claim-card';
+
+            const header = document.createElement('div');
+            header.className = 'claim-card-header';
 
             const title = document.createElement('div');
             title.className = 'claim-title';
             title.textContent = 'Riparazione ' + code + (type ? ' (' + type + ')' : '');
 
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-danger btn-delete-claim';
-            btn.textContent = 'Elimina riparazione';
-            btn.addEventListener('click', () => deleteRepair(code));
+            const btnDelete = document.createElement('button');
+            btnDelete.className = 'btn btn-danger btn-delete-claim';
+            btnDelete.textContent = 'Elimina riparazione';
+            btnDelete.addEventListener('click', () => deleteRepair(code));
 
-            div.appendChild(title);
-            div.appendChild(btn);
+            header.appendChild(title);
+            header.appendChild(btnDelete);
 
-            list.appendChild(div);
+            const details = document.createElement('div');
+            details.className = 'claim-details';
+
+            card.appendChild(header);
+            card.appendChild(details);
+            list.appendChild(card);
+
+            // Dettagli specifici del claim (RSA, Garanzia, ...)
+            if (typeof renderClaimDetails === 'function') {
+              renderClaimDetails(type, details, data, {
+                claimCardId: currentClaimId,
+                claimCode: code
+              });
+            }
           });
 
         } catch (err) {
@@ -790,7 +794,6 @@
         try {
           let claimTypeValue = null;
 
-          // Tipo del NUOVO claim (combo / fixed)
           if (typeof getCurrentClaimType === 'function') {
             claimTypeValue = getCurrentClaimType(currentClaimCardType, {
               containerId: 'claimTypeContainer',
@@ -828,20 +831,9 @@
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            // Aggiunge i dati specifici del tipo (es. rsa: {...})
-            if (typeof collectClaimExtraDataForSave === 'function') {
-              const extra = collectClaimExtraDataForSave(claimTypeValue) || {};
-              Object.assign(claimData, extra);
-            }
-
             tx.set(claimRef, claimData);
             return code;
           });
-
-          // Gestione allegati (per ora solo RSA)
-          if (typeof handleClaimAttachmentsAfterCreate === 'function') {
-            await handleClaimAttachmentsAfterCreate(claimTypeValue, currentClaimId, newCode);
-          }
 
           showMessage('Riparazione ' + newCode + ' (' + claimTypeValue + ') creata.', 'success');
           await loadClaims();
@@ -889,12 +881,6 @@
       document.getElementById('btnDelete').addEventListener('click', cancelRequest);
       document.getElementById('btnHome').addEventListener('click', goHome);
       document.getElementById('btnAddRepair').addEventListener('click', addRepair);
-
-      // Cambio tipologia = cambio modulo di creazione
-      const claimTypeSelect = document.getElementById('claimType');
-      if (claimTypeSelect) {
-        claimTypeSelect.addEventListener('change', updateClaimTypeUI);
-      }
     });
   </script>
 </body>
