@@ -14,7 +14,7 @@
     body {
       font-family: Arial, sans-serif;
       background: #f5f5f5;
-      margin: 0; /* niente bordo bianco del browser */
+      margin: 0;
     }
 
     .container {
@@ -425,7 +425,7 @@
       const db   = firebase.firestore();
 
       let currentUser = null;
-      let currentClaimId = null;
+      let currentClaimId = null;   // codice pratica / ID documento ClaimCards
       let isDistributor = false;
 
       const messageArea = document.getElementById('messageArea');
@@ -444,9 +444,36 @@
         messageArea.textContent = '';
       }
 
-      function getQueryParam(name) {
-        const params = new URLSearchParams(window.location.search);
-        return params.get(name);
+      // Recupero ID pratica: prima da sessionStorage (FTCLAIMS), poi eventualmente da URL
+      function getClaimIdFromContext() {
+        let id = null;
+
+        // 1) valore salvato esplicitamente
+        const fromSS = sessionStorage.getItem('ftclaims_claimCode');
+        if (fromSS) {
+          id = fromSS;
+        } else {
+          // 2) header oggetto
+          const headerStr = sessionStorage.getItem('currentClaimStep1');
+          if (headerStr) {
+            try {
+              const header = JSON.parse(headerStr);
+              if (header && header.claimId) {
+                id = header.claimId;
+              }
+            } catch (e) {
+              console.warn('Impossibile leggere currentClaimStep1:', e);
+            }
+          }
+        }
+
+        // 3) eventuale fallback da querystring (?id=...)
+        if (!id) {
+          const params = new URLSearchParams(window.location.search);
+          id = params.get('id');
+        }
+
+        return id;
       }
 
       async function loadUserInfo(user) {
@@ -471,10 +498,10 @@
 
       async function loadClaimCard() {
         clearMessage();
-        currentClaimId = getQueryParam('id');
+        currentClaimId = getClaimIdFromContext();
 
         if (!currentClaimId) {
-          showMessage('Errore: nessuna pratica specificata (parametro "id" mancante).', 'error');
+          showMessage('Errore: nessuna pratica selezionata.', 'error');
           return;
         }
 
@@ -483,49 +510,52 @@
           const snap = await ref.get();
 
           if (!snap.exists) {
-            showMessage('Pratica non trovata.', 'error');
+            showMessage('La pratica specificata non è stata trovata in banca dati.', 'error');
             return;
           }
 
           const data = snap.data() || {};
 
-          document.getElementById('claimCode').value  = data.code || '';
+          // DATI PRATICA
+          document.getElementById('claimCode').value  = data.code || currentClaimId;
           document.getElementById('claimType').value  = data.type || '';
 
           if (data.openDate)  document.getElementById('openDate').value  = data.openDate;
           if (data.orderDate) document.getElementById('orderDate').value = data.orderDate;
 
-          document.getElementById('openUser').value   = data.openUserName || '';
-          document.getElementById('openDealer').value = data.openDealerId || data.dealerId || '';
+          document.getElementById('openUser').value   = data.openUser || '';
+          document.getElementById('openDealer').value = data.openDealer || data.dealerId || '';
 
           let status = data.status || 'Aperto';
           document.getElementById('claimStatus').value = status;
-          if (!data.status) {
-            await ref.update({ status: status });
-          }
 
-          document.getElementById('vin').value      = data.vin || data.vehicleVin || '';
-          document.getElementById('customer').value = data.customer || data.customerName || '';
+          // DATI VEICOLO
+          const veh = data.vehicle || {};
+          document.getElementById('vin').value      = veh.vin || data.vin || '';
+          document.getElementById('customer').value = veh.customer || data.customer || '';
 
-          const regPlate = data.registrationPlate || data.plateNumber || '';
-          const regDate  = data.registrationDate   || data.plateDate   || '';
+          const regPlate = veh.registrationPlate || data.registrationPlate || data.plateNumber || '';
+          const regDate  = veh.registrationDate  || data.registrationDate   || data.plateDate   || '';
 
           document.getElementById('registrationPlate').value = regPlate;
           if (regDate) document.getElementById('registrationDate').value = regDate;
 
+          // COPERTURA
           const coverage = data.coverage || {};
           document.getElementById('coverageType').value = coverage.type || '';
           if (coverage.startDate) document.getElementById('coverageStart').value = coverage.startDate;
           if (coverage.endDate)   document.getElementById('coverageEnd').value   = coverage.endDate;
           document.getElementById('coverageNotes').value = coverage.notes || '';
 
+          // CONTRATTO MANUTENZIONE
           const mc = data.maintenanceContract || {};
           if (mc.startDate) document.getElementById('mcStart').value = mc.startDate;
           if (mc.endDate)   document.getElementById('mcEnd').value   = mc.endDate;
           document.getElementById('mcOptions').value = mc.options || '';
 
+          // KM / ORE
           const km    = data.vehicleKm   ?? data.kmVehicle    ?? data.km    ?? '';
-          const hours = data.engineHours ?? data.vehicleHours ?? data.hours ?? '';
+          const hours = data.engineHours ?? data.vehicleHours ?? data.engine_hours ?? data.hours ?? '';
 
           if (km !== undefined && km !== null) {
             document.getElementById('vehicleKm').value = km;
