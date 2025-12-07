@@ -111,7 +111,8 @@
     input[type="text"],
     input[type="date"],
     input[type="number"],
-    textarea {
+    textarea,
+    select {
       width: 100%;
       padding: 5px 7px;
       border: 1px solid #ccc;
@@ -260,8 +261,8 @@
               <input type="text" id="claimCode" readonly>
             </div>
             <div class="form-group">
-              <label for="claimType">Tipologia</label>
-              <input type="text" id="claimType" readonly>
+              <label for="claimCardType">Tipologia</label>
+              <input type="text" id="claimCardType" readonly>
             </div>
           </div>
 
@@ -403,17 +404,43 @@
             <h3>Gestione claim collegati alla claim card</h3>
             <button id="btnAddRepair" class="btn btn-primary btn-small">Aggiungi riparazione</button>
           </div>
+
+          <!-- NUOVO BOX: selezione tipologia claim -->
+          <div class="card" style="margin-bottom: 10px;">
+            <h3>Nuovo claim</h3>
+            <div class="form-group">
+              <label for="claimType"><strong>Tipologia claim</strong></label>
+              <!-- Questo container verrà gestito da ftclaims-claims.js -->
+              <div id="claimTypeContainer" style="margin-top: 5px; display:none;">
+                <select id="claimType"></select>
+              </div>
+              <!-- Per tipi fissi (Maintenance, FSA, Goodwill) -->
+              <input type="hidden" id="fixedClaimType">
+              <div class="small-text">
+                La lista varia in base alla tipologia della claim card
+                (Warranty, Maintenance, FSA, Goodwill).
+                Seleziona la tipologia e poi premi "Aggiungi riparazione".
+              </div>
+            </div>
+          </div>
+
           <div id="claimsList" class="claims-list"></div>
           <div class="right-panel-placeholder" id="claimsPlaceholder">
             In questa area verranno gestiti i singoli claim (FSA, Reclamo di Garanzia,
             Contratto di Manutenzione, ecc.) collegati alla stessa claim card.
-            <br>Per il momento sono visibili solo il codice riparazione e il tasto di eliminazione.
+            <br>
+            Per il momento sono visibili solo il codice riparazione, la tipologia (se impostata)
+            e il tasto di eliminazione.
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Logica riutilizzabile per la tipologia claim -->
+  <script src="ftclaims-claims.js"></script>
+
+  <!-- Logica specifica della pagina -->
   <script>
     window.addEventListener('load', function () {
       if (typeof firebase === 'undefined') {
@@ -425,7 +452,8 @@
       const db   = firebase.firestore();
 
       let currentUser = null;
-      let currentClaimId = null;   // codice pratica / ID documento ClaimCards
+      let currentClaimId = null;        // ID documento ClaimCards
+      let currentClaimCardType = null;  // Tipo claim card ("Warranty", "Maintenance", "FSA", "Goodwill")
       let isDistributor = false;
 
       const messageArea = document.getElementById('messageArea');
@@ -513,9 +541,12 @@
 
           const data = snap.data() || {};
 
+          // Tipo claim card
+          currentClaimCardType = data.type || '';
+
           // DATI PRATICA
-          document.getElementById('claimCode').value  = data.code || currentClaimId;
-          document.getElementById('claimType').value  = data.type || '';
+          document.getElementById('claimCode').value      = data.code || currentClaimId;
+          document.getElementById('claimCardType').value  = currentClaimCardType;
 
           if (data.openDate)  document.getElementById('openDate').value  = data.openDate;
           if (data.orderDate) document.getElementById('orderDate').value = data.orderDate;
@@ -550,12 +581,23 @@
           if (mc.endDate)   document.getElementById('mcEnd').value   = mc.endDate;
           document.getElementById('mcOptions').value = mc.options || '';
 
-          // KM / ORE (solo campi coerenti con STEP1)
+          // KM / ORE
           const km    = data.km ?? '';
           const hours = data.engineHours ?? '';
 
           document.getElementById('vehicleKm').value   = km;
           document.getElementById('engineHours').value = hours;
+
+          // Inizializza la UI della tipologia claim per i singoli claims
+          if (typeof initClaimTypeControls === 'function') {
+            initClaimTypeControls(currentClaimCardType, {
+              containerId: 'claimTypeContainer',
+              selectId: 'claimType',
+              fixedId: 'fixedClaimType'
+            });
+          } else {
+            console.warn('initClaimTypeControls non è definita. Controlla ftclaims-claims.js.');
+          }
 
           showMessage('Pratica caricata correttamente.', 'success');
 
@@ -590,13 +632,14 @@
           snap.forEach(docSnap => {
             const data = docSnap.data() || {};
             const code = data.code || docSnap.id;
+            const type = data.claimType || '';
 
             const div = document.createElement('div');
             div.className = 'claim-card';
 
             const title = document.createElement('div');
             title.className = 'claim-title';
-            title.textContent = 'Riparazione ' + code;
+            title.textContent = 'Riparazione ' + code + (type ? ' (' + type + ')' : '');
 
             const btn = document.createElement('button');
             btn.className = 'btn btn-danger btn-delete-claim';
@@ -689,6 +732,22 @@
         btn.disabled = true;
 
         try {
+          // Ricavo la tipologia claim scelta in base al tipo di ClaimCard
+          let claimTypeValue = null;
+          if (typeof getCurrentClaimType === 'function') {
+            claimTypeValue = getCurrentClaimType(currentClaimCardType, {
+              containerId: 'claimTypeContainer',
+              selectId: 'claimType',
+              fixedId: 'fixedClaimType'
+            });
+          }
+
+          if (!claimTypeValue) {
+            showMessage('Seleziona una tipologia di claim valida prima di aggiungere la riparazione.', 'error');
+            btn.disabled = false;
+            return;
+          }
+
           const cardRef = db.collection('ClaimCards').doc(currentClaimId);
 
           const newCode = await db.runTransaction(async (tx) => {
@@ -706,13 +765,15 @@
             const claimRef = cardRef.collection('Claims').doc(code);
             tx.set(claimRef, {
               code: code,
+              claimType: claimTypeValue,
+              status: 'Aperto',
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
 
             return code;
           });
 
-          showMessage('Riparazione ' + newCode + ' creata.', 'success');
+          showMessage('Riparazione ' + newCode + ' (' + claimTypeValue + ') creata.', 'success');
           await loadClaims();
         } catch (err) {
           console.error(err);
