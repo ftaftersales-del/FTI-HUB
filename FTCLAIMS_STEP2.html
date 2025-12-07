@@ -18,17 +18,17 @@
     }
 
     .container {
-      max-width: 1400px;          /* usa più larghezza schermo */
+      max-width: 1400px;
       margin: 0 auto;
       background: #ffffff;
-      padding: 20px 25px 30px;
+      padding: 20px 25px 25px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
     h2 {
       margin-top: 0;
-      margin-bottom: 10px;
+      margin-bottom: 5px;
     }
 
     .subtitle {
@@ -39,10 +39,12 @@
 
     .alert {
       padding: 10px 15px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       border-radius: 4px;
       font-size: 14px;
+      display: none;
     }
+
     .alert-info {
       background-color: #e8f4ff;
       border: 1px solid #bcdcff;
@@ -59,38 +61,50 @@
       color: #247a3a;
     }
 
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-gap: 20px;
+    /* Layout principale: colonna sinistra stretta, destra ampia */
+    .main-layout {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+    }
+
+    .left-column {
+      flex: 0 0 420px;
+      max-width: 420px;
+    }
+
+    .right-column {
+      flex: 1;
+      min-width: 0;
     }
 
     .card {
       border: 1px solid #ddd;
       border-radius: 6px;
-      padding: 15px 15px 10px;
+      padding: 12px 12px 8px;
       background: #fafafa;
+      margin-bottom: 12px;
     }
 
     .card h3 {
       margin-top: 0;
-      margin-bottom: 10px;
-      font-size: 16px;
+      margin-bottom: 8px;
+      font-size: 15px;
     }
 
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-column-gap: 15px;
+      grid-column-gap: 10px;
     }
 
     .form-group {
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
 
     label {
       display: block;
-      font-size: 12px;
+      font-size: 11px;
       margin-bottom: 3px;
       color: #555;
     }
@@ -100,10 +114,10 @@
     input[type="number"],
     textarea {
       width: 100%;
-      padding: 6px 8px;
+      padding: 5px 7px;
       border: 1px solid #ccc;
       border-radius: 4px;
-      font-size: 13px;
+      font-size: 12px;
       box-sizing: border-box;
       background-color: #fff;
     }
@@ -117,22 +131,27 @@
 
     textarea {
       resize: vertical;
-      min-height: 60px;
+      min-height: 50px;
+    }
+
+    .small-text {
+      font-size: 11px;
+      color: #777;
     }
 
     .actions {
-      margin-top: 20px;
+      margin-top: 15px;
       display: flex;
       justify-content: space-between;
       gap: 10px;
     }
 
     .btn {
-      padding: 8px 18px;
+      padding: 7px 16px;
       border-radius: 4px;
       border: none;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 13px;
     }
 
     .btn-primary {
@@ -155,17 +174,35 @@
       color: #fff;
     }
 
-    .small-text {
-      font-size: 12px;
+    /* Pannello destra (per i singoli claim) */
+    .right-panel {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fbfbfb;
+      padding: 12px;
+      min-height: 400px;
+    }
+
+    .right-panel h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .right-panel-placeholder {
+      font-size: 13px;
       color: #777;
+      margin-top: 8px;
     }
 
     @media (max-width: 992px) {
-      .grid {
-        grid-template-columns: 1fr;
+      .main-layout {
+        flex-direction: column;
       }
-      .form-row {
-        grid-template-columns: 1fr;
+
+      .left-column {
+        max-width: 100%;
+        flex: 1;
       }
     }
   </style>
@@ -175,173 +212,179 @@
     <h2>Dettaglio Claim Card</h2>
     <p class="subtitle">Visualizza e gestisci i dati della pratica.</p>
 
-    <div id="messageArea" class="alert alert-info" style="display:none;"></div>
+    <div id="messageArea" class="alert alert-info"></div>
 
-    <!-- Sezione principale in alto, usa tutta la larghezza -->
-    <div class="grid">
-      <!-- DATI PRATICA -->
-      <div class="card">
-        <h3>Dati pratica</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="claimCode">Codice pratica</label>
-            <input type="text" id="claimCode" readonly>
-          </div>
-          <div class="form-group">
-            <label for="claimType">Tipologia</label>
-            <input type="text" id="claimType" readonly>
-          </div>
-        </div>
+    <div class="main-layout">
+      <!-- COLONNA SINISTRA: dati sintetici della pratica -->
+      <div class="left-column">
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="openDate">Data apertura</label>
-            <!-- MAI modificabile -->
-            <input type="date" id="openDate" readonly>
+        <!-- Dati pratica -->
+        <div class="card">
+          <h3>Dati pratica</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="claimCode">Codice pratica</label>
+              <input type="text" id="claimCode" readonly>
+            </div>
+            <div class="form-group">
+              <label for="claimType">Tipologia</label>
+              <input type="text" id="claimType" readonly>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="orderDate">Data ordine di lavoro</label>
-            <input type="date" id="orderDate" readonly>
-          </div>
-        </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="openUser">Nome operatore apertura</label>
-            <input type="text" id="openUser" readonly>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="openDate">Data apertura</label>
+              <!-- MAI modificabile -->
+              <input type="date" id="openDate" readonly>
+            </div>
+            <div class="form-group">
+              <label for="orderDate">Data ordine di lavoro</label>
+              <input type="date" id="orderDate" readonly>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="openDealer">Dealer apertura</label>
-            <input type="text" id="openDealer" readonly>
-          </div>
-        </div>
 
-        <div class="form-row">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="openUser">Nome operatore apertura</label>
+              <input type="text" id="openUser" readonly>
+            </div>
+            <div class="form-group">
+              <label for="openDealer">Dealer apertura</label>
+              <input type="text" id="openDealer" readonly>
+            </div>
+          </div>
+
           <div class="form-group">
             <label for="claimStatus">Stato pratica</label>
-            <!-- Stato non modificabile dall’utente -->
+            <!-- Stato non modificabile -->
             <input type="text" id="claimStatus" readonly>
             <div class="small-text">
               Stati possibili: Aperto, Inviato, Sospeso, In Valutazione, Concluso, Chiuso.
             </div>
           </div>
-          <div class="form-group"></div>
         </div>
+
+        <!-- Dati veicolo -->
+        <div class="card">
+          <h3>Dati veicolo</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="vin">VIN</label>
+              <input type="text" id="vin" readonly>
+            </div>
+            <div class="form-group">
+              <label for="customer">Customer</label>
+              <input type="text" id="customer" readonly>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="registrationPlate">Registration Plate</label>
+              <!-- MODIFICABILE -->
+              <input type="text" id="registrationPlate">
+            </div>
+            <div class="form-group">
+              <label for="registrationDate">Registration Date</label>
+              <!-- MODIFICABILE -->
+              <input type="date" id="registrationDate">
+            </div>
+          </div>
+        </div>
+
+        <!-- Copertura garanzia -->
+        <div class="card">
+          <h3>Copertura garanzia alla data dell'ordine di lavoro</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="coverageType">Tipo copertura</label>
+              <input type="text" id="coverageType" readonly>
+            </div>
+            <div class="form-group">
+              <label for="coverageStart">Data inizio</label>
+              <input type="date" id="coverageStart" readonly>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="coverageEnd">Data fine</label>
+              <input type="date" id="coverageEnd" readonly>
+            </div>
+            <div class="form-group"></div>
+          </div>
+
+          <!-- Note copertura: solo distributore -->
+          <div class="form-group" id="coverageNotesRow">
+            <label for="coverageNotes">Note copertura (visibili solo al distributore)</label>
+            <textarea id="coverageNotes" disabled></textarea>
+          </div>
+        </div>
+
+        <!-- Contratto manutenzione -->
+        <div class="card">
+          <h3>Contratto di manutenzione (se presente)</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="mcStart">Data inizio</label>
+              <input type="date" id="mcStart" readonly>
+            </div>
+            <div class="form-group">
+              <label for="mcEnd">Data fine</label>
+              <input type="date" id="mcEnd" readonly>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="mcOptions">Opzioni presenti</label>
+            <textarea id="mcOptions" readonly></textarea>
+          </div>
+        </div>
+
+        <!-- KM / Ore -->
+        <div class="card">
+          <h3>Chilometraggio / ore motore</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="vehicleKm">KM veicolo</label>
+              <!-- MODIFICABILE -->
+              <input type="number" id="vehicleKm" min="0" step="1">
+            </div>
+            <div class="form-group">
+              <label for="engineHours">Ore motore</label>
+              <!-- MODIFICABILE -->
+              <input type="number" id="engineHours" min="0" step="1">
+            </div>
+          </div>
+        </div>
+
+        <!-- Azioni -->
+        <div class="actions">
+          <button id="btnBack" class="btn btn-secondary">Torna alla lista</button>
+          <div>
+            <button id="btnSave" class="btn btn-primary">Salva modifiche</button>
+            <button id="btnDelete" class="btn btn-danger">Cancella richiesta</button>
+          </div>
+        </div>
+
       </div>
 
-      <!-- DATI VEICOLO -->
-      <div class="card">
-        <h3>Dati veicolo</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="vin">VIN</label>
-            <input type="text" id="vin" readonly>
-          </div>
-          <div class="form-group">
-            <label for="customer">Customer</label>
-            <input type="text" id="customer" readonly>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="registrationPlate">Registration Plate</label>
-            <!-- MODIFICABILE -->
-            <input type="text" id="registrationPlate">
-          </div>
-          <div class="form-group">
-            <label for="registrationDate">Registration Date</label>
-            <!-- MODIFICABILE -->
-            <input type="date" id="registrationDate">
+      <!-- COLONNA DESTRA: area (libera) per i singoli claim -->
+      <div class="right-column">
+        <div class="right-panel">
+          <h3>Gestione claim collegati alla claim card</h3>
+          <div class="right-panel-placeholder">
+            In questa area verranno gestiti i singoli claim (FSA, Reclamo di Garanzia, Contratto di
+            Manutenzione, ecc.) collegati alla stessa claim card.
+            <br>Per il momento l'area è lasciata libera per lo sviluppo dei passi successivi.
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Altre sezioni, sempre nella parte alta -->
-    <div class="grid" style="margin-top:20px;">
-      <!-- COPERTURA GARANZIA -->
-      <div class="card">
-        <h3>Copertura garanzia alla data dell'ordine di lavoro</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="coverageType">Tipo copertura</label>
-            <input type="text" id="coverageType" readonly>
-          </div>
-          <div class="form-group">
-            <label for="coverageStart">Data inizio</label>
-            <input type="date" id="coverageStart" readonly>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="coverageEnd">Data fine</label>
-            <input type="date" id="coverageEnd" readonly>
-          </div>
-          <div class="form-group"></div>
-        </div>
-
-        <!-- Note copertura: solo DISTRIBUTORE -->
-        <div class="form-group" id="coverageNotesRow">
-          <label for="coverageNotes">Note copertura (visibili solo al distributore)</label>
-          <textarea id="coverageNotes" disabled></textarea>
-        </div>
-      </div>
-
-      <!-- CONTRATTO DI MANUTENZIONE -->
-      <div class="card">
-        <h3>Contratto di manutenzione (se presente)</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="mcStart">Data inizio</label>
-            <input type="date" id="mcStart" readonly>
-          </div>
-          <div class="form-group">
-            <label for="mcEnd">Data fine</label>
-            <input type="date" id="mcEnd" readonly>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="mcOptions">Opzioni presenti</label>
-          <textarea id="mcOptions" readonly></textarea>
-        </div>
-      </div>
-    </div>
-
-    <!-- KM / ORE -->
-    <div class="card" style="margin-top:20px;">
-      <h3>Chilometraggio / ore motore</h3>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="vehicleKm">KM veicolo</label>
-          <!-- MODIFICABILE -->
-          <input type="number" id="vehicleKm" min="0" step="1">
-        </div>
-        <div class="form-group">
-          <label for="engineHours">Ore motore</label>
-          <!-- MODIFICABILE -->
-          <input type="number" id="engineHours" min="0" step="1">
-        </div>
-      </div>
-    </div>
-
-    <!-- Azioni -->
-    <div class="actions">
-      <div>
-        <button id="btnBack" class="btn btn-secondary">Torna alla lista</button>
-      </div>
-      <div>
-        <button id="btnSave" class="btn btn-primary">Salva modifiche</button>
-        <button id="btnDelete" class="btn btn-danger">Cancella richiesta</button>
-      </div>
-    </div>
-
   </div>
 
   <script>
-    // Assumiamo che firebase-config.js abbia già inizializzato l'app
     const auth = firebase.auth();
     const db   = firebase.firestore();
 
@@ -376,7 +419,6 @@
         if (doc.exists) {
           const data = doc.data() || {};
           const role = data.role || '';
-          // Considero "Distributor" nel ruolo per distinguere distributore
           if (typeof role === 'string' && role.toLowerCase().includes('distributor')) {
             isDistributor = true;
           }
@@ -385,7 +427,6 @@
         console.error('Errore caricamento utente', err);
       }
 
-      // Gestione visibilità note copertura
       const notesRow = document.getElementById('coverageNotesRow');
       if (!isDistributor && notesRow) {
         notesRow.style.display = 'none';
@@ -412,15 +453,13 @@
 
         const data = snap.data() || {};
 
-        // --- DATI PRATICA ---
+        // DATI PRATICA
         document.getElementById('claimCode').value  = data.code || '';
         document.getElementById('claimType').value  = data.type || '';
 
-        // openDate: MAI modificabile → solo value
         if (data.openDate) {
           document.getElementById('openDate').value = data.openDate;
         }
-
         if (data.orderDate) {
           document.getElementById('orderDate').value = data.orderDate;
         }
@@ -428,37 +467,26 @@
         document.getElementById('openUser').value   = data.openUserName || '';
         document.getElementById('openDealer').value = data.openDealerId || data.dealerId || '';
 
-        // Stato pratica: se non presente, imposto e salvo "Aperto"
+        // Stato pratica: default "Aperto" se mancante
         let status = data.status || 'Aperto';
         document.getElementById('claimStatus').value = status;
-
         if (!data.status) {
-          // aggiorno 1 sola volta se mancava
           await ref.update({ status: status });
         }
 
-        // --- DATI VEICOLO ---
-        document.getElementById('vin').value       = data.vin || data.vehicleVin || '';
-        document.getElementById('customer').value  = data.customer || data.customerName || '';
+        // DATI VEICOLO
+        document.getElementById('vin').value      = data.vin || data.vehicleVin || '';
+        document.getElementById('customer').value = data.customer || data.customerName || '';
 
-        // registration plate / date (modificabili)
-        const regPlate =
-          data.registrationPlate ||
-          data.plateNumber ||
-          '';
-        const regDate =
-          data.registrationDate ||
-          data.plateDate ||
-          '';
+        const regPlate = data.registrationPlate || data.plateNumber || '';
+        const regDate  = data.registrationDate || data.plateDate || '';
 
         document.getElementById('registrationPlate').value = regPlate;
-        if (regDate) {
-          document.getElementById('registrationDate').value = regDate;
-        }
+        if (regDate) document.getElementById('registrationDate').value = regDate;
 
-        // --- COPERTURA GARANZIA ---
+        // COPERTURA
         const coverage = data.coverage || {};
-        document.getElementById('coverageType').value  = coverage.type || '';
+        document.getElementById('coverageType').value = coverage.type || '';
         if (coverage.startDate) {
           document.getElementById('coverageStart').value = coverage.startDate;
         }
@@ -467,27 +495,15 @@
         }
         document.getElementById('coverageNotes').value = coverage.notes || '';
 
-        // --- CONTRATTO MANUTENZIONE ---
+        // CONTRATTO MANUTENZIONE
         const mc = data.maintenanceContract || {};
-        if (mc.startDate) {
-          document.getElementById('mcStart').value = mc.startDate;
-        }
-        if (mc.endDate) {
-          document.getElementById('mcEnd').value = mc.endDate;
-        }
+        if (mc.startDate) document.getElementById('mcStart').value = mc.startDate;
+        if (mc.endDate)   document.getElementById('mcEnd').value   = mc.endDate;
         document.getElementById('mcOptions').value = mc.options || '';
 
-        // --- KM / ORE (modificabili) ---
-        const km =
-          data.vehicleKm ??
-          data.kmVehicle ??
-          data.km ??
-          '';
-        const hours =
-          data.engineHours ??
-          data.vehicleHours ??
-          data.hours ??
-          '';
+        // KM / ORE
+        const km = data.vehicleKm ?? data.kmVehicle ?? data.km ?? '';
+        const hours = data.engineHours ?? data.vehicleHours ?? data.hours ?? '';
 
         if (km !== undefined && km !== null) {
           document.getElementById('vehicleKm').value = km;
@@ -518,15 +534,15 @@
         const regPlate = document.getElementById('registrationPlate').value.trim();
         const regDate  = document.getElementById('registrationDate').value || null;
 
-        const kmRaw    = document.getElementById('vehicleKm').value;
-        const hRaw     = document.getElementById('engineHours').value;
+        const kmRaw = document.getElementById('vehicleKm').value;
+        const hRaw  = document.getElementById('engineHours').value;
 
         const kmVal = kmRaw === '' ? null : Number(kmRaw);
         const hVal  = hRaw === '' ? null : Number(hRaw);
 
         const updates = {
           registrationPlate: regPlate || null,
-          plateNumber: regPlate || null,      // mantengo sia il vecchio che il nuovo nome
+          plateNumber: regPlate || null,
           registrationDate: regDate,
           plateDate: regDate,
           vehicleKm: kmVal,
@@ -552,12 +568,9 @@
         return;
       }
 
-      if (!confirm('Sei sicuro di voler cancellare questa richiesta?')) {
-        return;
-      }
+      if (!confirm('Sei sicuro di voler cancellare questa richiesta?')) return;
 
       try {
-        // Se preferisci solo marcare come "Chiuso", sostituisci delete() con update({status: 'Chiuso'})
         await db.collection('ClaimCards').doc(currentClaimId).delete();
         alert('Pratica cancellata.');
         window.location.href = 'FTCLAIMS.html';
@@ -571,10 +584,10 @@
       window.location.href = 'FTCLAIMS.html';
     }
 
-    // --- INIT ---
+    // INIT
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        window.location.href = 'FTHUBAS.html'; // oppure pagina di login
+        window.location.href = 'FTHUBAS.html';
         return;
       }
       currentUser = user;
@@ -582,7 +595,6 @@
       await loadClaimCard();
     });
 
-    // Event listeners pulsanti
     document.getElementById('btnSave').addEventListener('click', saveChanges);
     document.getElementById('btnDelete').addEventListener('click', deleteClaim);
     document.getElementById('btnBack').addEventListener('click', goBackToList);
