@@ -235,6 +235,37 @@
       font-size: 11px;
     }
 
+    /* Layout DAYSHIFT / NIGHTSHIFT */
+    .shift-box {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px 8px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+    }
+
+    .shift-label {
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .time-input {
+      width: 40px;
+      text-align: center;
+    }
+
+    .time-separator {
+      font-weight: bold;
+      margin: 0 4px;
+    }
+
+    .currency-input {
+      text-align: right;
+    }
+
     @media (max-width: 992px) {
       .main-layout {
         flex-direction: column;
@@ -428,7 +459,7 @@
               </div>
             </div>
 
-            <!-- QUI verrà iniettato via JS il form specifico (RSA, Garanzia, ...) -->
+            <!-- Qui viene inserito il form specifico (RSA, Garanzia, ...) -->
             <div id="claimTypeSpecificContainer"></div>
           </div>
 
@@ -444,13 +475,13 @@
     </div>
   </div>
 
-  <!-- Logica per la combobox tipologia claim -->
+  <!-- Logica combobox tipologia claim -->
   <script src="ftclaims-claims.js?v=3"></script>
 
-  <!-- Logica dei form specifici (RSA, Garanzia, ...) -->
-  <script src="ftclaims-claimforms.js?v=1"></script>
+  <!-- Form specifici (RSA, Garanzia, ...) -->
+  <script src="ftclaims-claimforms.js?v=2"></script>
 
-  <!-- Logica specifica della pagina -->
+  <!-- Logica della pagina -->
   <script>
     window.addEventListener('load', function () {
       if (typeof firebase === 'undefined') {
@@ -463,7 +494,7 @@
 
       let currentUser = null;
       let currentClaimId = null;          // ID documento ClaimCards
-      let currentClaimCardType = null;    // Tipo claim card normalizzato (WARRANTY, MAINTENANCE, FSA, GOODWILL)
+      let currentClaimCardType = null;    // Tipo claim card (WARRANTY, MAINTENANCE, FSA, GOODWILL)
       let isDistributor = false;
 
       const messageArea = document.getElementById('messageArea');
@@ -592,6 +623,7 @@
           document.getElementById('vehicleKm').value   = km;
           document.getElementById('engineHours').value = hours;
 
+          // Inizializza combo tipologia claim in base al tipo di claim card
           if (typeof initClaimTypeControls === 'function') {
             initClaimTypeControls(currentClaimCardType, {
               containerId: 'claimTypeContainer',
@@ -758,6 +790,7 @@
         try {
           let claimTypeValue = null;
 
+          // Tipo del NUOVO claim (combo / fixed)
           if (typeof getCurrentClaimType === 'function') {
             claimTypeValue = getCurrentClaimType(currentClaimCardType, {
               containerId: 'claimTypeContainer',
@@ -795,6 +828,7 @@
               createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
+            // Aggiunge i dati specifici del tipo (es. rsa: {...})
             if (typeof collectClaimExtraDataForSave === 'function') {
               const extra = collectClaimExtraDataForSave(claimTypeValue) || {};
               Object.assign(claimData, extra);
@@ -804,6 +838,7 @@
             return code;
           });
 
+          // Gestione allegati (per ora solo RSA)
           if (typeof handleClaimAttachmentsAfterCreate === 'function') {
             await handleClaimAttachmentsAfterCreate(claimTypeValue, currentClaimId, newCode);
           }
@@ -855,7 +890,7 @@
       document.getElementById('btnHome').addEventListener('click', goHome);
       document.getElementById('btnAddRepair').addEventListener('click', addRepair);
 
-      // Quando cambia la tipologia (RSA / Garanzia / ecc.) rigeneriamo il form specifico
+      // Cambio tipologia = cambio modulo di creazione
       const claimTypeSelect = document.getElementById('claimType');
       if (claimTypeSelect) {
         claimTypeSelect.addEventListener('change', updateClaimTypeUI);
