@@ -448,12 +448,10 @@
       function getClaimIdFromContext() {
         let id = null;
 
-        // 1) valore salvato esplicitamente
         const fromSS = sessionStorage.getItem('ftclaims_claimCode');
         if (fromSS) {
           id = fromSS;
         } else {
-          // 2) header oggetto
           const headerStr = sessionStorage.getItem('currentClaimStep1');
           if (headerStr) {
             try {
@@ -467,7 +465,6 @@
           }
         }
 
-        // 3) eventuale fallback da querystring (?id=...)
         if (!id) {
           const params = new URLSearchParams(window.location.search);
           id = params.get('id');
@@ -534,8 +531,8 @@
           document.getElementById('vin').value      = veh.vin || data.vin || '';
           document.getElementById('customer').value = veh.customer || data.customer || '';
 
-          const regPlate = veh.registrationPlate || data.registrationPlate || data.plateNumber || '';
-          const regDate  = veh.registrationDate  || data.registrationDate   || data.plateDate   || '';
+          const regPlate = veh.registrationPlate || data.registrationPlate || '';
+          const regDate  = veh.registrationDate  || data.registrationDate   || '';
 
           document.getElementById('registrationPlate').value = regPlate;
           if (regDate) document.getElementById('registrationDate').value = regDate;
@@ -553,16 +550,12 @@
           if (mc.endDate)   document.getElementById('mcEnd').value   = mc.endDate;
           document.getElementById('mcOptions').value = mc.options || '';
 
-          // KM / ORE
-          const km    = data.vehicleKm   ?? data.kmVehicle    ?? data.km    ?? '';
-          const hours = data.engineHours ?? data.vehicleHours ?? data.engine_hours ?? data.hours ?? '';
+          // KM / ORE (solo campi coerenti con STEP1)
+          const km    = data.km ?? '';
+          const hours = data.engineHours ?? '';
 
-          if (km !== undefined && km !== null) {
-            document.getElementById('vehicleKm').value = km;
-          }
-          if (hours !== undefined && hours !== null) {
-            document.getElementById('engineHours').value = hours;
-          }
+          document.getElementById('vehicleKm').value   = km;
+          document.getElementById('engineHours').value = hours;
 
           showMessage('Pratica caricata correttamente.', 'success');
 
@@ -644,12 +637,8 @@
 
           const updates = {
             registrationPlate: regPlate || null,
-            plateNumber:       regPlate || null,
             registrationDate:  regDate,
-            plateDate:         regDate,
-            vehicleKm:   kmVal,
-            kmVehicle:   kmVal,
-            vehicleHours: hVal,
+            km: kmVal,
             engineHours: hVal
           };
 
