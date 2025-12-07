@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>FTCLAIMS - Dettaglio Claim Card (Step 2)</title>
+  <title>FTCLAIMS - Dettaglio Claim Card</title>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -14,97 +14,105 @@
     body {
       font-family: Arial, sans-serif;
       background: #f5f5f5;
-      margin: 0;
-      padding: 0;
+      margin: 20px;
     }
-
-    .top-bar {
-      background: #003366;
-      color: #fff;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .top-bar h1 { margin: 0; font-size: 20px; }
-    .top-bar .top-actions button {
-      margin-left: 10px;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .home-btn   { background: #ffffff; color: #003366; font-weight: bold; }
-    .logout-btn { background: #cc0000; color: #ffffff; }
 
     .container {
-      max-width: 1000px;
-      margin: 20px auto;
+      max-width: 1400px;          /* usa più larghezza schermo */
+      margin: 0 auto;
       background: #ffffff;
       padding: 20px 25px 30px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
-    .error-box {
-      padding: 10px;
-      border-radius: 6px;
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-      margin-bottom: 15px;
-      display: none;
+    h2 {
+      margin-top: 0;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      margin: 0 0 20px;
+      color: #666;
       font-size: 14px;
     }
 
-    .info-box {
-      padding: 8px;
-      border-radius: 6px;
-      background: #e6f2ff;
-      color: #003366;
-      border: 1px solid #b3d1ff;
-      margin-bottom: 10px;
-      font-size: 13px;
-    }
-
-    .section {
+    .alert {
+      padding: 10px 15px;
       margin-bottom: 20px;
-      padding: 15px;
-      border-radius: 8px;
-      background: #fafafa;
-      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .alert-info {
+      background-color: #e8f4ff;
+      border: 1px solid #bcdcff;
+      color: #24527a;
+    }
+    .alert-error {
+      background-color: #ffe8e8;
+      border: 1px solid #ffbcbc;
+      color: #7a2424;
+    }
+    .alert-success {
+      background-color: #e8ffec;
+      border: 1px solid #bcffca;
+      color: #247a3a;
     }
 
-    .section-title {
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #003366;
-    }
-
-    .form-grid-2 {
+    .grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px 20px;
+      grid-template-columns: 1fr 1fr;
+      grid-gap: 20px;
+    }
+
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px 15px 10px;
+      background: #fafafa;
+    }
+
+    .card h3 {
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-column-gap: 15px;
     }
 
     .form-group {
-      display: flex;
-      flex-direction: column;
+      margin-bottom: 10px;
     }
-    .form-group label {
-      font-size: 13px;
+
+    label {
+      display: block;
+      font-size: 12px;
       margin-bottom: 3px;
+      color: #555;
     }
-    .form-group input,
-    .form-group textarea {
+
+    input[type="text"],
+    input[type="date"],
+    input[type="number"],
+    textarea {
+      width: 100%;
       padding: 6px 8px;
-      border-radius: 4px;
       border: 1px solid #ccc;
+      border-radius: 4px;
       font-size: 13px;
+      box-sizing: border-box;
+      background-color: #fff;
     }
-    .form-group input[readonly],
-    .form-group textarea[readonly] {
-      background: #f0f0f0;
+
+    input[readonly],
+    input:disabled,
+    textarea:disabled {
+      background-color: #f1f1f1;
+      color: #555;
     }
 
     textarea {
@@ -112,378 +120,472 @@
       min-height: 60px;
     }
 
-    .status-label {
-      font-size: 13px;
-      font-style: italic;
-      color: #666;
-      margin-top: 5px;
-    }
-
-    .buttons-row {
-      margin-top: 15px;
+    .actions {
+      margin-top: 20px;
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       gap: 10px;
     }
 
     .btn {
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: 4px;
       border: none;
       cursor: pointer;
       font-size: 14px;
     }
-    .btn-cancel {
-      background: #cc0000;
+
+    .btn-primary {
+      background-color: #007bff;
       color: #fff;
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    .btn-danger {
+      background-color: #dc3545;
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      color: #fff;
+    }
+
+    .small-text {
+      font-size: 12px;
+      color: #777;
+    }
+
+    @media (max-width: 992px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .form-row {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
-
-  <div class="top-bar">
-    <h1>FTCLAIMS - Dettaglio Claim Card (Step 2)</h1>
-    <div class="top-actions">
-      <button class="home-btn" id="btn-home">Home</button>
-      <button class="logout-btn" id="btn-logout">Logout</button>
-    </div>
-  </div>
-
   <div class="container">
-    <div id="error-box" class="error-box"></div>
-    <div id="info-box" class="info-box">
-      Caricamento dati pratica in corso...
-    </div>
+    <h2>Dettaglio Claim Card</h2>
+    <p class="subtitle">Visualizza e gestisci i dati della pratica.</p>
 
-    <!-- DATI PRATICA -->
-    <div class="section">
-      <div class="section-title">Dati pratica</div>
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label for="claim-code">Codice pratica</label>
-          <input type="text" id="claim-code" readonly>
-        </div>
-        <div class="form-group">
-          <label for="claim-type">Tipologia</label>
-          <input type="text" id="claim-type" readonly>
-        </div>
-        <div class="form-group">
-          <label for="open-date">Data apertura</label>
-          <input type="date" id="open-date">
-        </div>
-        <div class="form-group">
-          <label for="order-date">Data ordine di lavoro</label>
-          <input type="text" id="order-date" readonly>
-        </div>
-        <div class="form-group">
-          <label for="order-number">Numero ordine di lavoro</label>
-          <input type="text" id="order-number" readonly>
-        </div>
-        <div class="form-group">
-          <label for="open-dealer">Dealer apertura</label>
-          <input type="text" id="open-dealer" readonly>
-        </div>
-        <div class="form-group">
-          <label for="open-user">Utente apertura</label>
-          <input type="text" id="open-user" readonly>
-        </div>
-      </div>
-      <div class="status-label">
-        Stato pratica: <span id="claim-status-value">Caricamento...</span>
-      </div>
-    </div>
+    <div id="messageArea" class="alert alert-info" style="display:none;"></div>
 
-    <!-- DATI VEICOLO -->
-    <div class="section">
-      <div class="section-title">Dati veicolo</div>
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label for="vehicle-vin">VIN</label>
-          <input type="text" id="vehicle-vin" readonly>
+    <!-- Sezione principale in alto, usa tutta la larghezza -->
+    <div class="grid">
+      <!-- DATI PRATICA -->
+      <div class="card">
+        <h3>Dati pratica</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="claimCode">Codice pratica</label>
+            <input type="text" id="claimCode" readonly>
+          </div>
+          <div class="form-group">
+            <label for="claimType">Tipologia</label>
+            <input type="text" id="claimType" readonly>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="vehicle-customer">Customer</label>
-          <input type="text" id="vehicle-customer" readonly>
-        </div>
-        <div class="form-group">
-          <label for="vehicle-plate">Registration Plate</label>
-          <input type="text" id="vehicle-plate" readonly>
-        </div>
-        <div class="form-group">
-          <label for="vehicle-reg-date">Registration Date</label>
-          <input type="text" id="vehicle-reg-date" readonly>
-        </div>
-      </div>
-    </div>
 
-    <!-- COPERTURA -->
-    <div class="section">
-      <div class="section-title">Copertura garanzia alla data dell'ordine di lavoro</div>
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label for="coverage-type">Tipo copertura</label>
-          <input type="text" id="coverage-type" readonly>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="openDate">Data apertura</label>
+            <!-- MAI modificabile -->
+            <input type="date" id="openDate" readonly>
+          </div>
+          <div class="form-group">
+            <label for="orderDate">Data ordine di lavoro</label>
+            <input type="date" id="orderDate" readonly>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="coverage-start">Data inizio</label>
-          <input type="text" id="coverage-start" readonly>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="openUser">Nome operatore apertura</label>
+            <input type="text" id="openUser" readonly>
+          </div>
+          <div class="form-group">
+            <label for="openDealer">Dealer apertura</label>
+            <input type="text" id="openDealer" readonly>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="coverage-end">Data fine</label>
-          <input type="text" id="coverage-end" readonly>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="claimStatus">Stato pratica</label>
+            <!-- Stato non modificabile dall’utente -->
+            <input type="text" id="claimStatus" readonly>
+            <div class="small-text">
+              Stati possibili: Aperto, Inviato, Sospeso, In Valutazione, Concluso, Chiuso.
+            </div>
+          </div>
+          <div class="form-group"></div>
         </div>
       </div>
-      <div class="form-group" style="margin-top:10px;">
-        <label for="coverage-notes">Note copertura</label>
-        <textarea id="coverage-notes" readonly></textarea>
+
+      <!-- DATI VEICOLO -->
+      <div class="card">
+        <h3>Dati veicolo</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="vin">VIN</label>
+            <input type="text" id="vin" readonly>
+          </div>
+          <div class="form-group">
+            <label for="customer">Customer</label>
+            <input type="text" id="customer" readonly>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="registrationPlate">Registration Plate</label>
+            <!-- MODIFICABILE -->
+            <input type="text" id="registrationPlate">
+          </div>
+          <div class="form-group">
+            <label for="registrationDate">Registration Date</label>
+            <!-- MODIFICABILE -->
+            <input type="date" id="registrationDate">
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- CONTRATTO MANUTENZIONE -->
-    <div class="section">
-      <div class="section-title">Contratto di manutenzione (se presente)</div>
-      <div class="form-grid-2">
-        <div class="form-group">
-          <label for="sc-start">Data inizio</label>
-          <input type="text" id="sc-start" readonly>
+    <!-- Altre sezioni, sempre nella parte alta -->
+    <div class="grid" style="margin-top:20px;">
+      <!-- COPERTURA GARANZIA -->
+      <div class="card">
+        <h3>Copertura garanzia alla data dell'ordine di lavoro</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="coverageType">Tipo copertura</label>
+            <input type="text" id="coverageType" readonly>
+          </div>
+          <div class="form-group">
+            <label for="coverageStart">Data inizio</label>
+            <input type="date" id="coverageStart" readonly>
+          </div>
         </div>
-        <div class="form-group">
-          <label for="sc-end">Data fine</label>
-          <input type="text" id="sc-end" readonly>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="coverageEnd">Data fine</label>
+            <input type="date" id="coverageEnd" readonly>
+          </div>
+          <div class="form-group"></div>
+        </div>
+
+        <!-- Note copertura: solo DISTRIBUTORE -->
+        <div class="form-group" id="coverageNotesRow">
+          <label for="coverageNotes">Note copertura (visibili solo al distributore)</label>
+          <textarea id="coverageNotes" disabled></textarea>
         </div>
       </div>
-      <div class="form-group" style="margin-top:10px;">
-        <label for="sc-options">Opzioni presenti</label>
-        <textarea id="sc-options" readonly></textarea>
+
+      <!-- CONTRATTO DI MANUTENZIONE -->
+      <div class="card">
+        <h3>Contratto di manutenzione (se presente)</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="mcStart">Data inizio</label>
+            <input type="date" id="mcStart" readonly>
+          </div>
+          <div class="form-group">
+            <label for="mcEnd">Data fine</label>
+            <input type="date" id="mcEnd" readonly>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="mcOptions">Opzioni presenti</label>
+          <textarea id="mcOptions" readonly></textarea>
+        </div>
       </div>
     </div>
 
     <!-- KM / ORE -->
-    <div class="section">
-      <div class="section-title">Chilometraggio / ore motore</div>
-      <div class="form-grid-2">
+    <div class="card" style="margin-top:20px;">
+      <h3>Chilometraggio / ore motore</h3>
+      <div class="form-row">
         <div class="form-group">
-          <label for="km-field">KM veicolo</label>
-          <input type="text" id="km-field" readonly>
+          <label for="vehicleKm">KM veicolo</label>
+          <!-- MODIFICABILE -->
+          <input type="number" id="vehicleKm" min="0" step="1">
         </div>
         <div class="form-group">
-          <label for="eh-field">Ore motore</label>
-          <input type="text" id="eh-field" readonly>
+          <label for="engineHours">Ore motore</label>
+          <!-- MODIFICABILE -->
+          <input type="number" id="engineHours" min="0" step="1">
         </div>
       </div>
     </div>
 
-    <!-- AZIONI -->
-    <div class="buttons-row">
-      <button class="btn btn-cancel" id="btn-cancel-claim">Cancella richiesta</button>
+    <!-- Azioni -->
+    <div class="actions">
+      <div>
+        <button id="btnBack" class="btn btn-secondary">Torna alla lista</button>
+      </div>
+      <div>
+        <button id="btnSave" class="btn btn-primary">Salva modifiche</button>
+        <button id="btnDelete" class="btn btn-danger">Cancella richiesta</button>
+      </div>
     </div>
+
   </div>
 
-<script>
-  console.log("FTCLAIMS Step2 – script avviato");
+  <script>
+    // Assumiamo che firebase-config.js abbia già inizializzato l'app
+    const auth = firebase.auth();
+    const db   = firebase.firestore();
 
-  const appAuth = window.auth || firebase.auth();
-  const appDb   = window.db   || firebase.firestore();
-  window.auth = appAuth;
-  window.db   = appDb;
+    let currentUser = null;
+    let currentClaimId = null;
+    let isDistributor = false;
 
-  let currentUser = null;
-  let claimDocRef = null;
-  let currentClaimId = null;
+    function showMessage(text, type) {
+      const area = document.getElementById('messageArea');
+      area.textContent = text;
+      area.className = 'alert';
+      if (type === 'error') area.classList.add('alert-error');
+      else if (type === 'success') area.classList.add('alert-success');
+      else area.classList.add('alert-info');
+      area.style.display = 'block';
+    }
 
-  function showError(msg) {
-    const box = document.getElementById('error-box');
-    box.textContent = msg;
-    box.style.display = 'block';
-    console.error("[FTCLAIMS_STEP2] ERRORE:", msg);
-  }
+    function clearMessage() {
+      const area = document.getElementById('messageArea');
+      area.style.display = 'none';
+      area.textContent = '';
+    }
 
-  function setInfo(msg) {
-    const box = document.getElementById('info-box');
-    box.textContent = msg;
-    console.log("[FTCLAIMS_STEP2] INFO:", msg);
-  }
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
 
-  function loadClaimIdFromSession() {
-    const rawHeader = sessionStorage.getItem('currentClaimStep1');
-    const codeFromSimple = sessionStorage.getItem('ftclaims_claimCode');
-    if (rawHeader) {
+    async function loadUserInfo(user) {
       try {
-        const header = JSON.parse(rawHeader);
-        if (header && header.claimId) {
-          console.log("ClaimId da currentClaimStep1:", header.claimId);
-          return header.claimId;
+        const doc = await db.collection('Users').doc(user.uid).get();
+        if (doc.exists) {
+          const data = doc.data() || {};
+          const role = data.role || '';
+          // Considero "Distributor" nel ruolo per distinguere distributore
+          if (typeof role === 'string' && role.toLowerCase().includes('distributor')) {
+            isDistributor = true;
+          }
         }
-      } catch (e) {
-        console.warn("Errore parse currentClaimStep1:", e);
+      } catch (err) {
+        console.error('Errore caricamento utente', err);
+      }
+
+      // Gestione visibilità note copertura
+      const notesRow = document.getElementById('coverageNotesRow');
+      if (!isDistributor && notesRow) {
+        notesRow.style.display = 'none';
       }
     }
-    console.log("ClaimId da ftclaims_claimCode:", codeFromSimple);
-    return codeFromSimple || null;
-  }
 
-  function fillForm(data) {
-    document.getElementById('claim-code').value   = data.code || currentClaimId || '';
-    document.getElementById('claim-type').value   = data.type || '';
-    document.getElementById('open-date').value    = data.openDate || '';
-    document.getElementById('order-date').value   = data.orderDate || '';
-    document.getElementById('order-number').value = data.orderNumber || '';
-    document.getElementById('open-dealer').value  = data.openDealer || '';
-    document.getElementById('open-user').value    = data.openUser || '';
-    document.getElementById('claim-status-value').textContent = data.status || '';
+    async function loadClaimCard() {
+      clearMessage();
+      currentClaimId = getQueryParam('id');
 
-    const v = data.vehicle || {};
-    document.getElementById('vehicle-vin').value      = v.vin || '';
-    document.getElementById('vehicle-customer').value = v.customer || '';
-    document.getElementById('vehicle-plate').value    = v.registrationPlate || '';
-    document.getElementById('vehicle-reg-date').value = v.registrationDate || '';
-
-    const c = data.coverage || {};
-    document.getElementById('coverage-type').value  = c.type || '';
-    document.getElementById('coverage-start').value = c.startDate || '';
-    document.getElementById('coverage-end').value   = c.endDate || '';
-    document.getElementById('coverage-notes').value = c.notes || '';
-
-    const sc = data.maintenanceContract || {};
-    document.getElementById('sc-start').value   = sc.startDate || '';
-    document.getElementById('sc-end').value     = sc.endDate || '';
-    document.getElementById('sc-options').value = sc.options || '';
-
-    document.getElementById('km-field').value = (data.km != null) ? data.km : '';
-    document.getElementById('eh-field').value = (data.engineHours != null) ? data.engineHours : '';
-  }
-
-  function attachOpenDateListener() {
-    if (!claimDocRef) return;
-    const openDateInput = document.getElementById('open-date');
-    openDateInput.onchange = null;
-
-    openDateInput.addEventListener('change', async () => {
-      try {
-        await claimDocRef.update({ openDate: openDateInput.value || null });
-        console.log("OpenDate aggiornata:", openDateInput.value);
-      } catch (e) {
-        console.error("Errore aggiornando openDate:", e);
-        alert("Errore durante il salvataggio della data di apertura.");
-      }
-    });
-  }
-
-  async function loadClaimData(claimId) {
-    setInfo("Carico pratica da Firestore...");
-    // 1) nuovo metodo: ID = code
-    try {
-      const ref = appDb.collection('ClaimCards').doc(claimId);
-      const snap = await ref.get();
-      if (snap.exists) {
-        claimDocRef = ref;
-        console.log("Pratica trovata con docId =", claimId);
-        return snap.data();
-      }
-    } catch (e) {
-      console.warn("Errore get docId:", e);
-    }
-
-    // 2) fallback: vecchie pratiche con ID random ma campo code = claimId
-    try {
-      const q = await appDb.collection('ClaimCards')
-        .where('code', '==', claimId)
-        .limit(1)
-        .get();
-      if (!q.empty) {
-        const doc = q.docs[0];
-        claimDocRef = doc.ref;
-        console.log("Pratica trovata tramite code == claimId, docId =", doc.id);
-        return doc.data();
-      }
-    } catch (e) {
-      console.error("Errore query code==claimId:", e);
-      throw e;
-    }
-
-    return null;
-  }
-
-  async function initPage(user) {
-    currentUser = user;
-    const claimId = loadClaimIdFromSession();
-    if (!claimId) {
-      showError("Codice pratica non trovato. Torna alla pagina FTCLAIMS e ripeti la procedura.");
-      setInfo("Impossibile continuare: codice mancante.");
-      return;
-    }
-
-    currentClaimId = claimId;
-    document.getElementById('claim-code').value = claimId;
-
-    try {
-      const data = await loadClaimData(claimId);
-      if (!data) {
-        showError("Nessuna pratica trovata per il codice " + claimId);
-        setInfo("Impossibile continuare: pratica inesistente.");
+      if (!currentClaimId) {
+        showMessage('Errore: nessuna pratica specificata (parametro "id" mancante).', 'error');
         return;
       }
-      fillForm(data);
-      attachOpenDateListener();
-      setInfo("Pratica caricata correttamente.");
-    } catch (e) {
-      console.error(e);
-      showError("Errore durante il caricamento della pratica: " + e.message);
-      setInfo("Si è verificato un errore.");
-    }
-  }
 
-  appAuth.onAuthStateChanged(async (user) => {
-    console.log("onAuthStateChanged FTCLAIMS Step2:", user ? user.uid : "NESSUN UTENTE");
-    if (!user) {
-      window.location.href = "index.html";
-      return;
-    }
-    try {
-      await initPage(user);
-    } catch (e) {
-      console.error(e);
-      showError("Errore inizializzazione pagina: " + e.message);
-    }
-  });
+      try {
+        const ref = db.collection('ClaimCards').doc(currentClaimId);
+        const snap = await ref.get();
 
-  document.getElementById('btn-home').addEventListener('click', () => {
-    window.location.href = 'FTHUBAS.html';
-  });
+        if (!snap.exists) {
+          showMessage('Pratica non trovata.', 'error');
+          return;
+        }
 
-  document.getElementById('btn-logout').addEventListener('click', async () => {
-    try {
-      await appAuth.signOut();
-      window.location.href = 'FTLOGIN.html';
-    } catch (e) {
-      console.error(e);
-      alert('Errore durante il logout.');
-    }
-  });
+        const data = snap.data() || {};
 
-  document.getElementById('btn-cancel-claim').addEventListener('click', async () => {
-    if (!claimDocRef || !currentClaimId) {
-      alert('Nessuna richiesta da cancellare (pratica non caricata).');
-      return;
-    }
-    if (!confirm('Sei sicuro di voler cancellare definitivamente questa richiesta?')) {
-      return;
-    }
-    try {
-      await claimDocRef.update({
-        status: 'Cancellata',
-        cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
-        cancelledByUid: currentUser ? currentUser.uid : null
-      });
-      document.getElementById('claim-status-value').textContent =
-        'Cancellata (definitivamente chiusa)';
-      alert('Richiesta cancellata con successo.');
-    } catch (e) {
-      console.error(e);
-      alert('Errore durante la cancellazione della richiesta.');
-    }
-  });
-</script>
+        // --- DATI PRATICA ---
+        document.getElementById('claimCode').value  = data.code || '';
+        document.getElementById('claimType').value  = data.type || '';
 
+        // openDate: MAI modificabile → solo value
+        if (data.openDate) {
+          document.getElementById('openDate').value = data.openDate;
+        }
+
+        if (data.orderDate) {
+          document.getElementById('orderDate').value = data.orderDate;
+        }
+
+        document.getElementById('openUser').value   = data.openUserName || '';
+        document.getElementById('openDealer').value = data.openDealerId || data.dealerId || '';
+
+        // Stato pratica: se non presente, imposto e salvo "Aperto"
+        let status = data.status || 'Aperto';
+        document.getElementById('claimStatus').value = status;
+
+        if (!data.status) {
+          // aggiorno 1 sola volta se mancava
+          await ref.update({ status: status });
+        }
+
+        // --- DATI VEICOLO ---
+        document.getElementById('vin').value       = data.vin || data.vehicleVin || '';
+        document.getElementById('customer').value  = data.customer || data.customerName || '';
+
+        // registration plate / date (modificabili)
+        const regPlate =
+          data.registrationPlate ||
+          data.plateNumber ||
+          '';
+        const regDate =
+          data.registrationDate ||
+          data.plateDate ||
+          '';
+
+        document.getElementById('registrationPlate').value = regPlate;
+        if (regDate) {
+          document.getElementById('registrationDate').value = regDate;
+        }
+
+        // --- COPERTURA GARANZIA ---
+        const coverage = data.coverage || {};
+        document.getElementById('coverageType').value  = coverage.type || '';
+        if (coverage.startDate) {
+          document.getElementById('coverageStart').value = coverage.startDate;
+        }
+        if (coverage.endDate) {
+          document.getElementById('coverageEnd').value = coverage.endDate;
+        }
+        document.getElementById('coverageNotes').value = coverage.notes || '';
+
+        // --- CONTRATTO MANUTENZIONE ---
+        const mc = data.maintenanceContract || {};
+        if (mc.startDate) {
+          document.getElementById('mcStart').value = mc.startDate;
+        }
+        if (mc.endDate) {
+          document.getElementById('mcEnd').value = mc.endDate;
+        }
+        document.getElementById('mcOptions').value = mc.options || '';
+
+        // --- KM / ORE (modificabili) ---
+        const km =
+          data.vehicleKm ??
+          data.kmVehicle ??
+          data.km ??
+          '';
+        const hours =
+          data.engineHours ??
+          data.vehicleHours ??
+          data.hours ??
+          '';
+
+        if (km !== undefined && km !== null) {
+          document.getElementById('vehicleKm').value = km;
+        }
+        if (hours !== undefined && hours !== null) {
+          document.getElementById('engineHours').value = hours;
+        }
+
+        showMessage('Pratica caricata correttamente.', 'success');
+
+      } catch (err) {
+        console.error(err);
+        showMessage('Errore nel caricamento della pratica: ' + err.message, 'error');
+      }
+    }
+
+    async function saveChanges() {
+      clearMessage();
+      if (!currentClaimId) {
+        showMessage('Impossibile salvare: nessuna pratica caricata.', 'error');
+        return;
+      }
+
+      const btnSave = document.getElementById('btnSave');
+      btnSave.disabled = true;
+
+      try {
+        const regPlate = document.getElementById('registrationPlate').value.trim();
+        const regDate  = document.getElementById('registrationDate').value || null;
+
+        const kmRaw    = document.getElementById('vehicleKm').value;
+        const hRaw     = document.getElementById('engineHours').value;
+
+        const kmVal = kmRaw === '' ? null : Number(kmRaw);
+        const hVal  = hRaw === '' ? null : Number(hRaw);
+
+        const updates = {
+          registrationPlate: regPlate || null,
+          plateNumber: regPlate || null,      // mantengo sia il vecchio che il nuovo nome
+          registrationDate: regDate,
+          plateDate: regDate,
+          vehicleKm: kmVal,
+          kmVehicle: kmVal,
+          vehicleHours: hVal,
+          engineHours: hVal
+        };
+
+        await db.collection('ClaimCards').doc(currentClaimId).update(updates);
+        showMessage('Modifiche salvate correttamente.', 'success');
+      } catch (err) {
+        console.error(err);
+        showMessage('Errore durante il salvataggio delle modifiche: ' + err.message, 'error');
+      } finally {
+        btnSave.disabled = false;
+      }
+    }
+
+    async function deleteClaim() {
+      clearMessage();
+      if (!currentClaimId) {
+        showMessage('Impossibile cancellare: nessuna pratica caricata.', 'error');
+        return;
+      }
+
+      if (!confirm('Sei sicuro di voler cancellare questa richiesta?')) {
+        return;
+      }
+
+      try {
+        // Se preferisci solo marcare come "Chiuso", sostituisci delete() con update({status: 'Chiuso'})
+        await db.collection('ClaimCards').doc(currentClaimId).delete();
+        alert('Pratica cancellata.');
+        window.location.href = 'FTCLAIMS.html';
+      } catch (err) {
+        console.error(err);
+        showMessage('Errore durante la cancellazione della pratica: ' + err.message, 'error');
+      }
+    }
+
+    function goBackToList() {
+      window.location.href = 'FTCLAIMS.html';
+    }
+
+    // --- INIT ---
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = 'FTHUBAS.html'; // oppure pagina di login
+        return;
+      }
+      currentUser = user;
+      await loadUserInfo(user);
+      await loadClaimCard();
+    });
+
+    // Event listeners pulsanti
+    document.getElementById('btnSave').addEventListener('click', saveChanges);
+    document.getElementById('btnDelete').addEventListener('click', deleteClaim);
+    document.getElementById('btnBack').addEventListener('click', goBackToList);
+  </script>
 </body>
 </html>
