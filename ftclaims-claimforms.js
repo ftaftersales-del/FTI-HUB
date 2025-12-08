@@ -1,6 +1,7 @@
 // ===============================
 // ftclaims-claimforms.js
 // Dettagli dei singoli claim (RSA, Garanzia, Garanzia Ricambio, ...)
+// + Allegati generici + Note stile chat per ogni claim
 // ===============================
 
 function normalizeClaimType(ct) {
@@ -31,11 +32,16 @@ function renderClaimDetails(claimType, container, claimData, ctx) {
     info.textContent =
       'Per la tipologia "' + type + '" non sono ancora previsti campi aggiuntivi.';
     container.appendChild(info);
+
+    // anche su tipi generici aggiungiamo Allegati + Note
+    addAttachmentsAndNotesSection(container, ctx);
   } else {
     const info = document.createElement("div");
     info.className = "small-text";
     info.textContent = "Tipologia claim non specificata.";
     container.appendChild(info);
+
+    addAttachmentsAndNotesSection(container, ctx);
   }
 }
 
@@ -147,24 +153,24 @@ function renderRSADetails(container, claimData, ctx) {
   container.innerHTML = html;
 
   // Riferimenti agli elementi
-  const dateInput      = container.querySelector("#" + prefix + "date");
-  const onlyTowInput   = container.querySelector("#" + prefix + "onlyTow");
-  const dayHoursInput  = container.querySelector("#" + prefix + "dayHours");
-  const dayMinInput    = container.querySelector("#" + prefix + "dayMinutes");
-  const nightHoursInput= container.querySelector("#" + prefix + "nightHours");
-  const nightMinInput  = container.querySelector("#" + prefix + "nightMinutes");
-  const kmInput        = container.querySelector("#" + prefix + "km");
-  const caseInput      = container.querySelector("#" + prefix + "case");
-  const towCostsInput  = container.querySelector("#" + prefix + "towCosts");
-  const invoicesInput  = container.querySelector("#" + prefix + "invoices");
-  const routeInput     = container.querySelector("#" + prefix + "route");
-  const saveBtn        = container.querySelector("#" + prefix + "saveBtn");
+  const dateInput       = container.querySelector("#" + prefix + "date");
+  const onlyTowInput    = container.querySelector("#" + prefix + "onlyTow");
+  const dayHoursInput   = container.querySelector("#" + prefix + "dayHours");
+  const dayMinInput     = container.querySelector("#" + prefix + "dayMinutes");
+  const nightHoursInput = container.querySelector("#" + prefix + "nightHours");
+  const nightMinInput   = container.querySelector("#" + prefix + "nightMinutes");
+  const kmInput         = container.querySelector("#" + prefix + "km");
+  const caseInput       = container.querySelector("#" + prefix + "case");
+  const towCostsInput   = container.querySelector("#" + prefix + "towCosts");
+  const invoicesInput   = container.querySelector("#" + prefix + "invoices");
+  const routeInput      = container.querySelector("#" + prefix + "route");
+  const saveBtn         = container.querySelector("#" + prefix + "saveBtn");
 
   // Pre-compilazione dai dati esistenti
   if (rsa.date) dateInput.value = rsa.date;
   if (rsa.onlyTow) onlyTowInput.checked = !!rsa.onlyTow;
-  if (rsa.dayShiftHours != null)   dayHoursInput.value = rsa.dayShiftHours;
-  if (rsa.dayShiftMinutes != null) dayMinInput.value   = rsa.dayShiftMinutes;
+  if (rsa.dayShiftHours != null)   dayHoursInput.value  = rsa.dayShiftHours;
+  if (rsa.dayShiftMinutes != null) dayMinInput.value    = rsa.dayShiftMinutes;
   if (rsa.nightShiftHours != null) nightHoursInput.value = rsa.nightShiftHours;
   if (rsa.nightShiftMinutes != null) nightMinInput.value = rsa.nightShiftMinutes;
   if (rsa.km != null) kmInput.value = rsa.km;
@@ -176,9 +182,9 @@ function renderRSADetails(container, claimData, ctx) {
     const dateStr  = dateInput.value || "";
     const isSpecial= isWeekendOrItalianHoliday(dateStr);
 
-    const dayInputs = [dayHoursInput, dayMinInput];
+    const dayInputs   = [dayHoursInput, dayMinInput];
     const nightInputs = [nightHoursInput, nightMinInput];
-    const kmInputs = [kmInput];
+    const kmInputs    = [kmInput];
 
     if (onlyTow) {
       [].concat(dayInputs, nightInputs, kmInputs).forEach(function (el) {
@@ -246,11 +252,11 @@ function renderRSADetails(container, claimData, ctx) {
       const rsaData = {
         date: rsaDate,
         onlyTow: onlyTow,
-        dayShiftHours:   onlyTow ? null : readInt(dayHoursInput),
-        dayShiftMinutes: onlyTow ? null : readInt(dayMinInput),
-        nightShiftHours: onlyTow ? null : readInt(nightHoursInput),
-        nightShiftMinutes: onlyTow ? null : readInt(nightMinInput),
-        km:              onlyTow ? null : readInt(kmInput),
+        dayShiftHours:    onlyTow ? null : readInt(dayHoursInput),
+        dayShiftMinutes:  onlyTow ? null : readInt(dayMinInput),
+        nightShiftHours:  onlyTow ? null : readInt(nightHoursInput),
+        nightShiftMinutes:onlyTow ? null : readInt(nightMinInput),
+        km:               onlyTow ? null : readInt(kmInput),
         caseNumber: (caseInput.value.trim() || null),
         towCostsAmount: readCurrency(towCostsInput)
       };
@@ -304,6 +310,9 @@ function renderRSADetails(container, claimData, ctx) {
       }
     });
   }
+
+  // Allegati generici + Note per questo claim
+  addAttachmentsAndNotesSection(container, ctx);
 }
 
 /* ===============================
@@ -476,7 +485,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
   const saveBtn         = container.querySelector("#" + prefix + "saveBtn");
 
   // Stato locale
-  let causaPartId = gar.causaPart && gar.causaPart.id ? gar.causaPart.id : null;
+  let causaPartId   = gar.causaPart && gar.causaPart.id ? gar.causaPart.id : null;
   let labourRateStd = typeof gar.labourRateStd === "number" ? gar.labourRateStd : null;
 
   // ---------------------------------
@@ -1207,21 +1216,25 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
       }
     });
   }
+
+  // Allegati generici + Note per questo claim
+  addAttachmentsAndNotesSection(container, ctx);
 }
 
 /**
  * Versione standard Garanzia
  */
 function renderGaranziaDetails(container, claimData, ctx) {
-  renderGaranziaDetailsInternal(container, claimData.garanzia || {}, ctx, {
-    isRicambio: false
-  });
+  renderGaranziaDetailsInternal(
+    container,
+    claimData.garanzia || {},
+    ctx,
+    { isRicambio: false }
+  );
 }
 
 /**
  * Versione Garanzia Ricambio
- * (identica alla Garanzia ma con campo aggiuntivo Data Fattura Precedente Lavorazione
- *  e salvataggio nel campo "garanziaRicambio")
  */
 function renderGaranziaRicambioDetails(container, claimData, ctx) {
   renderGaranziaDetailsInternal(
@@ -1230,4 +1243,319 @@ function renderGaranziaRicambioDetails(container, claimData, ctx) {
     ctx,
     { isRicambio: true }
   );
+}
+
+/* ===============================
+   Allegati generici + Note per claim
+=============================== */
+
+function addAttachmentsAndNotesSection(container, ctx) {
+  if (typeof firebase === "undefined" ||
+      !firebase.firestore || !firebase.storage) {
+    return;
+  }
+
+  const db = firebase.firestore();
+  const storage = firebase.storage();
+
+  // ---------- ALLEGATI ----------
+  const attPrefix = "att_" + ctx.claimCode + "_";
+
+  const attSection = document.createElement("div");
+  attSection.className = "form-group";
+  attSection.innerHTML = `
+    <h4 style="margin: 12px 0 4px; font-size: 13px;">Allegati</h4>
+    <div class="small-text">Allegati generici relativi a questo claim.</div>
+    <div style="margin-top:4px; display:flex; gap:4px; align-items:center;">
+      <input type="file" id="${attPrefix}file" multiple>
+      <button type="button" id="${attPrefix}uploadBtn" class="btn btn-small btn-secondary">Carica</button>
+    </div>
+    <div id="${attPrefix}list" class="small-text" style="margin-top:6px;"></div>
+  `;
+  container.appendChild(attSection);
+
+  const attFileInput = attSection.querySelector("#" + attPrefix + "file");
+  const attUploadBtn = attSection.querySelector("#" + attPrefix + "uploadBtn");
+  const attListDiv   = attSection.querySelector("#" + attPrefix + "list");
+
+  const attRefBase = db
+    .collection("ClaimCards")
+    .doc(ctx.claimCardId)
+    .collection("Claims")
+    .doc(ctx.claimCode)
+    .collection("Attachments");
+
+  function renderAttachmentsList(items) {
+    if (!items.length) {
+      attListDiv.textContent = "Nessun allegato presente.";
+      return;
+    }
+    const ul = document.createElement("ul");
+    ul.style.listStyleType = "none";
+    ul.style.paddingLeft = "0";
+
+    items.forEach(function (item) {
+      const li = document.createElement("li");
+      li.style.marginBottom = "4px";
+
+      const link = document.createElement("a");
+      link.href = item.url || "#";
+      link.target = "_blank";
+      link.rel = "noopener";
+      link.textContent = item.name || item.path || "file";
+
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.textContent = "Elimina";
+      delBtn.className = "btn btn-small btn-danger";
+      delBtn.style.marginLeft = "6px";
+
+      delBtn.addEventListener("click", async function () {
+        if (!confirm('Vuoi eliminare l\'allegato "' + (item.name || "") + '"?')) {
+          return;
+        }
+        try {
+          if (item.path) {
+            try {
+              await storage.ref(item.path).delete();
+            } catch (e) {
+              console.warn("Errore cancellazione file Storage:", e);
+            }
+          }
+          await attRefBase.doc(item.id).delete();
+          loadAttachments();
+        } catch (err) {
+          console.error(err);
+          alert("Errore durante l'eliminazione dell'allegato: " + err.message);
+        }
+      });
+
+      li.appendChild(link);
+      li.appendChild(delBtn);
+      ul.appendChild(li);
+    });
+
+    attListDiv.innerHTML = "";
+    attListDiv.appendChild(ul);
+  }
+
+  async function loadAttachments() {
+    try {
+      const snap = await attRefBase.orderBy("createdAt", "asc").get();
+      const items = [];
+      snap.forEach(function (doc) {
+        const d = doc.data() || {};
+        items.push({
+          id: doc.id,
+          name: d.name || "",
+          path: d.path || "",
+          url: d.url || ""
+        });
+      });
+      renderAttachmentsList(items);
+    } catch (err) {
+      console.error(err);
+      attListDiv.textContent = "Errore nel caricamento degli allegati.";
+    }
+  }
+
+  if (attUploadBtn) {
+    attUploadBtn.addEventListener("click", async function () {
+      const files = attFileInput.files;
+      if (!files || !files.length) {
+        alert("Seleziona almeno un file.");
+        return;
+      }
+
+      attUploadBtn.disabled = true;
+      try {
+        const basePath =
+          "ClaimCards/" + ctx.claimCardId + "/Claims/" + ctx.claimCode + "/Attachments/";
+        const userInfo = await getCurrentUserInfo();
+
+        for (let i = 0; i < files.length; i++) {
+          const f = files[i];
+          const path = basePath + Date.now() + "_" + i + "_" + f.name;
+          const ref  = storage.ref(path);
+          await ref.put(f);
+          const url = await ref.getDownloadURL();
+
+          await attRefBase.add({
+            name: f.name,
+            path: path,
+            url: url,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            authorUid: userInfo.uid || null,
+            authorName: userInfo.name || null,
+            authorDealerId: userInfo.dealerId || null
+          });
+        }
+
+        attFileInput.value = "";
+        loadAttachments();
+      } catch (err) {
+        console.error(err);
+        alert("Errore nel caricamento degli allegati: " + err.message);
+      } finally {
+        attUploadBtn.disabled = false;
+      }
+    });
+  }
+
+  loadAttachments();
+
+  // ---------- NOTE ----------
+  const notesPrefix = "note_" + ctx.claimCode + "_";
+
+  const notesSection = document.createElement("div");
+  notesSection.className = "form-group";
+  notesSection.innerHTML = `
+    <h4 style="margin: 12px 0 4px; font-size: 13px;">Note</h4>
+    <div id="${notesPrefix}list"
+         class="small-text"
+         style="max-height:150px; overflow-y:auto; border:1px solid #ddd; background:#ffffff; padding:4px;">
+      Nessuna nota.
+    </div>
+    <div style="margin-top:4px; display:flex; gap:4px;">
+      <textarea id="${notesPrefix}text" rows="2" style="flex:1;" placeholder="Scrivi una nota..."></textarea>
+      <button type="button" id="${notesPrefix}send" class="btn btn-small btn-primary">Invia</button>
+    </div>
+  `;
+  container.appendChild(notesSection);
+
+  const notesListDiv = notesSection.querySelector("#" + notesPrefix + "list");
+  const noteTextArea = notesSection.querySelector("#" + notesPrefix + "text");
+  const noteSendBtn  = notesSection.querySelector("#" + notesPrefix + "send");
+
+  const notesRef = db
+    .collection("ClaimCards")
+    .doc(ctx.claimCardId)
+    .collection("Claims")
+    .doc(ctx.claimCode)
+    .collection("Notes");
+
+  function renderNotesSnapshot(snap) {
+    if (snap.empty) {
+      notesListDiv.textContent = "Nessuna nota.";
+      return;
+    }
+    notesListDiv.innerHTML = "";
+    snap.forEach(function (doc) {
+      const d = doc.data() || {};
+      const line = document.createElement("div");
+      line.style.marginBottom = "6px";
+      line.style.borderBottom = "1px solid #eee";
+      line.style.paddingBottom = "4px";
+
+      const header = document.createElement("div");
+      header.style.fontWeight = "bold";
+
+      let author = d.authorName || "";
+      if (!author && d.authorDealerId) {
+        author = d.authorDealerId;
+      }
+
+      let when = "";
+      if (d.createdAt && d.createdAt.toDate) {
+        const t = d.createdAt.toDate();
+        const dd = String(t.getDate()).padStart(2, "0");
+        const mm = String(t.getMonth() + 1).padStart(2, "0");
+        const yyyy = t.getFullYear();
+        const hh = String(t.getHours()).padStart(2, "0");
+        const mi = String(t.getMinutes()).padStart(2, "0");
+        when = dd + "/" + mm + "/" + yyyy + " " + hh + ":" + mi;
+      }
+
+      header.textContent = author
+        ? author + (when ? " (" + when + ")" : "")
+        : (when || "");
+
+      const body = document.createElement("div");
+      body.textContent = d.text || "";
+
+      line.appendChild(header);
+      line.appendChild(body);
+      notesListDiv.appendChild(line);
+    });
+
+    notesListDiv.scrollTop = notesListDiv.scrollHeight;
+  }
+
+  // Aggiornamento in tempo reale delle note
+  notesRef.orderBy("createdAt", "asc").onSnapshot(
+    function (snap) {
+      renderNotesSnapshot(snap);
+    },
+    function (err) {
+      console.error("Errore onSnapshot Note:", err);
+    }
+  );
+
+  if (noteSendBtn) {
+    noteSendBtn.addEventListener("click", async function () {
+      const txt = (noteTextArea.value || "").trim();
+      if (!txt) return;
+
+      noteSendBtn.disabled = true;
+      try {
+        const userInfo = await getCurrentUserInfo();
+        await notesRef.add({
+          text: txt,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          authorUid: userInfo.uid || null,
+          authorName: userInfo.name || null,
+          authorDealerId: userInfo.dealerId || null
+        });
+        noteTextArea.value = "";
+      } catch (err) {
+        console.error(err);
+        alert("Errore nell'invio della nota: " + err.message);
+      } finally {
+        noteSendBtn.disabled = false;
+      }
+    });
+  }
+}
+
+/**
+ * Recupero info utente corrente (usato per allegati e note)
+ */
+let _ftclaimsUserInfoPromise = null;
+
+function getCurrentUserInfo() {
+  if (typeof firebase === "undefined" ||
+      !firebase.auth || !firebase.firestore) {
+    return Promise.resolve({ uid: null, name: null, dealerId: null });
+  }
+
+  if (!_ftclaimsUserInfoPromise) {
+    _ftclaimsUserInfoPromise = (async function () {
+      const auth = firebase.auth();
+      const user = auth.currentUser;
+      if (!user) {
+        return { uid: null, name: null, dealerId: null };
+      }
+
+      const db = firebase.firestore();
+      let name = user.displayName || null;
+      let dealerId = null;
+
+      try {
+        const snap = await db.collection("Users").doc(user.uid).get();
+        if (snap.exists) {
+          const d = snap.data() || {};
+          dealerId = d.dealerId || d.DealerID || d.dealerID || null;
+          if (!name) {
+            name = d.fullName || d.name || d.displayName || null;
+          }
+        }
+      } catch (err) {
+        console.warn("Errore lettura utente per allegati/note:", err);
+      }
+
+      return { uid: user.uid, name: name, dealerId: dealerId };
+    })();
+  }
+
+  return _ftclaimsUserInfoPromise;
 }
