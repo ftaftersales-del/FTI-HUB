@@ -306,12 +306,15 @@
       margin-bottom: 4px;
     }
 
-    .notes-input-row input[type="text"] {
+    /* textarea multiriga per le note */
+    .notes-input-row textarea {
       flex: 1;
       padding: 4px 6px;
       border-radius: 4px;
       border: 1px solid #ccc;
       font-size: 12px;
+      resize: vertical;
+      min-height: 40px;
     }
 
     .attachments-list {
@@ -335,6 +338,7 @@
       align-items: center;
       border-bottom: 1px solid #f0f0f0;
       padding: 3px 0;
+      gap: 6px;
     }
 
     .attachment-item:last-child {
@@ -352,6 +356,12 @@
     .attachment-meta {
       font-size: 11px;
       color: #666;
+    }
+
+    .attachment-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
     }
 
     /* RSA shift boxes (usate in ftclaims-claimforms.js) */
@@ -917,8 +927,8 @@
             const notesInputRow = document.createElement('div');
             notesInputRow.className = 'notes-input-row';
 
-            const noteInput = document.createElement('input');
-            noteInput.type = 'text';
+            // textarea multiriga per l'inserimento nota
+            const noteInput = document.createElement('textarea');
             noteInput.placeholder = 'Scrivi una nota per questo claim...';
 
             const btnAddNote = document.createElement('button');
@@ -974,12 +984,7 @@
             startClaimAttachmentsListener(code, attachListEl);
 
             btnAddNote.addEventListener('click', () => addClaimNote(code, noteInput));
-            noteInput.addEventListener('keydown', (e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addClaimNote(code, noteInput);
-              }
-            });
+            // niente Enter automatico: dentro la textarea va a capo
 
             btnUpload.addEventListener('click', () => uploadClaimFiles(code, fileInput, btnUpload));
           });
@@ -1219,6 +1224,37 @@
         }
       }
 
+      async function deleteClaimAttachment(claimCode, attachmentId, path) {
+        if (!currentClaimId || !attachmentId) return;
+        if (!confirm('Vuoi eliminare questo allegato?')) return;
+
+        try {
+          // cancello file dallo Storage (se presente)
+          if (typeof firebase.storage !== 'undefined' && path) {
+            try {
+              const storage = firebase.storage();
+              await storage.ref(path).delete();
+            } catch (e) {
+              console.warn('Errore eliminazione file Storage, proseguo con il documento Firestore', e);
+            }
+          }
+
+          // cancello il documento Firestore
+          const docRef = db
+            .collection('ClaimCards')
+            .doc(currentClaimId)
+            .collection('Claims')
+            .doc(claimCode)
+            .collection('Attachments')
+            .doc(attachmentId);
+
+          await docRef.delete();
+        } catch (err) {
+          console.error('Errore eliminazione allegato claim', claimCode, err);
+          alert('Errore durante l\'eliminazione dell\'allegato: ' + err.message);
+        }
+      }
+
       function startClaimAttachmentsListener(claimCode, containerEl) {
         if (!currentClaimId || !containerEl) return;
 
@@ -1250,6 +1286,12 @@
 
               snap.forEach(docSnap => {
                 const d = docSnap.data() || {};
+
+                // escludo fatture precedenti (gestite nel blocco dedicato)
+                if (d.category === 'prevRepairInvoice') {
+                  return;
+                }
+
                 const row = document.createElement('div');
                 row.className = 'attachment-item';
 
@@ -1269,7 +1311,22 @@
 
                 infoDiv.appendChild(link);
                 infoDiv.appendChild(meta);
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'attachment-actions';
+
+                const btnDel = document.createElement('button');
+                btnDel.type = 'button';
+                btnDel.className = 'btn btn-danger btn-small';
+                btnDel.textContent = 'Elimina';
+                btnDel.addEventListener('click', () => {
+                  deleteClaimAttachment(claimCode, docSnap.id, d.path);
+                });
+
+                actionsDiv.appendChild(btnDel);
+
                 row.appendChild(infoDiv);
+                row.appendChild(actionsDiv);
 
                 containerEl.appendChild(row);
               });
@@ -1343,6 +1400,7 @@
               name: f.name,
               path: path,
               url: url,
+              category: 'claimAttachment',
               uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
               authorUid: currentUser ? currentUser.uid : null,
               authorName: currentUserName || null,
