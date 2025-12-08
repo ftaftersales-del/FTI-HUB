@@ -69,6 +69,21 @@
     return day === 0 || day === 6;
   }
 
+  function normalizeLabourCode(code) {
+    if (!code) return '';
+    return code.toString().replace(/\s+/g, '').toUpperCase();
+  }
+
+  function isQuantityEditableLabour(code) {
+    const n = normalizeLabourCode(code);
+    return n === '96000000' || n === '94000000';
+  }
+
+  function isTotalEditableLabour(code) {
+    const n = normalizeLabourCode(code);
+    return n === 'OL000';
+  }
+
   // ==========================
   // Entry Point: renderClaimDetails
   // ==========================
@@ -215,8 +230,9 @@
     const towCost     = document.getElementById('rsa_towcost_' + claimCode);
     const btnSave     = document.getElementById('rsa_save_' + claimCode);
 
-    if (!dateInput || !chkOnlyTow || !dayH || !dayM || !nightH || !nightM || !kmInput || !caseInput || !towCost || !btnSave) {
-      console.warn('[ftclaims-claimforms] Elementi RSA mancanti per claim', claimCode);
+    if (!dateInput || !chkOnlyTow || !dayH || !dayM || !nightH || !nightM ||
+        !kmInput || !caseInput || !towCost || !btnSave) {
+      console.error('[ftclaims-claimforms] Elementi RSA mancanti per claim', claimCode);
       return;
     }
 
@@ -248,8 +264,10 @@
       const onlyTow = chkOnlyTow.checked;
 
       // se solo traino => disabilito tutti i campi tranne caso e costi
-      dayH.disabled    = onlyTow || dayH.disabled;
-      dayM.disabled    = onlyTow || dayM.disabled;
+      const disabledByDate = isWeekend(dateInput.value) || isItalianHoliday(dateInput.value);
+
+      dayH.disabled    = onlyTow || disabledByDate;
+      dayM.disabled    = onlyTow || disabledByDate;
       nightH.disabled  = onlyTow;
       nightM.disabled  = onlyTow;
       kmInput.disabled = onlyTow;
@@ -265,8 +283,11 @@
       }
     }
 
-    // Listener (protetti)
-    dateInput.addEventListener('change', updateDayShiftEnabled);
+    // Listener
+    dateInput.addEventListener('change', () => {
+      updateDayShiftEnabled();
+      updateOnlyTowEnabled();
+    });
     chkOnlyTow.addEventListener('change', updateOnlyTowEnabled);
 
     // Init stato
@@ -334,28 +355,13 @@
     }
   }
 
-  function normalizeLabourCode(code) {
-    if (!code) return '';
-    return code.toString().replace(/\s+/g, '').toUpperCase();
-  }
-
-  function isQuantityEditableLabour(code) {
-    const n = normalizeLabourCode(code);
-    return n === '96000000' || n === '94000000';
-  }
-
-  function isTotalEditableLabour(code) {
-    const n = normalizeLabourCode(code);
-    return n === 'OL000';
-  }
-
   function renderWarrantyClaimSection(container, claimRef, claimData, claimCode, isReplacementWarranty, claimCardId) {
     const db = getDb();
     if (!db) return;
 
     const warranty = (claimData && claimData.warranty) || {};
-    const partsModel  = Array.isArray(warranty.parts)  ? warranty.parts.slice()  : [];
-    const labourModel = Array.isArray(warranty.labour) ? warranty.labour.slice() : [];
+    const partsModel  = Array.isArray(warranty.parts)  ? warranty.parts.map(p => ({ ...p }))  : [];
+    const labourModel = Array.isArray(warranty.labour) ? warranty.labour.map(l => ({ ...l })) : [];
 
     let laborRateStd = 0;
 
@@ -390,7 +396,7 @@
             <button type="button" class="btn btn-secondary btn-small" id="gar_causa_search_${claimCode}">Cerca</button>
           </div>
           <div class="small-text">
-            La ricerca avviene nel DB FTPartsCodes sul campo codice.
+            La ricerca avviene nel DB FTPartsCodes sul campo "codice".
           </div>
         </div>
         <div class="form-group">
@@ -517,7 +523,7 @@
       setupPrevInvoiceHandlers(claimRef, claimCode);
     }
 
-    // Riferimenti elementi
+    // Riferimenti elementi principali
     const selSymptom    = document.getElementById('gar_symptom_' + claimCode);
     const selCcc        = document.getElementById('gar_ccc_' + claimCode);
     const causaCode     = document.getElementById('gar_causa_code_' + claimCode);
@@ -543,7 +549,7 @@
         !commento || !partCodeInput || !btnPartSearch || !btnPartAdd ||
         !partsBody || !partsTotalEl || !labourCodeInput || !btnLabourSearch ||
         !btnLabourAdd || !labourBody || !labourTotalEl || !btnSave) {
-      console.warn('[ftclaims-claimforms] Elementi Garanzia mancanti per claim', claimCode);
+      console.error('[ftclaims-claimforms] Elementi garanzia mancanti per claim', claimCode);
       return;
     }
 
@@ -556,38 +562,7 @@
     // Symptom + CCC codes
     // =======================
 
-    async function loadSymptomsAndSelect() {
-      if (!selSymptom || !selCcc) return;
-      try {
-        const snap = await db.collection('Symptom').get();
-        const savedSymptomId = warranty.symptomId || null;
-        selSymptom.innerHTML = '<option value="">Seleziona...</option>';
-
-        snap.forEach(doc => {
-          const d = doc.data() || {};
-          const opt = document.createElement('option');
-          opt.value = doc.id;
-          const label =
-            (d.SymptomCode || d.code || doc.id) +
-            ' - ' +
-            (d.SymptomDescriptionItalian || d.description || d.Descrizione || '');
-          opt.textContent = label.trim();
-          selSymptom.appendChild(opt);
-        });
-
-        if (savedSymptomId) {
-          selSymptom.value = savedSymptomId;
-          await loadCccForSymptom(savedSymptomId, warranty.cccId || null);
-        } else {
-          selCcc.innerHTML = '<option value="">Seleziona...</option>';
-        }
-      } catch (e) {
-        console.error('[ftclaims-claimforms] Errore caricamento Symptom:', e);
-      }
-    }
-
     async function loadCccForSymptom(symptomId, preselectCccId) {
-      if (!selCcc) return;
       selCcc.innerHTML = '<option value="">Seleziona...</option>';
       if (!symptomId) return;
       try {
@@ -617,12 +592,39 @@
       }
     }
 
-    if (selSymptom) {
-      selSymptom.addEventListener('change', () => {
-        const symptomId = selSymptom.value || null;
-        loadCccForSymptom(symptomId, null);
-      });
+    async function loadSymptomsAndSelect() {
+      try {
+        const snap = await db.collection('Symptom').get();
+        const savedSymptomId = warranty.symptomId || null;
+        selSymptom.innerHTML = '<option value="">Seleziona...</option>';
+
+        snap.forEach(doc => {
+          const d = doc.data() || {};
+          const opt = document.createElement('option');
+          opt.value = doc.id;
+          const label =
+            (d.SymptomCode || d.code || doc.id) +
+            ' - ' +
+            (d.SymptomDescriptionItalian || d.description || d.Descrizione || '');
+          opt.textContent = label.trim();
+          selSymptom.appendChild(opt);
+        });
+
+        if (savedSymptomId) {
+          selSymptom.value = savedSymptomId;
+          await loadCccForSymptom(savedSymptomId, warranty.cccId || null);
+        } else {
+          selCcc.innerHTML = '<option value="">Seleziona...</option>';
+        }
+      } catch (e) {
+        console.error('[ftclaims-claimforms] Errore caricamento Symptom:', e);
+      }
     }
+
+    selSymptom.addEventListener('change', () => {
+      const symptomId = selSymptom.value || null;
+      loadCccForSymptom(symptomId, null);
+    });
 
     // =======================
     // Componente causa (FTPartsCodes)
@@ -663,17 +665,13 @@
       }
     }
 
-    if (btnCausaSearch) {
-      btnCausaSearch.addEventListener('click', searchCauseComponent);
-    }
+    btnCausaSearch.addEventListener('click', searchCauseComponent);
 
     // =======================
     // Ricambi
     // =======================
 
     function rebuildPartsTable() {
-      if (!partsBody || !partsTotalEl) return;
-
       partsBody.innerHTML = '';
       let total = 0;
 
@@ -775,19 +773,16 @@
       }
     }
 
-    if (btnPartSearch) btnPartSearch.addEventListener('click', searchPartAndAdd);
-    if (btnPartAdd)    btnPartAdd.addEventListener('click', searchPartAndAdd);
+    btnPartSearch.addEventListener('click', searchPartAndAdd);
+    btnPartAdd.addEventListener('click', searchPartAndAdd);
 
-    // Ricostruzione iniziale ricambi da Firestore
-    rebuildPartsTable();
+    rebuildPartsTable(); // iniziale
 
     // =======================
     // Manodopera
     // =======================
 
     function rebuildLabourTable() {
-      if (!labourBody || !labourTotalEl) return;
-
       labourBody.innerHTML = '';
       let total = 0;
 
@@ -811,7 +806,7 @@
         const editableQty = isQuantityEditableLabour(l.code);
         const editableTotal = isTotalEditableLabour(l.code);
 
-        inputQty.disabled = !editableQty && !editableTotal; // se OL000, la qty NON è modificabile
+        inputQty.disabled = !editableQty && !editableTotal; // se OL000, qty non modificabile
 
         inputQty.addEventListener('change', () => {
           l.quantity = Number(inputQty.value) || 0;
@@ -904,7 +899,6 @@
           total: 0
         };
 
-        // default: totale = qty * laborRateStd (se già conosciuto)
         if (laborRateStd > 0) {
           labour.total = (labour.quantity || 0) * laborRateStd;
         }
@@ -918,11 +912,10 @@
       }
     }
 
-    if (btnLabourSearch) btnLabourSearch.addEventListener('click', searchLabourAndAdd);
-    if (btnLabourAdd)    btnLabourAdd.addEventListener('click', searchLabourAndAdd);
+    btnLabourSearch.addEventListener('click', searchLabourAndAdd);
+    btnLabourAdd.addEventListener('click', searchLabourAndAdd);
 
-    // Ricostruzione iniziale manodopera da Firestore
-    rebuildLabourTable();
+    rebuildLabourTable(); // iniziale
 
     // =======================
     // Carico Symptom / CCC iniziali
@@ -1060,7 +1053,6 @@
   function setupPrevInvoiceHandlers(claimRef, claimCode) {
     const input = document.getElementById('prev_invoice_file_' + claimCode);
     const btn   = document.getElementById('prev_invoice_upload_' + claimCode);
-
     if (!input || !btn) {
       console.warn('[ftclaims-claimforms] Controlli fattura precedente non trovati per claim', claimCode);
       return;
@@ -1092,9 +1084,9 @@
     const db = getDb();
     if (!storage || !db) throw new Error('Storage/Firestore non disponibili');
 
-    const claimPath = claimRef.path; // "ClaimCards/<id>/Claims/<code>"
-    const segments = claimPath.split('/');
-    const claimCardId = segments[1]; // ClaimCards/<id>
+    // claimRef.path = "ClaimCards/<id>/Claims/<code>"
+    const segments = claimRef.path.split('/');
+    const claimCardId = segments[1];
     const basePath = 'ClaimCards/' + claimCardId + '/Claims/' + claimCode + '/Attachments/';
 
     const safeName = Date.now() + '_' + file.name.replace(/[^\w.\-]/g, '_');
