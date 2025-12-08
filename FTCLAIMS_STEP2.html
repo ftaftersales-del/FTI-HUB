@@ -11,9 +11,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
 
-  <!-- Dettagli singoli claim (RSA, Garanzia, ...) -->
-  <script src="ftclaims-claimforms.js"></script>
-
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -93,6 +90,13 @@
       margin-top: 0;
       margin-bottom: 8px;
       font-size: 15px;
+    }
+
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
     }
 
     .form-row {
@@ -178,30 +182,32 @@
       color: #fff;
     }
 
-    .btn-small {
-      padding: 5px 10px;
-      font-size: 12px;
-    }
-
     .right-panel {
       border: 1px solid #ddd;
       border-radius: 6px;
       background: #fbfbfb;
       padding: 12px;
-      margin-bottom: 12px;
+      min-height: 400px;
     }
 
     .right-panel-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
       margin-bottom: 8px;
-      gap: 10px;
     }
 
     .right-panel h3 {
       margin: 0;
       font-size: 15px;
+    }
+
+    .right-panel-placeholder {
+      font-size: 13px;
+      color: #777;
+      margin-top: 8px;
+    }
+
+    .btn-small {
+      padding: 5px 10px;
+      font-size: 12px;
     }
 
     .claims-list {
@@ -211,7 +217,7 @@
     .claim-card {
       border: 1px solid #ddd;
       border-radius: 4px;
-      padding: 6px 8px;
+      padding: 6px 8px 10px;
       margin-bottom: 6px;
       background: #ffffff;
     }
@@ -220,8 +226,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 4px;
-      gap: 8px;
+      margin-bottom: 6px;
     }
 
     .claim-title {
@@ -229,150 +234,48 @@
       font-weight: bold;
     }
 
-    .claim-meta {
+    .btn-delete-claim {
+      padding: 4px 8px;
       font-size: 11px;
-      color: #555;
-      flex: 1;
     }
 
     .claim-details {
-      margin-top: 4px;
       border-top: 1px solid #eee;
-      padding-top: 4px;
-      margin-bottom: 6px;
-    }
-
-    .claim-extra-section {
-      margin-top: 4px;
-      padding-top: 4px;
-      border-top: 1px dashed #ddd;
-    }
-
-    .claim-extra-title {
-      font-size: 12px;
-      font-weight: bold;
-      margin-bottom: 3px;
-    }
-
-    .notes-list {
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      background: #ffffff;
-      max-height: 160px;
-      overflow-y: auto;
-      padding: 4px 6px;
-      font-size: 12px;
-      margin-bottom: 4px;
-    }
-
-    .notes-placeholder {
-      color: #777;
+      margin-top: 6px;
+      padding-top: 6px;
       font-size: 12px;
     }
 
-    .note-item {
-      border-bottom: 1px solid #f0f0f0;
-      padding: 3px 0;
-    }
-
-    .note-item:last-child {
-      border-bottom: none;
-    }
-
-    .note-header {
-      font-size: 11px;
-      color: #555;
-      margin-bottom: 1px;
-    }
-
-    .note-author {
-      font-weight: bold;
-    }
-
-    .note-date {
-      font-style: italic;
-      margin-left: 6px;
-    }
-
-    .note-text {
-      font-size: 12px;
-      color: #222;
-      white-space: pre-wrap;
-    }
-
-    .notes-input-row {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 4px;
-    }
-
-    .notes-input-row input[type="text"] {
-      flex: 1;
-      padding: 4px 6px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      font-size: 12px;
-    }
-
-    .attachments-list {
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      background: #ffffff;
-      max-height: 160px;
-      overflow-y: auto;
-      padding: 4px 6px;
-      font-size: 12px;
-    }
-
-    .attachments-placeholder {
-      color: #777;
-      font-size: 12px;
-    }
-
-    .attachment-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #f0f0f0;
-      padding: 3px 0;
-    }
-
-    .attachment-item:last-child {
-      border-bottom: none;
-    }
-
-    .attachment-info a {
-      text-decoration: none;
-    }
-
-    .attachment-info a:hover {
-      text-decoration: underline;
-    }
-
-    .attachment-meta {
-      font-size: 11px;
-      color: #666;
-    }
-
-    /* RSA shift boxes (usate in ftclaims-claimforms.js) */
+    /* Layout DAYSHIFT / NIGHTSHIFT nei claim */
     .shift-box {
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 6px 8px;
+      margin-bottom: 6px;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      margin-right: 12px;
-      margin-bottom: 4px;
+      gap: 6px;
+      font-size: 12px;
+      margin-right: 10px;
     }
+
     .shift-label {
-      font-size: 11px;
       font-weight: bold;
+      white-space: nowrap;
     }
+
     .time-input {
       width: 40px;
-      text-align: right;
+      text-align: center;
     }
+
     .time-separator {
-      font-size: 13px;
       font-weight: bold;
+      margin: 0 4px;
+    }
+
+    .currency-input {
+      text-align: right;
     }
 
     @media (max-width: 992px) {
@@ -406,8 +309,8 @@
               <input type="text" id="claimCode" readonly>
             </div>
             <div class="form-group">
-              <label for="claimType">Tipologia</label>
-              <input type="text" id="claimType" readonly>
+              <label for="claimCardType">Tipologia</label>
+              <input type="text" id="claimCardType" readonly>
             </div>
           </div>
 
@@ -437,7 +340,7 @@
             <label for="claimStatus">Stato pratica</label>
             <input type="text" id="claimStatus" readonly>
             <div class="small-text">
-              Stati possibili: Aperta, Inviata, Sospesa, In Valutazione, Conclusa, Chiusa, Cancellata.
+              Stati possibili: Aperto, Inviato, Sospeso, In Valutazione, Concluso, Chiuso, Cancellato.
             </div>
           </div>
         </div>
@@ -544,35 +447,50 @@
 
       <!-- COLONNA DESTRA -->
       <div class="right-column">
-
-        <!-- Gestione CLAIMS -->
         <div class="right-panel">
           <div class="right-panel-header">
             <h3>Gestione claim collegati alla claim card</h3>
           </div>
 
-          <div class="form-row" style="margin-bottom:8px;">
+          <!-- BOX NUOVO CLAIM -->
+          <div class="card" style="margin-bottom: 10px;">
+            <div class="card-header-row">
+              <h3>Nuovo claim</h3>
+              <button id="btnAddRepair" class="btn btn-primary btn-small">Crea claim</button>
+            </div>
+
             <div class="form-group">
-              <label for="claimTypeSelect">Tipologia claim da creare</label>
-              <select id="claimTypeSelect"></select>
+              <label for="claimType"><strong>Tipologia claim</strong></label>
+              <div id="claimTypeContainer" style="margin-top: 5px; display:none;">
+                <select id="claimType"></select>
+              </div>
+              <input type="hidden" id="fixedClaimType">
               <div class="small-text">
-                Seleziona la tipologia e premi "Crea claim".
+                La lista varia in base alla tipologia della claim card
+                (WARRANTY, MAINTENANCE, FSA, GOODWILL).
               </div>
             </div>
-            <div class="form-group" style="display:flex; align-items:flex-end; justify-content:flex-end;">
-              <button id="btnCreateClaim" class="btn btn-primary btn-small" type="button">
-                Crea claim
-              </button>
-            </div>
+            <!-- Nessun campo specifico qui: i dettagli stanno DENTRO ogni claim -->
           </div>
 
           <div id="claimsList" class="claims-list"></div>
+          <div class="right-panel-placeholder" id="claimsPlaceholder">
+            In questa area verranno gestiti i singoli claim collegati alla stessa claim card.
+            <br>
+            Ogni claim ha al suo interno i campi specifici (RSA, Garanzia, ecc.).
+          </div>
         </div>
-
       </div>
     </div>
   </div>
 
+  <!-- Combobox tipologia claim -->
+  <script src="ftclaims-claims.js?v=3"></script>
+
+  <!-- Form dei singoli claim (RSA ecc.) -->
+  <script src="ftclaims-claimforms.js?v=3"></script>
+
+  <!-- Logica pagina -->
   <script>
     window.addEventListener('load', function () {
       if (typeof firebase === 'undefined') {
@@ -585,21 +503,8 @@
 
       let currentUser = null;
       let currentClaimId = null;
+      let currentClaimCardType = null;
       let isDistributor = false;
-      let currentUserName = '';
-      let currentUserDealerId = '';
-      let claimCardType = '';
-
-      // Listener per note/allegati per ogni claim (key = claimCode)
-      const claimNotesUnsub = {};
-      const claimAttachmentsUnsub = {};
-
-      const ALLOWED_ATTACHMENT_EXTENSIONS = [
-        'png', 'jpg', 'jpeg',
-        'xlsx', 'xls', 'doc', 'docx', 'dox',
-        'pdf', 'rar', 'zip',
-        'mp4', 'mp3', 'mp33'
-      ];
 
       const messageArea = document.getElementById('messageArea');
 
@@ -615,25 +520,6 @@
       function clearMessage() {
         messageArea.style.display = 'none';
         messageArea.textContent = '';
-      }
-
-      function formatDateTime(ts) {
-        if (!ts) return '';
-        try {
-          const d = ts.toDate ? ts.toDate() : ts;
-          const dd = String(d.getDate()).padStart(2, '0');
-          const mm = String(d.getMonth() + 1).toString().padStart(2, '0');
-          const yyyy = d.getFullYear();
-          const hh = String(d.getHours()).padStart(2, '0');
-          const min = String(d.getMinutes()).padStart(2, '0');
-          return `${dd}/${mm}/${yyyy} ${hh}:${min}`;
-        } catch (e) {
-          return '';
-        }
-      }
-
-      function normalizeClaimType(ct) {
-        return (ct || '').toString().trim().toUpperCase();
       }
 
       function getClaimIdFromContext() {
@@ -670,25 +556,9 @@
           if (doc.exists) {
             const data = doc.data() || {};
             const role = data.role || '';
-
             if (typeof role === 'string' && role.toLowerCase().includes('distributor')) {
               isDistributor = true;
             }
-
-            currentUserName =
-              data.displayName ||
-              data.name ||
-              data.fullName ||
-              data.username ||
-              user.email ||
-              '';
-
-            currentUserDealerId =
-              data.dealerId ||
-              data.dealerID ||
-              data.DealerID ||
-              data.DealerId ||
-              null;
           }
         } catch (err) {
           console.error('Errore caricamento utente', err);
@@ -698,57 +568,6 @@
         if (!isDistributor && notesRow) {
           notesRow.style.display = 'none';
         }
-      }
-
-      function populateClaimTypeSelect() {
-        const select = document.getElementById('claimTypeSelect');
-        if (!select) return;
-
-        select.innerHTML = '';
-
-        let options = [];
-        const cardTypeNorm = normalizeClaimType(claimCardType);
-
-        if (cardTypeNorm === 'WARRANTY' || cardTypeNorm === 'FULL LINE' || cardTypeNorm === 'DRIVE LINE') {
-          options = [
-            { value: 'RSA', label: 'RSA' },
-            { value: 'GARANZIA', label: 'Garanzia' },
-            { value: 'GARANZIA RICAMBIO', label: 'Garanzia Ricambio' }
-          ];
-        } else if (cardTypeNorm === 'MAINTENANCE') {
-          options = [
-            { value: 'MANUTENZIONE', label: 'Manutenzione' }
-          ];
-        } else if (cardTypeNorm === 'FSA') {
-          options = [
-            { value: 'FSA', label: 'FSA' }
-          ];
-        } else if (cardTypeNorm === 'GOODWILL') {
-          options = [
-            { value: 'GOODWILL', label: 'Goodwill' }
-          ];
-        } else {
-          options = [
-            { value: 'RSA', label: 'RSA' },
-            { value: 'GARANZIA', label: 'Garanzia' },
-            { value: 'GARANZIA RICAMBIO', label: 'Garanzia Ricambio' },
-            { value: 'MANUTENZIONE', label: 'Manutenzione' },
-            { value: 'FSA', label: 'FSA' },
-            { value: 'GOODWILL', label: 'Goodwill' }
-          ];
-        }
-
-        const empty = document.createElement('option');
-        empty.value = '';
-        empty.textContent = 'Seleziona...';
-        select.appendChild(empty);
-
-        options.forEach(o => {
-          const opt = document.createElement('option');
-          opt.value = o.value;
-          opt.textContent = o.label;
-          select.appendChild(opt);
-        });
       }
 
       async function loadClaimCard() {
@@ -771,10 +590,11 @@
 
           const data = snap.data() || {};
 
-          document.getElementById('claimCode').value  = data.code || currentClaimId;
-          document.getElementById('claimType').value  = data.type || '';
+          const rawType = data.type || '';
+          currentClaimCardType = rawType.toString().trim().toUpperCase();
 
-          claimCardType = data.type || '';
+          document.getElementById('claimCode').value      = data.code || currentClaimId;
+          document.getElementById('claimCardType').value  = currentClaimCardType;
 
           if (data.openDate)  document.getElementById('openDate').value  = data.openDate;
           if (data.orderDate) document.getElementById('orderDate').value = data.orderDate;
@@ -782,7 +602,7 @@
           document.getElementById('openUser').value   = data.openUser || '';
           document.getElementById('openDealer').value = data.openDealer || data.dealerId || '';
 
-          let status = data.status || 'Aperta';
+          const status = data.status || 'Aperto';
           document.getElementById('claimStatus').value = status;
 
           const veh = data.vehicle || {};
@@ -812,7 +632,16 @@
           document.getElementById('vehicleKm').value   = km;
           document.getElementById('engineHours').value = hours;
 
-          populateClaimTypeSelect();
+          // Inizializza combo tipologia claim in base al tipo di claim card
+          if (typeof initClaimTypeControls === 'function') {
+            initClaimTypeControls(currentClaimCardType, {
+              containerId: 'claimTypeContainer',
+              selectId: 'claimType',
+              fixedId: 'fixedClaimType'
+            });
+          } else {
+            console.warn('initClaimTypeControls non è definita. Controlla ftclaims-claims.js.');
+          }
 
           showMessage('Pratica caricata correttamente.', 'success');
 
@@ -822,22 +651,10 @@
         }
       }
 
-      function clearClaimListeners() {
-        for (const k in claimNotesUnsub) {
-          try { claimNotesUnsub[k](); } catch (e) {}
-          delete claimNotesUnsub[k];
-        }
-        for (const k in claimAttachmentsUnsub) {
-          try { claimAttachmentsUnsub[k](); } catch (e) {}
-          delete claimAttachmentsUnsub[k];
-        }
-      }
-
       async function loadClaims() {
         const list = document.getElementById('claimsList');
+        const placeholder = document.getElementById('claimsPlaceholder');
         list.innerHTML = '';
-
-        clearClaimListeners();
 
         if (!currentClaimId) return;
 
@@ -850,17 +667,16 @@
             .get();
 
           if (snap.empty) {
-            const div = document.createElement('div');
-            div.className = 'small-text';
-            div.textContent = 'Non sono ancora presenti claim collegati a questa pratica.';
-            list.appendChild(div);
+            placeholder.style.display = 'block';
             return;
           }
+
+          placeholder.style.display = 'none';
 
           snap.forEach(docSnap => {
             const data = docSnap.data() || {};
             const code = data.code || docSnap.id;
-            const type = data.type || '';
+            const type = data.claimType || '';
 
             const card = document.createElement('div');
             card.className = 'claim-card';
@@ -870,123 +686,35 @@
 
             const title = document.createElement('div');
             title.className = 'claim-title';
-            title.textContent = 'Claim ' + code;
+            title.textContent = 'Riparazione ' + code + (type ? ' (' + type + ')' : '');
 
-            const meta = document.createElement('div');
-            meta.className = 'claim-meta';
-            meta.textContent = type ? ('Tipo: ' + type) : 'Tipo non specificato';
-
-            const btnDel = document.createElement('button');
-            btnDel.className = 'btn btn-danger btn-small';
-            btnDel.textContent = 'Elimina claim';
-            btnDel.addEventListener('click', () => deleteRepair(code));
+            const btnDelete = document.createElement('button');
+            btnDelete.className = 'btn btn-danger btn-delete-claim';
+            btnDelete.textContent = 'Elimina riparazione';
+            btnDelete.addEventListener('click', () => deleteRepair(code));
 
             header.appendChild(title);
-            header.appendChild(meta);
-            header.appendChild(btnDel);
+            header.appendChild(btnDelete);
 
-            const detailsDiv = document.createElement('div');
-            detailsDiv.className = 'claim-details';
+            const details = document.createElement('div');
+            details.className = 'claim-details';
 
             card.appendChild(header);
-            card.appendChild(detailsDiv);
-
-            // Dettagli specifici (RSA, Garanzia, ecc.)
-            try {
-              renderClaimDetails(
-                type,
-                detailsDiv,
-                data,
-                { claimCardId: currentClaimId, claimCode: code }
-              );
-            } catch (e) {
-              console.error('Errore renderClaimDetails per claim', code, e);
-            }
-
-            // SEZIONE NOTE CLAIM
-            const notesSection = document.createElement('div');
-            notesSection.className = 'claim-extra-section';
-
-            const notesTitle = document.createElement('div');
-            notesTitle.className = 'claim-extra-title';
-            notesTitle.textContent = 'Note claim';
-
-            const notesListEl = document.createElement('div');
-            notesListEl.className = 'notes-list';
-
-            const notesInputRow = document.createElement('div');
-            notesInputRow.className = 'notes-input-row';
-
-            const noteInput = document.createElement('input');
-            noteInput.type = 'text';
-            noteInput.placeholder = 'Scrivi una nota per questo claim...';
-
-            const btnAddNote = document.createElement('button');
-            btnAddNote.type = 'button';
-            btnAddNote.className = 'btn btn-primary btn-small';
-            btnAddNote.textContent = 'Aggiungi';
-
-            notesInputRow.appendChild(noteInput);
-            notesInputRow.appendChild(btnAddNote);
-
-            notesSection.appendChild(notesTitle);
-            notesSection.appendChild(notesListEl);
-            notesSection.appendChild(notesInputRow);
-
-            // SEZIONE ALLEGATI CLAIM
-            const attachSection = document.createElement('div');
-            attachSection.className = 'claim-extra-section';
-
-            const attachTitle = document.createElement('div');
-            attachTitle.className = 'claim-extra-title';
-            attachTitle.textContent = 'Allegati claim';
-
-            const attachUploadRow = document.createElement('div');
-            attachUploadRow.className = 'notes-input-row';
-
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.multiple = true;
-            fileInput.style.flex = '1';
-
-            const btnUpload = document.createElement('button');
-            btnUpload.type = 'button';
-            btnUpload.className = 'btn btn-secondary btn-small';
-            btnUpload.textContent = 'Carica';
-
-            attachUploadRow.appendChild(fileInput);
-            attachUploadRow.appendChild(btnUpload);
-
-            const attachListEl = document.createElement('div');
-            attachListEl.className = 'attachments-list';
-
-            attachSection.appendChild(attachTitle);
-            attachSection.appendChild(attachUploadRow);
-            attachSection.appendChild(attachListEl);
-
-            card.appendChild(notesSection);
-            card.appendChild(attachSection);
-
+            card.appendChild(details);
             list.appendChild(card);
 
-            // Listener note e allegati per questo claim
-            startClaimNotesListener(code, notesListEl);
-            startClaimAttachmentsListener(code, attachListEl);
-
-            btnAddNote.addEventListener('click', () => addClaimNote(code, noteInput));
-            noteInput.addEventListener('keydown', (e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addClaimNote(code, noteInput);
-              }
-            });
-
-            btnUpload.addEventListener('click', () => uploadClaimFiles(code, fileInput, btnUpload));
+            // Dettagli specifici del claim (RSA, Garanzia, ...)
+            if (typeof renderClaimDetails === 'function') {
+              renderClaimDetails(type, details, data, {
+                claimCardId: currentClaimId,
+                claimCode: code
+              });
+            }
           });
 
         } catch (err) {
           console.error(err);
-          showMessage('Errore nel caricamento dei claim: ' + err.message, 'error');
+          showMessage('Errore nel caricamento delle riparazioni: ' + err.message, 'error');
         }
       }
 
@@ -1040,9 +768,9 @@
 
         try {
           const ref = db.collection('ClaimCards').doc(currentClaimId);
-          await ref.update({ status: 'Cancellata' });
-          document.getElementById('claimStatus').value = 'Cancellata';
-          showMessage('Richiesta cancellata (stato impostato su "Cancellata").', 'success');
+          await ref.update({ status: 'Cancellato' });
+          document.getElementById('claimStatus').value = 'Cancellato';
+          showMessage('Richiesta cancellata (stato impostato su "Cancellato").', 'success');
         } catch (err) {
           console.error(err);
           showMessage('Errore durante la cancellazione della richiesta: ' + err.message, 'error');
@@ -1053,25 +781,33 @@
         window.location.href = 'FTHUBAS.html';
       }
 
-      async function createClaim() {
+      async function addRepair() {
         clearMessage();
         if (!currentClaimId) {
-          showMessage('Impossibile aggiungere claim: nessuna pratica caricata.', 'error');
+          showMessage('Impossibile aggiungere: nessuna pratica caricata.', 'error');
           return;
         }
 
-        const select = document.getElementById('claimTypeSelect');
-        if (!select || !select.value) {
-          showMessage('Seleziona una tipologia di claim valida prima di creare il claim.', 'error');
-          return;
-        }
-
-        const chosenType = select.value;
-
-        const btn = document.getElementById('btnCreateClaim');
+        const btn = document.getElementById('btnAddRepair');
         btn.disabled = true;
 
         try {
+          let claimTypeValue = null;
+
+          if (typeof getCurrentClaimType === 'function') {
+            claimTypeValue = getCurrentClaimType(currentClaimCardType, {
+              containerId: 'claimTypeContainer',
+              selectId: 'claimType',
+              fixedId: 'fixedClaimType'
+            });
+          }
+
+          if (!claimTypeValue) {
+            showMessage('Seleziona una tipologia di claim valida prima di creare il claim.', 'error');
+            btn.disabled = false;
+            return;
+          }
+
           const cardRef = db.collection('ClaimCards').doc(currentClaimId);
 
           const newCode = await db.runTransaction(async (tx) => {
@@ -1087,20 +823,23 @@
             tx.update(cardRef, { lastClaimNumber: nextNum });
 
             const claimRef = cardRef.collection('Claims').doc(code);
-            tx.set(claimRef, {
-              code: code,
-              type: chosenType,
-              createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
 
+            const claimData = {
+              code: code,
+              claimType: claimTypeValue,
+              status: 'Aperto',
+              createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            tx.set(claimRef, claimData);
             return code;
           });
 
-          showMessage('Claim ' + newCode + ' (' + chosenType + ') creato.', 'success');
+          showMessage('Riparazione ' + newCode + ' (' + claimTypeValue + ') creata.', 'success');
           await loadClaims();
         } catch (err) {
           console.error(err);
-          showMessage('Errore nella creazione del claim: ' + err.message, 'error');
+          showMessage('Errore nella creazione della riparazione: ' + err.message, 'error');
         } finally {
           btn.disabled = false;
         }
@@ -1110,252 +849,18 @@
         clearMessage();
         if (!currentClaimId || !code) return;
 
-        if (!confirm('Vuoi davvero eliminare il claim ' + code + '?')) {
+        if (!confirm('Vuoi davvero eliminare la riparazione ' + code + '?')) {
           return;
         }
 
         try {
           const cardRef = db.collection('ClaimCards').doc(currentClaimId);
           await cardRef.collection('Claims').doc(code).delete();
-          showMessage('Claim ' + code + ' eliminato.', 'success');
+          showMessage('Riparazione ' + code + ' eliminata.', 'success');
           await loadClaims();
         } catch (err) {
           console.error(err);
-          showMessage('Errore durante l\'eliminazione del claim: ' + err.message, 'error');
-        }
-      }
-
-      function startClaimNotesListener(claimCode, containerEl) {
-        if (!currentClaimId || !containerEl) return;
-
-        if (claimNotesUnsub[claimCode]) {
-          claimNotesUnsub[claimCode]();
-          delete claimNotesUnsub[claimCode];
-        }
-
-        const ref = db
-          .collection('ClaimCards')
-          .doc(currentClaimId)
-          .collection('Claims')
-          .doc(claimCode)
-          .collection('Notes');
-
-        claimNotesUnsub[claimCode] = ref
-          .orderBy('createdAt', 'asc')
-          .onSnapshot(
-            (snap) => {
-              containerEl.innerHTML = '';
-
-              if (snap.empty) {
-                const div = document.createElement('div');
-                div.className = 'notes-placeholder';
-                div.textContent = 'Nessuna nota per questo claim.';
-                containerEl.appendChild(div);
-                return;
-              }
-
-              snap.forEach(docSnap => {
-                const d = docSnap.data() || {};
-                const wrapper = document.createElement('div');
-                wrapper.className = 'note-item';
-
-                const header = document.createElement('div');
-                header.className = 'note-header';
-
-                const authorSpan = document.createElement('span');
-                authorSpan.className = 'note-author';
-                authorSpan.textContent = d.authorName || 'Sconosciuto';
-
-                const dateSpan = document.createElement('span');
-                dateSpan.className = 'note-date';
-                dateSpan.textContent = formatDateTime(d.createdAt);
-
-                header.appendChild(authorSpan);
-                header.appendChild(dateSpan);
-
-                const textDiv = document.createElement('div');
-                textDiv.className = 'note-text';
-                textDiv.textContent = d.text || '';
-
-                wrapper.appendChild(header);
-                wrapper.appendChild(textDiv);
-
-                containerEl.appendChild(wrapper);
-              });
-
-              containerEl.scrollTop = containerEl.scrollHeight;
-            },
-            (err) => {
-              console.error('Errore listener note claim', claimCode, err);
-            }
-          );
-      }
-
-      async function addClaimNote(claimCode, inputEl) {
-        if (!currentClaimId || !inputEl) return;
-        const text = (inputEl.value || '').trim();
-        if (!text) return;
-
-        try {
-          const ref = db
-            .collection('ClaimCards')
-            .doc(currentClaimId)
-            .collection('Claims')
-            .doc(claimCode)
-            .collection('Notes');
-
-          await ref.add({
-            text: text,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            authorUid: currentUser ? currentUser.uid : null,
-            authorName: currentUserName || null,
-            authorDealerId: currentUserDealerId || null
-          });
-
-          inputEl.value = '';
-        } catch (err) {
-          console.error('Errore salvataggio nota claim', claimCode, err);
-          alert('Errore nel salvataggio della nota: ' + err.message);
-        }
-      }
-
-      function startClaimAttachmentsListener(claimCode, containerEl) {
-        if (!currentClaimId || !containerEl) return;
-
-        if (claimAttachmentsUnsub[claimCode]) {
-          claimAttachmentsUnsub[claimCode]();
-          delete claimAttachmentsUnsub[claimCode];
-        }
-
-        const ref = db
-          .collection('ClaimCards')
-          .doc(currentClaimId)
-          .collection('Claims')
-          .doc(claimCode)
-          .collection('Attachments');
-
-        claimAttachmentsUnsub[claimCode] = ref
-          .orderBy('uploadedAt', 'desc')
-          .onSnapshot(
-            (snap) => {
-              containerEl.innerHTML = '';
-
-              if (snap.empty) {
-                const div = document.createElement('div');
-                div.className = 'attachments-placeholder';
-                div.textContent = 'Nessun allegato per questo claim.';
-                containerEl.appendChild(div);
-                return;
-              }
-
-              snap.forEach(docSnap => {
-                const d = docSnap.data() || {};
-                const row = document.createElement('div');
-                row.className = 'attachment-item';
-
-                const infoDiv = document.createElement('div');
-                infoDiv.className = 'attachment-info';
-
-                const link = document.createElement('a');
-                link.href = d.url || '#';
-                link.target = '_blank';
-                link.rel = 'noopener noreferrer';
-                link.textContent = d.name || 'file';
-
-                const meta = document.createElement('div');
-                meta.className = 'attachment-meta';
-                meta.textContent = formatDateTime(d.uploadedAt) +
-                  (d.authorName ? ' - ' + d.authorName : '');
-
-                infoDiv.appendChild(link);
-                infoDiv.appendChild(meta);
-                row.appendChild(infoDiv);
-
-                containerEl.appendChild(row);
-              });
-            },
-            (err) => {
-              console.error('Errore listener allegati claim', claimCode, err);
-            }
-          );
-      }
-
-      async function uploadClaimFiles(claimCode, fileInput, btn) {
-        if (!currentClaimId || !fileInput) return;
-        const files = fileInput.files || [];
-        if (!files.length) return;
-
-        if (typeof firebase.storage === 'undefined') {
-          alert('Storage Firebase non disponibile.');
-          return;
-        }
-
-        const invalidFiles = [];
-        const validFiles = [];
-
-        for (let i = 0; i < files.length; i++) {
-          const f = files[i];
-          const name = f.name || '';
-          const parts = name.split('.');
-          const ext = parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
-
-          if (!ALLOWED_ATTACHMENT_EXTENSIONS.includes(ext)) {
-            invalidFiles.push(name);
-          } else {
-            validFiles.push(f);
-          }
-        }
-
-        if (invalidFiles.length > 0) {
-          alert(
-            'I seguenti file hanno un formato non consentito e non sono stati caricati:\n\n' +
-            invalidFiles.join('\n') +
-            '\n\nFormati ammessi: png, jpg, jpeg, xlsx, xls, doc, docx, dox, pdf, rar, zip, mp4, mp3, mp33.'
-          );
-        }
-
-        if (!validFiles.length) {
-          return;
-        }
-
-        const storage = firebase.storage();
-        if (btn) btn.disabled = true;
-
-        try {
-          const basePath = 'ClaimCards/' + currentClaimId + '/Claims/' + claimCode + '/Attachments/';
-          const collRef = db
-            .collection('ClaimCards')
-            .doc(currentClaimId)
-            .collection('Claims')
-            .doc(claimCode)
-            .collection('Attachments');
-
-          for (let i = 0; i < validFiles.length; i++) {
-            const f = validFiles[i];
-            const safeName = f.name.replace(/[^\w.\-]/g, '_');
-            const path = basePath + Date.now() + '_' + safeName;
-
-            const ref = storage.ref(path);
-            await ref.put(f);
-            const url = await ref.getDownloadURL();
-
-            await collRef.add({
-              name: f.name,
-              path: path,
-              url: url,
-              uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
-              authorUid: currentUser ? currentUser.uid : null,
-              authorName: currentUserName || null,
-              authorDealerId: currentUserDealerId || null
-            });
-          }
-
-          fileInput.value = '';
-        } catch (err) {
-          console.error('Errore caricamento allegati claim', claimCode, err);
-          alert('Errore nel caricamento degli allegati: ' + err.message);
-        } finally {
-          if (btn) btn.disabled = false;
+          showMessage('Errore durante l\'eliminazione della riparazione: ' + err.message, 'error');
         }
       }
 
@@ -1375,7 +880,7 @@
       document.getElementById('btnSave').addEventListener('click', saveChanges);
       document.getElementById('btnDelete').addEventListener('click', cancelRequest);
       document.getElementById('btnHome').addEventListener('click', goHome);
-      document.getElementById('btnCreateClaim').addEventListener('click', createClaim);
+      document.getElementById('btnAddRepair').addEventListener('click', addRepair);
     });
   </script>
 </body>
