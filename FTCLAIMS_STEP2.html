@@ -232,22 +232,37 @@
     .claim-meta {
       font-size: 11px;
       color: #555;
+      flex: 1;
     }
 
     .claim-details {
       margin-top: 4px;
       border-top: 1px solid #eee;
       padding-top: 4px;
+      margin-bottom: 6px;
+    }
+
+    .claim-extra-section {
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px dashed #ddd;
+    }
+
+    .claim-extra-title {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 3px;
     }
 
     .notes-list {
       border: 1px solid #ddd;
       border-radius: 4px;
       background: #ffffff;
-      max-height: 220px;
+      max-height: 160px;
       overflow-y: auto;
-      padding: 6px 8px;
+      padding: 4px 6px;
       font-size: 12px;
+      margin-bottom: 4px;
     }
 
     .notes-placeholder {
@@ -257,7 +272,7 @@
 
     .note-item {
       border-bottom: 1px solid #f0f0f0;
-      padding: 4px 0;
+      padding: 3px 0;
     }
 
     .note-item:last-child {
@@ -267,7 +282,7 @@
     .note-header {
       font-size: 11px;
       color: #555;
-      margin-bottom: 2px;
+      margin-bottom: 1px;
     }
 
     .note-author {
@@ -286,14 +301,14 @@
     }
 
     .notes-input-row {
-      margin-top: 6px;
       display: flex;
-      gap: 6px;
+      gap: 4px;
+      margin-bottom: 4px;
     }
 
     .notes-input-row input[type="text"] {
       flex: 1;
-      padding: 5px 7px;
+      padding: 4px 6px;
       border-radius: 4px;
       border: 1px solid #ccc;
       font-size: 12px;
@@ -303,9 +318,9 @@
       border: 1px solid #ddd;
       border-radius: 4px;
       background: #ffffff;
-      max-height: 220px;
+      max-height: 160px;
       overflow-y: auto;
-      padding: 6px 8px;
+      padding: 4px 6px;
       font-size: 12px;
     }
 
@@ -319,7 +334,7 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid #f0f0f0;
-      padding: 4px 0;
+      padding: 3px 0;
     }
 
     .attachment-item:last-child {
@@ -539,9 +554,7 @@
           <div class="form-row" style="margin-bottom:8px;">
             <div class="form-group">
               <label for="claimTypeSelect">Tipologia claim da creare</label>
-              <select id="claimTypeSelect">
-                <!-- Popolata da JS in base al tipo claim card -->
-              </select>
+              <select id="claimTypeSelect"></select>
               <div class="small-text">
                 Seleziona la tipologia e premi "Crea claim".
               </div>
@@ -554,54 +567,6 @@
           </div>
 
           <div id="claimsList" class="claims-list"></div>
-        </div>
-
-        <!-- NOTE PRATICA -->
-        <div class="right-panel">
-          <div class="right-panel-header">
-            <h3>Note pratica</h3>
-          </div>
-
-          <div id="notesList" class="notes-list">
-            <div class="notes-placeholder">
-              Non sono ancora presenti note per questa pratica.
-            </div>
-          </div>
-
-          <div class="notes-input-row">
-            <input type="text" id="newNoteText" placeholder="Scrivi una nota..." />
-            <button type="button" id="btnAddNote" class="btn btn-primary btn-small">
-              Aggiungi nota
-            </button>
-          </div>
-        </div>
-
-        <!-- ALLEGATI PRATICA -->
-        <div class="right-panel">
-          <div class="right-panel-header">
-            <h3>Allegati pratica</h3>
-          </div>
-
-          <div class="form-group">
-            <label for="practiceFiles">
-              Carica allegati (png, jpg, jpeg, xlsx, xls, doc, docx, dox, pdf, rar, zip, mp4, mp3, mp33)
-            </label>
-            <div style="display:flex; gap:6px; align-items:center;">
-              <input type="file" id="practiceFiles" multiple>
-              <button type="button" id="btnUploadPracticeFiles" class="btn btn-secondary btn-small">
-                Carica
-              </button>
-            </div>
-            <div class="small-text">
-              I formati diversi non saranno caricati.
-            </div>
-          </div>
-
-          <div id="attachmentsList" class="attachments-list">
-            <div class="attachments-placeholder">
-              Nessun allegato caricato per questa pratica.
-            </div>
-          </div>
         </div>
 
       </div>
@@ -623,9 +588,11 @@
       let isDistributor = false;
       let currentUserName = '';
       let currentUserDealerId = '';
-      let notesUnsubscribe = null;
-      let attachmentsUnsubscribe = null;
-      let claimCardType = ''; // tipo claim card (WARRANTY, MAINTENANCE, FSA, GOODWILL, ...)
+      let claimCardType = '';
+
+      // Listener per note/allegati per ogni claim (key = claimCode)
+      const claimNotesUnsub = {};
+      const claimAttachmentsUnsub = {};
 
       const ALLOWED_ATTACHMENT_EXTENSIONS = [
         'png', 'jpg', 'jpeg',
@@ -669,7 +636,6 @@
         return (ct || '').toString().trim().toUpperCase();
       }
 
-      // Recupero ID pratica da sessionStorage o URL
       function getClaimIdFromContext() {
         let id = null;
 
@@ -741,7 +707,6 @@
         select.innerHTML = '';
 
         let options = [];
-
         const cardTypeNorm = normalizeClaimType(claimCardType);
 
         if (cardTypeNorm === 'WARRANTY' || cardTypeNorm === 'FULL LINE' || cardTypeNorm === 'DRIVE LINE') {
@@ -763,7 +728,6 @@
             { value: 'GOODWILL', label: 'Goodwill' }
           ];
         } else {
-          // fallback: tutte
           options = [
             { value: 'RSA', label: 'RSA' },
             { value: 'GARANZIA', label: 'Garanzia' },
@@ -807,7 +771,6 @@
 
           const data = snap.data() || {};
 
-          // DATI PRATICA
           document.getElementById('claimCode').value  = data.code || currentClaimId;
           document.getElementById('claimType').value  = data.type || '';
 
@@ -822,7 +785,6 @@
           let status = data.status || 'Aperta';
           document.getElementById('claimStatus').value = status;
 
-          // DATI VEICOLO
           const veh = data.vehicle || {};
           document.getElementById('vin').value      = veh.vin || data.vin || '';
           document.getElementById('customer').value = veh.customer || data.customer || '';
@@ -833,27 +795,23 @@
           document.getElementById('registrationPlate').value = regPlate;
           if (regDate) document.getElementById('registrationDate').value = regDate;
 
-          // COPERTURA
           const coverage = data.coverage || {};
           document.getElementById('coverageType').value = coverage.type || '';
           if (coverage.startDate) document.getElementById('coverageStart').value = coverage.startDate;
           if (coverage.endDate)   document.getElementById('coverageEnd').value   = coverage.endDate;
           document.getElementById('coverageNotes').value = coverage.notes || '';
 
-          // CONTRATTO MANUTENZIONE
           const mc = data.maintenanceContract || {};
           if (mc.startDate) document.getElementById('mcStart').value = mc.startDate;
           if (mc.endDate)   document.getElementById('mcEnd').value   = mc.endDate;
           document.getElementById('mcOptions').value = mc.options || '';
 
-          // KM / ORE
           const km    = data.km ?? '';
           const hours = data.engineHours ?? '';
 
           document.getElementById('vehicleKm').value   = km;
           document.getElementById('engineHours').value = hours;
 
-          // Popola combobox tipologie claim
           populateClaimTypeSelect();
 
           showMessage('Pratica caricata correttamente.', 'success');
@@ -864,9 +822,22 @@
         }
       }
 
+      function clearClaimListeners() {
+        for (const k in claimNotesUnsub) {
+          try { claimNotesUnsub[k](); } catch (e) {}
+          delete claimNotesUnsub[k];
+        }
+        for (const k in claimAttachmentsUnsub) {
+          try { claimAttachmentsUnsub[k](); } catch (e) {}
+          delete claimAttachmentsUnsub[k];
+        }
+      }
+
       async function loadClaims() {
         const list = document.getElementById('claimsList');
         list.innerHTML = '';
+
+        clearClaimListeners();
 
         if (!currentClaimId) return;
 
@@ -920,9 +891,7 @@
             card.appendChild(header);
             card.appendChild(detailsDiv);
 
-            list.appendChild(card);
-
-            // Render dettagli claim specifici (RSA, Garanzia, ...)
+            // Dettagli specifici (RSA, Garanzia, ecc.)
             try {
               renderClaimDetails(
                 type,
@@ -933,6 +902,86 @@
             } catch (e) {
               console.error('Errore renderClaimDetails per claim', code, e);
             }
+
+            // SEZIONE NOTE CLAIM
+            const notesSection = document.createElement('div');
+            notesSection.className = 'claim-extra-section';
+
+            const notesTitle = document.createElement('div');
+            notesTitle.className = 'claim-extra-title';
+            notesTitle.textContent = 'Note claim';
+
+            const notesListEl = document.createElement('div');
+            notesListEl.className = 'notes-list';
+
+            const notesInputRow = document.createElement('div');
+            notesInputRow.className = 'notes-input-row';
+
+            const noteInput = document.createElement('input');
+            noteInput.type = 'text';
+            noteInput.placeholder = 'Scrivi una nota per questo claim...';
+
+            const btnAddNote = document.createElement('button');
+            btnAddNote.type = 'button';
+            btnAddNote.className = 'btn btn-primary btn-small';
+            btnAddNote.textContent = 'Aggiungi';
+
+            notesInputRow.appendChild(noteInput);
+            notesInputRow.appendChild(btnAddNote);
+
+            notesSection.appendChild(notesTitle);
+            notesSection.appendChild(notesListEl);
+            notesSection.appendChild(notesInputRow);
+
+            // SEZIONE ALLEGATI CLAIM
+            const attachSection = document.createElement('div');
+            attachSection.className = 'claim-extra-section';
+
+            const attachTitle = document.createElement('div');
+            attachTitle.className = 'claim-extra-title';
+            attachTitle.textContent = 'Allegati claim';
+
+            const attachUploadRow = document.createElement('div');
+            attachUploadRow.className = 'notes-input-row';
+
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.multiple = true;
+            fileInput.style.flex = '1';
+
+            const btnUpload = document.createElement('button');
+            btnUpload.type = 'button';
+            btnUpload.className = 'btn btn-secondary btn-small';
+            btnUpload.textContent = 'Carica';
+
+            attachUploadRow.appendChild(fileInput);
+            attachUploadRow.appendChild(btnUpload);
+
+            const attachListEl = document.createElement('div');
+            attachListEl.className = 'attachments-list';
+
+            attachSection.appendChild(attachTitle);
+            attachSection.appendChild(attachUploadRow);
+            attachSection.appendChild(attachListEl);
+
+            card.appendChild(notesSection);
+            card.appendChild(attachSection);
+
+            list.appendChild(card);
+
+            // Listener note e allegati per questo claim
+            startClaimNotesListener(code, notesListEl);
+            startClaimAttachmentsListener(code, attachListEl);
+
+            btnAddNote.addEventListener('click', () => addClaimNote(code, noteInput));
+            noteInput.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addClaimNote(code, noteInput);
+              }
+            });
+
+            btnUpload.addEventListener('click', () => uploadClaimFiles(code, fileInput, btnUpload));
           });
 
         } catch (err) {
@@ -1017,7 +1066,7 @@
           return;
         }
 
-        const chosenType = select.value; // es. "RSA", "GARANZIA", ...
+        const chosenType = select.value;
 
         const btn = document.getElementById('btnCreateClaim');
         btn.disabled = true;
@@ -1076,29 +1125,32 @@
         }
       }
 
-      function startNotesListener() {
-        const notesList = document.getElementById('notesList');
-        if (!notesList || !currentClaimId) return;
+      function startClaimNotesListener(claimCode, containerEl) {
+        if (!currentClaimId || !containerEl) return;
 
-        if (notesUnsubscribe) {
-          notesUnsubscribe();
-          notesUnsubscribe = null;
+        if (claimNotesUnsub[claimCode]) {
+          claimNotesUnsub[claimCode]();
+          delete claimNotesUnsub[claimCode];
         }
 
-        notesUnsubscribe = db
+        const ref = db
           .collection('ClaimCards')
           .doc(currentClaimId)
-          .collection('Notes')
+          .collection('Claims')
+          .doc(claimCode)
+          .collection('Notes');
+
+        claimNotesUnsub[claimCode] = ref
           .orderBy('createdAt', 'asc')
           .onSnapshot(
             (snap) => {
-              notesList.innerHTML = '';
+              containerEl.innerHTML = '';
 
               if (snap.empty) {
                 const div = document.createElement('div');
                 div.className = 'notes-placeholder';
-                div.textContent = 'Non sono ancora presenti note per questa pratica.';
-                notesList.appendChild(div);
+                div.textContent = 'Nessuna nota per questo claim.';
+                containerEl.appendChild(div);
                 return;
               }
 
@@ -1128,28 +1180,28 @@
                 wrapper.appendChild(header);
                 wrapper.appendChild(textDiv);
 
-                notesList.appendChild(wrapper);
+                containerEl.appendChild(wrapper);
               });
 
-              notesList.scrollTop = notesList.scrollHeight;
+              containerEl.scrollTop = containerEl.scrollHeight;
             },
             (err) => {
-              console.error('Errore listener note pratica:', err);
+              console.error('Errore listener note claim', claimCode, err);
             }
           );
       }
 
-      async function addNote() {
-        const input = document.getElementById('newNoteText');
-        if (!input || !currentClaimId) return;
-
-        const text = (input.value || '').trim();
+      async function addClaimNote(claimCode, inputEl) {
+        if (!currentClaimId || !inputEl) return;
+        const text = (inputEl.value || '').trim();
         if (!text) return;
 
         try {
           const ref = db
             .collection('ClaimCards')
             .doc(currentClaimId)
+            .collection('Claims')
+            .doc(claimCode)
             .collection('Notes');
 
           await ref.add({
@@ -1160,36 +1212,39 @@
             authorDealerId: currentUserDealerId || null
           });
 
-          input.value = '';
+          inputEl.value = '';
         } catch (err) {
-          console.error(err);
+          console.error('Errore salvataggio nota claim', claimCode, err);
           alert('Errore nel salvataggio della nota: ' + err.message);
         }
       }
 
-      function startAttachmentsListener() {
-        const listEl = document.getElementById('attachmentsList');
-        if (!listEl || !currentClaimId) return;
+      function startClaimAttachmentsListener(claimCode, containerEl) {
+        if (!currentClaimId || !containerEl) return;
 
-        if (attachmentsUnsubscribe) {
-          attachmentsUnsubscribe();
-          attachmentsUnsubscribe = null;
+        if (claimAttachmentsUnsub[claimCode]) {
+          claimAttachmentsUnsub[claimCode]();
+          delete claimAttachmentsUnsub[claimCode];
         }
 
-        attachmentsUnsubscribe = db
+        const ref = db
           .collection('ClaimCards')
           .doc(currentClaimId)
-          .collection('Attachments')
+          .collection('Claims')
+          .doc(claimCode)
+          .collection('Attachments');
+
+        claimAttachmentsUnsub[claimCode] = ref
           .orderBy('uploadedAt', 'desc')
           .onSnapshot(
             (snap) => {
-              listEl.innerHTML = '';
+              containerEl.innerHTML = '';
 
               if (snap.empty) {
                 const div = document.createElement('div');
                 div.className = 'attachments-placeholder';
-                div.textContent = 'Nessun allegato caricato per questa pratica.';
-                listEl.appendChild(div);
+                div.textContent = 'Nessun allegato per questo claim.';
+                containerEl.appendChild(div);
                 return;
               }
 
@@ -1216,20 +1271,18 @@
                 infoDiv.appendChild(meta);
                 row.appendChild(infoDiv);
 
-                listEl.appendChild(row);
+                containerEl.appendChild(row);
               });
             },
             (err) => {
-              console.error('Errore listener allegati pratica:', err);
+              console.error('Errore listener allegati claim', claimCode, err);
             }
           );
       }
 
-      async function uploadPracticeFiles() {
-        const input = document.getElementById('practiceFiles');
-        if (!input || !currentClaimId) return;
-
-        const files = input.files || [];
+      async function uploadClaimFiles(claimCode, fileInput, btn) {
+        if (!currentClaimId || !fileInput) return;
+        const files = fileInput.files || [];
         if (!files.length) return;
 
         if (typeof firebase.storage === 'undefined') {
@@ -1266,14 +1319,15 @@
         }
 
         const storage = firebase.storage();
-        const btn = document.getElementById('btnUploadPracticeFiles');
         if (btn) btn.disabled = true;
 
         try {
-          const basePath = 'ClaimCards/' + currentClaimId + '/PracticeAttachments/';
+          const basePath = 'ClaimCards/' + currentClaimId + '/Claims/' + claimCode + '/Attachments/';
           const collRef = db
             .collection('ClaimCards')
             .doc(currentClaimId)
+            .collection('Claims')
+            .doc(claimCode)
             .collection('Attachments');
 
           for (let i = 0; i < validFiles.length; i++) {
@@ -1296,9 +1350,9 @@
             });
           }
 
-          input.value = '';
+          fileInput.value = '';
         } catch (err) {
-          console.error(err);
+          console.error('Errore caricamento allegati claim', claimCode, err);
           alert('Errore nel caricamento degli allegati: ' + err.message);
         } finally {
           if (btn) btn.disabled = false;
@@ -1315,8 +1369,6 @@
         await loadUserInfo(user);
         await loadClaimCard();
         await loadClaims();
-        startNotesListener();
-        startAttachmentsListener();
       });
 
       // LISTENER BOTTONI
@@ -1324,25 +1376,6 @@
       document.getElementById('btnDelete').addEventListener('click', cancelRequest);
       document.getElementById('btnHome').addEventListener('click', goHome);
       document.getElementById('btnCreateClaim').addEventListener('click', createClaim);
-
-      const btnAddNote = document.getElementById('btnAddNote');
-      const newNoteInput = document.getElementById('newNoteText');
-      if (btnAddNote) {
-        btnAddNote.addEventListener('click', addNote);
-      }
-      if (newNoteInput) {
-        newNoteInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            addNote();
-          }
-        });
-      }
-
-      const btnUploadFiles = document.getElementById('btnUploadPracticeFiles');
-      if (btnUploadFiles) {
-        btnUploadFiles.addEventListener('click', uploadPracticeFiles);
-      }
     });
   </script>
 </body>
