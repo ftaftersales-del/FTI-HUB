@@ -1,6 +1,6 @@
 // ===============================
 // ftclaims-claimforms.js
-// Dettagli dei singoli claim (RSA, Garanzia, ...)
+// Dettagli dei singoli claim (RSA, Garanzia, Garanzia Ricambio, ...)
 // ===============================
 
 function normalizeClaimType(ct) {
@@ -9,7 +9,7 @@ function normalizeClaimType(ct) {
 
 /**
  * Entry point:
- *   - claimType: "RSA", "Garanzia", ...
+ *   - claimType: "RSA", "Garanzia", "Garanzia Ricambio", ...
  *   - container: div interno alla card della singola riparazione
  *   - claimData: dati Firestore del claim
  *   - ctx: { claimCardId, claimCode }
@@ -22,7 +22,15 @@ function renderClaimDetails(claimType, container, claimData, ctx) {
   if (type === "RSA") {
     renderRSADetails(container, claimData, ctx);
   } else if (type === "GARANZIA") {
-    renderGaranziaDetails(container, claimData, ctx);
+    // Garanzia standard
+    renderGaranziaDetails(container, claimData, ctx, {
+      includePrevInvoiceDate: false
+    });
+  } else if (type === "GARANZIA RICAMBIO") {
+    // Garanzia Ricambio: stessa logica della garanzia + campo extra
+    renderGaranziaDetails(container, claimData, ctx, {
+      includePrevInvoiceDate: true
+    });
   } else if (type) {
     const info = document.createElement("div");
     info.className = "small-text";
@@ -128,11 +136,13 @@ function renderRSADetails(container, claimData, ctx) {
     <div class="form-group">
       <label for="${prefix}invoices">Fatture (uno o più file)</label>
       <input type="file" id="${prefix}invoices" multiple>
+      <div id="${prefix}invoicesList" class="small-text" style="margin-top:4px;"></div>
     </div>
 
     <div class="form-group">
       <label for="${prefix}route">Tragitto (uno o più file)</label>
       <input type="file" id="${prefix}route" multiple>
+      <div id="${prefix}routeList" class="small-text" style="margin-top:4px;"></div>
     </div>
 
     <div class="form-group">
@@ -145,18 +155,20 @@ function renderRSADetails(container, claimData, ctx) {
   container.innerHTML = html;
 
   // Riferimenti agli elementi
-  const dateInput      = container.querySelector("#" + prefix + "date");
-  const onlyTowInput   = container.querySelector("#" + prefix + "onlyTow");
-  const dayHoursInput  = container.querySelector("#" + prefix + "dayHours");
-  const dayMinInput    = container.querySelector("#" + prefix + "dayMinutes");
-  const nightHoursInput= container.querySelector("#" + prefix + "nightHours");
-  const nightMinInput  = container.querySelector("#" + prefix + "nightMinutes");
-  const kmInput        = container.querySelector("#" + prefix + "km");
-  const caseInput      = container.querySelector("#" + prefix + "case");
-  const towCostsInput  = container.querySelector("#" + prefix + "towCosts");
-  const invoicesInput  = container.querySelector("#" + prefix + "invoices");
-  const routeInput     = container.querySelector("#" + prefix + "route");
-  const saveBtn        = container.querySelector("#" + prefix + "saveBtn");
+  const dateInput        = container.querySelector("#" + prefix + "date");
+  const onlyTowInput     = container.querySelector("#" + prefix + "onlyTow");
+  const dayHoursInput    = container.querySelector("#" + prefix + "dayHours");
+  const dayMinInput      = container.querySelector("#" + prefix + "dayMinutes");
+  const nightHoursInput  = container.querySelector("#" + prefix + "nightHours");
+  const nightMinInput    = container.querySelector("#" + prefix + "nightMinutes");
+  const kmInput          = container.querySelector("#" + prefix + "km");
+  const caseInput        = container.querySelector("#" + prefix + "case");
+  const towCostsInput    = container.querySelector("#" + prefix + "towCosts");
+  const invoicesInput    = container.querySelector("#" + prefix + "invoices");
+  const routeInput       = container.querySelector("#" + prefix + "route");
+  const invoicesListDiv  = container.querySelector("#" + prefix + "invoicesList");
+  const routeListDiv     = container.querySelector("#" + prefix + "routeList");
+  const saveBtn          = container.querySelector("#" + prefix + "saveBtn");
 
   // Pre-compilazione dai dati esistenti
   if (rsa.date) dateInput.value = rsa.date;
@@ -168,6 +180,10 @@ function renderRSADetails(container, claimData, ctx) {
   if (rsa.km != null) kmInput.value = rsa.km;
   if (rsa.caseNumber) caseInput.value = rsa.caseNumber;
   if (rsa.towCostsAmount != null) towCostsInput.value = rsa.towCostsAmount;
+
+  // Metadati allegati esistenti
+  let invoiceMeta = Array.isArray(rsa.invoiceFiles) ? rsa.invoiceFiles.slice() : [];
+  let routeMeta   = Array.isArray(rsa.routeFiles)   ? rsa.routeFiles.slice()   : [];
 
   function updateFieldsState() {
     const onlyTow  = onlyTowInput.checked;
@@ -227,6 +243,93 @@ function renderRSADetails(container, claimData, ctx) {
     return isNaN(n) ? null : n;
   }
 
+  // ----------------------------
+  // Render liste file + elimina
+  // ----------------------------
+  function renderFileList(metaArray, listDiv, kind) {
+    if (!listDiv) return;
+    listDiv.innerHTML = "";
+
+    if (!metaArray || !metaArray.length) {
+      listDiv.textContent = "Nessun file caricato.";
+      return;
+    }
+
+    metaArray.forEach((file, index) => {
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.justifyContent = "space-between";
+      row.style.gap = "6px";
+      row.style.marginTop = "2px";
+
+      const link = document.createElement("a");
+      link.href = file.url || "#";
+      link.target = "_blank";
+      link.textContent = file.name || "File";
+
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.textContent = "Elimina";
+      delBtn.className = "btn btn-small btn-danger";
+
+      delBtn.addEventListener("click", async () => {
+        if (!confirm('Vuoi eliminare il file "' + (file.name || "") + '"?')) {
+          return;
+        }
+
+        if (typeof firebase === "undefined" || !firebase.storage || !firebase.firestore) {
+          alert("Firebase non disponibile.");
+          return;
+        }
+
+        const storage = firebase.storage();
+        const db = firebase.firestore();
+
+        try {
+          // Elimino da Storage
+          if (file.path) {
+            await storage.ref(file.path).delete();
+          }
+
+          // Elimino dai metadati nel documento
+          const claimRef = db
+            .collection("ClaimCards")
+            .doc(ctx.claimCardId)
+            .collection("Claims")
+            .doc(ctx.claimCode);
+
+          const newMeta = metaArray.slice();
+          newMeta.splice(index, 1);
+
+          const fieldName = kind === "invoice"
+            ? "rsa.invoiceFiles"
+            : "rsa.routeFiles";
+
+          await claimRef.update({ [fieldName]: newMeta });
+
+          // Aggiorno array locale e UI
+          metaArray.splice(index, 1);
+          renderFileList(metaArray, listDiv, kind);
+        } catch (err) {
+          console.error(err);
+          alert("Errore durante l'eliminazione del file: " + err.message);
+        }
+      });
+
+      row.appendChild(link);
+      row.appendChild(delBtn);
+      listDiv.appendChild(row);
+    });
+  }
+
+  // Disegno liste iniziali
+  renderFileList(invoiceMeta, invoicesListDiv, "invoice");
+  renderFileList(routeMeta, routeListDiv, "route");
+
+  // ----------------------------
+  // Salvataggio complessivo RSA
+  // ----------------------------
   if (saveBtn) {
     saveBtn.addEventListener("click", async () => {
       if (typeof firebase === "undefined" ||
@@ -253,12 +356,14 @@ function renderRSADetails(container, claimData, ctx) {
         towCostsAmount: readCurrency(towCostsInput)
       };
 
-      // Upload allegati (aggiunti a quelli già presenti)
-      const basePath = "ClaimCards/" + ctx.claimCardId + "/Claims/" + ctx.claimCode + "/";
+      const basePath =
+        "ClaimCards/" + ctx.claimCardId + "/Claims/" + ctx.claimCode + "/";
 
-      let invoiceMeta = Array.isArray(rsa.invoiceFiles) ? rsa.invoiceFiles.slice() : [];
-      let routeMeta   = Array.isArray(rsa.routeFiles)   ? rsa.routeFiles.slice()   : [];
+      // Parto dai meta esistenti (già caricati all'inizio)
+      let invoiceMetaCurrent = invoiceMeta.slice();
+      let routeMetaCurrent   = routeMeta.slice();
 
+      // Nuovi file fatture
       const invFiles = invoicesInput.files || [];
       for (let i = 0; i < invFiles.length; i++) {
         const f = invFiles[i];
@@ -266,9 +371,10 @@ function renderRSADetails(container, claimData, ctx) {
         const ref  = storage.ref(path);
         await ref.put(f);
         const url = await ref.getDownloadURL();
-        invoiceMeta.push({ name: f.name, path, url });
+        invoiceMetaCurrent.push({ name: f.name, path, url });
       }
 
+      // Nuovi file tragitto
       const routeFiles = routeInput.files || [];
       for (let i = 0; i < routeFiles.length; i++) {
         const f = routeFiles[i];
@@ -276,11 +382,11 @@ function renderRSADetails(container, claimData, ctx) {
         const ref  = storage.ref(path);
         await ref.put(f);
         const url = await ref.getDownloadURL();
-        routeMeta.push({ name: f.name, path, url });
+        routeMetaCurrent.push({ name: f.name, path, url });
       }
 
-      if (invoiceMeta.length) rsaData.invoiceFiles = invoiceMeta;
-      if (routeMeta.length)   rsaData.routeFiles   = routeMeta;
+      if (invoiceMetaCurrent.length) rsaData.invoiceFiles = invoiceMetaCurrent;
+      if (routeMetaCurrent.length)   rsaData.routeFiles   = routeMetaCurrent;
 
       try {
         const claimRef = db
@@ -290,6 +396,12 @@ function renderRSADetails(container, claimData, ctx) {
           .doc(ctx.claimCode);
 
         await claimRef.update({ rsa: rsaData });
+
+        // Aggiorno array locali e UI
+        invoiceMeta = invoiceMetaCurrent;
+        routeMeta   = routeMetaCurrent;
+        renderFileList(invoiceMeta, invoicesListDiv, "invoice");
+        renderFileList(routeMeta, routeListDiv, "route");
 
         // reset solo i file (i dati restano)
         invoicesInput.value = "";
@@ -305,12 +417,14 @@ function renderRSADetails(container, claimData, ctx) {
 }
 
 /* ===============================
-   GARANZIA
+   GARANZIA / GARANZIA RICAMBIO
 =============================== */
 
-function renderGaranziaDetails(container, claimData, ctx) {
+function renderGaranziaDetails(container, claimData, ctx, options) {
   const gar = claimData.garanzia || {};
   const prefix = "gar_" + ctx.claimCode + "_";
+  const includePrevInvoiceDate =
+    options && options.includePrevInvoiceDate ? true : false;
 
   const html = `
     <h4 style="margin: 4px 0 6px; font-size: 13px;">Dati Garanzia</h4>
@@ -354,6 +468,17 @@ function renderGaranziaDetails(container, claimData, ctx) {
       <label for="${prefix}commento">Commento tecnico</label>
       <textarea id="${prefix}commento" rows="3"></textarea>
     </div>
+
+    ${
+      includePrevInvoiceDate
+        ? `
+    <div class="form-group">
+      <label for="${prefix}prevInvoiceDate">Data Fattura Precedente Lavorazione</label>
+      <input type="date" id="${prefix}prevInvoiceDate">
+    </div>
+        `
+        : ""
+    }
 
     <hr>
 
@@ -438,6 +563,9 @@ function renderGaranziaDetails(container, claimData, ctx) {
   const causaExtInput   = container.querySelector("#" + prefix + "causaExt");
   const causaDescInput  = container.querySelector("#" + prefix + "causaDesc");
   const commentoInput   = container.querySelector("#" + prefix + "commento");
+  const prevInvoiceInput= includePrevInvoiceDate
+    ? container.querySelector("#" + prefix + "prevInvoiceDate")
+    : null;
 
   const partsBody       = container.querySelector("#" + prefix + "partsBody");
   const addPartBtn      = container.querySelector("#" + prefix + "addPart");
@@ -469,6 +597,11 @@ function renderGaranziaDetails(container, claimData, ctx) {
   function formatMoney(v) {
     const n = toNumberOrNull(v) || 0;
     return n.toFixed(2);
+  }
+
+  // Pre-fill campo extra per Garanzia Ricambio
+  if (includePrevInvoiceDate && prevInvoiceInput && gar.previousInvoiceDate) {
+    prevInvoiceInput.value = gar.previousInvoiceDate;
   }
 
   // ---------------------------------
@@ -1102,6 +1235,11 @@ function renderGaranziaDetails(container, claimData, ctx) {
           commentoTecnico: (commentoInput.value || "").trim() || null,
           labourRateStd: labourRateStd != null ? labourRateStd : null
         };
+
+        if (includePrevInvoiceDate && prevInvoiceInput) {
+          garanziaData.previousInvoiceDate =
+            prevInvoiceInput.value ? prevInvoiceInput.value : null;
+        }
 
         // RICAMBI
         const parts = [];
