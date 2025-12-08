@@ -227,6 +227,7 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 6px;
+      cursor: pointer;
     }
 
     .claim-title {
@@ -244,6 +245,11 @@
       margin-top: 6px;
       padding-top: 6px;
       font-size: 12px;
+    }
+
+    /* quando la card è collassata nascondo i dettagli */
+    .claim-card.collapsed .claim-details {
+      display: none;
     }
 
     /* Layout DAYSHIFT / NIGHTSHIFT nei claim */
@@ -487,7 +493,7 @@
   <!-- Combobox tipologia claim -->
   <script src="ftclaims-claims.js?v=3"></script>
 
-  <!-- Form dei singoli claim (RSA ecc.) -->
+  <!-- Form dei singoli claim (RSA, Garanzia, Garanzia Ricambio, ...) -->
   <script src="ftclaims-claimforms.js?v=3"></script>
 
   <!-- Logica pagina -->
@@ -679,7 +685,7 @@
             const type = data.claimType || '';
 
             const card = document.createElement('div');
-            card.className = 'claim-card';
+            card.className = 'claim-card collapsed'; // di default CHIUSA
 
             const header = document.createElement('div');
             header.className = 'claim-card-header';
@@ -688,13 +694,50 @@
             title.className = 'claim-title';
             title.textContent = 'Riparazione ' + code + (type ? ' (' + type + ')' : '');
 
+            // bottone Mostra/Nascondi dettagli
+            const toggleBtn = document.createElement('button');
+            toggleBtn.className = 'btn btn-secondary btn-small';
+            toggleBtn.textContent = 'Mostra dettagli';
+            let expanded = false;
+
+            function setExpanded(state) {
+              expanded = state;
+              if (expanded) {
+                card.classList.remove('collapsed');
+                toggleBtn.textContent = 'Nascondi dettagli';
+              } else {
+                card.classList.add('collapsed');
+                toggleBtn.textContent = 'Mostra dettagli';
+              }
+            }
+
+            toggleBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              setExpanded(!expanded);
+            });
+
             const btnDelete = document.createElement('button');
-            btnDelete.className = 'btn btn-danger btn-delete-claim';
+            btnDelete.className = 'btn btn-danger btn-delete-claim btn-small';
             btnDelete.textContent = 'Elimina riparazione';
-            btnDelete.addEventListener('click', () => deleteRepair(code));
+            btnDelete.addEventListener('click', (e) => {
+              e.stopPropagation();
+              deleteRepair(code);
+            });
+
+            const headerRight = document.createElement('div');
+            headerRight.style.display = 'flex';
+            headerRight.style.gap = '4px';
+            headerRight.appendChild(toggleBtn);
+            headerRight.appendChild(btnDelete);
 
             header.appendChild(title);
-            header.appendChild(btnDelete);
+            header.appendChild(headerRight);
+
+            // cliccando ovunque sull'intestazione (tranne i bottoni) apro/chiudo
+            header.addEventListener('click', (e) => {
+              if (e.target === toggleBtn || e.target === btnDelete) return;
+              setExpanded(!expanded);
+            });
 
             const details = document.createElement('div');
             details.className = 'claim-details';
@@ -703,7 +746,7 @@
             card.appendChild(details);
             list.appendChild(card);
 
-            // Dettagli specifici del claim (RSA, Garanzia, ...)
+            // Dettagli specifici del claim (RSA, Garanzia, Garanzia Ricambio, ...)
             if (typeof renderClaimDetails === 'function') {
               renderClaimDetails(type, details, data, {
                 claimCardId: currentClaimId,
