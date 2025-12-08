@@ -38,6 +38,14 @@
     return n.toFixed(2) + ' €';
   }
 
+  function safeAddListener(el, ev, fn, dbgName) {
+    if (!el) {
+      console.warn('[ftclaims-claimforms] addEventListener fallito: elemento mancante ->', dbgName);
+      return;
+    }
+    el.addEventListener(ev, fn);
+  }
+
   // --------------------------
   // Festività italiane "standard"
   // (solo per blocco DAYSHIFT RSA)
@@ -263,7 +271,6 @@
     function updateOnlyTowEnabled() {
       const onlyTow = chkOnlyTow.checked;
 
-      // se solo traino => disabilito tutti i campi tranne caso e costi
       const disabledByDate = isWeekend(dateInput.value) || isItalianHoliday(dateInput.value);
 
       dayH.disabled    = onlyTow || disabledByDate;
@@ -283,19 +290,19 @@
       }
     }
 
-    // Listener
-    dateInput.addEventListener('change', () => {
+    safeAddListener(dateInput, 'change', () => {
       updateDayShiftEnabled();
       updateOnlyTowEnabled();
-    });
-    chkOnlyTow.addEventListener('change', updateOnlyTowEnabled);
+    }, 'rsa_date change');
+
+    safeAddListener(chkOnlyTow, 'change', updateOnlyTowEnabled, 'rsa_onlytow change');
 
     // Init stato
     updateDayShiftEnabled();
     updateOnlyTowEnabled();
 
     // Salvataggio
-    btnSave.addEventListener('click', async () => {
+    safeAddListener(btnSave, 'click', async () => {
       try {
         const newRsa = {
           date: dateInput.value || null,
@@ -315,7 +322,7 @@
         console.error('[ftclaims-claimforms] Errore salvataggio RSA:', err);
         alert('Errore nel salvataggio RSA: ' + err.message);
       }
-    });
+    }, 'rsa_save click');
   }
 
   // ==========================
@@ -545,24 +552,37 @@
 
     const btnSave         = document.getElementById('gar_save_' + claimCode);
 
-    if (!selSymptom || !selCcc || !causaCode || !causaDescr || !btnCausaSearch ||
-        !commento || !partCodeInput || !btnPartSearch || !btnPartAdd ||
-        !partsBody || !partsTotalEl || !labourCodeInput || !btnLabourSearch ||
-        !btnLabourAdd || !labourBody || !labourTotalEl || !btnSave) {
-      console.error('[ftclaims-claimforms] Elementi garanzia mancanti per claim', claimCode);
-      return;
-    }
+    console.log('[ftclaims-claimforms] Elementi garanzia per claim', claimCode, {
+      selSymptom: !!selSymptom,
+      selCcc: !!selCcc,
+      causaCode: !!causaCode,
+      causaDescr: !!causaDescr,
+      btnCausaSearch: !!btnCausaSearch,
+      commento: !!commento,
+      partCodeInput: !!partCodeInput,
+      btnPartSearch: !!btnPartSearch,
+      btnPartAdd: !!btnPartAdd,
+      partsBody: !!partsBody,
+      partsTotalEl: !!partsTotalEl,
+      labourCodeInput: !!labourCodeInput,
+      btnLabourSearch: !!btnLabourSearch,
+      btnLabourAdd: !!btnLabourAdd,
+      labourBody: !!labourBody,
+      labourTotalEl: !!labourTotalEl,
+      btnSave: !!btnSave
+    });
 
     // Prefill campo commento / componente causa
-    if (warranty.comment) commento.value = warranty.comment;
-    if (warranty.causePartCode)  causaCode.value  = warranty.causePartCode;
-    if (warranty.causePartDescr) causaDescr.value = warranty.causePartDescr;
+    if (warranty.comment && commento) commento.value = warranty.comment;
+    if (warranty.causePartCode && causaCode)  causaCode.value  = warranty.causePartCode;
+    if (warranty.causePartDescr && causaDescr) causaDescr.value = warranty.causePartDescr;
 
     // =======================
     // Symptom + CCC codes
     // =======================
 
     async function loadCccForSymptom(symptomId, preselectCccId) {
+      if (!selCcc) return;
       selCcc.innerHTML = '<option value="">Seleziona...</option>';
       if (!symptomId) return;
       try {
@@ -593,6 +613,7 @@
     }
 
     async function loadSymptomsAndSelect() {
+      if (!selSymptom || !selCcc) return;
       try {
         const snap = await db.collection('Symptom').get();
         const savedSymptomId = warranty.symptomId || null;
@@ -621,15 +642,16 @@
       }
     }
 
-    selSymptom.addEventListener('change', () => {
+    safeAddListener(selSymptom, 'change', () => {
       const symptomId = selSymptom.value || null;
       loadCccForSymptom(symptomId, null);
-    });
+    }, 'gar_symptom change');
 
     // =======================
     // Componente causa (FTPartsCodes)
     // =======================
     async function searchCauseComponent() {
+      if (!causaCode || !causaDescr) return;
       const code = (causaCode.value || '').trim();
       if (!code) {
         alert('Inserisci un codice ricambio da cercare.');
@@ -665,13 +687,14 @@
       }
     }
 
-    btnCausaSearch.addEventListener('click', searchCauseComponent);
+    safeAddListener(btnCausaSearch, 'click', searchCauseComponent, 'gar_causa_search click');
 
     // =======================
     // Ricambi
     // =======================
 
     function rebuildPartsTable() {
+      if (!partsBody || !partsTotalEl) return;
       partsBody.innerHTML = '';
       let total = 0;
 
@@ -735,6 +758,7 @@
     }
 
     async function searchPartAndAdd() {
+      if (!partCodeInput) return;
       const code = (partCodeInput.value || '').trim();
       if (!code) {
         alert('Inserisci un codice ricambio da cercare.');
@@ -773,8 +797,8 @@
       }
     }
 
-    btnPartSearch.addEventListener('click', searchPartAndAdd);
-    btnPartAdd.addEventListener('click', searchPartAndAdd);
+    safeAddListener(btnPartSearch, 'click', searchPartAndAdd, 'gar_part_search click');
+    safeAddListener(btnPartAdd, 'click', searchPartAndAdd, 'gar_part_add click');
 
     rebuildPartsTable(); // iniziale
 
@@ -783,6 +807,8 @@
     // =======================
 
     function rebuildLabourTable() {
+      if (!labourBody || !labourTotalEl) return;
+
       labourBody.innerHTML = '';
       let total = 0;
 
@@ -871,6 +897,7 @@
     }
 
     async function searchLabourAndAdd() {
+      if (!labourCodeInput) return;
       const code = (labourCodeInput.value || '').trim();
       if (!code) {
         alert('Inserisci un codice manodopera da cercare.');
@@ -912,8 +939,8 @@
       }
     }
 
-    btnLabourSearch.addEventListener('click', searchLabourAndAdd);
-    btnLabourAdd.addEventListener('click', searchLabourAndAdd);
+    safeAddListener(btnLabourSearch, 'click', searchLabourAndAdd, 'gar_labour_search click');
+    safeAddListener(btnLabourAdd, 'click', searchLabourAndAdd, 'gar_labour_add click');
 
     rebuildLabourTable(); // iniziale
 
@@ -936,7 +963,7 @@
     // =======================
     // Salvataggio completo
     // =======================
-    btnSave.addEventListener('click', async () => {
+    safeAddListener(btnSave, 'click', async () => {
       try {
         // Se Garanzia Ricambio: controllo fattura precedente
         if (isReplacementWarranty) {
@@ -947,15 +974,15 @@
           }
         }
 
-        const selectedSymptomId = selSymptom.value || null;
-        const selectedCccId     = selCcc.value || null;
+        const selectedSymptomId = selSymptom ? (selSymptom.value || null) : null;
+        const selectedCccId     = selCcc ? (selCcc.value || null) : null;
 
         const newWarranty = {
           symptomId: selectedSymptomId,
           cccId: selectedCccId,
-          causePartCode: (causaCode.value || '').trim() || null,
-          causePartDescr: (causaDescr.value || '').trim() || null,
-          comment: (commento.value || '').trim() || null,
+          causePartCode:  causaCode  ? ((causaCode.value  || '').trim() || null) : null,
+          causePartDescr: causaDescr ? ((causaDescr.value || '').trim() || null) : null,
+          comment:        commento   ? ((commento.value   || '').trim() || null) : null,
           parts: partsModel,
           labour: labourModel
         };
@@ -966,7 +993,7 @@
         console.error('[ftclaims-claimforms] Errore salvataggio garanzia:', e);
         alert('Errore nel salvataggio dati garanzia: ' + e.message);
       }
-    });
+    }, 'gar_save click');
   }
 
   // ==========================
