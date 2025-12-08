@@ -38,14 +38,6 @@
     return n.toFixed(2) + ' €';
   }
 
-  function safeAddListener(el, ev, fn, dbgName) {
-    if (!el) {
-      console.warn('[ftclaims-claimforms] addEventListener fallito: elemento mancante ->', dbgName);
-      return;
-    }
-    el.addEventListener(ev, fn);
-  }
-
   // --------------------------
   // Festività italiane "standard"
   // (solo per blocco DAYSHIFT RSA)
@@ -64,7 +56,6 @@
   ];
 
   function isItalianHoliday(dateStr) {
-    // dateStr nel formato YYYY-MM-DD
     if (!dateStr || dateStr.length !== 10) return false;
     const mmdd = dateStr.substring(5); // "MM-DD"
     return IT_HOLIDAYS.indexOf(mmdd) !== -1;
@@ -75,21 +66,6 @@
     const d = new Date(dateStr + 'T00:00:00');
     const day = d.getDay(); // 0=Dom, 6=Sab
     return day === 0 || day === 6;
-  }
-
-  function normalizeLabourCode(code) {
-    if (!code) return '';
-    return code.toString().replace(/\s+/g, '').toUpperCase();
-  }
-
-  function isQuantityEditableLabour(code) {
-    const n = normalizeLabourCode(code);
-    return n === '96000000' || n === '94000000';
-  }
-
-  function isTotalEditableLabour(code) {
-    const n = normalizeLabourCode(code);
-    return n === 'OL000';
   }
 
   // ==========================
@@ -238,12 +214,6 @@
     const towCost     = document.getElementById('rsa_towcost_' + claimCode);
     const btnSave     = document.getElementById('rsa_save_' + claimCode);
 
-    if (!dateInput || !chkOnlyTow || !dayH || !dayM || !nightH || !nightM ||
-        !kmInput || !caseInput || !towCost || !btnSave) {
-      console.error('[ftclaims-claimforms] Elementi RSA mancanti per claim', claimCode);
-      return;
-    }
-
     // Prefill da claimData.rsa
     if (rsaData.date)        dateInput.value  = rsaData.date;
     if (rsaData.onlyTow)     chkOnlyTow.checked = !!rsaData.onlyTow;
@@ -271,10 +241,9 @@
     function updateOnlyTowEnabled() {
       const onlyTow = chkOnlyTow.checked;
 
-      const disabledByDate = isWeekend(dateInput.value) || isItalianHoliday(dateInput.value);
-
-      dayH.disabled    = onlyTow || disabledByDate;
-      dayM.disabled    = onlyTow || disabledByDate;
+      // se solo traino => disabilito tutti i campi tranne caso e costi
+      dayH.disabled    = onlyTow || dayH.disabled;
+      dayM.disabled    = onlyTow || dayM.disabled;
       nightH.disabled  = onlyTow;
       nightM.disabled  = onlyTow;
       kmInput.disabled = onlyTow;
@@ -290,19 +259,16 @@
       }
     }
 
-    safeAddListener(dateInput, 'change', () => {
-      updateDayShiftEnabled();
-      updateOnlyTowEnabled();
-    }, 'rsa_date change');
-
-    safeAddListener(chkOnlyTow, 'change', updateOnlyTowEnabled, 'rsa_onlytow change');
+    // Listener
+    dateInput.addEventListener('change', updateDayShiftEnabled);
+    chkOnlyTow.addEventListener('change', updateOnlyTowEnabled);
 
     // Init stato
     updateDayShiftEnabled();
     updateOnlyTowEnabled();
 
     // Salvataggio
-    safeAddListener(btnSave, 'click', async () => {
+    btnSave.addEventListener('click', async () => {
       try {
         const newRsa = {
           date: dateInput.value || null,
@@ -322,7 +288,7 @@
         console.error('[ftclaims-claimforms] Errore salvataggio RSA:', err);
         alert('Errore nel salvataggio RSA: ' + err.message);
       }
-    }, 'rsa_save click');
+    });
   }
 
   // ==========================
@@ -362,13 +328,28 @@
     }
   }
 
+  function normalizeLabourCode(code) {
+    if (!code) return '';
+    return code.toString().replace(/\s+/g, '').toUpperCase();
+  }
+
+  function isQuantityEditableLabour(code) {
+    const n = normalizeLabourCode(code);
+    return n === '96000000' || n === '94000000';
+  }
+
+  function isTotalEditableLabour(code) {
+    const n = normalizeLabourCode(code);
+    return n === 'OL000';
+  }
+
   function renderWarrantyClaimSection(container, claimRef, claimData, claimCode, isReplacementWarranty, claimCardId) {
     const db = getDb();
     if (!db) return;
 
     const warranty = (claimData && claimData.warranty) || {};
-    const partsModel  = Array.isArray(warranty.parts)  ? warranty.parts.map(p => ({ ...p }))  : [];
-    const labourModel = Array.isArray(warranty.labour) ? warranty.labour.map(l => ({ ...l })) : [];
+    const partsModel  = Array.isArray(warranty.parts)  ? warranty.parts.slice()  : [];
+    const labourModel = Array.isArray(warranty.labour) ? warranty.labour.slice() : [];
 
     let laborRateStd = 0;
 
@@ -383,13 +364,13 @@
       <div class="form-row">
         <div class="form-group">
           <label>Symptom</label>
-          <select data-role="gar-symptom">
+          <select id="gar_symptom_${claimCode}">
             <option value="">Seleziona...</option>
           </select>
         </div>
         <div class="form-group">
           <label>CCC Codes</label>
-          <select data-role="gar-ccc">
+          <select id="gar_ccc_${claimCode}">
             <option value="">Seleziona...</option>
           </select>
         </div>
@@ -399,8 +380,8 @@
         <div class="form-group">
           <label>Componente causa (codice ricambio)</label>
           <div style="display:flex; gap:4px;">
-            <input type="text" data-role="gar-causa-code" placeholder="Codice ricambio">
-            <button type="button" class="btn btn-secondary btn-small" data-role="gar-causa-search">Cerca</button>
+            <input type="text" id="gar_causa_code_${claimCode}" placeholder="Codice ricambio">
+            <button type="button" class="btn btn-secondary btn-small" id="gar_causa_search_${claimCode}">Cerca</button>
           </div>
           <div class="small-text">
             La ricerca avviene nel DB FTPartsCodes sul campo "codice".
@@ -408,13 +389,13 @@
         </div>
         <div class="form-group">
           <label>Descrizione componente</label>
-          <input type="text" data-role="gar-causa-descr" readonly>
+          <input type="text" id="gar_causa_descr_${claimCode}" readonly>
         </div>
       </div>
 
       <div class="form-group">
         <label>Commento tecnico</label>
-        <textarea data-role="gar-commento" rows="3"></textarea>
+        <textarea id="gar_commento_${claimCode}" rows="3"></textarea>
       </div>
 
       <!-- RICAMBI -->
@@ -425,13 +406,13 @@
         <div class="form-group">
           <label>Codice</label>
           <div style="display:flex; gap:4px;">
-            <input type="text" data-role="gar-part-code">
-            <button type="button" class="btn btn-secondary btn-small" data-role="gar-part-search">Cerca</button>
+            <input type="text" id="gar_part_code_${claimCode}">
+            <button type="button" class="btn btn-secondary btn-small" id="gar_part_search_${claimCode}">Cerca</button>
           </div>
         </div>
         <div class="form-group">
           <label>&nbsp;</label>
-          <button type="button" class="btn btn-primary btn-small" data-role="gar-part-add">Aggiungi ricambio</button>
+          <button type="button" class="btn btn-primary btn-small" id="gar_part_add_${claimCode}">Aggiungi ricambio</button>
         </div>
       </div>
 
@@ -447,11 +428,12 @@
             <th style="width:80px;">Azioni</th>
           </tr>
         </thead>
-        <tbody data-role="gar-parts-body"></tbody>
+        <tbody id="gar_parts_body_${claimCode}">
+        </tbody>
         <tfoot>
           <tr>
             <td colspan="5" style="text-align:right; font-weight:bold;">Totale ricambi:</td>
-            <td data-role="gar-parts-total">0.00 €</td>
+            <td id="gar_parts_total_${claimCode}">0.00 €</td>
             <td></td>
           </tr>
         </tfoot>
@@ -465,13 +447,13 @@
         <div class="form-group">
           <label>Codice labour</label>
           <div style="display:flex; gap:4px;">
-            <input type="text" data-role="gar-labour-code">
-            <button type="button" class="btn btn-secondary btn-small" data-role="gar-labour-search">Cerca</button>
+            <input type="text" id="gar_labour_code_${claimCode}">
+            <button type="button" class="btn btn-secondary btn-small" id="gar_labour_search_${claimCode}">Cerca</button>
           </div>
         </div>
         <div class="form-group">
           <label>&nbsp;</label>
-          <button type="button" class="btn btn-primary btn-small" data-role="gar-labour-add">Aggiungi manodopera</button>
+          <button type="button" class="btn btn-primary btn-small" id="gar_labour_add_${claimCode}">Aggiungi manodopera</button>
         </div>
       </div>
 
@@ -485,18 +467,19 @@
             <th style="width:80px;">Azioni</th>
           </tr>
         </thead>
-        <tbody data-role="gar-labour-body"></tbody>
+        <tbody id="gar_labour_body_${claimCode}">
+        </tbody>
         <tfoot>
           <tr>
             <td colspan="3" style="text-align:right; font-weight:bold;">Totale manodopera:</td>
-            <td data-role="gar-labour-total">0.00 €</td>
+            <td id="gar_labour_total_${claimCode}">0.00 €</td>
             <td></td>
           </tr>
         </tfoot>
       </table>
 
       <div style="margin-top:10px; text-align:right;">
-        <button type="button" class="btn btn-primary btn-small" data-role="gar-save">
+        <button type="button" class="btn btn-primary btn-small" id="gar_save_${claimCode}">
           Salva dati Garanzia
         </button>
       </div>
@@ -505,9 +488,8 @@
     container.appendChild(section);
 
     // --- Fattura riparazione precedente solo per Garanzia Ricambio ---
-    let fatturaBox = null;
     if (isReplacementWarranty) {
-      fatturaBox = document.createElement('div');
+      const fatturaBox = document.createElement('div');
       fatturaBox.className = 'card claim-detail-card';
       fatturaBox.style.marginTop = '8px';
 
@@ -517,104 +499,88 @@
           Carica almeno un file (png, jpeg, xlsx, xls, doc, docx, pdf, rar, zip, mp4, mp3).
         </div>
         <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
-          <input type="file" data-role="prev-invoice-file">
-          <button type="button" class="btn btn-primary btn-small" data-role="prev-invoice-upload">
+          <input type="file" id="prev_invoice_file_${claimCode}">
+          <button type="button" class="btn btn-primary btn-small" id="prev_invoice_upload_${claimCode}">
             Carica fattura
           </button>
         </div>
-        <div data-role="prev-invoice-list" class="attachments-list small-text" style="margin-top:6px;">
+        <div id="prev_invoice_list_${claimCode}" class="attachments-list small-text" style="margin-top:6px;">
           Nessuna fattura caricata per questo claim.
         </div>
       `;
       container.appendChild(fatturaBox);
 
-      setupPrevInvoiceHandlers(claimRef, claimCode, fatturaBox);
+      setupPrevInvoiceHandlers(claimRef, claimCode);
     }
 
-    // Riferimenti elementi *all'interno del section*
-    const selSymptom       = section.querySelector('[data-role="gar-symptom"]');
-    const selCcc           = section.querySelector('[data-role="gar-ccc"]');
-    const causaCode        = section.querySelector('[data-role="gar-causa-code"]');
-    const causaDescr       = section.querySelector('[data-role="gar-causa-descr"]');
-    const btnCausaSearch   = section.querySelector('[data-role="gar-causa-search"]');
-    const commento         = section.querySelector('[data-role="gar-commento"]');
+    // Riferimenti elementi
+    const selSymptom    = document.getElementById('gar_symptom_' + claimCode);
+    const selCcc        = document.getElementById('gar_ccc_' + claimCode);
+    const causaCode     = document.getElementById('gar_causa_code_' + claimCode);
+    const causaDescr    = document.getElementById('gar_causa_descr_' + claimCode);
+    const btnCausaSearch= document.getElementById('gar_causa_search_' + claimCode);
+    const commento      = document.getElementById('gar_commento_' + claimCode);
 
-    const partCodeInput    = section.querySelector('[data-role="gar-part-code"]');
-    const btnPartSearch    = section.querySelector('[data-role="gar-part-search"]');
-    const btnPartAdd       = section.querySelector('[data-role="gar-part-add"]');
-    const partsBody        = section.querySelector('[data-role="gar-parts-body"]');
-    const partsTotalEl     = section.querySelector('[data-role="gar-parts-total"]');
+    const partCodeInput = document.getElementById('gar_part_code_' + claimCode);
+    const btnPartSearch = document.getElementById('gar_part_search_' + claimCode);
+    const btnPartAdd    = document.getElementById('gar_part_add_' + claimCode);
+    const partsBody     = document.getElementById('gar_parts_body_' + claimCode);
+    const partsTotalEl  = document.getElementById('gar_parts_total_' + claimCode);
 
-    const labourCodeInput  = section.querySelector('[data-role="gar-labour-code"]');
-    const btnLabourSearch  = section.querySelector('[data-role="gar-labour-search"]');
-    const btnLabourAdd     = section.querySelector('[data-role="gar-labour-add"]');
-    const labourBody       = section.querySelector('[data-role="gar-labour-body"]');
-    const labourTotalEl    = section.querySelector('[data-role="gar-labour-total"]');
+    const labourCodeInput = document.getElementById('gar_labour_code_' + claimCode);
+    const btnLabourSearch = document.getElementById('gar_labour_search_' + claimCode);
+    const btnLabourAdd    = document.getElementById('gar_labour_add_' + claimCode);
+    const labourBody      = document.getElementById('gar_labour_body_' + claimCode);
+    const labourTotalEl   = document.getElementById('gar_labour_total_' + claimCode);
 
-    const btnSave          = section.querySelector('[data-role="gar-save"]');
-
-    console.log('[ftclaims-claimforms] Elementi garanzia per claim', claimCode, {
-      selSymptom: !!selSymptom,
-      selCcc: !!selCcc,
-      causaCode: !!causaCode,
-      causaDescr: !!causaDescr,
-      btnCausaSearch: !!btnCausaSearch,
-      commento: !!commento,
-      partCodeInput: !!partCodeInput,
-      btnPartSearch: !!btnPartSearch,
-      btnPartAdd: !!btnPartAdd,
-      partsBody: !!partsBody,
-      partsTotalEl: !!partsTotalEl,
-      labourCodeInput: !!labourCodeInput,
-      btnLabourSearch: !!btnLabourSearch,
-      btnLabourAdd: !!btnLabourAdd,
-      labourBody: !!labourBody,
-      labourTotalEl: !!labourTotalEl,
-      btnSave: !!btnSave
-    });
+    const btnSave         = document.getElementById('gar_save_' + claimCode);
 
     // Prefill campo commento / componente causa
-    if (warranty.comment && commento) commento.value = warranty.comment;
-    if (warranty.causePartCode && causaCode)  causaCode.value  = warranty.causePartCode;
-    if (warranty.causePartDescr && causaDescr) causaDescr.value = warranty.causePartDescr;
+    if (warranty.comment)        commento.value   = warranty.comment;
+    if (warranty.causePartCode)  causaCode.value  = warranty.causePartCode;
+    if (warranty.causePartDescr) causaDescr.value = warranty.causePartDescr;
+
+    // =======================
+    // Funzione di salvataggio unico warranty
+    // =======================
+    async function saveWarranty(options) {
+      const opts = options || {};
+      const notifyOk    = !!opts.notifyOk;
+      const notifyError = !!opts.notifyError;
+      const reason      = opts.reason || 'auto';
+
+      try {
+        const selectedSymptomId = selSymptom.value || null;
+        const selectedCccId     = selCcc.value || null;
+
+        const newWarranty = {
+          symptomId: selectedSymptomId,
+          cccId: selectedCccId,
+          causePartCode: (causaCode.value || '').trim() || null,
+          causePartDescr: (causaDescr.value || '').trim() || null,
+          comment: (commento.value || '').trim() || null,
+          parts: partsModel,
+          labour: labourModel
+        };
+
+        await claimRef.update({ warranty: newWarranty });
+        console.log('[ftclaims-claimforms] warranty salvata (' + reason + ')', newWarranty);
+        if (notifyOk) {
+          alert('Dati garanzia salvati.');
+        }
+      } catch (e) {
+        console.error('[ftclaims-claimforms] Errore salvataggio garanzia (' + reason + '):', e);
+        if (notifyError) {
+          alert('Errore nel salvataggio dati garanzia: ' + e.message);
+        }
+      }
+    }
 
     // =======================
     // Symptom + CCC codes
     // =======================
 
-    async function loadCccForSymptom(symptomId, preselectCccId) {
-      if (!selCcc) return;
-      selCcc.innerHTML = '<option value="">Seleziona...</option>';
-      if (!symptomId) return;
-      try {
-        const snap = await db
-          .collection('Symptom')
-          .doc(symptomId)
-          .collection('CCC_Codes')
-          .get();
-
-        snap.forEach(doc => {
-          const d = doc.data() || {};
-          const opt = document.createElement('option');
-          opt.value = doc.id;
-          const label =
-            (d.CCC_Code || d.code || doc.id) +
-            ' - ' +
-            (d.DescriptionItalian || d.description || d.Descrizione || '');
-          opt.textContent = label.trim();
-          selCcc.appendChild(opt);
-        });
-
-        if (preselectCccId) {
-          selCcc.value = preselectCccId;
-        }
-      } catch (e) {
-        console.error('[ftclaims-claimforms] Errore caricamento CCC_Codes:', e);
-      }
-    }
-
     async function loadSymptomsAndSelect() {
-      if (!selSymptom || !selCcc) return;
       try {
         const snap = await db.collection('Symptom').get();
         const savedSymptomId = warranty.symptomId || null;
@@ -624,6 +590,8 @@
           const d = doc.data() || {};
           const opt = document.createElement('option');
           opt.value = doc.id;
+
+          // usa codice + descrizione italiana (come prima)
           const label =
             (d.SymptomCode || d.code || doc.id) +
             ' - ' +
@@ -643,16 +611,53 @@
       }
     }
 
-    safeAddListener(selSymptom, 'change', () => {
+    async function loadCccForSymptom(symptomId, preselectCccId) {
+      selCcc.innerHTML = '<option value="">Seleziona...</option>';
+      if (!symptomId) return;
+      try {
+        const snap = await db
+          .collection('Symptom')
+          .doc(symptomId)
+          .collection('CCC_Codes')
+          .orderBy('order', 'asc')
+          .get();
+
+        snap.forEach(doc => {
+          const d = doc.data() || {};
+          const opt = document.createElement('option');
+          opt.value = doc.id;
+
+          // *** CORREZIONE PUNTO 1 ***
+          // Usa il campo "text" come descrizione da mostrare
+          const label = d.text || d.DescriptionItalian || d.description || d.Descrizione || doc.id;
+          opt.textContent = label.toString().trim();
+          selCcc.appendChild(opt);
+        });
+
+        if (preselectCccId) {
+          selCcc.value = preselectCccId;
+        }
+      } catch (e) {
+        console.error('[ftclaims-claimforms] Errore caricamento CCC_Codes:', e);
+      }
+    }
+
+    selSymptom.addEventListener('change', () => {
       const symptomId = selSymptom.value || null;
-      loadCccForSymptom(symptomId, null);
-    }, 'gar_symptom change');
+      loadCccForSymptom(symptomId, null).then(() => {
+        // autosalvo anche la modifica del symptom
+        saveWarranty({ reason: 'symptom change' });
+      });
+    });
+
+    selCcc.addEventListener('change', () => {
+      saveWarranty({ reason: 'ccc change' });
+    });
 
     // =======================
     // Componente causa (FTPartsCodes)
     // =======================
     async function searchCauseComponent() {
-      if (!causaCode || !causaDescr) return;
       const code = (causaCode.value || '').trim();
       if (!code) {
         alert('Inserisci un codice ricambio da cercare.');
@@ -682,20 +687,26 @@
           '';
 
         causaDescr.value = descr;
+
+        // salvo subito la modifica della componente causa
+        saveWarranty({ reason: 'cause search' });
       } catch (e) {
         console.error('[ftclaims-claimforms] Errore ricerca componente causa:', e);
         alert('Errore durante la ricerca del ricambio: ' + e.message);
       }
     }
 
-    safeAddListener(btnCausaSearch, 'click', searchCauseComponent, 'gar_causa_search click');
+    btnCausaSearch.addEventListener('click', searchCauseComponent);
+
+    commento.addEventListener('change', () => {
+      saveWarranty({ reason: 'comment change' });
+    });
 
     // =======================
     // Ricambi
     // =======================
 
     function rebuildPartsTable() {
-      if (!partsBody || !partsTotalEl) return;
       partsBody.innerHTML = '';
       let total = 0;
 
@@ -725,6 +736,8 @@
           p.quantity = Number(inputQty.value) || 0;
           p.total = (p.refund || 0) * p.quantity;
           rebuildPartsTable();
+          // *** salvataggio automatico ricambi ***
+          saveWarranty({ reason: 'parts qty change' });
         });
         tdQty.appendChild(inputQty);
 
@@ -739,6 +752,8 @@
         btnDel.addEventListener('click', () => {
           partsModel.splice(index, 1);
           rebuildPartsTable();
+          // *** salvataggio automatico ricambi ***
+          saveWarranty({ reason: 'parts delete' });
         });
         tdActions.appendChild(btnDel);
 
@@ -759,7 +774,6 @@
     }
 
     async function searchPartAndAdd() {
-      if (!partCodeInput) return;
       const code = (partCodeInput.value || '').trim();
       if (!code) {
         alert('Inserisci un codice ricambio da cercare.');
@@ -792,24 +806,26 @@
         partsModel.push(part);
         rebuildPartsTable();
         partCodeInput.value = '';
+
+        // *** salvataggio automatico ricambi ***
+        saveWarranty({ reason: 'parts add' });
       } catch (e) {
         console.error('[ftclaims-claimforms] Errore ricerca ricambio:', e);
         alert('Errore durante la ricerca del ricambio: ' + e.message);
       }
     }
 
-    safeAddListener(btnPartSearch, 'click', searchPartAndAdd, 'gar_part_search click');
-    safeAddListener(btnPartAdd, 'click', searchPartAndAdd, 'gar_part_add click');
+    btnPartSearch.addEventListener('click', searchPartAndAdd);
+    btnPartAdd.addEventListener('click', searchPartAndAdd);
 
-    rebuildPartsTable(); // iniziale
+    // Ricostruzione iniziale ricambi da Firestore
+    rebuildPartsTable();
 
     // =======================
     // Manodopera
     // =======================
 
     function rebuildLabourTable() {
-      if (!labourBody || !labourTotalEl) return;
-
       labourBody.innerHTML = '';
       let total = 0;
 
@@ -830,10 +846,11 @@
         inputQty.value = l.quantity != null ? l.quantity : 0;
         inputQty.style.width = '60px';
 
-        const editableQty = isQuantityEditableLabour(l.code);
+        const editableQty   = isQuantityEditableLabour(l.code);
         const editableTotal = isTotalEditableLabour(l.code);
 
-        inputQty.disabled = !editableQty && !editableTotal; // se OL000, qty non modificabile
+        // se OL000 => qty non modificabile
+        inputQty.disabled = !editableQty && !editableTotal;
 
         inputQty.addEventListener('change', () => {
           l.quantity = Number(inputQty.value) || 0;
@@ -841,6 +858,8 @@
             l.total = (l.quantity || 0) * (laborRateStd || 0);
           }
           rebuildLabourTable();
+          // *** salvataggio automatico manodopera ***
+          saveWarranty({ reason: 'labour qty change' });
         });
 
         tdQty.appendChild(inputQty);
@@ -868,6 +887,8 @@
             }
           }
           rebuildLabourTable();
+          // *** salvataggio automatico manodopera ***
+          saveWarranty({ reason: 'labour total change' });
         });
 
         tdTotal.appendChild(inputTotal);
@@ -880,6 +901,8 @@
         btnDel.addEventListener('click', () => {
           labourModel.splice(index, 1);
           rebuildLabourTable();
+          // *** salvataggio automatico manodopera ***
+          saveWarranty({ reason: 'labour delete' });
         });
         tdActions.appendChild(btnDel);
 
@@ -898,7 +921,6 @@
     }
 
     async function searchLabourAndAdd() {
-      if (!labourCodeInput) return;
       const code = (labourCodeInput.value || '').trim();
       if (!code) {
         alert('Inserisci un codice manodopera da cercare.');
@@ -934,16 +956,20 @@
         labourModel.push(labour);
         rebuildLabourTable();
         labourCodeInput.value = '';
+
+        // *** salvataggio automatico manodopera ***
+        saveWarranty({ reason: 'labour add' });
       } catch (e) {
         console.error('[ftclaims-claimforms] Errore ricerca manodopera:', e);
         alert('Errore durante la ricerca della manodopera: ' + e.message);
       }
     }
 
-    safeAddListener(btnLabourSearch, 'click', searchLabourAndAdd, 'gar_labour_search click');
-    safeAddListener(btnLabourAdd, 'click', searchLabourAndAdd, 'gar_labour_add click');
+    btnLabourSearch.addEventListener('click', searchLabourAndAdd);
+    btnLabourAdd.addEventListener('click', searchLabourAndAdd);
 
-    rebuildLabourTable(); // iniziale
+    // Ricostruzione iniziale manodopera da Firestore
+    rebuildLabourTable();
 
     // =======================
     // Carico Symptom / CCC iniziali
@@ -962,47 +988,23 @@
     }
 
     // =======================
-    // Salvataggio completo
+    // Salvataggio completo (bottone)
     // =======================
-    safeAddListener(btnSave, 'click', async () => {
-      try {
-        // Se Garanzia Ricambio: controllo fattura precedente
-        if (isReplacementWarranty) {
-          const hasInvoice = await checkPrevInvoiceExists(claimRef);
-          if (!hasInvoice) {
-            alert('Per un claim di tipo "Garanzia Ricambio" è obbligatorio allegare almeno una "Fattura riparazione precedente".');
-            return;
-          }
-        }
-
-        const selectedSymptomId = selSymptom ? (selSymptom.value || null) : null;
-        const selectedCccId     = selCcc ? (selCcc.value || null) : null;
-
-        const newWarranty = {
-          symptomId: selectedSymptomId,
-          cccId: selectedCccId,
-          causePartCode:  causaCode  ? ((causaCode.value  || '').trim() || null) : null,
-          causePartDescr: causaDescr ? ((causaDescr.value || '').trim() || null) : null,
-          comment:        commento   ? ((commento.value   || '').trim() || null) : null,
-          parts: partsModel,
-          labour: labourModel
-        };
-
-        await claimRef.update({ warranty: newWarranty });
-        alert('Dati garanzia salvati.');
-      } catch (e) {
-        console.error('[ftclaims-claimforms] Errore salvataggio garanzia:', e);
-        alert('Errore nel salvataggio dati garanzia: ' + e.message);
-      }
-    }, 'gar_save click');
+    btnSave.addEventListener('click', () => {
+      saveWarranty({
+        reason: 'manual save',
+        notifyOk: true,
+        notifyError: true
+      });
+    });
   }
 
   // ==========================
   // 3) Fattura riparazione precedente (Garanzia Ricambio)
   // ==========================
 
-  async function loadPrevInvoiceList(claimRef, claimCode, rootEl) {
-    const listEl = rootEl && rootEl.querySelector('[data-role="prev-invoice-list"]');
+  async function loadPrevInvoiceList(claimRef, claimCode) {
+    const listEl = document.getElementById('prev_invoice_list_' + claimCode);
     if (!listEl) return;
 
     listEl.textContent = 'Caricamento fatture...';
@@ -1057,7 +1059,7 @@
               await storage.ref(att.path).delete().catch(() => {});
             }
             await claimRef.collection('Attachments').doc(att.id).delete();
-            await loadPrevInvoiceList(claimRef, claimCode, rootEl);
+            await loadPrevInvoiceList(claimRef, claimCode);
           } catch (err) {
             console.error('[ftclaims-claimforms] Errore eliminazione fattura:', err);
             alert('Errore durante l\'eliminazione della fattura: ' + err.message);
@@ -1078,15 +1080,12 @@
     }
   }
 
-  function setupPrevInvoiceHandlers(claimRef, claimCode, rootEl) {
-    const input = rootEl && rootEl.querySelector('[data-role="prev-invoice-file"]');
-    const btn   = rootEl && rootEl.querySelector('[data-role="prev-invoice-upload"]');
-    if (!input || !btn) {
-      console.warn('[ftclaims-claimforms] Controlli fattura precedente non trovati per claim', claimCode);
-      return;
-    }
+  function setupPrevInvoiceHandlers(claimRef, claimCode) {
+    const input = document.getElementById('prev_invoice_file_' + claimCode);
+    const btn   = document.getElementById('prev_invoice_upload_' + claimCode);
+    if (!input || !btn) return;
 
-    loadPrevInvoiceList(claimRef, claimCode, rootEl);
+    loadPrevInvoiceList(claimRef, claimCode);
 
     btn.addEventListener('click', async () => {
       const files = input.files;
@@ -1099,7 +1098,7 @@
       try {
         await uploadPrevInvoice(claimRef, claimCode, file);
         input.value = '';
-        await loadPrevInvoiceList(claimRef, claimCode, rootEl);
+        await loadPrevInvoiceList(claimRef, claimCode);
       } catch (e) {
         console.error('[ftclaims-claimforms] Errore upload fattura:', e);
         alert('Errore nel caricamento della fattura: ' + e.message);
@@ -1112,9 +1111,9 @@
     const db = getDb();
     if (!storage || !db) throw new Error('Storage/Firestore non disponibili');
 
-    // claimRef.path = "ClaimCards/<id>/Claims/<code>"
-    const segments = claimRef.path.split('/');
-    const claimCardId = segments[1];
+    const claimPath = claimRef.path; // "ClaimCards/<id>/Claims/<code>"
+    const segments = claimPath.split('/');
+    const claimCardId = segments[1]; // ClaimCards/<id>
     const basePath = 'ClaimCards/' + claimCardId + '/Claims/' + claimCode + '/Attachments/';
 
     const safeName = Date.now() + '_' + file.name.replace(/[^\w.\-]/g, '_');
