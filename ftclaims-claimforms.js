@@ -383,13 +383,13 @@
       <div class="form-row">
         <div class="form-group">
           <label>Symptom</label>
-          <select id="gar_symptom_${claimCode}">
+          <select data-role="gar-symptom">
             <option value="">Seleziona...</option>
           </select>
         </div>
         <div class="form-group">
           <label>CCC Codes</label>
-          <select id="gar_ccc_${claimCode}">
+          <select data-role="gar-ccc">
             <option value="">Seleziona...</option>
           </select>
         </div>
@@ -399,8 +399,8 @@
         <div class="form-group">
           <label>Componente causa (codice ricambio)</label>
           <div style="display:flex; gap:4px;">
-            <input type="text" id="gar_causa_code_${claimCode}" placeholder="Codice ricambio">
-            <button type="button" class="btn btn-secondary btn-small" id="gar_causa_search_${claimCode}">Cerca</button>
+            <input type="text" data-role="gar-causa-code" placeholder="Codice ricambio">
+            <button type="button" class="btn btn-secondary btn-small" data-role="gar-causa-search">Cerca</button>
           </div>
           <div class="small-text">
             La ricerca avviene nel DB FTPartsCodes sul campo "codice".
@@ -408,13 +408,13 @@
         </div>
         <div class="form-group">
           <label>Descrizione componente</label>
-          <input type="text" id="gar_causa_descr_${claimCode}" readonly>
+          <input type="text" data-role="gar-causa-descr" readonly>
         </div>
       </div>
 
       <div class="form-group">
         <label>Commento tecnico</label>
-        <textarea id="gar_commento_${claimCode}" rows="3"></textarea>
+        <textarea data-role="gar-commento" rows="3"></textarea>
       </div>
 
       <!-- RICAMBI -->
@@ -425,13 +425,13 @@
         <div class="form-group">
           <label>Codice</label>
           <div style="display:flex; gap:4px;">
-            <input type="text" id="gar_part_code_${claimCode}">
-            <button type="button" class="btn btn-secondary btn-small" id="gar_part_search_${claimCode}">Cerca</button>
+            <input type="text" data-role="gar-part-code">
+            <button type="button" class="btn btn-secondary btn-small" data-role="gar-part-search">Cerca</button>
           </div>
         </div>
         <div class="form-group">
           <label>&nbsp;</label>
-          <button type="button" class="btn btn-primary btn-small" id="gar_part_add_${claimCode}">Aggiungi ricambio</button>
+          <button type="button" class="btn btn-primary btn-small" data-role="gar-part-add">Aggiungi ricambio</button>
         </div>
       </div>
 
@@ -447,11 +447,11 @@
             <th style="width:80px;">Azioni</th>
           </tr>
         </thead>
-        <tbody id="gar_parts_body_${claimCode}"></tbody>
+        <tbody data-role="gar-parts-body"></tbody>
         <tfoot>
           <tr>
             <td colspan="5" style="text-align:right; font-weight:bold;">Totale ricambi:</td>
-            <td id="gar_parts_total_${claimCode}">0.00 €</td>
+            <td data-role="gar-parts-total">0.00 €</td>
             <td></td>
           </tr>
         </tfoot>
@@ -465,13 +465,13 @@
         <div class="form-group">
           <label>Codice labour</label>
           <div style="display:flex; gap:4px;">
-            <input type="text" id="gar_labour_code_${claimCode}">
-            <button type="button" class="btn btn-secondary btn-small" id="gar_labour_search_${claimCode}">Cerca</button>
+            <input type="text" data-role="gar-labour-code">
+            <button type="button" class="btn btn-secondary btn-small" data-role="gar-labour-search">Cerca</button>
           </div>
         </div>
         <div class="form-group">
           <label>&nbsp;</label>
-          <button type="button" class="btn btn-primary btn-small" id="gar_labour_add_${claimCode}">Aggiungi manodopera</button>
+          <button type="button" class="btn btn-primary btn-small" data-role="gar-labour-add">Aggiungi manodopera</button>
         </div>
       </div>
 
@@ -485,18 +485,18 @@
             <th style="width:80px;">Azioni</th>
           </tr>
         </thead>
-        <tbody id="gar_labour_body_${claimCode}"></tbody>
+        <tbody data-role="gar-labour-body"></tbody>
         <tfoot>
           <tr>
             <td colspan="3" style="text-align:right; font-weight:bold;">Totale manodopera:</td>
-            <td id="gar_labour_total_${claimCode}">0.00 €</td>
+            <td data-role="gar-labour-total">0.00 €</td>
             <td></td>
           </tr>
         </tfoot>
       </table>
 
       <div style="margin-top:10px; text-align:right;">
-        <button type="button" class="btn btn-primary btn-small" id="gar_save_${claimCode}">
+        <button type="button" class="btn btn-primary btn-small" data-role="gar-save">
           Salva dati Garanzia
         </button>
       </div>
@@ -505,8 +505,9 @@
     container.appendChild(section);
 
     // --- Fattura riparazione precedente solo per Garanzia Ricambio ---
+    let fatturaBox = null;
     if (isReplacementWarranty) {
-      const fatturaBox = document.createElement('div');
+      fatturaBox = document.createElement('div');
       fatturaBox.className = 'card claim-detail-card';
       fatturaBox.style.marginTop = '8px';
 
@@ -516,41 +517,41 @@
           Carica almeno un file (png, jpeg, xlsx, xls, doc, docx, pdf, rar, zip, mp4, mp3).
         </div>
         <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
-          <input type="file" id="prev_invoice_file_${claimCode}">
-          <button type="button" class="btn btn-primary btn-small" id="prev_invoice_upload_${claimCode}">
+          <input type="file" data-role="prev-invoice-file">
+          <button type="button" class="btn btn-primary btn-small" data-role="prev-invoice-upload">
             Carica fattura
           </button>
         </div>
-        <div id="prev_invoice_list_${claimCode}" class="attachments-list small-text" style="margin-top:6px;">
+        <div data-role="prev-invoice-list" class="attachments-list small-text" style="margin-top:6px;">
           Nessuna fattura caricata per questo claim.
         </div>
       `;
       container.appendChild(fatturaBox);
 
-      setupPrevInvoiceHandlers(claimRef, claimCode);
+      setupPrevInvoiceHandlers(claimRef, claimCode, fatturaBox);
     }
 
-    // Riferimenti elementi principali
-    const selSymptom    = document.getElementById('gar_symptom_' + claimCode);
-    const selCcc        = document.getElementById('gar_ccc_' + claimCode);
-    const causaCode     = document.getElementById('gar_causa_code_' + claimCode);
-    const causaDescr    = document.getElementById('gar_causa_descr_' + claimCode);
-    const btnCausaSearch= document.getElementById('gar_causa_search_' + claimCode);
-    const commento      = document.getElementById('gar_commento_' + claimCode);
+    // Riferimenti elementi *all'interno del section*
+    const selSymptom       = section.querySelector('[data-role="gar-symptom"]');
+    const selCcc           = section.querySelector('[data-role="gar-ccc"]');
+    const causaCode        = section.querySelector('[data-role="gar-causa-code"]');
+    const causaDescr       = section.querySelector('[data-role="gar-causa-descr"]');
+    const btnCausaSearch   = section.querySelector('[data-role="gar-causa-search"]');
+    const commento         = section.querySelector('[data-role="gar-commento"]');
 
-    const partCodeInput = document.getElementById('gar_part_code_' + claimCode);
-    const btnPartSearch = document.getElementById('gar_part_search_' + claimCode);
-    const btnPartAdd    = document.getElementById('gar_part_add_' + claimCode);
-    const partsBody     = document.getElementById('gar_parts_body_' + claimCode);
-    const partsTotalEl  = document.getElementById('gar_parts_total_' + claimCode);
+    const partCodeInput    = section.querySelector('[data-role="gar-part-code"]');
+    const btnPartSearch    = section.querySelector('[data-role="gar-part-search"]');
+    const btnPartAdd       = section.querySelector('[data-role="gar-part-add"]');
+    const partsBody        = section.querySelector('[data-role="gar-parts-body"]');
+    const partsTotalEl     = section.querySelector('[data-role="gar-parts-total"]');
 
-    const labourCodeInput = document.getElementById('gar_labour_code_' + claimCode);
-    const btnLabourSearch = document.getElementById('gar_labour_search_' + claimCode);
-    const btnLabourAdd    = document.getElementById('gar_labour_add_' + claimCode);
-    const labourBody      = document.getElementById('gar_labour_body_' + claimCode);
-    const labourTotalEl   = document.getElementById('gar_labour_total_' + claimCode);
+    const labourCodeInput  = section.querySelector('[data-role="gar-labour-code"]');
+    const btnLabourSearch  = section.querySelector('[data-role="gar-labour-search"]');
+    const btnLabourAdd     = section.querySelector('[data-role="gar-labour-add"]');
+    const labourBody       = section.querySelector('[data-role="gar-labour-body"]');
+    const labourTotalEl    = section.querySelector('[data-role="gar-labour-total"]');
 
-    const btnSave         = document.getElementById('gar_save_' + claimCode);
+    const btnSave          = section.querySelector('[data-role="gar-save"]');
 
     console.log('[ftclaims-claimforms] Elementi garanzia per claim', claimCode, {
       selSymptom: !!selSymptom,
@@ -1000,8 +1001,8 @@
   // 3) Fattura riparazione precedente (Garanzia Ricambio)
   // ==========================
 
-  async function loadPrevInvoiceList(claimRef, claimCode) {
-    const listEl = document.getElementById('prev_invoice_list_' + claimCode);
+  async function loadPrevInvoiceList(claimRef, claimCode, rootEl) {
+    const listEl = rootEl && rootEl.querySelector('[data-role="prev-invoice-list"]');
     if (!listEl) return;
 
     listEl.textContent = 'Caricamento fatture...';
@@ -1056,7 +1057,7 @@
               await storage.ref(att.path).delete().catch(() => {});
             }
             await claimRef.collection('Attachments').doc(att.id).delete();
-            await loadPrevInvoiceList(claimRef, claimCode);
+            await loadPrevInvoiceList(claimRef, claimCode, rootEl);
           } catch (err) {
             console.error('[ftclaims-claimforms] Errore eliminazione fattura:', err);
             alert('Errore durante l\'eliminazione della fattura: ' + err.message);
@@ -1077,15 +1078,15 @@
     }
   }
 
-  function setupPrevInvoiceHandlers(claimRef, claimCode) {
-    const input = document.getElementById('prev_invoice_file_' + claimCode);
-    const btn   = document.getElementById('prev_invoice_upload_' + claimCode);
+  function setupPrevInvoiceHandlers(claimRef, claimCode, rootEl) {
+    const input = rootEl && rootEl.querySelector('[data-role="prev-invoice-file"]');
+    const btn   = rootEl && rootEl.querySelector('[data-role="prev-invoice-upload"]');
     if (!input || !btn) {
       console.warn('[ftclaims-claimforms] Controlli fattura precedente non trovati per claim', claimCode);
       return;
     }
 
-    loadPrevInvoiceList(claimRef, claimCode);
+    loadPrevInvoiceList(claimRef, claimCode, rootEl);
 
     btn.addEventListener('click', async () => {
       const files = input.files;
@@ -1098,7 +1099,7 @@
       try {
         await uploadPrevInvoice(claimRef, claimCode, file);
         input.value = '';
-        await loadPrevInvoiceList(claimRef, claimCode);
+        await loadPrevInvoiceList(claimRef, claimCode, rootEl);
       } catch (e) {
         console.error('[ftclaims-claimforms] Errore upload fattura:', e);
         alert('Errore nel caricamento della fattura: ' + e.message);
