@@ -3,6 +3,10 @@
 // Logica riutilizzabile per la TIPOLOGIA dei claims
 // ===============================
 
+/**
+ * Normalizza il tipo di ClaimCard in MAIUSCOLO senza spazi.
+ * Es: "Warranty" → "WARRANTY"
+ */
 function normalizeCardType(cardType) {
   const normalized = (cardType || '').toString().trim().toUpperCase();
   console.log('[ftclaims-claims] normalizeCardType:', cardType, '=>', normalized);
@@ -13,24 +17,28 @@ function normalizeCardType(cardType) {
  * Inizializza i controlli per la tipologia claim in base
  * al tipo di ClaimCard:
  *
- *  - WARRANTY    -> combobox con: RSA, Garanzia, Garanzia Ricambio
- *  - MAINTENANCE -> tipologia fissa: Manutenzione
- *  - FSA         -> tipologia fissa: FSA
- *  - GOODWILL    -> tipologia fissa: Goodwill
+ *  - WARRANTY / FULL LINE / DRIVE LINE -> combobox con: (vuoto), RSA, Garanzia, Garanzia Ricambio
+ *  - MAINTENANCE                       -> tipologia fissa: Manutenzione
+ *  - FSA                               -> tipologia fissa: FSA
+ *  - GOODWILL                          -> tipologia fissa: Goodwill
+ *
+ *  ids.containerId  = id del contenitore del select (combo tipi claim)
+ *  ids.selectId     = id del <select> per la tipologia claim
+ *  ids.fixedId      = id dell'<input> (o hidden) per la tipologia fissa
  */
 function initClaimTypeControls(cardType, ids = {}) {
   console.log('[ftclaims-claims] initClaimTypeControls chiamata con:', cardType);
 
-  const containerId = ids.containerId || "claimTypeContainer";
-  const selectId = ids.selectId || "claimType";
-  const fixedId = ids.fixedId || "fixedClaimType";
+  const containerId = ids.containerId || 'claimTypeContainer';
+  const selectId    = ids.selectId    || 'claimType';
+  const fixedId     = ids.fixedId     || 'fixedClaimType';
 
   const container = document.getElementById(containerId);
-  const select = document.getElementById(selectId);
-  const fixed = document.getElementById(fixedId);
+  const select    = document.getElementById(selectId);
+  const fixed     = document.getElementById(fixedId);
 
   if (!container || !select || !fixed) {
-    console.error("initClaimTypeControls: elementi HTML mancanti.", {
+    console.error('[ftclaims-claims] initClaimTypeControls: elementi HTML mancanti.', {
       containerId,
       selectId,
       fixedId
@@ -42,66 +50,83 @@ function initClaimTypeControls(cardType, ids = {}) {
   console.log('[ftclaims-claims] tipo normalizzato:', type);
 
   // Reset di base
-  container.style.display = "none";
-  select.innerHTML = "";
-  fixed.value = "";
+  container.style.display = 'none';
+  select.innerHTML = '';
+  fixed.value = '';
 
-  switch (type) {
-    case "WARRANTY": {
-      container.style.display = "block";
+  // Utility per aggiungere l'opzione "Seleziona..."
+  function addPlaceholderOption(sel) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = 'Seleziona...';
+    sel.appendChild(opt);
+  }
 
-      const warrantyOptions = [
-        "RSA",
-        "Garanzia",
-        "Garanzia Ricambio"
-      ];
+  // Trattiamo WARRANTY, FULL LINE e DRIVE LINE allo stesso modo
+  if (type === 'WARRANTY' || type === 'FULL LINE' || type === 'DRIVE LINE') {
+    container.style.display = 'block';
 
-      warrantyOptions.forEach(opt => {
-        const o = document.createElement("option");
-        o.value = opt;
-        o.textContent = opt;
-        select.appendChild(o);
-      });
+    // Opzione placeholder
+    addPlaceholderOption(select);
 
-      console.log('[ftclaims-claims] opzioni WARRANTY impostate');
-      break;
-    }
+    const warrantyOptions = [
+      'RSA',
+      'Garanzia',
+      'Garanzia Ricambio'
+    ];
 
-    case "MAINTENANCE":
-      fixed.value = "Manutenzione";
-      console.log('[ftclaims-claims] tipo fisso: Manutenzione');
-      break;
+    warrantyOptions.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt;
+      o.textContent = opt;
+      select.appendChild(o);
+    });
 
-    case "FSA":
-      fixed.value = "FSA";
-      console.log('[ftclaims-claims] tipo fisso: FSA');
-      break;
+    console.log('[ftclaims-claims] opzioni WARRANTY/FL/DL impostate:', warrantyOptions);
 
-    case "GOODWILL":
-      fixed.value = "Goodwill";
-      console.log('[ftclaims-claims] tipo fisso: Goodwill');
-      break;
+  } else if (type === 'MAINTENANCE') {
+    fixed.value = 'Manutenzione';
+    console.log('[ftclaims-claims] tipo fisso: Manutenzione');
 
-    default:
-      console.error("Tipo di ClaimCard non riconosciuto in initClaimTypeControls:", cardType, '=> normalizzato:', type);
+  } else if (type === 'FSA') {
+    fixed.value = 'FSA';
+    console.log('[ftclaims-claims] tipo fisso: FSA');
+
+  } else if (type === 'GOODWILL') {
+    fixed.value = 'Goodwill';
+    console.log('[ftclaims-claims] tipo fisso: Goodwill');
+
+  } else {
+    console.error(
+      '[ftclaims-claims] Tipo di ClaimCard non riconosciuto in initClaimTypeControls:',
+      cardType,
+      '=> normalizzato:',
+      type
+    );
   }
 }
 
 /**
  * Restituisce la tipologia di claim da salvare,
  * in base al tipo di ClaimCard.
+ *
+ * Per WARRANTY / FULL LINE / DRIVE LINE:
+ *   -> usa il valore selezionato nella combobox (può essere null se non selezionato)
+ *
+ * Per MAINTENANCE / FSA / GOODWILL:
+ *   -> usa il valore nel campo "fixedClaimType"
  */
 function getCurrentClaimType(cardType, ids = {}) {
-  const containerId = ids.containerId || "claimTypeContainer";
-  const selectId = ids.selectId || "claimType";
-  const fixedId = ids.fixedId || "fixedClaimType";
+  const containerId = ids.containerId || 'claimTypeContainer';
+  const selectId    = ids.selectId    || 'claimType';
+  const fixedId     = ids.fixedId     || 'fixedClaimType';
 
   const container = document.getElementById(containerId);
-  const select = document.getElementById(selectId);
-  const fixed = document.getElementById(fixedId);
+  const select    = document.getElementById(selectId);
+  const fixed     = document.getElementById(fixedId);
 
   if (!container || !select || !fixed) {
-    console.error("getCurrentClaimType: elementi HTML mancanti.", {
+    console.error('[ftclaims-claims] getCurrentClaimType: elementi HTML mancanti.', {
       containerId,
       selectId,
       fixedId
@@ -111,8 +136,8 @@ function getCurrentClaimType(cardType, ids = {}) {
 
   const type = normalizeCardType(cardType);
 
-  if (type === "WARRANTY") {
-    console.log('[ftclaims-claims] getCurrentClaimType (WARRANTY):', select.value);
+  if (type === 'WARRANTY' || type === 'FULL LINE' || type === 'DRIVE LINE') {
+    console.log('[ftclaims-claims] getCurrentClaimType (WARRANTY/FL/DL):', select.value);
     return select.value || null;
   } else {
     console.log('[ftclaims-claims] getCurrentClaimType (fisso):', fixed.value);
