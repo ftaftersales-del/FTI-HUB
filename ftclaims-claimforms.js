@@ -1,1173 +1,1128 @@
 // ===============================
 // ftclaims-claimforms.js
-// Dettagli dei singoli claim (RSA, Garanzia, ...)
+// Gestione UI e salvataggio dei singoli CLAIM
+// (RSA, Garanzia, Garanzia Ricambio, ecc.)
 // ===============================
 
-function normalizeClaimType(ct) {
-  return (ct || "").toString().trim().toUpperCase();
-}
+(function () {
+  // ==========================
+  // Utility comuni
+  // ==========================
 
-/**
- * Entry point:
- *   - claimType: "RSA", "Garanzia", ...
- *   - container: div interno alla card della singola riparazione
- *   - claimData: dati Firestore del claim
- *   - ctx: { claimCardId, claimCode }
- */
-function renderClaimDetails(claimType, container, claimData, ctx) {
-  const type = normalizeClaimType(claimType);
-
-  container.innerHTML = "";
-
-  if (type === "RSA") {
-    renderRSADetails(container, claimData, ctx);
-  } else if (type === "GARANZIA") {
-    renderGaranziaDetails(container, claimData, ctx);
-  } else if (type) {
-    const info = document.createElement("div");
-    info.className = "small-text";
-    info.textContent =
-      'Per la tipologia "' + type + '" non sono ancora previsti campi aggiuntivi.';
-    container.appendChild(info);
-  } else {
-    const info = document.createElement("div");
-    info.className = "small-text";
-    info.textContent = "Tipologia claim non specificata.";
-    container.appendChild(info);
+  function getDb() {
+    if (!firebase || !firebase.firestore) {
+      console.error('[ftclaims-claimforms] Firestore non disponibile');
+      return null;
+    }
+    return firebase.firestore();
   }
-}
 
-/* ===============================
-   RSA
-=============================== */
+  function getStorage() {
+    if (!firebase || !firebase.storage) {
+      console.error('[ftclaims-claimforms] Storage non disponibile');
+      return null;
+    }
+    return firebase.storage();
+  }
 
-function isWeekendOrItalianHoliday(dateStr) {
-  if (!dateStr) return false;
-  const d = new Date(dateStr + "T00:00:00");
-  if (isNaN(d.getTime())) return false;
+  function toNumberOrNull(v) {
+    if (v === null || v === undefined) return null;
+    const s = v.toString().trim();
+    if (s === '') return null;
+    const n = Number(s.replace(',', '.'));
+    return isNaN(n) ? null : n;
+  }
 
-  const day = d.getDay(); // 0 domenica, 6 sabato
-  if (day === 0 || day === 6) return true;
+  function formatEuro(v) {
+    const n = Number(v || 0);
+    return n.toFixed(2) + ' €';
+  }
 
-  const month = (d.getMonth() + 1).toString().padStart(2, "0");
-  const dayOfMonth = d.getDate().toString().padStart(2, "0");
-  const md = month + "-" + dayOfMonth;
-
-  const holidays = [
-    "01-01", // Capodanno
-    "01-06", // Epifania
-    "04-25", // Liberazione
-    "05-01", // Festa del lavoro
-    "06-02", // Festa della Repubblica
-    "08-15", // Ferragosto
-    "11-01", // Ognissanti
-    "12-08", // Immacolata
-    "12-25", // Natale
-    "12-26"  // Santo Stefano
+  // --------------------------
+  // Festività italiane "standard"
+  // (solo per blocco DAYSHIFT RSA)
+  // --------------------------
+  const IT_HOLIDAYS = [
+    '01-01', // Capodanno
+    '01-06', // Epifania
+    '04-25', // Liberazione
+    '05-01', // Lavoro
+    '06-02', // Repubblica
+    '08-15', // Ferragosto
+    '11-01', // Ognissanti
+    '12-08', // Immacolata
+    '12-25', // Natale
+    '12-26'  // S. Stefano
   ];
 
-  return holidays.includes(md);
-}
+  function isItalianHoliday(dateStr) {
+    // dateStr nel formato YYYY-MM-DD
+    if (!dateStr || dateStr.length !== 10) return false;
+    const mmdd = dateStr.substring(5); // "MM-DD"
+    return IT_HOLIDAYS.indexOf(mmdd) !== -1;
+  }
 
-function renderRSADetails(container, claimData, ctx) {
-  const rsa = claimData.rsa || {};
-  const prefix = "rsa_" + ctx.claimCode + "_";
+  function isWeekend(dateStr) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr + 'T00:00:00');
+    const day = d.getDay(); // 0=Dom, 6=Sab
+    return day === 0 || day === 6;
+  }
 
-  const html = `
-    <h4 style="margin: 4px 0 6px; font-size: 13px;">Dati RSA</h4>
+  // ==========================
+  // Entry Point: renderClaimDetails
+  // ==========================
 
-    <div class="form-group">
-      <label for="${prefix}date">Data RSA (inizio intervento)</label>
-      <input type="date" id="${prefix}date">
-      <div class="small-text">
-        Se cade di sabato, domenica o festività nazionale, il DAYSHIFT non è compilabile.
-      </div>
-    </div>
+  /**
+   * Disegna il contenuto di un claim all'interno di container,
+   * in base alla tipologia:
+   *  - "RSA"
+   *  - "Garanzia"
+   *  - "Garanzia Ricambio"
+   */
+  window.renderClaimDetails = function renderClaimDetails(claimType, container, claimData, ctx) {
+    if (!container) return;
+    const db = getDb();
+    if (!db) return;
 
-    <div class="form-group">
-      <label>
-        <input type="checkbox" id="${prefix}onlyTow">
-        Solo Traino
-      </label>
-      <div class="small-text">
-        Se selezionato, si compilano solo "Caso RSA n." e "Traino, costi correlati".
-      </div>
-    </div>
+    const type = (claimType || claimData.type || '').toString().trim();
+    const normType = type.toUpperCase();
+    const claimCardId = ctx && ctx.claimCardId;
+    const claimCode   = ctx && ctx.claimCode;
 
-    <div class="form-group">
-      <div class="shift-box">
-        <span class="shift-label">DAYSHIFT</span>
-        <input type="number" id="${prefix}dayHours" class="time-input" min="0" max="99" step="1">
-        <span class="time-separator">:</span>
-        <input type="number" id="${prefix}dayMinutes" class="time-input" min="0" max="59" step="1">
-      </div>
-
-      <div class="shift-box">
-        <span class="shift-label">NIGHTSHIFT</span>
-        <input type="number" id="${prefix}nightHours" class="time-input" min="0" max="99" step="1">
-        <span class="time-separator">:</span>
-        <input type="number" id="${prefix}nightMinutes" class="time-input" min="0" max="59" step="1">
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="${prefix}km">PERCORRENZA - Km</label>
-      <input type="number" id="${prefix}km" min="0" step="1">
-    </div>
-
-    <div class="form-group">
-      <label for="${prefix}case">Caso RSA n.</label>
-      <input type="text" id="${prefix}case" maxlength="7">
-    </div>
-
-    <div class="form-group">
-      <label for="${prefix}towCosts">Traino, costi correlati (€)</label>
-      <input type="number" id="${prefix}towCosts" min="0" step="0.01" class="currency-input">
-    </div>
-
-    <div class="form-group">
-      <label for="${prefix}invoices">Fatture (uno o più file)</label>
-      <input type="file" id="${prefix}invoices" multiple>
-    </div>
-
-    <div class="form-group">
-      <label for="${prefix}route">Tragitto (uno o più file)</label>
-      <input type="file" id="${prefix}route" multiple>
-    </div>
-
-    <div class="form-group">
-      <button type="button" id="${prefix}saveBtn" class="btn btn-primary btn-small">
-        Salva dati RSA
-      </button>
-    </div>
-  `;
-
-  container.innerHTML = html;
-
-  // Riferimenti agli elementi
-  const dateInput      = container.querySelector("#" + prefix + "date");
-  const onlyTowInput   = container.querySelector("#" + prefix + "onlyTow");
-  const dayHoursInput  = container.querySelector("#" + prefix + "dayHours");
-  const dayMinInput    = container.querySelector("#" + prefix + "dayMinutes");
-  const nightHoursInput= container.querySelector("#" + prefix + "nightHours");
-  const nightMinInput  = container.querySelector("#" + prefix + "nightMinutes");
-  const kmInput        = container.querySelector("#" + prefix + "km");
-  const caseInput      = container.querySelector("#" + prefix + "case");
-  const towCostsInput  = container.querySelector("#" + prefix + "towCosts");
-  const invoicesInput  = container.querySelector("#" + prefix + "invoices");
-  const routeInput     = container.querySelector("#" + prefix + "route");
-  const saveBtn        = container.querySelector("#" + prefix + "saveBtn");
-
-  // Pre-compilazione dai dati esistenti
-  if (rsa.date) dateInput.value = rsa.date;
-  if (rsa.onlyTow) onlyTowInput.checked = !!rsa.onlyTow;
-  if (rsa.dayShiftHours != null)   dayHoursInput.value = rsa.dayShiftHours;
-  if (rsa.dayShiftMinutes != null) dayMinInput.value   = rsa.dayShiftMinutes;
-  if (rsa.nightShiftHours != null) nightHoursInput.value = rsa.nightShiftHours;
-  if (rsa.nightShiftMinutes != null) nightMinInput.value = rsa.nightShiftMinutes;
-  if (rsa.km != null) kmInput.value = rsa.km;
-  if (rsa.caseNumber) caseInput.value = rsa.caseNumber;
-  if (rsa.towCostsAmount != null) towCostsInput.value = rsa.towCostsAmount;
-
-  function updateFieldsState() {
-    const onlyTow  = onlyTowInput.checked;
-    const dateStr  = dateInput.value || "";
-    const isSpecial= isWeekendOrItalianHoliday(dateStr);
-
-    const dayInputs = [dayHoursInput, dayMinInput];
-    const nightInputs = [nightHoursInput, nightMinInput];
-    const kmInputs = [kmInput];
-
-    if (onlyTow) {
-      [...dayInputs, ...nightInputs, ...kmInputs].forEach(el => {
-        if (!el) return;
-        el.disabled = true;
-        el.value = "";
-      });
+    if (!claimCardId || !claimCode) {
+      console.error('[ftclaims-claimforms] renderClaimDetails: ctx mancante o incompleto', ctx);
       return;
     }
 
-    // Non solo traino
-    dayInputs.forEach(el => {
-      if (!el) return;
-      el.disabled = isSpecial;
-      if (isSpecial) el.value = "";
+    const claimRef = db
+      .collection('ClaimCards')
+      .doc(claimCardId)
+      .collection('Claims')
+      .doc(claimCode);
+
+    console.log('[ftclaims-claimforms] renderClaimDetails:', {
+      type,
+      normType,
+      claimCardId,
+      claimCode
     });
 
-    nightInputs.forEach(el => {
-      if (!el) return;
-      el.disabled = false;
-    });
+    if (normType === 'RSA') {
+      renderRsaClaimSection(container, claimRef, claimData, claimCode);
+    } else if (normType === 'GARANZIA' || normType === 'GARANZIA RICAMBIO') {
+      const isReplacementWarranty = (normType === 'GARANZIA RICAMBIO');
+      renderWarrantyClaimSection(container, claimRef, claimData, claimCode, isReplacementWarranty, claimCardId);
+    } else {
+      const info = document.createElement('div');
+      info.className = 'small-text';
+      info.textContent = 'Per questa tipologia di claim non sono ancora previsti campi aggiuntivi.';
+      container.appendChild(info);
+    }
+  };
 
-    kmInputs.forEach(el => {
-      if (!el) return;
-      el.disabled = false;
-    });
-  }
+  // ==========================
+  // 1) CLAIM RSA
+  // ==========================
 
-  if (dateInput)    dateInput.addEventListener("change", updateFieldsState);
-  if (onlyTowInput) onlyTowInput.addEventListener("change", updateFieldsState);
+  function renderRsaClaimSection(container, claimRef, claimData, claimCode) {
+    const rsaData = (claimData && claimData.rsa) || {};
 
-  // Stato iniziale
-  updateFieldsState();
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginTop = '8px';
 
-  function readInt(input) {
-    if (!input) return null;
-    const v = input.value.trim();
-    if (v === "") return null;
-    const n = Number(v);
-    return isNaN(n) ? null : n;
-  }
+    card.innerHTML = `
+      <h3>Claim RSA</h3>
 
-  function readCurrency(input) {
-    if (!input) return null;
-    let v = input.value.trim().replace(",", ".");
-    if (v === "") return null;
-    const n = Number(v);
-    return isNaN(n) ? null : n;
-  }
-
-  if (saveBtn) {
-    saveBtn.addEventListener("click", async () => {
-      if (typeof firebase === "undefined" ||
-          !firebase.firestore || !firebase.storage) {
-        alert("Firebase non disponibile.");
-        return;
-      }
-
-      const db = firebase.firestore();
-      const storage = firebase.storage();
-
-      const onlyTow = onlyTowInput.checked;
-      const rsaDate = dateInput.value || null;
-
-      const rsaData = {
-        date: rsaDate,
-        onlyTow: onlyTow,
-        dayShiftHours:   onlyTow ? null : readInt(dayHoursInput),
-        dayShiftMinutes: onlyTow ? null : readInt(dayMinInput),
-        nightShiftHours: onlyTow ? null : readInt(nightHoursInput),
-        nightShiftMinutes: onlyTow ? null : readInt(nightMinInput),
-        km:              onlyTow ? null : readInt(kmInput),
-        caseNumber: (caseInput.value.trim() || null),
-        towCostsAmount: readCurrency(towCostsInput)
-      };
-
-      // Upload allegati (aggiunti a quelli già presenti)
-      const basePath = "ClaimCards/" + ctx.claimCardId + "/Claims/" + ctx.claimCode + "/";
-
-      let invoiceMeta = Array.isArray(rsa.invoiceFiles) ? rsa.invoiceFiles.slice() : [];
-      let routeMeta   = Array.isArray(rsa.routeFiles)   ? rsa.routeFiles.slice()   : [];
-
-      const invFiles = invoicesInput.files || [];
-      for (let i = 0; i < invFiles.length; i++) {
-        const f = invFiles[i];
-        const path = basePath + "Fatture/" + Date.now() + "_" + f.name;
-        const ref  = storage.ref(path);
-        await ref.put(f);
-        const url = await ref.getDownloadURL();
-        invoiceMeta.push({ name: f.name, path, url });
-      }
-
-      const routeFiles = routeInput.files || [];
-      for (let i = 0; i < routeFiles.length; i++) {
-        const f = routeFiles[i];
-        const path = basePath + "Tragitto/" + Date.now() + "_" + f.name;
-        const ref  = storage.ref(path);
-        await ref.put(f);
-        const url = await ref.getDownloadURL();
-        routeMeta.push({ name: f.name, path, url });
-      }
-
-      if (invoiceMeta.length) rsaData.invoiceFiles = invoiceMeta;
-      if (routeMeta.length)   rsaData.routeFiles   = routeMeta;
-
-      try {
-        const claimRef = db
-          .collection("ClaimCards")
-          .doc(ctx.claimCardId)
-          .collection("Claims")
-          .doc(ctx.claimCode);
-
-        await claimRef.update({ rsa: rsaData });
-
-        // reset solo i file (i dati restano)
-        invoicesInput.value = "";
-        routeInput.value = "";
-
-        alert("Dati RSA salvati.");
-      } catch (err) {
-        console.error(err);
-        alert("Errore nel salvataggio dati RSA: " + err.message);
-      }
-    });
-  }
-}
-
-/* ===============================
-   GARANZIA
-=============================== */
-
-function renderGaranziaDetails(container, claimData, ctx) {
-  const gar = claimData.garanzia || {};
-  const prefix = "gar_" + ctx.claimCode + "_";
-
-  const html = `
-    <h4 style="margin: 4px 0 6px; font-size: 13px;">Dati Garanzia</h4>
-
-    <!-- SYMPTOM + CCC -->
-    <div class="form-group">
-      <label for="${prefix}symptom">Symptom</label>
-      <select id="${prefix}symptom"></select>
-    </div>
-
-    <div class="form-group">
-      <label for="${prefix}ccc">CCC Codes</label>
-      <select id="${prefix}ccc"></select>
-    </div>
-
-    <!-- Componente causa -->
-    <div class="form-group">
-      <label for="${prefix}causaCode">Componente causa (codice ricambio)</label>
-      <div style="display:flex; gap:4px;">
-        <input type="text" id="${prefix}causaCode" style="flex:0 0 150px;">
-        <button type="button" id="${prefix}causaSearch" class="btn btn-small btn-secondary">Cerca</button>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="rsa_date_${claimCode}">Data RSA</label>
+          <input type="date" id="rsa_date_${claimCode}">
+          <div class="small-text">
+            Se la data è sabato, domenica o festività nazionale, i campi DAYSHIFT non saranno compilabili.
+          </div>
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <div>
+            <label style="font-size:12px;">
+              <input type="checkbox" id="rsa_onlytow_${claimCode}">
+              Solo traino
+            </label>
+          </div>
+        </div>
       </div>
-      <div class="small-text">
-        La ricerca avviene nel DB FTPartsCodes sul campo "codice".
-      </div>
-    </div>
 
-    <div class="form-row">
       <div class="form-group">
-        <label for="${prefix}causaExt">Codice esteso componente</label>
-        <input type="text" id="${prefix}causaExt" readonly>
+        <label>Turni di lavoro</label>
+        <div class="shift-box">
+          <span class="shift-label">DAYSHIFT</span>
+          <input type="number" min="0" max="99" step="1"
+                 id="rsa_day_h_${claimCode}"
+                 class="time-input">
+          <span class="time-separator">:</span>
+          <input type="number" min="0" max="59" step="1"
+                 id="rsa_day_m_${claimCode}"
+                 class="time-input">
+        </div>
+        <div class="shift-box">
+          <span class="shift-label">NIGHTSHIFT</span>
+          <input type="number" min="0" max="99" step="1"
+                 id="rsa_night_h_${claimCode}"
+                 class="time-input">
+          <span class="time-separator">:</span>
+          <input type="number" min="0" max="59" step="1"
+                 id="rsa_night_m_${claimCode}"
+                 class="time-input">
+        </div>
       </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="rsa_km_${claimCode}">Percorrenza (Km)</label>
+          <input type="number" min="0" step="1" id="rsa_km_${claimCode}">
+        </div>
+        <div class="form-group">
+          <label for="rsa_case_${claimCode}">Caso RSA n.</label>
+          <input type="text" id="rsa_case_${claimCode}" maxlength="7" placeholder="Max 7 caratteri">
+        </div>
+      </div>
+
       <div class="form-group">
-        <label for="${prefix}causaDesc">Descrizione componente</label>
-        <input type="text" id="${prefix}causaDesc" readonly>
+        <label for="rsa_towcost_${claimCode}">Traino, costi correlati (€)</label>
+        <input type="number" min="0" step="0.01" id="rsa_towcost_${claimCode}">
       </div>
-    </div>
 
-    <!-- Commento tecnico -->
-    <div class="form-group">
-      <label for="${prefix}commento">Commento tecnico</label>
-      <textarea id="${prefix}commento" rows="3"></textarea>
-    </div>
+      <div style="margin-top:10px; text-align:right;">
+        <button type="button" class="btn btn-primary btn-small" id="rsa_save_${claimCode}">
+          Salva dati RSA
+        </button>
+      </div>
+    `;
 
-    <hr>
+    container.appendChild(card);
 
-    <!-- RICAMBI -->
-    <h4 style="margin: 4px 0 6px; font-size: 13px;">Ricambi</h4>
-    <div class="small-text">Ricambi selezionati dal DB FTPartsCodes.</div>
+    // Riferimenti input
+    const dateInput   = document.getElementById('rsa_date_' + claimCode);
+    const chkOnlyTow  = document.getElementById('rsa_onlytow_' + claimCode);
+    const dayH        = document.getElementById('rsa_day_h_' + claimCode);
+    const dayM        = document.getElementById('rsa_day_m_' + claimCode);
+    const nightH      = document.getElementById('rsa_night_h_' + claimCode);
+    const nightM      = document.getElementById('rsa_night_m_' + claimCode);
+    const kmInput     = document.getElementById('rsa_km_' + claimCode);
+    const caseInput   = document.getElementById('rsa_case_' + claimCode);
+    const towCost     = document.getElementById('rsa_towcost_' + claimCode);
+    const btnSave     = document.getElementById('rsa_save_' + claimCode);
 
-    <div class="form-group">
-      <table style="width:100%; border-collapse:collapse; font-size:12px;">
-        <thead>
-          <tr>
-            <th style="border-bottom:1px solid #ddd; text-align:left;">Codice</th>
-            <th style="border-bottom:1px solid #ddd; text-align:left;">Codice esteso</th>
-            <th style="border-bottom:1px solid #ddd; text-align:left;">Descrizione</th>
-            <th style="border-bottom:1px solid #ddd; text-align:right;">Rimborso garanzia (€/unità)</th>
-            <th style="border-bottom:1px solid #ddd; text-align:right;">Quantità</th>
-            <th style="border-bottom:1px solid #ddd; text-align:right;">Totale</th>
-            <th style="border-bottom:1px solid #ddd; text-align:center;">Azioni</th>
-          </tr>
-        </thead>
-        <tbody id="${prefix}partsBody"></tbody>
-      </table>
-    </div>
+    // Prefill da claimData.rsa
+    if (rsaData.date)        dateInput.value  = rsaData.date;
+    if (rsaData.onlyTow)     chkOnlyTow.checked = !!rsaData.onlyTow;
+    if (rsaData.dayHours != null)   dayH.value   = rsaData.dayHours;
+    if (rsaData.dayMinutes != null) dayM.value   = rsaData.dayMinutes;
+    if (rsaData.nightHours != null) nightH.value = rsaData.nightHours;
+    if (rsaData.nightMinutes != null) nightM.value = rsaData.nightMinutes;
+    if (rsaData.km != null)  kmInput.value      = rsaData.km;
+    if (rsaData.caseNumber)  caseInput.value    = rsaData.caseNumber;
+    if (rsaData.towCost != null) towCost.value  = rsaData.towCost;
 
-    <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
-      <button type="button" id="${prefix}addPart" class="btn btn-small btn-secondary">Aggiungi ricambio</button>
-      <div><strong>Totale ricambi: </strong><span id="${prefix}partsTotal">0.00</span> €</div>
-    </div>
-
-    <hr>
-
-    <!-- MANODOPERA -->
-    <h4 style="margin: 4px 0 6px; font-size: 13px;">Manodopera</h4>
-    <div class="small-text" id="${prefix}labourRateLabel">Tariffa oraria dealer: -- €/h</div>
-
-    <div class="form-group">
-      <table style="width:100%; border-collapse:collapse; font-size:12px;">
-        <thead>
-          <tr>
-            <th style="border-bottom:1px solid #ddd; text-align:left;">Codice labour</th>
-            <th style="border-bottom:1px solid #ddd; text-align:left;">Descrizione</th>
-            <th style="border-bottom:1px solid #ddd; text-align:right;">Quantità</th>
-            <th style="border-bottom:1px solid #ddd; text-align:right;">Totale</th>
-            <th style="border-bottom:1px solid #ddd; text-align:center;">Azioni</th>
-          </tr>
-        </thead>
-        <tbody id="${prefix}labourBody"></tbody>
-      </table>
-    </div>
-
-    <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
-      <button type="button" id="${prefix}addLabour" class="btn btn-small btn-secondary">Aggiungi manodopera</button>
-      <div><strong>Totale manodopera: </strong><span id="${prefix}labourTotal">0.00</span> €</div>
-    </div>
-
-    <hr>
-
-    <div class="form-group">
-      <button type="button" id="${prefix}saveBtn" class="btn btn-primary btn-small">
-        Salva dati Garanzia
-      </button>
-    </div>
-  `;
-
-  container.innerHTML = html;
-
-  if (typeof firebase === "undefined" || !firebase.firestore) {
-    const msg = document.createElement("div");
-    msg.className = "small-text";
-    msg.textContent = "Firebase non disponibile.";
-    container.appendChild(msg);
-    return;
-  }
-
-  const db = firebase.firestore();
-
-  // ---- Riferimenti UI base ----
-  const symptomSelect   = container.querySelector("#" + prefix + "symptom");
-  const cccSelect       = container.querySelector("#" + prefix + "ccc");
-  const causaCodeInput  = container.querySelector("#" + prefix + "causaCode");
-  const causaSearchBtn  = container.querySelector("#" + prefix + "causaSearch");
-  const causaExtInput   = container.querySelector("#" + prefix + "causaExt");
-  const causaDescInput  = container.querySelector("#" + prefix + "causaDesc");
-  const commentoInput   = container.querySelector("#" + prefix + "commento");
-
-  const partsBody       = container.querySelector("#" + prefix + "partsBody");
-  const addPartBtn      = container.querySelector("#" + prefix + "addPart");
-  const partsTotalSpan  = container.querySelector("#" + prefix + "partsTotal");
-
-  const labourBody      = container.querySelector("#" + prefix + "labourBody");
-  const addLabourBtn    = container.querySelector("#" + prefix + "addLabour");
-  const labourTotalSpan = container.querySelector("#" + prefix + "labourTotal");
-  const labourRateLabel = container.querySelector("#" + prefix + "labourRateLabel");
-
-  const saveBtn         = container.querySelector("#" + prefix + "saveBtn");
-
-  // Stato locale
-  let causaPartId = gar.causaPart && gar.causaPart.id ? gar.causaPart.id : null;
-  let labourRateStd = typeof gar.labourRateStd === "number" ? gar.labourRateStd : null;
-
-  // ---------------------------------
-  // Helpers numerici
-  // ---------------------------------
-  function toNumberOrNull(v) {
-    if (v === null || v === undefined) return null;
-    if (typeof v === "number") return v;
-    const s = String(v).replace(",", ".").trim();
-    if (!s) return null;
-    const n = Number(s);
-    return isNaN(n) ? null : n;
-  }
-
-  function formatMoney(v) {
-    const n = toNumberOrNull(v) || 0;
-    return n.toFixed(2);
-  }
-
-  // ---------------------------------
-  // SYMPTOM + CCC
-  // ---------------------------------
-  async function loadSymptoms(selectedId) {
-    if (!symptomSelect) return;
-    symptomSelect.innerHTML = "";
-
-    const optEmpty = document.createElement("option");
-    optEmpty.value = "";
-    optEmpty.textContent = "Seleziona...";
-    symptomSelect.appendChild(optEmpty);
-
-    try {
-      const snap = await db.collection("Symptom").get();
-      const docs = [];
-      snap.forEach(doc => docs.push(doc));
-      docs.sort((a, b) => {
-        const la = (a.data().label || "").toString();
-        const lb = (b.data().label || "").toString();
-        return la.localeCompare(lb, "it");
-      });
-
-      docs.forEach(doc => {
-        const d = doc.data() || {};
-        const opt = document.createElement("option");
-        opt.value = doc.id;
-        opt.textContent = doc.id + " - " + (d.label || "");
-        symptomSelect.appendChild(opt);
-      });
-
-      if (selectedId) {
-        symptomSelect.value = selectedId;
+    // Funzione per abilitare/disabilitare DAYSHIFT in base alla data
+    function updateDayShiftEnabled() {
+      const val = dateInput.value;
+      const disabled = isWeekend(val) || isItalianHoliday(val);
+      dayH.disabled = disabled;
+      dayM.disabled = disabled;
+      if (disabled) {
+        dayH.value = '';
+        dayM.value = '';
       }
-    } catch (err) {
-      console.error("Errore caricamento Symptom:", err);
     }
-  }
 
-  async function loadCCCForSymptom(symptomId, selectedCCCId) {
-    if (!cccSelect) return;
-    cccSelect.innerHTML = "";
+    // Funzione per "Solo traino"
+    function updateOnlyTowEnabled() {
+      const onlyTow = chkOnlyTow.checked;
 
-    const optEmpty = document.createElement("option");
-    optEmpty.value = "";
-    optEmpty.textContent = "Seleziona...";
-    cccSelect.appendChild(optEmpty);
+      // se solo traino => disabilito tutti i campi tranne caso e costi
+      dayH.disabled    = onlyTow || dayH.disabled;
+      dayM.disabled    = onlyTow || dayM.disabled;
+      nightH.disabled  = onlyTow;
+      nightM.disabled  = onlyTow;
+      kmInput.disabled = onlyTow;
 
-    if (!symptomId) return;
-
-    try {
-      console.log("[Garanzia] Carico CCC_Codes per Symptom:", symptomId);
-
-      const collRef = db
-        .collection("Symptom")
-        .doc(symptomId)
-        .collection("CCC_Codes");
-
-      const snap = await collRef.get();
-
-      if (snap.empty) {
-        console.warn("[Garanzia] Nessun CCC_Code per Symptom:", symptomId);
-        return;
+      if (onlyTow) {
+        dayH.value = '';
+        dayM.value = '';
+        nightH.value = '';
+        nightM.value = '';
+        kmInput.value = '';
+      } else {
+        updateDayShiftEnabled();
       }
-
-      const docs = [];
-      snap.forEach(doc => docs.push(doc));
-
-      docs.sort((a, b) => {
-        const oa = toNumberOrNull(a.data().order) || 0;
-        const ob = toNumberOrNull(b.data().order) || 0;
-        return oa - ob;
-      });
-
-      docs.forEach(doc => {
-        const d = doc.data() || {};
-        const opt = document.createElement("option");
-        opt.value = doc.id;
-        opt.textContent = d.text || doc.id;
-        opt.dataset.order = d.order != null ? String(d.order) : "";
-        cccSelect.appendChild(opt);
-      });
-
-      if (selectedCCCId) {
-        cccSelect.value = selectedCCCId;
-      }
-
-      console.log("[Garanzia] Caricati", docs.length, "CCC_Codes");
-    } catch (err) {
-      console.error("Errore caricamento CCC Codes:", err);
-      alert("Errore nel caricamento dei CCC Codes: " + err.message);
     }
-  }
 
-  // Eventi combobox
-  if (symptomSelect) {
-    symptomSelect.addEventListener("change", () => {
-      loadCCCForSymptom(symptomSelect.value, null);
-    });
-  }
+    // Listener
+    dateInput.addEventListener('change', updateDayShiftEnabled);
+    chkOnlyTow.addEventListener('change', updateOnlyTowEnabled);
 
-  // Pre-fill SYMPTOM + CCC se ci sono dati
-  const garSymptomId = gar.symptom && gar.symptom.id ? gar.symptom.id : null;
-  const garCCCId     = gar.ccc && gar.ccc.id ? gar.ccc.id : null;
+    // Init stato
+    updateDayShiftEnabled();
+    updateOnlyTowEnabled();
 
-  loadSymptoms(garSymptomId).then(() => {
-    if (garSymptomId) {
-      loadCCCForSymptom(garSymptomId, garCCCId);
-    }
-  });
-
-  // ---------------------------------
-  // Componente causa
-  // ---------------------------------
-  if (gar.causaPart) {
-    causaCodeInput.value = gar.causaPart.codice || "";
-    causaExtInput.value  = gar.causaPart.codice_esteso || "";
-    causaDescInput.value = gar.causaPart.descrizione || "";
-    causaPartId          = gar.causaPart.id || null;
-  }
-
-  async function findPartByCode(code) {
-    if (!code) return null;
-    const snap = await db
-      .collection("FTPartsCodes")
-      .where("codice", "==", code)
-      .limit(1)
-      .get();
-    if (snap.empty) return null;
-    const doc = snap.docs[0];
-    return { id: doc.id, data: doc.data() || {} };
-  }
-
-  if (causaSearchBtn) {
-    causaSearchBtn.addEventListener("click", async () => {
-      const code = (causaCodeInput.value || "").trim();
-      if (!code) {
-        alert("Inserisci un codice ricambio per la componente causa.");
-        return;
-      }
+    // Salvataggio
+    btnSave.addEventListener('click', async () => {
       try {
-        const found = await findPartByCode(code);
-        if (!found) {
-          alert("Ricambio non trovato in FTPartsCodes.");
-          return;
-        }
-        const d = found.data;
-        causaPartId = found.id;
-        causaExtInput.value  = d.codice_esteso || "";
-        causaDescInput.value = d.descrizione || "";
+        const newRsa = {
+          date: dateInput.value || null,
+          onlyTow: !!chkOnlyTow.checked,
+          dayHours: toNumberOrNull(dayH.value),
+          dayMinutes: toNumberOrNull(dayM.value),
+          nightHours: toNumberOrNull(nightH.value),
+          nightMinutes: toNumberOrNull(nightM.value),
+          km: toNumberOrNull(kmInput.value),
+          caseNumber: (caseInput.value || '').trim() || null,
+          towCost: toNumberOrNull(towCost.value)
+        };
+
+        await claimRef.update({ rsa: newRsa });
+        alert('Dati RSA salvati.');
       } catch (err) {
-        console.error(err);
-        alert("Errore durante la ricerca componente causa: " + err.message);
+        console.error('[ftclaims-claimforms] Errore salvataggio RSA:', err);
+        alert('Errore nel salvataggio RSA: ' + err.message);
       }
     });
   }
 
-  if (gar.commentoTecnico) {
-    commentoInput.value = gar.commentoTecnico;
-  }
+  // ==========================
+  // 2) CLAIM GARANZIA / GARANZIA RICAMBIO
+  // ==========================
 
-  // ---------------------------------
-  // Ricambi - gestione righe
-  // ---------------------------------
-  function createPartRow(initialData) {
-    const tr = document.createElement("tr");
-
-    // Codice + bottone cerca
-    const tdCode = document.createElement("td");
-    const codeInput = document.createElement("input");
-    codeInput.type = "text";
-    codeInput.style.width = "100px";
-    codeInput.value = initialData && initialData.codice ? initialData.codice : "";
-    codeInput.dataset.partId = initialData && initialData.id ? initialData.id : "";
-
-    const searchBtn = document.createElement("button");
-    searchBtn.type = "button";
-    searchBtn.textContent = "Cerca";
-    searchBtn.className = "btn btn-small btn-secondary";
-    searchBtn.style.marginLeft = "4px";
-
-    tdCode.appendChild(codeInput);
-    tdCode.appendChild(searchBtn);
-
-    // Codice esteso
-    const tdExt = document.createElement("td");
-    const extInput = document.createElement("input");
-    extInput.type = "text";
-    extInput.readOnly = true;
-    extInput.style.width = "100%";
-    extInput.value = initialData && initialData.codice_esteso ? initialData.codice_esteso : "";
-    tdExt.appendChild(extInput);
-
-    // Descrizione
-    const tdDesc = document.createElement("td");
-    const descInput = document.createElement("input");
-    descInput.type = "text";
-    descInput.readOnly = true;
-    descInput.style.width = "100%";
-    descInput.value = initialData && initialData.descrizione ? initialData.descrizione : "";
-    tdDesc.appendChild(descInput);
-
-    // Rimborso unitario
-    const tdRefund = document.createElement("td");
-    tdRefund.style.textAlign = "right";
-    const refundInput = document.createElement("input");
-    refundInput.type = "number";
-    refundInput.readOnly = true;
-    refundInput.style.width = "90px";
-    refundInput.step = "0.01";
-    refundInput.value = initialData && initialData.rimborso_garanzia != null
-      ? formatMoney(initialData.rimborso_garanzia)
-      : "";
-    tdRefund.appendChild(refundInput);
-
-    // Quantità
-    const tdQty = document.createElement("td");
-    tdQty.style.textAlign = "right";
-    const qtyInput = document.createElement("input");
-    qtyInput.type = "number";
-    qtyInput.min = "0";
-    qtyInput.step = "1";
-    qtyInput.style.width = "60px";
-    qtyInput.value = initialData && initialData.quantita != null
-      ? String(initialData.quantita)
-      : "1";
-    tdQty.appendChild(qtyInput);
-
-    // Totale
-    const tdTotal = document.createElement("td");
-    tdTotal.style.textAlign = "right";
-    const totalInput = document.createElement("input");
-    totalInput.type = "number";
-    totalInput.readOnly = true;
-    totalInput.style.width = "90px";
-    totalInput.step = "0.01";
-    totalInput.value = initialData && initialData.totale != null
-      ? formatMoney(initialData.totale)
-      : "0.00";
-    tdTotal.appendChild(totalInput);
-
-    // Azioni
-    const tdActions = document.createElement("td");
-    tdActions.style.textAlign = "center";
-    const delBtn = document.createElement("button");
-    delBtn.type = "button";
-    delBtn.textContent = "Elimina";
-    delBtn.className = "btn btn-small btn-danger";
-    tdActions.appendChild(delBtn);
-
-    tr.appendChild(tdCode);
-    tr.appendChild(tdExt);
-    tr.appendChild(tdDesc);
-    tr.appendChild(tdRefund);
-    tr.appendChild(tdQty);
-    tr.appendChild(tdTotal);
-    tr.appendChild(tdActions);
-
-    partsBody.appendChild(tr);
-
-    function recalcRow() {
-      const refund = toNumberOrNull(refundInput.value) || 0;
-      const qty = toNumberOrNull(qtyInput.value) || 0;
-      const tot = refund * qty;
-      totalInput.value = formatMoney(tot);
-      recalcPartsTotals();
-    }
-
-    qtyInput.addEventListener("input", recalcRow);
-
-    searchBtn.addEventListener("click", async () => {
-      const code = (codeInput.value || "").trim();
-      if (!code) {
-        alert("Inserisci un codice ricambio.");
-        return;
-      }
-      try {
-        const found = await findPartByCode(code);
-        if (!found) {
-          alert("Ricambio non trovato in FTPartsCodes.");
-          return;
-        }
-        const d = found.data;
-        codeInput.dataset.partId = found.id;
-        extInput.value = d.codice_esteso || "";
-        descInput.value = d.descrizione || "";
-        refundInput.value = d.rimborso_garanzia != null
-          ? formatMoney(d.rimborso_garanzia)
-          : "";
-        recalcRow();
-      } catch (err) {
-        console.error(err);
-        alert("Errore ricerca ricambio: " + err.message);
-      }
-    });
-
-    delBtn.addEventListener("click", () => {
-      tr.remove();
-      recalcPartsTotals();
-    });
-
-    // Calcolo iniziale
-    recalcRow();
-  }
-
-  function recalcPartsTotals() {
-    let tot = 0;
-    const rows = partsBody.querySelectorAll("tr");
-    rows.forEach(tr => {
-      const totalInput = tr.querySelector("td:nth-child(6) input");
-      const v = totalInput ? toNumberOrNull(totalInput.value) || 0 : 0;
-      tot += v;
-    });
-    partsTotalSpan.textContent = formatMoney(tot);
-  }
-
-  // Precarica eventuali ricambi già presenti
-  if (Array.isArray(gar.parts)) {
-    gar.parts.forEach(p => {
-      createPartRow(p);
-    });
-    recalcPartsTotals();
-  }
-
-  if (addPartBtn) {
-    addPartBtn.addEventListener("click", () => {
-      createPartRow(null);
-    });
-  }
-
-  // ---------------------------------
-  // Manodopera
-  // ---------------------------------
-  async function loadLabourRateStdIfNeeded() {
-    if (labourRateStd != null) {
-      labourRateLabel.textContent =
-        "Tariffa oraria dealer: " + formatMoney(labourRateStd) + " €/h";
-      return labourRateStd;
-    }
+  async function getLaborRateStdForClaimCard(claimCardId) {
+    const db = getDb();
+    if (!db) return 0;
     try {
-      const cardSnap = await db.collection("ClaimCards").doc(ctx.claimCardId).get();
-      if (!cardSnap.exists) {
-        labourRateStd = 0;
-        labourRateLabel.textContent = "Tariffa oraria dealer: n/d";
-        return labourRateStd;
-      }
+      const cardSnap = await db.collection('ClaimCards').doc(claimCardId).get();
+      if (!cardSnap.exists) return 0;
       const cardData = cardSnap.data() || {};
-      const dealerId = cardData.openDealer || cardData.dealerId || null;
-      if (!dealerId) {
-        labourRateStd = 0;
-        labourRateLabel.textContent = "Tariffa oraria dealer: n/d";
-        return labourRateStd;
-      }
-      const dealerSnap = await db.collection("dealers").doc(dealerId).get();
-      if (!dealerSnap.exists) {
-        labourRateStd = 0;
-        labourRateLabel.textContent = "Tariffa oraria dealer: n/d";
-        return labourRateStd;
-      }
-      const dealerData = dealerSnap.data() || {};
-      labourRateStd = toNumberOrNull(dealerData.LaborRateStd) || 0;
-      labourRateLabel.textContent =
-        "Tariffa oraria dealer: " + formatMoney(labourRateStd) + " €/h";
-      return labourRateStd;
-    } catch (err) {
-      console.error("Errore lettura LaborRateStd:", err);
-      labourRateStd = 0;
-      labourRateLabel.textContent = "Tariffa oraria dealer: n/d";
-      return labourRateStd;
+      const dealerId =
+        cardData.openDealer ||
+        cardData.dealerId ||
+        cardData.DealerID ||
+        cardData.DealerId ||
+        null;
+
+      if (!dealerId) return 0;
+
+      const dealerSnap = await db.collection('dealers').doc(dealerId).get();
+      if (!dealerSnap.exists) return 0;
+
+      const d = dealerSnap.data() || {};
+      const rate =
+        d.LaborRateStd ||
+        d.laborRateStd ||
+        d.labor_rate_std ||
+        0;
+
+      return Number(rate) || 0;
+    } catch (e) {
+      console.error('[ftclaims-claimforms] getLaborRateStdForClaimCard errore:', e);
+      return 0;
     }
   }
 
-  async function findLabourByCode(code) {
-    if (!code) return null;
-    const snap = await db
-      .collection("FTLabourCodes")
-      .where("codice_labour", "==", code)
-      .limit(1)
-      .get();
-    if (snap.empty) return null;
-    const doc = snap.docs[0];
-    return { id: doc.id, data: doc.data() || {} };
+  function normalizeLabourCode(code) {
+    if (!code) return '';
+    return code.toString().replace(/\s+/g, '').toUpperCase();
   }
 
-  function createLabourRow(initialData) {
-    const tr = document.createElement("tr");
+  function isQuantityEditableLabour(code) {
+    const n = normalizeLabourCode(code);
+    return n === '96000000' || n === '94000000';
+  }
 
-    // Codice labour + cerca
-    const tdCode = document.createElement("td");
-    const codeInput = document.createElement("input");
-    codeInput.type = "text";
-    codeInput.style.width = "100px";
-    codeInput.value = initialData && initialData.codice_labour
-      ? initialData.codice_labour
-      : "";
-    codeInput.dataset.labourId = initialData && initialData.id ? initialData.id : "";
+  function isTotalEditableLabour(code) {
+    const n = normalizeLabourCode(code);
+    return n === 'OL000';
+  }
 
-    const searchBtn = document.createElement("button");
-    searchBtn.type = "button";
-    searchBtn.textContent = "Cerca";
-    searchBtn.className = "btn btn-small btn-secondary";
-    searchBtn.style.marginLeft = "4px";
+  function renderWarrantyClaimSection(container, claimRef, claimData, claimCode, isReplacementWarranty, claimCardId) {
+    const db = getDb();
+    if (!db) return;
 
-    tdCode.appendChild(codeInput);
-    tdCode.appendChild(searchBtn);
+    const warranty = (claimData && claimData.warranty) || {};
+    const partsModel  = Array.isArray(warranty.parts)  ? warranty.parts.slice()  : [];
+    const labourModel = Array.isArray(warranty.labour) ? warranty.labour.slice() : [];
 
-    // Descrizione
-    const tdDesc = document.createElement("td");
-    const descInput = document.createElement("input");
-    descInput.type = "text";
-    descInput.readOnly = true;
-    descInput.style.width = "100%";
-    descInput.value = initialData && initialData.descrizione_tradotta
-      ? initialData.descrizione_tradotta
-      : "";
-    tdDesc.appendChild(descInput);
+    let laborRateStd = 0;
 
-    // Quantità
-    const tdQty = document.createElement("td");
-    tdQty.style.textAlign = "right";
-    const qtyInput = document.createElement("input");
-    qtyInput.type = "number";
-    qtyInput.min = "0";
-    qtyInput.step = "0.1";
-    qtyInput.style.width = "60px";
-    qtyInput.value = initialData && initialData.quantita != null
-      ? String(initialData.quantita)
-      : "1";
-    tdQty.appendChild(qtyInput);
+    // Card principale
+    const section = document.createElement('div');
+    section.className = 'card claim-detail-card';
+    section.style.marginTop = '8px';
 
-    // Totale
-    const tdTotal = document.createElement("td");
-    tdTotal.style.textAlign = "right";
-    const totalInput = document.createElement("input");
-    totalInput.type = "number";
-    totalInput.style.width = "90px";
-    totalInput.step = "0.01";
-    totalInput.value = initialData && initialData.totale != null
-      ? formatMoney(initialData.totale)
-      : "0.00";
-    tdTotal.appendChild(totalInput);
+    section.innerHTML = `
+      <h3>Claim Garanzia${isReplacementWarranty ? ' (Ricambio)' : ''}</h3>
 
-    // Azioni
-    const tdActions = document.createElement("td");
-    tdActions.style.textAlign = "center";
-    const delBtn = document.createElement("button");
-    delBtn.type = "button";
-    delBtn.textContent = "Elimina";
-    delBtn.className = "btn btn-small btn-danger";
-    tdActions.appendChild(delBtn);
+      <div class="form-row">
+        <div class="form-group">
+          <label>Symptom</label>
+          <select id="gar_symptom_${claimCode}">
+            <option value="">Seleziona...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>CCC Codes</label>
+          <select id="gar_ccc_${claimCode}">
+            <option value="">Seleziona...</option>
+          </select>
+        </div>
+      </div>
 
-    tr.appendChild(tdCode);
-    tr.appendChild(tdDesc);
-    tr.appendChild(tdQty);
-    tr.appendChild(tdTotal);
-    tr.appendChild(tdActions);
+      <div class="form-row">
+        <div class="form-group">
+          <label>Componente causa (codice ricambio)</label>
+          <div style="display:flex; gap:4px;">
+            <input type="text" id="gar_causa_code_${claimCode}" placeholder="Codice ricambio">
+            <button type="button" class="btn btn-secondary btn-small" id="gar_causa_search_${claimCode}">Cerca</button>
+          </div>
+          <div class="small-text">
+            La ricerca avviene nel DB FTPartsCodes sul campo codice.
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Descrizione componente</label>
+          <input type="text" id="gar_causa_descr_${claimCode}" readonly>
+        </div>
+      </div>
 
-    labourBody.appendChild(tr);
+      <div class="form-group">
+        <label>Commento tecnico</label>
+        <textarea id="gar_commento_${claimCode}" rows="3"></textarea>
+      </div>
 
-    function normalizedCode() {
-      return (codeInput.value || "").replace(/\s+/g, "").toUpperCase();
+      <!-- RICAMBI -->
+      <h4>Ricambi</h4>
+      <div class="small-text">Ricambi selezionati dal DB FTPartsCodes.</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Codice</label>
+          <div style="display:flex; gap:4px;">
+            <input type="text" id="gar_part_code_${claimCode}">
+            <button type="button" class="btn btn-secondary btn-small" id="gar_part_search_${claimCode}">Cerca</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <button type="button" class="btn btn-primary btn-small" id="gar_part_add_${claimCode}">Aggiungi ricambio</button>
+        </div>
+      </div>
+
+      <table class="simple-table" style="margin-top:6px;">
+        <thead>
+          <tr>
+            <th style="width:130px;">Codice</th>
+            <th style="width:180px;">Codice esteso</th>
+            <th>Descrizione</th>
+            <th style="width:110px;">Rimborso garanzia (€/unità)</th>
+            <th style="width:80px;">Quantità</th>
+            <th style="width:110px;">Totale</th>
+            <th style="width:80px;">Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="gar_parts_body_${claimCode}">
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="5" style="text-align:right; font-weight:bold;">Totale ricambi:</td>
+            <td id="gar_parts_total_${claimCode}">0.00 €</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- MANODOPERA -->
+      <h4 style="margin-top:14px;">Manodopera</h4>
+      <div class="small-text">La tariffa oraria viene letta dal dealer (LaborRateStd).</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Codice labour</label>
+          <div style="display:flex; gap:4px;">
+            <input type="text" id="gar_labour_code_${claimCode}">
+            <button type="button" class="btn btn-secondary btn-small" id="gar_labour_search_${claimCode}">Cerca</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>&nbsp;</label>
+          <button type="button" class="btn btn-primary btn-small" id="gar_labour_add_${claimCode}">Aggiungi manodopera</button>
+        </div>
+      </div>
+
+      <table class="simple-table" style="margin-top:6px;">
+        <thead>
+          <tr>
+            <th style="width:130px;">Codice</th>
+            <th>Descrizione</th>
+            <th style="width:80px;">Quantità</th>
+            <th style="width:110px;">Totale</th>
+            <th style="width:80px;">Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="gar_labour_body_${claimCode}">
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3" style="text-align:right; font-weight:bold;">Totale manodopera:</td>
+            <td id="gar_labour_total_${claimCode}">0.00 €</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div style="margin-top:10px; text-align:right;">
+        <button type="button" class="btn btn-primary btn-small" id="gar_save_${claimCode}">
+          Salva dati Garanzia
+        </button>
+      </div>
+    `;
+
+    container.appendChild(section);
+
+    // --- Fattura riparazione precedente solo per Garanzia Ricambio ---
+    if (isReplacementWarranty) {
+      const fatturaBox = document.createElement('div');
+      fatturaBox.className = 'card claim-detail-card';
+      fatturaBox.style.marginTop = '8px';
+
+      fatturaBox.innerHTML = `
+        <h4>Fattura riparazione precedente (obbligatoria)</h4>
+        <div class="small-text">
+          Carica almeno un file (png, jpeg, xlsx, xls, doc, docx, pdf, rar, zip, mp4, mp3).
+        </div>
+        <div style="display:flex; gap:6px; align-items:center; margin-top:4px;">
+          <input type="file" id="prev_invoice_file_${claimCode}">
+          <button type="button" class="btn btn-primary btn-small" id="prev_invoice_upload_${claimCode}">
+            Carica fattura
+          </button>
+        </div>
+        <div id="prev_invoice_list_${claimCode}" class="attachments-list small-text" style="margin-top:6px;">
+          Nessuna fattura caricata per questo claim.
+        </div>
+      `;
+      container.appendChild(fatturaBox);
+
+      setupPrevInvoiceHandlers(claimRef, claimCode);
     }
 
-    function isCode96or94() {
-      const c = normalizedCode();
-      return c === "96000000" || c === "94000000";
-    }
+    // Riferimenti elementi
+    const selSymptom    = document.getElementById('gar_symptom_' + claimCode);
+    const selCcc        = document.getElementById('gar_ccc_' + claimCode);
+    const causaCode     = document.getElementById('gar_causa_code_' + claimCode);
+    const causaDescr    = document.getElementById('gar_causa_descr_' + claimCode);
+    const btnCausaSearch= document.getElementById('gar_causa_search_' + claimCode);
+    const commento      = document.getElementById('gar_commento_' + claimCode);
 
-    function isCodeOL000() {
-      const c = normalizedCode();
-      return c === "OL000";
-    }
+    const partCodeInput = document.getElementById('gar_part_code_' + claimCode);
+    const btnPartSearch = document.getElementById('gar_part_search_' + claimCode);
+    const btnPartAdd    = document.getElementById('gar_part_add_' + claimCode);
+    const partsBody     = document.getElementById('gar_parts_body_' + claimCode);
+    const partsTotalEl  = document.getElementById('gar_parts_total_' + claimCode);
 
-    function updateFieldModes() {
-      const isSpecialQty = isCode96or94();
-      const isOL = isCodeOL000();
+    const labourCodeInput = document.getElementById('gar_labour_code_' + claimCode);
+    const btnLabourSearch = document.getElementById('gar_labour_search_' + claimCode);
+    const btnLabourAdd    = document.getElementById('gar_labour_add_' + claimCode);
+    const labourBody      = document.getElementById('gar_labour_body_' + claimCode);
+    const labourTotalEl   = document.getElementById('gar_labour_total_' + claimCode);
 
-      if (isOL) {
-        // OL000: quantità NON modificabile, totale modificabile
-        qtyInput.readOnly = true;
-        totalInput.readOnly = false;
-      } else if (isSpecialQty) {
-        // 96 000 000 e 94 000 000: quantità modificabile, totale calcolato
-        qtyInput.readOnly = false;
-        totalInput.readOnly = true;
-      } else {
-        // tutti gli altri: quantità NON modificabile, totale calcolato
-        qtyInput.readOnly = true;
-        totalInput.readOnly = true;
-      }
-    }
+    const btnSave         = document.getElementById('gar_save_' + claimCode);
 
-    function recalcRow(fromTotalChange) {
-      const rate = labourRateStd || 0;
+    // Prefill campo commento / componente causa
+    if (warranty.comment) commento.value = warranty.comment;
+    if (warranty.causePartCode)  causaCode.value  = warranty.causePartCode;
+    if (warranty.causePartDescr) causaDescr.value = warranty.causePartDescr;
 
-      if (isCodeOL000()) {
-        // Totale inserito a mano → calcolo quantità = totale / rate
-        if (fromTotalChange) {
-          const tot = toNumberOrNull(totalInput.value) || 0;
-          const qty = rate ? tot / rate : 0;
-          qtyInput.value = qty.toFixed(2);
+    // =======================
+    // Symptom + CCC codes
+    // =======================
+
+    async function loadSymptomsAndSelect() {
+      try {
+        const snap = await db.collection('Symptom').get();
+        const savedSymptomId = warranty.symptomId || null;
+        selSymptom.innerHTML = '<option value="">Seleziona...</option>';
+
+        snap.forEach(doc => {
+          const d = doc.data() || {};
+          const opt = document.createElement('option');
+          opt.value = doc.id;
+          const label =
+            (d.SymptomCode || d.code || doc.id) +
+            ' - ' +
+            (d.SymptomDescriptionItalian || d.description || d.Descrizione || '');
+          opt.textContent = label.trim();
+          selSymptom.appendChild(opt);
+        });
+
+        if (savedSymptomId) {
+          selSymptom.value = savedSymptomId;
+          await loadCccForSymptom(savedSymptomId, warranty.cccId || null);
+        } else {
+          selCcc.innerHTML = '<option value="">Seleziona...</option>';
         }
-      } else {
-        // Normale o 96/94 → quantità (fissa o modificabile), totale = qty * rate
-        const qty = toNumberOrNull(qtyInput.value) || 0;
-        const tot = rate * qty;
-        totalInput.value = formatMoney(tot);
+      } catch (e) {
+        console.error('[ftclaims-claimforms] Errore caricamento Symptom:', e);
       }
-
-      recalcLabourTotals();
     }
 
-    // Eventi
-    qtyInput.addEventListener("input", () => recalcRow(false));
-    totalInput.addEventListener("input", () => {
-      if (isCodeOL000()) recalcRow(true);
+    async function loadCccForSymptom(symptomId, preselectCccId) {
+      selCcc.innerHTML = '<option value="">Seleziona...</option>';
+      if (!symptomId) return;
+      try {
+        const snap = await db
+          .collection('Symptom')
+          .doc(symptomId)
+          .collection('CCC_Codes')
+          .get();
+
+        snap.forEach(doc => {
+          const d = doc.data() || {};
+          const opt = document.createElement('option');
+          opt.value = doc.id;
+          const label =
+            (d.CCC_Code || d.code || doc.id) +
+            ' - ' +
+            (d.DescriptionItalian || d.description || d.Descrizione || '');
+          opt.textContent = label.trim();
+          selCcc.appendChild(opt);
+        });
+
+        if (preselectCccId) {
+          selCcc.value = preselectCccId;
+        }
+      } catch (e) {
+        console.error('[ftclaims-claimforms] Errore caricamento CCC_Codes:', e);
+      }
+    }
+
+    selSymptom.addEventListener('change', () => {
+      const symptomId = selSymptom.value || null;
+      loadCccForSymptom(symptomId, null);
     });
 
-    searchBtn.addEventListener("click", async () => {
-      const code = (codeInput.value || "").trim();
+    // =======================
+    // Componente causa (FTPartsCodes)
+    // =======================
+    async function searchCauseComponent() {
+      const code = (causaCode.value || '').trim();
       if (!code) {
-        alert("Inserisci un codice labour.");
+        alert('Inserisci un codice ricambio da cercare.');
         return;
       }
+
       try {
-        const found = await findLabourByCode(code);
-        if (!found) {
-          alert("Codice labour non trovato in FTLabourCodes.");
+        const snap = await db
+          .collection('FTPartsCodes')
+          .where('codice', '==', code)
+          .limit(1)
+          .get();
+
+        if (snap.empty) {
+          alert('Nessun ricambio trovato per il codice inserito.');
+          causaDescr.value = '';
           return;
         }
-        const d = found.data;
-        codeInput.dataset.labourId = found.id;
-        descInput.value = d.descrizione_tradotta || d.descrizione || "";
-        // quantitá suggerita da DB se presente (solo al primo caricamento)
-        if (d.quantita != null && !initialData) {
-          qtyInput.value = String(d.quantita);
-        }
-        updateFieldModes();
-        recalcRow(false);
-      } catch (err) {
-        console.error(err);
-        alert("Errore ricerca labour: " + err.message);
+
+        const doc = snap.docs[0];
+        const d = doc.data() || {};
+
+        const descr =
+          d.descrizione ||
+          d.Descrizione ||
+          d.description ||
+          '';
+
+        causaDescr.value = descr;
+      } catch (e) {
+        console.error('[ftclaims-claimforms] Errore ricerca componente causa:', e);
+        alert('Errore durante la ricerca del ricambio: ' + e.message);
       }
-    });
-
-    codeInput.addEventListener("change", () => {
-      updateFieldModes();
-      recalcRow(false);
-    });
-
-    delBtn.addEventListener("click", () => {
-      tr.remove();
-      recalcLabourTotals();
-    });
-
-    // Stato iniziale
-    updateFieldModes();
-    recalcRow(false);
-  }
-
-  function recalcLabourTotals() {
-    let tot = 0;
-    const rows = labourBody.querySelectorAll("tr");
-    rows.forEach(tr => {
-      const totalInput = tr.querySelector("td:nth-child(4) input");
-      const v = totalInput ? toNumberOrNull(totalInput.value) || 0 : 0;
-      tot += v;
-    });
-    labourTotalSpan.textContent = formatMoney(tot);
-  }
-
-  // Precarica tariffa + righe labour
-  loadLabourRateStdIfNeeded().then(() => {
-    if (Array.isArray(gar.labour)) {
-      gar.labour.forEach(l => {
-        createLabourRow(l);
-      });
-      recalcLabourTotals();
     }
-  });
 
-  if (addLabourBtn) {
-    addLabourBtn.addEventListener("click", async () => {
-      await loadLabourRateStdIfNeeded();
-      createLabourRow(null);
-    });
-  }
+    btnCausaSearch.addEventListener('click', searchCauseComponent);
 
-  // ---------------------------------
-  // Salvataggio complessivo Garanzia
-  // ---------------------------------
-  if (saveBtn) {
-    saveBtn.addEventListener("click", async () => {
+    // =======================
+    // Ricambi
+    // =======================
+
+    function rebuildPartsTable() {
+      partsBody.innerHTML = '';
+      let total = 0;
+
+      partsModel.forEach((p, index) => {
+        const tr = document.createElement('tr');
+
+        const tdCode = document.createElement('td');
+        tdCode.textContent = p.code || '';
+
+        const tdExt = document.createElement('td');
+        tdExt.textContent = p.extendedCode || '';
+
+        const tdDesc = document.createElement('td');
+        tdDesc.textContent = p.description || '';
+
+        const tdRefund = document.createElement('td');
+        tdRefund.textContent = formatEuro(p.refund || 0);
+
+        const tdQty = document.createElement('td');
+        const inputQty = document.createElement('input');
+        inputQty.type = 'number';
+        inputQty.min = '0';
+        inputQty.step = '1';
+        inputQty.value = p.quantity != null ? p.quantity : 1;
+        inputQty.style.width = '60px';
+        inputQty.addEventListener('change', () => {
+          p.quantity = Number(inputQty.value) || 0;
+          p.total = (p.refund || 0) * p.quantity;
+          rebuildPartsTable();
+        });
+        tdQty.appendChild(inputQty);
+
+        const tdTotal = document.createElement('td');
+        tdTotal.textContent = formatEuro(p.total || 0);
+
+        const tdActions = document.createElement('td');
+        const btnDel = document.createElement('button');
+        btnDel.type = 'button';
+        btnDel.className = 'btn btn-danger btn-small';
+        btnDel.textContent = 'Elimina';
+        btnDel.addEventListener('click', () => {
+          partsModel.splice(index, 1);
+          rebuildPartsTable();
+        });
+        tdActions.appendChild(btnDel);
+
+        tr.appendChild(tdCode);
+        tr.appendChild(tdExt);
+        tr.appendChild(tdDesc);
+        tr.appendChild(tdRefund);
+        tr.appendChild(tdQty);
+        tr.appendChild(tdTotal);
+        tr.appendChild(tdActions);
+
+        partsBody.appendChild(tr);
+
+        total += p.total || 0;
+      });
+
+      partsTotalEl.textContent = formatEuro(total);
+    }
+
+    async function searchPartAndAdd() {
+      const code = (partCodeInput.value || '').trim();
+      if (!code) {
+        alert('Inserisci un codice ricambio da cercare.');
+        return;
+      }
+
       try {
-        await loadLabourRateStdIfNeeded();
+        const snap = await db
+          .collection('FTPartsCodes')
+          .where('codice', '==', code)
+          .limit(1)
+          .get();
 
-        const symptomId = symptomSelect.value || null;
-        let symptomLabel = null;
-        if (symptomId) {
-          const opt = symptomSelect.options[symptomSelect.selectedIndex];
-          symptomLabel = opt ? opt.textContent : null;
+        if (snap.empty) {
+          alert('Nessun ricambio trovato per il codice inserito.');
+          return;
         }
 
-        const cccId = cccSelect.value || null;
-        let cccText = null;
-        let cccOrder = null;
-        if (cccId) {
-          const opt = cccSelect.options[cccSelect.selectedIndex];
-          if (opt) {
-            cccText = opt.textContent;
-            cccOrder = opt.dataset.order ? Number(opt.dataset.order) : null;
+        const doc = snap.docs[0];
+        const d = doc.data() || {};
+
+        const part = {
+          code: d.codice || d.code || doc.id,
+          extendedCode: d.codice_esteso || d.CodiceEsteso || d.extendedCode || '',
+          description: d.descrizione || d.Descrizione || d.description || '',
+          refund: Number(d.rimborso_garanzia || d.RimborsoGaranzia || d.warrantyRefund || 0),
+          quantity: 1
+        };
+        part.total = part.refund * part.quantity;
+        partsModel.push(part);
+        rebuildPartsTable();
+        partCodeInput.value = '';
+      } catch (e) {
+        console.error('[ftclaims-claimforms] Errore ricerca ricambio:', e);
+        alert('Errore durante la ricerca del ricambio: ' + e.message);
+      }
+    }
+
+    btnPartSearch.addEventListener('click', searchPartAndAdd);
+    btnPartAdd.addEventListener('click', searchPartAndAdd);
+
+    // Ricostruzione iniziale ricambi da Firestore
+    rebuildPartsTable();
+
+    // =======================
+    // Manodopera
+    // =======================
+
+    function rebuildLabourTable() {
+      labourBody.innerHTML = '';
+      let total = 0;
+
+      labourModel.forEach((l, index) => {
+        const tr = document.createElement('tr');
+
+        const tdCode = document.createElement('td');
+        tdCode.textContent = l.code || '';
+
+        const tdDesc = document.createElement('td');
+        tdDesc.textContent = l.description || '';
+
+        const tdQty = document.createElement('td');
+        const inputQty = document.createElement('input');
+        inputQty.type = 'number';
+        inputQty.step = '0.1';
+        inputQty.min = '0';
+        inputQty.value = l.quantity != null ? l.quantity : 0;
+        inputQty.style.width = '60px';
+
+        const editableQty = isQuantityEditableLabour(l.code);
+        const editableTotal = isTotalEditableLabour(l.code);
+
+        inputQty.disabled = !editableQty && !editableTotal; // se OL000, la qty NON è modificabile
+
+        inputQty.addEventListener('change', () => {
+          l.quantity = Number(inputQty.value) || 0;
+          if (!editableTotal) {
+            l.total = (l.quantity || 0) * (laborRateStd || 0);
+          }
+          rebuildLabourTable();
+        });
+
+        tdQty.appendChild(inputQty);
+
+        const tdTotal = document.createElement('td');
+        const inputTotal = document.createElement('input');
+        inputTotal.type = 'number';
+        inputTotal.step = '0.01';
+        inputTotal.min = '0';
+        inputTotal.value = l.total != null ? l.total : 0;
+        inputTotal.style.width = '80px';
+
+        inputTotal.disabled = !editableTotal; // solo OL000 modificabile sul totale
+
+        inputTotal.addEventListener('change', () => {
+          l.total = Number(inputTotal.value) || 0;
+          if (editableTotal) {
+            // Per OL000: ricalcolo quantità = totale / laborRate
+            if (laborRateStd > 0) {
+              l.quantity = l.total / laborRateStd;
+              inputQty.value = l.quantity.toFixed(2);
+            } else {
+              l.quantity = 0;
+              inputQty.value = '0';
+            }
+          }
+          rebuildLabourTable();
+        });
+
+        tdTotal.appendChild(inputTotal);
+
+        const tdActions = document.createElement('td');
+        const btnDel = document.createElement('button');
+        btnDel.type = 'button';
+        btnDel.className = 'btn btn-danger btn-small';
+        btnDel.textContent = 'Elimina';
+        btnDel.addEventListener('click', () => {
+          labourModel.splice(index, 1);
+          rebuildLabourTable();
+        });
+        tdActions.appendChild(btnDel);
+
+        tr.appendChild(tdCode);
+        tr.appendChild(tdDesc);
+        tr.appendChild(tdQty);
+        tr.appendChild(tdTotal);
+        tr.appendChild(tdActions);
+
+        labourBody.appendChild(tr);
+
+        total += l.total || 0;
+      });
+
+      labourTotalEl.textContent = formatEuro(total);
+    }
+
+    async function searchLabourAndAdd() {
+      const code = (labourCodeInput.value || '').trim();
+      if (!code) {
+        alert('Inserisci un codice manodopera da cercare.');
+        return;
+      }
+
+      try {
+        const snap = await db
+          .collection('FTLabourCodes')
+          .where('codice_labour', '==', code)
+          .limit(1)
+          .get();
+
+        if (snap.empty) {
+          alert('Nessuna manodopera trovata per il codice inserito.');
+          return;
+        }
+
+        const doc = snap.docs[0];
+        const d = doc.data() || {};
+
+        const labour = {
+          code: d.codice_labour || d.code || doc.id,
+          description: d.descrizione_tradotta || d.description || d.Descrizione || '',
+          quantity: Number(d.quantita_standard || d.standard_qty || 0),
+          total: 0
+        };
+
+        // default: totale = qty * laborRateStd (se già conosciuto)
+        if (laborRateStd > 0) {
+          labour.total = (labour.quantity || 0) * laborRateStd;
+        }
+
+        labourModel.push(labour);
+        rebuildLabourTable();
+        labourCodeInput.value = '';
+      } catch (e) {
+        console.error('[ftclaims-claimforms] Errore ricerca manodopera:', e);
+        alert('Errore durante la ricerca della manodopera: ' + e.message);
+      }
+    }
+
+    btnLabourSearch.addEventListener('click', searchLabourAndAdd);
+    btnLabourAdd.addEventListener('click', searchLabourAndAdd);
+
+    // Ricostruzione iniziale manodopera da Firestore
+    rebuildLabourTable();
+
+    // =======================
+    // Carico Symptom / CCC iniziali
+    // =======================
+    loadSymptomsAndSelect();
+
+    // =======================
+    // Tariffa oraria dealer
+    // =======================
+    if (claimCardId) {
+      getLaborRateStdForClaimCard(claimCardId).then(rate => {
+        laborRateStd = rate || 0;
+        console.log('[ftclaims-claimforms] LaborRateStd per claim', claimCardId, '=', laborRateStd);
+        rebuildLabourTable();
+      });
+    }
+
+    // =======================
+    // Salvataggio completo
+    // =======================
+    btnSave.addEventListener('click', async () => {
+      try {
+        // Se Garanzia Ricambio: controllo fattura precedente
+        if (isReplacementWarranty) {
+          const hasInvoice = await checkPrevInvoiceExists(claimRef);
+          if (!hasInvoice) {
+            alert('Per un claim di tipo "Garanzia Ricambio" è obbligatorio allegare almeno una "Fattura riparazione precedente".');
+            return;
           }
         }
 
-        const garanziaData = {
-          symptom: symptomId
-            ? { id: symptomId, label: symptomLabel }
-            : null,
-          ccc: cccId
-            ? { id: cccId, text: cccText, order: cccOrder }
-            : null,
-          causaPart: causaPartId
-            ? {
-                id: causaPartId,
-                codice: (causaCodeInput.value || "").trim() || null,
-                codice_esteso: causaExtInput.value || null,
-                descrizione: causaDescInput.value || null
-              }
-            : null,
-          commentoTecnico: (commentoInput.value || "").trim() || null,
-          labourRateStd: labourRateStd != null ? labourRateStd : null
+        const selectedSymptomId = selSymptom.value || null;
+        const selectedCccId     = selCcc.value || null;
+
+        const newWarranty = {
+          symptomId: selectedSymptomId,
+          cccId: selectedCccId,
+          causePartCode: (causaCode.value || '').trim() || null,
+          causePartDescr: (causaDescr.value || '').trim() || null,
+          comment: (commento.value || '').trim() || null,
+          parts: partsModel,
+          labour: labourModel
         };
 
-        // RICAMBI
-        const parts = [];
-        let partsTotal = 0;
-        const partRows = partsBody.querySelectorAll("tr");
-        partRows.forEach(tr => {
-          const codeInput = tr.querySelector("td:nth-child(1) input");
-          const refundInput = tr.querySelector("td:nth-child(4) input");
-          const qtyInput = tr.querySelector("td:nth-child(5) input");
-          const totalInput = tr.querySelector("td:nth-child(6) input");
-
-          const codice = codeInput ? (codeInput.value || "").trim() : "";
-          if (!codice) return;
-
-          const p = {
-            id: codeInput.dataset.partId || null,
-            codice: codice,
-            codice_esteso: tr.querySelector("td:nth-child(2) input").value || null,
-            descrizione: tr.querySelector("td:nth-child(3) input").value || null,
-            rimborso_garanzia: toNumberOrNull(refundInput.value),
-            quantita: toNumberOrNull(qtyInput.value),
-            totale: toNumberOrNull(totalInput.value)
-          };
-          partsTotal += p.totale || 0;
-          parts.push(p);
-        });
-        garanziaData.parts = parts;
-        garanziaData.totaleRicambi = partsTotal;
-
-        // MANODOPERA
-        const labour = [];
-        let labourTotal = 0;
-        const labourRows = labourBody.querySelectorAll("tr");
-        labourRows.forEach(tr => {
-          const codeInput = tr.querySelector("td:nth-child(1) input");
-          const qtyInput = tr.querySelector("td:nth-child(3) input");
-          const totalInput = tr.querySelector("td:nth-child(4) input");
-          const codice = codeInput ? (codeInput.value || "").trim() : "";
-          if (!codice) return;
-
-          const l = {
-            id: codeInput.dataset.labourId || null,
-            codice_labour: codice,
-            descrizione_tradotta: tr.querySelector("td:nth-child(2) input").value || null,
-            quantita: toNumberOrNull(qtyInput.value),
-            totale: toNumberOrNull(totalInput.value)
-          };
-          labourTotal += l.totale || 0;
-          labour.push(l);
-        });
-        garanziaData.labour = labour;
-        garanziaData.totaleManodopera = labourTotal;
-
-        const claimRef = db
-          .collection("ClaimCards")
-          .doc(ctx.claimCardId)
-          .collection("Claims")
-          .doc(ctx.claimCode);
-
-        await claimRef.update({ garanzia: garanziaData });
-
-        alert("Dati Garanzia salvati.");
-      } catch (err) {
-        console.error(err);
-        alert("Errore nel salvataggio dati Garanzia: " + err.message);
+        await claimRef.update({ warranty: newWarranty });
+        alert('Dati garanzia salvati.');
+      } catch (e) {
+        console.error('[ftclaims-claimforms] Errore salvataggio garanzia:', e);
+        alert('Errore nel salvataggio dati garanzia: ' + e.message);
       }
     });
   }
-}
+
+  // ==========================
+  // 3) Fattura riparazione precedente (Garanzia Ricambio)
+  // ==========================
+
+  async function loadPrevInvoiceList(claimRef, claimCode) {
+    const listEl = document.getElementById('prev_invoice_list_' + claimCode);
+    if (!listEl) return;
+
+    listEl.textContent = 'Caricamento fatture...';
+
+    try {
+      const snap = await claimRef.collection('Attachments')
+        .orderBy('uploadedAt', 'asc')
+        .get();
+
+      const invoices = [];
+      snap.forEach(doc => {
+        const d = doc.data() || {};
+        if (d.category === 'prevRepairInvoice') {
+          invoices.push({ id: doc.id, ...d });
+        }
+      });
+
+      if (!invoices.length) {
+        listEl.textContent = 'Nessuna fattura caricata per questo claim.';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      invoices.forEach(att => {
+        const row = document.createElement('div');
+        row.className = 'attachment-row';
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.marginBottom = '2px';
+
+        const left = document.createElement('span');
+        left.textContent = att.name || '(senza nome)';
+
+        const right = document.createElement('span');
+
+        const link = document.createElement('a');
+        link.href = att.url;
+        link.target = '_blank';
+        link.textContent = 'Scarica';
+
+        const btnDel = document.createElement('button');
+        btnDel.type = 'button';
+        btnDel.className = 'btn btn-danger btn-small';
+        btnDel.style.marginLeft = '6px';
+        btnDel.textContent = 'Elimina';
+        btnDel.addEventListener('click', async () => {
+          if (!confirm('Vuoi eliminare questa fattura?')) return;
+          try {
+            const storage = getStorage();
+            if (storage && att.path) {
+              await storage.ref(att.path).delete().catch(() => {});
+            }
+            await claimRef.collection('Attachments').doc(att.id).delete();
+            await loadPrevInvoiceList(claimRef, claimCode);
+          } catch (err) {
+            console.error('[ftclaims-claimforms] Errore eliminazione fattura:', err);
+            alert('Errore durante l\'eliminazione della fattura: ' + err.message);
+          }
+        });
+
+        right.appendChild(link);
+        right.appendChild(btnDel);
+
+        row.appendChild(left);
+        row.appendChild(right);
+        listEl.appendChild(row);
+      });
+
+    } catch (err) {
+      console.error('[ftclaims-claimforms] Errore loadPrevInvoiceList:', err);
+      listEl.textContent = 'Errore nel caricamento delle fatture: ' + err.message;
+    }
+  }
+
+  function setupPrevInvoiceHandlers(claimRef, claimCode) {
+    const input = document.getElementById('prev_invoice_file_' + claimCode);
+    const btn   = document.getElementById('prev_invoice_upload_' + claimCode);
+    if (!input || !btn) return;
+
+    loadPrevInvoiceList(claimRef, claimCode);
+
+    btn.addEventListener('click', async () => {
+      const files = input.files;
+      if (!files || !files.length) {
+        alert('Seleziona un file da caricare come fattura precedente.');
+        return;
+      }
+
+      const file = files[0]; // uno per volta
+      try {
+        await uploadPrevInvoice(claimRef, claimCode, file);
+        input.value = '';
+        await loadPrevInvoiceList(claimRef, claimCode);
+      } catch (e) {
+        console.error('[ftclaims-claimforms] Errore upload fattura:', e);
+        alert('Errore nel caricamento della fattura: ' + e.message);
+      }
+    });
+  }
+
+  async function uploadPrevInvoice(claimRef, claimCode, file) {
+    const storage = getStorage();
+    const db = getDb();
+    if (!storage || !db) throw new Error('Storage/Firestore non disponibili');
+
+    const claimPath = claimRef.path; // "ClaimCards/<id>/Claims/<code>"
+    const segments = claimPath.split('/');
+    const claimCardId = segments[1]; // ClaimCards/<id>
+    const basePath = 'ClaimCards/' + claimCardId + '/Claims/' + claimCode + '/Attachments/';
+
+    const safeName = Date.now() + '_' + file.name.replace(/[^\w.\-]/g, '_');
+    const fullPath = basePath + safeName;
+    const ref = storage.ref(fullPath);
+
+    await ref.put(file);
+    const url = await ref.getDownloadURL();
+
+    const user = firebase.auth().currentUser;
+    let authorName = '';
+    let authorDealer = '';
+
+    try {
+      if (user) {
+        const userSnap = await db.collection('Users').doc(user.uid).get();
+        if (userSnap.exists) {
+          const u = userSnap.data() || {};
+          authorName =
+            u.fullName ||
+            u.displayName ||
+            u.name ||
+            '';
+          authorDealer =
+            u.dealerId ||
+            u.dealerID ||
+            u.DealerID ||
+            u.DealerId ||
+            '';
+        }
+      }
+    } catch (e) {
+      console.warn('[ftclaims-claimforms] impossibile leggere dati utente per fattura:', e);
+    }
+
+    await claimRef.collection('Attachments').add({
+      name: file.name,
+      path: fullPath,
+      url: url,
+      category: 'prevRepairInvoice',
+      uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      authorUid: user ? user.uid : null,
+      authorName: authorName || null,
+      authorDealerId: authorDealer || null
+    });
+  }
+
+  async function checkPrevInvoiceExists(claimRef) {
+    const snap = await claimRef.collection('Attachments')
+      .where('category', '==', 'prevRepairInvoice')
+      .limit(1)
+      .get();
+    return !snap.empty;
+  }
+
+})();
