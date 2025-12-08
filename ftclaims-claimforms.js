@@ -521,12 +521,20 @@ function renderGaranziaDetails(container, claimData, ctx) {
     if (!symptomId) return;
 
     try {
+      console.log("[Garanzia] Carico CCC_Codes per Symptom:", symptomId);
+
       const collRef = db
         .collection("Symptom")
         .doc(symptomId)
         .collection("CCC_Codes");
 
       const snap = await collRef.get();
+
+      if (snap.empty) {
+        console.warn("[Garanzia] Nessun CCC_Code per Symptom:", symptomId);
+        return;
+      }
+
       const docs = [];
       snap.forEach(doc => docs.push(doc));
 
@@ -548,8 +556,11 @@ function renderGaranziaDetails(container, claimData, ctx) {
       if (selectedCCCId) {
         cccSelect.value = selectedCCCId;
       }
+
+      console.log("[Garanzia] Caricati", docs.length, "CCC_Codes");
     } catch (err) {
       console.error("Errore caricamento CCC Codes:", err);
+      alert("Errore nel caricamento dei CCC Codes: " + err.message);
     }
   }
 
@@ -894,7 +905,6 @@ function renderGaranziaDetails(container, claimData, ctx) {
     tdTotal.style.textAlign = "right";
     const totalInput = document.createElement("input");
     totalInput.type = "number";
-    totalInput.readOnly = true;
     totalInput.style.width = "90px";
     totalInput.step = "0.01";
     totalInput.value = initialData && initialData.totale != null
@@ -919,15 +929,64 @@ function renderGaranziaDetails(container, claimData, ctx) {
 
     labourBody.appendChild(tr);
 
-    function recalcRow() {
+    function normalizedCode() {
+      return (codeInput.value || "").replace(/\s+/g, "").toUpperCase();
+    }
+
+    function isCode96or94() {
+      const c = normalizedCode();
+      return c === "96000000" || c === "94000000";
+    }
+
+    function isCodeOL000() {
+      const c = normalizedCode();
+      return c === "OL000";
+    }
+
+    function updateFieldModes() {
+      const isSpecialQty = isCode96or94();
+      const isOL = isCodeOL000();
+
+      if (isOL) {
+        // OL000: quantità NON modificabile, totale modificabile
+        qtyInput.readOnly = true;
+        totalInput.readOnly = false;
+      } else if (isSpecialQty) {
+        // 96 000 000 e 94 000 000: quantità modificabile, totale calcolato
+        qtyInput.readOnly = false;
+        totalInput.readOnly = true;
+      } else {
+        // tutti gli altri: quantità NON modificabile, totale calcolato
+        qtyInput.readOnly = true;
+        totalInput.readOnly = true;
+      }
+    }
+
+    function recalcRow(fromTotalChange) {
       const rate = labourRateStd || 0;
-      const qty = toNumberOrNull(qtyInput.value) || 0;
-      const tot = rate * qty;
-      totalInput.value = formatMoney(tot);
+
+      if (isCodeOL000()) {
+        // Totale inserito a mano → calcolo quantità = totale / rate
+        if (fromTotalChange) {
+          const tot = toNumberOrNull(totalInput.value) || 0;
+          const qty = rate ? tot / rate : 0;
+          qtyInput.value = qty.toFixed(2);
+        }
+      } else {
+        // Normale o 96/94 → quantità (fissa o modificabile), totale = qty * rate
+        const qty = toNumberOrNull(qtyInput.value) || 0;
+        const tot = rate * qty;
+        totalInput.value = formatMoney(tot);
+      }
+
       recalcLabourTotals();
     }
 
-    qtyInput.addEventListener("input", recalcRow);
+    // Eventi
+    qtyInput.addEventListener("input", () => recalcRow(false));
+    totalInput.addEventListener("input", () => {
+      if (isCodeOL000()) recalcRow(true);
+    });
 
     searchBtn.addEventListener("click", async () => {
       const code = (codeInput.value || "").trim();
@@ -944,15 +1003,21 @@ function renderGaranziaDetails(container, claimData, ctx) {
         const d = found.data;
         codeInput.dataset.labourId = found.id;
         descInput.value = d.descrizione_tradotta || d.descrizione || "";
-        // quantitá suggerita da DB se presente
+        // quantitá suggerita da DB se presente (solo al primo caricamento)
         if (d.quantita != null && !initialData) {
           qtyInput.value = String(d.quantita);
         }
-        recalcRow();
+        updateFieldModes();
+        recalcRow(false);
       } catch (err) {
         console.error(err);
         alert("Errore ricerca labour: " + err.message);
       }
+    });
+
+    codeInput.addEventListener("change", () => {
+      updateFieldModes();
+      recalcRow(false);
     });
 
     delBtn.addEventListener("click", () => {
@@ -960,7 +1025,9 @@ function renderGaranziaDetails(container, claimData, ctx) {
       recalcLabourTotals();
     });
 
-    recalcRow();
+    // Stato iniziale
+    updateFieldModes();
+    recalcRow(false);
   }
 
   function recalcLabourTotals() {
