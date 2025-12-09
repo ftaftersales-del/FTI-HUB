@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>FTMANAG - Gestione Reclami</title>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <script src="="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px 25px 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 22px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .top-bar-left {
+      font-size: 14px;
+      color: #555;
+    }
+
+    .top-bar-right button {
+      padding: 6px 12px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .btn-primary:disabled,
+    .btn-secondary:disabled {
+      opacity: 0.6;
+      cursor: default;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    thead {
+      background-color: #f0f0f0;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px 8px;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #fafafa;
+    }
+
+    tbody tr:hover {
+      background-color: #e8f0fe;
+      cursor: pointer;
+    }
+
+    .filters-row input,
+    .filters-row select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 3px 4px;
+      font-size: 12px;
+    }
+
+    .status-pill {
+      padding: 2px 6px;
+      border-radius: 12px;
+      font-size: 11px;
+      border: 1px solid #ccc;
+      display: inline-block;
+    }
+
+    .status-Aperta {
+      background-color: #e7f5ff;
+      border-color: #74c0fc;
+    }
+    .status-Inviata {
+      background-color: #fff3bf;
+      border-color: #fcc419;
+    }
+    .status-Sospesa {
+      background-color: #ffe3e3;
+      border-color: #fa5252;
+    }
+    .status-In\ Valutazione {
+      background-color: #e6fcf5;
+      border-color: #20c997;
+    }
+    .status-Conclusa {
+      background-color: #e9ecef;
+      border-color: #868e96;
+    }
+    .status-Cancellata {
+      background-color: #f8f0fc;
+      border-color: #cc5de8;
+    }
+
+    .bottom-bar {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .error-message {
+      color: #b00020;
+      margin-top: 10px;
+      font-size: 13px;
+    }
+
+    .loading {
+      font-size: 13px;
+      color: #555;
+      margin-top: 5px;
+    }
+
+    .nowrap {
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="top-bar">
+      <div>
+        <h1>FTMANAG - Gestione reclami</h1>
+        <div class="top-bar-left" id="userInfo">
+          Caricamento informazioni utente...
+        </div>
+      </div>
+      <div class="top-bar-right">
+        <button class="btn-secondary" onclick="window.location.href='FTHUBAS.html'">
+          Torna a Home
+        </button>
+      </div>
+    </div>
+
+    <div id="loading" class="loading">Caricamento reclami...</div>
+    <div id="error" class="error-message" style="display:none;"></div>
+
+    <table id="claimsTable" style="display:none;">
+      <thead>
+        <tr id="header-row">
+          <!-- intestazioni colonne generate da JS -->
+        </tr>
+        <tr class="filters-row" id="filters-row">
+          <!-- filtri generati da JS -->
+        </tr>
+      </thead>
+      <tbody id="claimsBody">
+        <!-- righe reclami -->
+      </tbody>
+    </table>
+
+    <div class="bottom-bar">
+      <div id="summary">Nessun reclamo caricato.</div>
+      <div>
+        <button class="btn-primary" id="loadMoreBtn" onclick="loadMoreClaims()" disabled>
+          Carica altri
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser = null;
+    let currentDealerId = null;
+    let isDistributor = false;
+
+    const pageSize = 10;
+    let lastVisible = null;
+    let reachedEnd = false;
+
+    // Tutti i claim caricati finora
+    let allClaims = [];
+
+    // Configurazione colonne (verrà adattata per dealer/distributore)
+    let columns = []; // riempito dopo aver saputo se è distributore
+
+    // Filtri correnti
+    const filters = {
+      openDealer: '',
+      status: '',
+      code: '',
+      type: '',
+      vin: '',
+      customer: '',
+      plate: '',
+      km: '',
+      engineHours: '',
+      openDate: ''
+    };
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        document.getElementById('userInfo').textContent = 'Utente non autenticato.';
+        document.getElementById('loading').textContent = 'Effettua il login per vedere i reclami.';
+        return;
+      }
+
+      currentUser = user;
+
+      try {
+        // Legge documento utente
+        const userDocRef = db.collection('Users').doc(user.uid);
+        const userSnap = await userDocRef.get();
+        if (!userSnap.exists) {
+          throw new Error('Documento utente non trovato in /Users.');
+        }
+
+        const userData = userSnap.data();
+        currentDealerId =
+          userData.dealerId ||
+          userData.dealerID ||
+          userData.DealerID ||
+          userData.DealerId ||
+          null;
+
+        if (!currentDealerId) {
+          throw new Error('DealerID non presente nel documento utente.');
+        }
+
+        // Legge documento dealer per sapere se è distributore
+        const dealerSnap = await db.collection('dealers').doc(currentDealerId).get();
+        if (!dealerSnap.exists) {
+          throw new Error('Documento dealer non trovato in /dealers.');
+        }
+
+        const dealerData = dealerSnap.data();
+        isDistributor = !!dealerData.isDistributor;
+
+        // Mostra info utente
+        document.getElementById('userInfo').textContent =
+          'Utente: ' + (userData.displayName || user.email || user.uid) +
+          ' | Dealer: ' + currentDealerId +
+          (isDistributor ? ' (Distributore)' : ' (Dealer)');
+
+        // Prepara colonne in base al ruolo
+        setupColumns();
+
+        // Costruisce header e filtri
+        buildTableHeaderAndFilters();
+
+        // Carica primi reclami
+        await loadInitialClaims();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error').textContent =
+          'Errore nel caricamento: ' + err.message;
+        document.getElementById('loading').style.display = 'none';
+      }
+    });
+
+    function setupColumns() {
+      // Ordine colonne per dealer:
+      // status, code, type, vin, customer, plate, km, engineHours, openDate
+      const baseColumns = [
+        { key: 'status', label: 'Stato' },
+        { key: 'code', label: 'Claim card' },
+        { key: 'type', label: 'Tipologia' },
+        { key: 'vin', label: 'Telaio' },
+        { key: 'customer', label: 'Cliente' },
+        { key: 'plate', label: 'Targa' },
+        { key: 'km', label: 'KM' },
+        { key: 'engineHours', label: 'Ore motore' },
+        { key: 'openDate', label: 'Data apertura' }
+      ];
+
+      if (isDistributor) {
+        // Per il distributore, openDealer prima, poi tutto il resto nello stesso ordine
+        columns = [
+          { key: 'openDealer', label: 'Dealer apertura' },
+          ...baseColumns
+        ];
+      } else {
+        columns = baseColumns;
+      }
+    }
+
+    function buildTableHeaderAndFilters() {
+      const headerRow = document.getElementById('header-row');
+      const filtersRow = document.getElementById('filters-row');
+      headerRow.innerHTML = '';
+      filtersRow.innerHTML = '';
+
+      columns.forEach(col => {
+        const th = document.createElement('th');
+        th.textContent = col.label;
+        headerRow.appendChild(th);
+
+        const filterCell = document.createElement('th');
+        if (col.key === 'status') {
+          // Select per status con i valori noti
+          const select = document.createElement('select');
+          select.id = 'filter-status';
+          const optEmpty = document.createElement('option');
+          optEmpty.value = '';
+          optEmpty.textContent = '';
+          select.appendChild(optEmpty);
+
+          ['Aperta','Inviata','Sospesa','In Valutazione','Conclusa','Cancellata']
+            .forEach(st => {
+              const opt = document.createElement('option');
+              opt.value = st;
+              opt.textContent = st;
+              select.appendChild(opt);
+            });
+
+          select.addEventListener('change', () => {
+            filters.status = select.value;
+            renderTable();
+          });
+          filterCell.appendChild(select);
+        } else {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.placeholder = '';
+          input.dataset.key = col.key;
+          input.addEventListener('input', () => {
+            const key = input.dataset.key;
+            filters[key] = input.value.trim().toLowerCase();
+            renderTable();
+          });
+          filterCell.appendChild(input);
+        }
+
+        filtersRow.appendChild(filterCell);
+      });
+
+      document.getElementById('claimsTable').style.display = 'table';
+    }
+
+    async function loadInitialClaims() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('loading').textContent = 'Caricamento reclami...';
+      document.getElementById('error').style.display = 'none';
+
+      allClaims = [];
+      lastVisible = null;
+      reachedEnd = false;
+
+      let query = db.collection('ClaimCards')
+        .orderBy('code', 'desc')
+        .limit(pageSize);
+
+      if (!isDistributor) {
+        query = db.collection('ClaimCards')
+          .where('openDealer', '==', currentDealerId)
+          .orderBy('code', 'desc')
+          .limit(pageSize);
+      }
+
+      const snap = await query.get();
+      if (snap.empty) {
+        document.getElementById('summary').textContent = 'Nessun reclamo trovato.';
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('loadMoreBtn').disabled = true;
+        return;
+      }
+
+      snap.forEach(doc => {
+        allClaims.push(formatClaimDoc(doc));
+      });
+
+      lastVisible = snap.docs[snap.docs.length - 1];
+      if (snap.docs.length < pageSize) {
+        reachedEnd = true;
+      }
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('loadMoreBtn').disabled = reachedEnd;
+      renderTable();
+    }
+
+    async function loadMoreClaims() {
+      if (reachedEnd || !lastVisible) return;
+
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('loading').textContent = 'Carico altri reclami...';
+      document.getElementById('error').style.display = 'none';
+
+      try {
+        let query = db.collection('ClaimCards')
+          .orderBy('code', 'desc')
+          .startAfter(lastVisible)
+          .limit(pageSize);
+
+        if (!isDistributor) {
+          query = db.collection('ClaimCards')
+            .where('openDealer', '==', currentDealerId)
+            .orderBy('code', 'desc')
+            .startAfter(lastVisible)
+            .limit(pageSize);
+        }
+
+        const snap = await query.get();
+        if (snap.empty) {
+          reachedEnd = true;
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('loadMoreBtn').disabled = true;
+          return;
+        }
+
+        snap.forEach(doc => {
+          allClaims.push(formatClaimDoc(doc));
+        });
+
+        lastVisible = snap.docs[snap.docs.length - 1];
+        if (snap.docs.length < pageSize) {
+          reachedEnd = true;
+        }
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('loadMoreBtn').disabled = reachedEnd;
+        renderTable();
+      } catch (err) {
+        console.error(err);
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error').textContent =
+          'Errore nel caricamento di altri reclami: ' + err.message;
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+
+    function formatClaimDoc(doc) {
+      const data = doc.data();
+      const vehicle = data.vehicle || {};
+
+      return {
+        id: doc.id,
+        openDealer: data.openDealer || '',
+        status: data.status || '',
+        code: data.code || doc.id,
+        type: data.type || '',
+        vin: vehicle.vin || '',
+        customer: vehicle.customer || '',
+        plate: vehicle.registrationPlate || '',
+        km: data.km != null ? data.km : '',
+        engineHours: data.engineHours != null ? data.engineHours : '',
+        openDate: data.openDate || '',
+        raw: data
+      };
+    }
+
+    function claimMatchesFilters(claim) {
+      // openDealer
+      if (filters.openDealer && (!claim.openDealer || !String(claim.openDealer).toLowerCase().includes(filters.openDealer))) {
+        return false;
+      }
+      // status (match esatto se impostato)
+      if (filters.status && claim.status !== filters.status) {
+        return false;
+      }
+      // code
+      if (filters.code && (!claim.code || !String(claim.code).toLowerCase().includes(filters.code))) {
+        return false;
+      }
+      // type
+      if (filters.type && (!claim.type || !String(claim.type).toLowerCase().includes(filters.type))) {
+        return false;
+      }
+      // vin
+      if (filters.vin && (!claim.vin || !String(claim.vin).toLowerCase().includes(filters.vin))) {
+        return false;
+      }
+      // customer
+      if (filters.customer && (!claim.customer || !String(claim.customer).toLowerCase().includes(filters.customer))) {
+        return false;
+      }
+      // plate
+      if (filters.plate && (!claim.plate || !String(claim.plate).toLowerCase().includes(filters.plate))) {
+        return false;
+      }
+      // km
+      if (filters.km && (claim.km === '' || !String(claim.km).toLowerCase().includes(filters.km))) {
+        return false;
+      }
+      // engineHours
+      if (filters.engineHours && (claim.engineHours === '' || !String(claim.engineHours).toLowerCase().includes(filters.engineHours))) {
+        return false;
+      }
+      // openDate
+      if (filters.openDate && (!claim.openDate || !String(claim.openDate).toLowerCase().includes(filters.openDate))) {
+        return false;
+      }
+
+      return true;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('claimsBody');
+      tbody.innerHTML = '';
+
+      const filtered = allClaims.filter(claimMatchesFilters);
+
+      filtered.forEach(claim => {
+        const tr = document.createElement('tr');
+        tr.addEventListener('click', () => openClaimDetails(claim));
+
+        columns.forEach(col => {
+          const td = document.createElement('td');
+          td.classList.add('nowrap');
+
+          switch (col.key) {
+            case 'status':
+              const span = document.createElement('span');
+              span.textContent = claim.status || '';
+              span.className = 'status-pill';
+              if (claim.status) {
+                // per "In Valutazione" la classe viene "status-In Valutazione" (gestita nel CSS escapata)
+                span.classList.add('status-' + claim.status.replace(/\s/g, '\\ '));
+              }
+              td.appendChild(span);
+              break;
+            case 'code':
+              td.textContent = claim.code || '';
+              break;
+            case 'type':
+              td.textContent = claim.type || '';
+              break;
+            case 'vin':
+              td.textContent = claim.vin || '';
+              break;
+            case 'customer':
+              td.textContent = claim.customer || '';
+              break;
+            case 'plate':
+              td.textContent = claim.plate || '';
+              break;
+            case 'km':
+              td.textContent = claim.km !== '' ? claim.km : '';
+              break;
+            case 'engineHours':
+              td.textContent = claim.engineHours !== '' ? claim.engineHours : '';
+              break;
+            case 'openDate':
+              td.textContent = claim.openDate || '';
+              break;
+            case 'openDealer':
+              td.textContent = claim.openDealer || '';
+              break;
+            default:
+              td.textContent = '';
+          }
+
+          tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('summary').textContent =
+        'Reclami mostrati: ' + filtered.length + ' | Reclami caricati: ' + allClaims.length +
+        (reachedEnd ? ' | Fine elenco.' : '');
+    }
+
+    function openClaimDetails(claim) {
+      // Salva info in sessionStorage per FTCLAIMS_STEP2
+      try {
+        sessionStorage.setItem('currentClaimCardCode', claim.code);
+        sessionStorage.setItem('currentClaimIsDistributor', isDistributor ? '1' : '0');
+        sessionStorage.setItem('currentClaimStatus', claim.status || '');
+      } catch (e) {
+        console.warn('Impossibile usare sessionStorage:', e);
+      }
+
+      window.location.href = 'FTCLAIMS_STEP2.html?from=FTMANAG';
+    }
+  </script>
+</body>
+</html>
