@@ -204,8 +204,9 @@
   </div>
 
   <script>
-    const auth = firebase.auth();
-    const db   = firebase.firestore();
+    // auth e db arrivano già da firebase-config.js
+    // const auth = firebase.auth();
+    // const db   = firebase.firestore();
 
     let currentUser = null;
     let currentDealerId = null;
@@ -243,7 +244,6 @@
       currentUser = user;
 
       try {
-        // 1) documento utente
         const userDocRef = db.collection('Users').doc(user.uid);
         const userSnap   = await userDocRef.get();
         if (!userSnap.exists) {
@@ -252,7 +252,6 @@
 
         const userData = userSnap.data() || {};
 
-        // dealerId pulito da eventuali spazi / varianti
         const rawDealerId =
           userData.dealerId ||
           userData.dealerID ||
@@ -265,10 +264,9 @@
           throw new Error('DealerID non presente nel documento utente.');
         }
 
-        // 2) cerco il dealer in /dealers via campo (non per doc id!)
+        // cerco il dealer in /dealers per campo, non per docId
         let dealerData = null;
 
-        // prima provo con DealerID
         let dealerQuery = await db.collection('dealers')
           .where('DealerID', '==', currentDealerId)
           .limit(1)
@@ -277,7 +275,6 @@
         if (!dealerQuery.empty) {
           dealerData = dealerQuery.docs[0].data();
         } else {
-          // fallback: campo dealerId (minuscolo)
           dealerQuery = await db.collection('dealers')
             .where('dealerId', '==', currentDealerId)
             .limit(1)
@@ -289,19 +286,16 @@
 
         if (!dealerData) {
           console.warn('Dealer non trovato in /dealers per DealerID =', currentDealerId);
-          // se non lo trovo, considero che NON sia distributore
           isDistributor = false;
         } else {
           isDistributor = !!dealerData.isDistributor;
         }
 
-        // Info utente
         document.getElementById('userInfo').textContent =
           'Utente: ' + (userData.displayName || user.email || user.uid) +
           ' | Dealer: ' + currentDealerId +
           (isDistributor ? ' (Distributore)' : ' (Dealer)');
 
-        // Colonne e tabella
         setupColumns();
         buildTableHeaderAndFilters();
         await loadInitialClaims();
@@ -400,12 +394,10 @@
 
       let query;
       if (isDistributor) {
-        // distributore: vede tutti
         query = db.collection('ClaimCards')
           .orderBy('code', 'desc')
           .limit(pageSize);
       } else {
-        // dealer: solo le sue pratiche
         query = db.collection('ClaimCards')
           .where('openDealer', '==', currentDealerId)
           .orderBy('code', 'desc')
@@ -508,7 +500,6 @@
 
     function claimMatchesFilters(claim) {
       if (!isDistributor) {
-        // ulteriore safety: un dealer non vede mai claim di altri dealer
         if (claim.openDealer && claim.openDealer !== currentDealerId) {
           return false;
         }
