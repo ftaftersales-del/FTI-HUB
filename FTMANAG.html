@@ -215,13 +215,9 @@
     let lastVisible = null;
     let reachedEnd = false;
 
-    // Claim caricati da Firestore
     let allClaims = [];
-
-    // Config colonne (dipende da dealer/distributore)
     let columns = [];
 
-    // Filtri
     const filters = {
       openDealer: '',
       status: '',
@@ -247,7 +243,7 @@
       currentUser = user;
 
       try {
-        // Documento utente
+        // 1) documento utente
         const userDocRef = db.collection('Users').doc(user.uid);
         const userSnap   = await userDocRef.get();
         if (!userSnap.exists) {
@@ -255,31 +251,57 @@
         }
 
         const userData = userSnap.data() || {};
-        currentDealerId =
+
+        // dealerId pulito da eventuali spazi / varianti
+        const rawDealerId =
           userData.dealerId ||
           userData.dealerID ||
           userData.DealerID ||
           userData.DealerId ||
-          null;
+          '';
+        currentDealerId = rawDealerId ? String(rawDealerId).trim() : null;
 
         if (!currentDealerId) {
           throw new Error('DealerID non presente nel documento utente.');
         }
 
-        // Documento dealer per capire se è distributore
-        const dealerSnap = await db.collection('dealers').doc(currentDealerId).get();
-        if (!dealerSnap.exists) {
-          throw new Error('Documento dealer non trovato in /dealers.');
+        // 2) cerco il dealer in /dealers via campo (non per doc id!)
+        let dealerData = null;
+
+        // prima provo con DealerID
+        let dealerQuery = await db.collection('dealers')
+          .where('DealerID', '==', currentDealerId)
+          .limit(1)
+          .get();
+
+        if (!dealerQuery.empty) {
+          dealerData = dealerQuery.docs[0].data();
+        } else {
+          // fallback: campo dealerId (minuscolo)
+          dealerQuery = await db.collection('dealers')
+            .where('dealerId', '==', currentDealerId)
+            .limit(1)
+            .get();
+          if (!dealerQuery.empty) {
+            dealerData = dealerQuery.docs[0].data();
+          }
         }
 
-        const dealerData = dealerSnap.data() || {};
-        isDistributor = !!dealerData.isDistributor;
+        if (!dealerData) {
+          console.warn('Dealer non trovato in /dealers per DealerID =', currentDealerId);
+          // se non lo trovo, considero che NON sia distributore
+          isDistributor = false;
+        } else {
+          isDistributor = !!dealerData.isDistributor;
+        }
 
+        // Info utente
         document.getElementById('userInfo').textContent =
           'Utente: ' + (userData.displayName || user.email || user.uid) +
           ' | Dealer: ' + currentDealerId +
           (isDistributor ? ' (Distributore)' : ' (Dealer)');
 
+        // Colonne e tabella
         setupColumns();
         buildTableHeaderAndFilters();
         await loadInitialClaims();
@@ -293,8 +315,6 @@
     });
 
     function setupColumns() {
-      // Ordine per dealer:
-      // status, code, type, vin, customer, plate, km, engineHours, openDate
       const baseColumns = [
         { key: 'status',  label: 'Stato' },
         { key: 'code',    label: 'Claim card' },
@@ -308,7 +328,6 @@
       ];
 
       if (isDistributor) {
-        // Per distributore: openDealer, poi stessa sequenza
         columns = [
           { key: 'openDealer', label: 'Dealer apertura' },
           ...baseColumns
@@ -375,16 +394,18 @@
       document.getElementById('loading').textContent = 'Caricamento reclami...';
       document.getElementById('error').style.display = 'none';
 
-      allClaims  = [];
+      allClaims   = [];
       lastVisible = null;
       reachedEnd  = false;
 
       let query;
       if (isDistributor) {
+        // distributore: vede tutti
         query = db.collection('ClaimCards')
           .orderBy('code', 'desc')
           .limit(pageSize);
       } else {
+        // dealer: solo le sue pratiche
         query = db.collection('ClaimCards')
           .where('openDealer', '==', currentDealerId)
           .orderBy('code', 'desc')
@@ -393,7 +414,8 @@
 
       const snap = await query.get();
       if (snap.empty) {
-        document.getElementById('summary').textContent = 'Nessun reclamo trovato.';
+        document.getElementById('summary').textContent =
+          'Nessun reclamo trovato per questo account.';
         document.getElementById('loading').style.display = 'none';
         document.getElementById('loadMoreBtn').disabled = true;
         return;
@@ -485,6 +507,13 @@
     }
 
     function claimMatchesFilters(claim) {
+      if (!isDistributor) {
+        // ulteriore safety: un dealer non vede mai claim di altri dealer
+        if (claim.openDealer && claim.openDealer !== currentDealerId) {
+          return false;
+        }
+      }
+
       if (filters.openDealer &&
           (!claim.openDealer || !String(claim.openDealer).toLowerCase().includes(filters.openDealer))) {
         return false;
@@ -608,17 +637,13 @@
 
     function openClaimDetails(claim) {
       try {
-        // Chiave usata da FTCLAIMS_STEP2 per capire quale documento aprire
         sessionStorage.setItem('ftclaims_claimCode', claim.code);
-
-        // Extra (per uso futuro, non danno fastidio se non letti)
         sessionStorage.setItem('currentClaimStatus', claim.status || '');
         sessionStorage.setItem('currentClaimIsDistributor', isDistributor ? '1' : '0');
       } catch (e) {
         console.warn('Impossibile usare sessionStorage:', e);
       }
 
-      // Redireziona al dettaglio; come paracadute passiamo anche ?id=
       window.location.href = 'FTCLAIMS_STEP2.html?id=' + encodeURIComponent(claim.code);
     }
   </script>
