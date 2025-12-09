@@ -8,7 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
-  <script src="="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
 
   <style>
@@ -126,7 +126,7 @@
       background-color: #ffe3e3;
       border-color: #fa5252;
     }
-    .status-In\ Valutazione {
+    .status-In-Valutazione {
       background-color: #e6fcf5;
       border-color: #20c997;
     }
@@ -187,16 +187,10 @@
 
     <table id="claimsTable" style="display:none;">
       <thead>
-        <tr id="header-row">
-          <!-- intestazioni colonne generate da JS -->
-        </tr>
-        <tr class="filters-row" id="filters-row">
-          <!-- filtri generati da JS -->
-        </tr>
+        <tr id="header-row"></tr>
+        <tr class="filters-row" id="filters-row"></tr>
       </thead>
-      <tbody id="claimsBody">
-        <!-- righe reclami -->
-      </tbody>
+      <tbody id="claimsBody"></tbody>
     </table>
 
     <div class="bottom-bar">
@@ -211,7 +205,7 @@
 
   <script>
     const auth = firebase.auth();
-    const db = firebase.firestore();
+    const db   = firebase.firestore();
 
     let currentUser = null;
     let currentDealerId = null;
@@ -221,13 +215,13 @@
     let lastVisible = null;
     let reachedEnd = false;
 
-    // Tutti i claim caricati finora
+    // Claim caricati da Firestore
     let allClaims = [];
 
-    // Configurazione colonne (verrà adattata per dealer/distributore)
-    let columns = []; // riempito dopo aver saputo se è distributore
+    // Config colonne (dipende da dealer/distributore)
+    let columns = [];
 
-    // Filtri correnti
+    // Filtri
     const filters = {
       openDealer: '',
       status: '',
@@ -243,22 +237,24 @@
 
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        document.getElementById('userInfo').textContent = 'Utente non autenticato.';
-        document.getElementById('loading').textContent = 'Effettua il login per vedere i reclami.';
+        document.getElementById('userInfo').textContent =
+          'Utente non autenticato. Effettua il login.';
+        document.getElementById('loading').textContent =
+          'Effettua il login per vedere i reclami.';
         return;
       }
 
       currentUser = user;
 
       try {
-        // Legge documento utente
+        // Documento utente
         const userDocRef = db.collection('Users').doc(user.uid);
-        const userSnap = await userDocRef.get();
+        const userSnap   = await userDocRef.get();
         if (!userSnap.exists) {
           throw new Error('Documento utente non trovato in /Users.');
         }
 
-        const userData = userSnap.data();
+        const userData = userSnap.data() || {};
         currentDealerId =
           userData.dealerId ||
           userData.dealerID ||
@@ -270,28 +266,22 @@
           throw new Error('DealerID non presente nel documento utente.');
         }
 
-        // Legge documento dealer per sapere se è distributore
+        // Documento dealer per capire se è distributore
         const dealerSnap = await db.collection('dealers').doc(currentDealerId).get();
         if (!dealerSnap.exists) {
           throw new Error('Documento dealer non trovato in /dealers.');
         }
 
-        const dealerData = dealerSnap.data();
+        const dealerData = dealerSnap.data() || {};
         isDistributor = !!dealerData.isDistributor;
 
-        // Mostra info utente
         document.getElementById('userInfo').textContent =
           'Utente: ' + (userData.displayName || user.email || user.uid) +
           ' | Dealer: ' + currentDealerId +
           (isDistributor ? ' (Distributore)' : ' (Dealer)');
 
-        // Prepara colonne in base al ruolo
         setupColumns();
-
-        // Costruisce header e filtri
         buildTableHeaderAndFilters();
-
-        // Carica primi reclami
         await loadInitialClaims();
       } catch (err) {
         console.error(err);
@@ -303,22 +293,22 @@
     });
 
     function setupColumns() {
-      // Ordine colonne per dealer:
+      // Ordine per dealer:
       // status, code, type, vin, customer, plate, km, engineHours, openDate
       const baseColumns = [
-        { key: 'status', label: 'Stato' },
-        { key: 'code', label: 'Claim card' },
-        { key: 'type', label: 'Tipologia' },
-        { key: 'vin', label: 'Telaio' },
-        { key: 'customer', label: 'Cliente' },
-        { key: 'plate', label: 'Targa' },
-        { key: 'km', label: 'KM' },
+        { key: 'status',  label: 'Stato' },
+        { key: 'code',    label: 'Claim card' },
+        { key: 'type',    label: 'Tipologia pratica' },
+        { key: 'vin',     label: 'Telaio (VIN)' },
+        { key: 'customer',label: 'Cliente' },
+        { key: 'plate',   label: 'Targa' },
+        { key: 'km',      label: 'KM' },
         { key: 'engineHours', label: 'Ore motore' },
-        { key: 'openDate', label: 'Data apertura' }
+        { key: 'openDate',label: 'Data apertura' }
       ];
 
       if (isDistributor) {
-        // Per il distributore, openDealer prima, poi tutto il resto nello stesso ordine
+        // Per distributore: openDealer, poi stessa sequenza
         columns = [
           { key: 'openDealer', label: 'Dealer apertura' },
           ...baseColumns
@@ -329,9 +319,9 @@
     }
 
     function buildTableHeaderAndFilters() {
-      const headerRow = document.getElementById('header-row');
+      const headerRow  = document.getElementById('header-row');
       const filtersRow = document.getElementById('filters-row');
-      headerRow.innerHTML = '';
+      headerRow.innerHTML  = '';
       filtersRow.innerHTML = '';
 
       columns.forEach(col => {
@@ -340,16 +330,15 @@
         headerRow.appendChild(th);
 
         const filterCell = document.createElement('th');
+
         if (col.key === 'status') {
-          // Select per status con i valori noti
           const select = document.createElement('select');
-          select.id = 'filter-status';
           const optEmpty = document.createElement('option');
           optEmpty.value = '';
           optEmpty.textContent = '';
           select.appendChild(optEmpty);
 
-          ['Aperta','Inviata','Sospesa','In Valutazione','Conclusa','Cancellata']
+          ['Aperta', 'Inviata', 'Sospesa', 'In Valutazione', 'Conclusa', 'Cancellata']
             .forEach(st => {
               const opt = document.createElement('option');
               opt.value = st;
@@ -361,11 +350,11 @@
             filters.status = select.value;
             renderTable();
           });
+
           filterCell.appendChild(select);
         } else {
           const input = document.createElement('input');
           input.type = 'text';
-          input.placeholder = '';
           input.dataset.key = col.key;
           input.addEventListener('input', () => {
             const key = input.dataset.key;
@@ -386,15 +375,16 @@
       document.getElementById('loading').textContent = 'Caricamento reclami...';
       document.getElementById('error').style.display = 'none';
 
-      allClaims = [];
+      allClaims  = [];
       lastVisible = null;
-      reachedEnd = false;
+      reachedEnd  = false;
 
-      let query = db.collection('ClaimCards')
-        .orderBy('code', 'desc')
-        .limit(pageSize);
-
-      if (!isDistributor) {
+      let query;
+      if (isDistributor) {
+        query = db.collection('ClaimCards')
+          .orderBy('code', 'desc')
+          .limit(pageSize);
+      } else {
         query = db.collection('ClaimCards')
           .where('openDealer', '==', currentDealerId)
           .orderBy('code', 'desc')
@@ -431,12 +421,13 @@
       document.getElementById('error').style.display = 'none';
 
       try {
-        let query = db.collection('ClaimCards')
-          .orderBy('code', 'desc')
-          .startAfter(lastVisible)
-          .limit(pageSize);
-
-        if (!isDistributor) {
+        let query;
+        if (isDistributor) {
+          query = db.collection('ClaimCards')
+            .orderBy('code', 'desc')
+            .startAfter(lastVisible)
+            .limit(pageSize);
+        } else {
           query = db.collection('ClaimCards')
             .where('openDealer', '==', currentDealerId)
             .orderBy('code', 'desc')
@@ -474,7 +465,7 @@
     }
 
     function formatClaimDoc(doc) {
-      const data = doc.data();
+      const data    = doc.data() || {};
       const vehicle = data.vehicle || {};
 
       return {
@@ -483,55 +474,63 @@
         status: data.status || '',
         code: data.code || doc.id,
         type: data.type || '',
-        vin: vehicle.vin || '',
-        customer: vehicle.customer || '',
-        plate: vehicle.registrationPlate || '',
-        km: data.km != null ? data.km : '',
-        engineHours: data.engineHours != null ? data.engineHours : '',
+        vin: vehicle.vin || data.vin || '',
+        customer: vehicle.customer || data.customer || '',
+        plate: vehicle.registrationPlate || data.registrationPlate || '',
+        km: (data.km !== undefined && data.km !== null) ? data.km : '',
+        engineHours: (data.engineHours !== undefined && data.engineHours !== null) ? data.engineHours : '',
         openDate: data.openDate || '',
         raw: data
       };
     }
 
     function claimMatchesFilters(claim) {
-      // openDealer
-      if (filters.openDealer && (!claim.openDealer || !String(claim.openDealer).toLowerCase().includes(filters.openDealer))) {
+      if (filters.openDealer &&
+          (!claim.openDealer || !String(claim.openDealer).toLowerCase().includes(filters.openDealer))) {
         return false;
       }
-      // status (match esatto se impostato)
+
       if (filters.status && claim.status !== filters.status) {
         return false;
       }
-      // code
-      if (filters.code && (!claim.code || !String(claim.code).toLowerCase().includes(filters.code))) {
+
+      if (filters.code &&
+          (!claim.code || !String(claim.code).toLowerCase().includes(filters.code))) {
         return false;
       }
-      // type
-      if (filters.type && (!claim.type || !String(claim.type).toLowerCase().includes(filters.type))) {
+
+      if (filters.type &&
+          (!claim.type || !String(claim.type).toLowerCase().includes(filters.type))) {
         return false;
       }
-      // vin
-      if (filters.vin && (!claim.vin || !String(claim.vin).toLowerCase().includes(filters.vin))) {
+
+      if (filters.vin &&
+          (!claim.vin || !String(claim.vin).toLowerCase().includes(filters.vin))) {
         return false;
       }
-      // customer
-      if (filters.customer && (!claim.customer || !String(claim.customer).toLowerCase().includes(filters.customer))) {
+
+      if (filters.customer &&
+          (!claim.customer || !String(claim.customer).toLowerCase().includes(filters.customer))) {
         return false;
       }
-      // plate
-      if (filters.plate && (!claim.plate || !String(claim.plate).toLowerCase().includes(filters.plate))) {
+
+      if (filters.plate &&
+          (!claim.plate || !String(claim.plate).toLowerCase().includes(filters.plate))) {
         return false;
       }
-      // km
-      if (filters.km && (claim.km === '' || !String(claim.km).toLowerCase().includes(filters.km))) {
+
+      if (filters.km &&
+          (claim.km === '' || !String(claim.km).toLowerCase().includes(filters.km))) {
         return false;
       }
-      // engineHours
-      if (filters.engineHours && (claim.engineHours === '' || !String(claim.engineHours).toLowerCase().includes(filters.engineHours))) {
+
+      if (filters.engineHours &&
+          (claim.engineHours === '' || !String(claim.engineHours).toLowerCase().includes(filters.engineHours))) {
         return false;
       }
-      // openDate
-      if (filters.openDate && (!claim.openDate || !String(claim.openDate).toLowerCase().includes(filters.openDate))) {
+
+      if (filters.openDate &&
+          (!claim.openDate || !String(claim.openDate).toLowerCase().includes(filters.openDate))) {
         return false;
       }
 
@@ -553,16 +552,17 @@
           td.classList.add('nowrap');
 
           switch (col.key) {
-            case 'status':
+            case 'status': {
               const span = document.createElement('span');
               span.textContent = claim.status || '';
               span.className = 'status-pill';
               if (claim.status) {
-                // per "In Valutazione" la classe viene "status-In Valutazione" (gestita nel CSS escapata)
-                span.classList.add('status-' + claim.status.replace(/\s/g, '\\ '));
+                const cls = 'status-' + claim.status.replace(/\s+/g, '-');
+                span.classList.add(cls);
               }
               td.appendChild(span);
               break;
+            }
             case 'code':
               td.textContent = claim.code || '';
               break;
@@ -601,21 +601,25 @@
       });
 
       document.getElementById('summary').textContent =
-        'Reclami mostrati: ' + filtered.length + ' | Reclami caricati: ' + allClaims.length +
+        'Reclami mostrati: ' + filtered.length +
+        ' | Reclami caricati: ' + allClaims.length +
         (reachedEnd ? ' | Fine elenco.' : '');
     }
 
     function openClaimDetails(claim) {
-      // Salva info in sessionStorage per FTCLAIMS_STEP2
       try {
-        sessionStorage.setItem('currentClaimCardCode', claim.code);
-        sessionStorage.setItem('currentClaimIsDistributor', isDistributor ? '1' : '0');
+        // Chiave usata da FTCLAIMS_STEP2 per capire quale documento aprire
+        sessionStorage.setItem('ftclaims_claimCode', claim.code);
+
+        // Extra (per uso futuro, non danno fastidio se non letti)
         sessionStorage.setItem('currentClaimStatus', claim.status || '');
+        sessionStorage.setItem('currentClaimIsDistributor', isDistributor ? '1' : '0');
       } catch (e) {
         console.warn('Impossibile usare sessionStorage:', e);
       }
 
-      window.location.href = 'FTCLAIMS_STEP2.html?from=FTMANAG';
+      // Redireziona al dettaglio; come paracadute passiamo anche ?id=
+      window.location.href = 'FTCLAIMS_STEP2.html?id=' + encodeURIComponent(claim.code);
     }
   </script>
 </body>
