@@ -52,6 +52,7 @@
     }
   </style>
 </head>
+
 <body>
 
   <div class="card">
@@ -66,113 +67,99 @@
 
     <hr>
 
-    <!-- AREA FTDMS (mostrata solo se permesso) -->
+    <!-- AREA FTDMS (solo con permessi) -->
     <div id="admin-section" class="section" style="display:none;">
       <h3>Area Amministratore (FTDMS)</h3>
       <p>Da qui puoi accedere al pannello di gestione Dealer e Utenze (DMS).</p>
       <button onclick="goToDMS()">Apri DMS</button>
     </div>
 
-    <!-- AREA FTVIN (sempre visibile per utente loggato) -->
+    <!-- AREA FTVIN -->
     <div id="ftvin-section" class="section">
       <h3>Verifica Copertura VIN (FTVIN)</h3>
       <p>Accedi alla ricerca dei contratti per telaio.</p>
       <button onclick="goToFTVIN()">Apri FTVIN</button>
     </div>
 
-    <!-- AREA FTCLAIMS (reclamo di garanzia) -->
+    <!-- AREA FTCLAIMS -->
     <div id="ftclaims-section" class="section">
       <h3>Reclamo di Garanzia (FTCLAIMS)</h3>
       <p>Apri una nuova pratica di garanzia.</p>
       <button onclick="goToFTCLAIMS()">Apri Reclamo di Garanzia</button>
     </div>
 
-    <!-- 🔹 NUOVA AREA FTFSA -->
+    <!-- 🔹 AREA FTMANAG (Gestione reclami esistenti) -->
+    <div id="ftmanag-section" class="section">
+      <h3>Gestione Reclami (FTMANAG)</h3>
+      <p>Consulta, filtra e modifica le pratiche già create.</p>
+      <button onclick="goToFTMANAG()">Apri Gestione Reclami</button>
+    </div>
+    <!-- 🔹 FINE AREA -->
+
+    <!-- AREA FTFSA -->
     <div id="ftfsa-section" class="section">
       <h3>Verifica FSA (FTFSA)</h3>
       <p>Verifica e gestisci le campagne FSA associate a un telaio.</p>
       <button onclick="goToFTFSA()">Verifica FSA</button>
     </div>
-    <!-- 🔹 FINE NUOVA AREA -->
 
-    <!-- 🔹 AREA FTHOTLINE -->
+    <!-- AREA FTHOTLINE -->
     <div id="fthotline-section" class="section">
       <h3>Hotline Tecnica (FTHOTLINE)</h3>
       <p>Gestisci i ticket di assistenza tra dealer e distributore.</p>
       <button onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
     </div>
-    <!-- 🔹 FINE AREA -->
 
   </div>
 
   <script>
-    // Si assume che in firebase-config.js siano già definiti:
-    // firebase.initializeApp(firebaseConfig);
-    // const auth = firebase.auth();
-    // const db   = firebase.firestore();
-
     let currentAccount = null;
 
     async function loadCurrentUserInfo(user) {
       const userRef = db.collection('Users').doc(user.uid);
       const userSnap = await userRef.get();
-      if (!userSnap.exists) {
-        throw new Error("Profilo utente non trovato nel database.");
-      }
+      if (!userSnap.exists) throw new Error("Profilo utente non trovato.");
 
       const userData = userSnap.data();
       const roleId   = userData.role || "User";
 
-      // provo a leggere i permessi ruolo (solo per FTDMS)
       let permissions = {};
       try {
         const roleRef = db.collection('roles').doc(roleId);
         const roleSnap = await roleRef.get();
         if (roleSnap.exists) {
           const roleData = roleSnap.data() || {};
-          const basePermissions = roleData.permission || {};
-          const extra = userData.extraPermissions || {};
+          const basePerm = roleData.permission || {};
+          const extra    = userData.extraPermissions || {};
 
-          const effectivePermissions = JSON.parse(JSON.stringify(basePermissions));
+          const effective = JSON.parse(JSON.stringify(basePerm));
           Object.keys(extra).forEach(section => {
-            effectivePermissions[section] = {
-              ...(effectivePermissions[section] || { read: false, write: false }),
+            effective[section] = {
+              ...(effective[section] || { read: false, write: false }),
               ...extra[section]
             };
           });
 
-          permissions = effectivePermissions;
+          permissions = effective;
         }
       } catch (e) {
-        console.warn("Impossibile leggere il documento ruolo:", e);
+        console.warn("Impossibile leggere doc ruolo:", e);
       }
 
-      currentAccount = {
-        firebaseUser: user,
-        userData,
-        roleId,
-        permissions
-      };
+      currentAccount = { firebaseUser: user, userData, roleId, permissions };
       return currentAccount;
     }
 
     function canRead(section) {
       if (!currentAccount) return false;
-
-      // permessi espliciti
-      if (currentAccount.permissions[section]?.read === true) return true;
-
-      // fallback: Admin vede tutto
+      if (currentAccount.permissions[section]?.read) return true;
       if (currentAccount.roleId === 'Admin') return true;
-
       return false;
     }
 
     function renderUserInfo() {
       const { firebaseUser, userData, roleId } = currentAccount;
-      const userInfoEl = document.getElementById('user-info');
-
-      userInfoEl.innerHTML = `
+      document.getElementById('user-info').innerHTML = `
         <p><strong>Nome:</strong> ${userData.displayName || firebaseUser.email}</p>
         <p><strong>Email:</strong> ${firebaseUser.email}</p>
         <p><strong>Dealer ID:</strong> ${userData.dealerId || '-'}</p>
@@ -182,72 +169,39 @@
     }
 
     function updateUI() {
-      const adminSection = document.getElementById('admin-section');
-
-      // FTDMS dipende dai permessi
-      if (canRead('FTDMS')) {
-        adminSection.style.display = 'block';
-      } else {
-        adminSection.style.display = 'none';
-      }
-
-      // FTVIN, FTCLAIMS, FTFSA, FTHOTLINE
-      // per ora accesso a tutti gli utenti loggati.
-      // In futuro puoi legare ogni sezione ai permessi se ti serve.
+      // area admin (DMS)
+      document.getElementById('admin-section').style.display =
+        canRead('FTDMS') ? 'block' : 'none';
     }
 
-    // Listener autenticazione
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
         window.location.href = "index.html";
         return;
       }
-
       try {
         await loadCurrentUserInfo(user);
         renderUserInfo();
         updateUI();
       } catch (e) {
-        console.error("Errore nel recupero dati utente:", e);
-        document.getElementById('user-info').innerText =
-          "Errore nel recupero dati utente: " + e.message;
+        console.error(e);
+        document.getElementById('user-info').textContent =
+          "Errore caricamento dati utente: " + e.message;
       }
     });
 
-    function logout() {
-      auth.signOut().then(() => {
-        window.location.href = "index.html";
-      });
-    }
+    function logout()     { auth.signOut().then(() => window.location.href = "index.html"); }
+    function goToDMS()    { window.location.href = "FTDMS.html"; }
+    function goToFTVIN()  { window.location.href = "FTVIN.html"; }
+    function goToFTCLAIMS() { window.location.href = "FTCLAIMS.html"; }
+    function goToFTFSA()  { window.location.href = "FTFSA.html"; }
+    function goToFTHOTLINE() { window.location.href = "FTHOTLINE.html"; }
 
-    function goToDMS() {
-      if (!canRead('FTDMS')) {
-        alert("Non hai i permessi per accedere a FTDMS.");
-        return;
-      }
-      window.location.href = "FTDMS.html";
+    // ⭐ NUOVA FUNZIONE: NAVIGAZIONE FTMANAG
+    function goToFTMANAG() {
+      window.location.href = "FTMANAG.html";
     }
-
-    function goToFTVIN() {
-      window.location.href = "FTVIN.html";
-    }
-
-    function goToFTCLAIMS() {
-      window.location.href = "FTCLAIMS.html";
-    }
-
-    // 🔹 NAVIGAZIONE FSA
-    function goToFTFSA() {
-      window.location.href = "FTFSA.html";
-    }
-    // 🔹 FINE NAVIGAZIONE FSA
-
-    // 🔹 NAVIGAZIONE HOTLINE
-    function goToFTHOTLINE() {
-      window.location.href = "FTHOTLINE.html";
-    }
-    // 🔹 FINE NAVIGAZIONE HOTLINE
-
   </script>
+
 </body>
 </html>
