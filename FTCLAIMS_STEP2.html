@@ -247,41 +247,8 @@
       font-size: 12px;
     }
 
-    /* quando la card è collassata nascondo i dettagli */
     .claim-card.collapsed .claim-details {
       display: none;
-    }
-
-    /* Layout DAYSHIFT / NIGHTSHIFT nei claim */
-    .shift-box {
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 6px 8px;
-      margin-bottom: 6px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      margin-right: 10px;
-    }
-
-    .shift-label {
-      font-weight: bold;
-      white-space: nowrap;
-    }
-
-    .time-input {
-      width: 40px;
-      text-align: center;
-    }
-
-    .time-separator {
-      font-weight: bold;
-      margin: 0 4px;
-    }
-
-    .currency-input {
-      text-align: right;
     }
 
     @media (max-width: 992px) {
@@ -344,9 +311,9 @@
 
           <div class="form-group">
             <label for="claimStatus">Stato pratica</label>
-            <input type="text" id="claimStatus" readonly>
+            <select id="claimStatus"></select>
             <div class="small-text">
-              Stati possibili: Aperta, Inviata, Sospesa, In Valutazione, Conclusa, Cancellata.
+              Stati: Aperta, Inviata, Sospesa, In Valutazione, Conclusa, Cancellata.
             </div>
           </div>
         </div>
@@ -476,27 +443,20 @@
                 (WARRANTY, MAINTENANCE, FSA, GOODWILL).
               </div>
             </div>
-            <!-- Nessun campo specifico qui: i dettagli stanno DENTRO ogni claim -->
           </div>
 
           <div id="claimsList" class="claims-list"></div>
           <div class="right-panel-placeholder" id="claimsPlaceholder">
-            In questa area verranno gestiti i singoli claim collegati alla stessa claim card.
-            <br>
-            Ogni claim ha al suo interno i campi specifici (RSA, Garanzia, ecc.).
+            In quest'area verranno gestiti i singoli claim collegati alla stessa claim card.
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Combobox tipologia claim -->
   <script src="ftclaims-claims.js?v=3"></script>
-
-  <!-- Form dei singoli claim (RSA, Garanzia, Garanzia Ricambio, ...) -->
   <script src="ftclaims-claimforms.js?v=3"></script>
 
-  <!-- Logica pagina -->
   <script>
     window.addEventListener('load', function () {
       if (typeof firebase === 'undefined') {
@@ -510,8 +470,8 @@
       let currentUser = null;
       let currentClaimId = null;
       let currentClaimCardType = null;
-      let isDistributor = false;
-      let currentClaimStatus = null; // stato della CLAIM CARD principale (Aperta, Inviata, ...)
+      let isDistributor = false;   // dealer FT001
+      let currentClaimStatus = null; // stato CLAIM CARD (Aperta, Inviata, ...)
 
       const messageArea = document.getElementById('messageArea');
 
@@ -562,8 +522,10 @@
           const doc = await db.collection('Users').doc(user.uid).get();
           if (doc.exists) {
             const data = doc.data() || {};
-            const role = data.role || '';
-            if (typeof role === 'string' && role.toLowerCase().includes('distributor')) {
+            const dealerId =
+              data.dealerId || data.dealerID || data.DealerID || data.DealerId || null;
+
+            if (dealerId === 'FT001') {
               isDistributor = true;
             }
           }
@@ -575,6 +537,85 @@
         if (!isDistributor && notesRow) {
           notesRow.style.display = 'none';
         }
+      }
+
+      // Macchina a stati per lo stato della CLAIM CARD
+      function getAllowedStatusOptions(status, isDistributorFlag) {
+        if (!status) return [];
+
+        if (isDistributorFlag) {
+          switch (status) {
+            case 'Aperta':
+              return ['Aperta', 'Inviata', 'Cancellata'];
+            case 'Sospesa':
+              return ['Sospesa', 'Inviata', 'In Valutazione', 'Cancellata'];
+            case 'Inviata':
+              return ['Inviata', 'Sospesa', 'In Valutazione', 'Cancellata'];
+            case 'In Valutazione':
+              return ['In Valutazione', 'Sospesa', 'Conclusa', 'Cancellata'];
+            case 'Conclusa':
+              // il distributore può riaprirla se serve
+              return ['Conclusa', 'In Valutazione', 'Sospesa'];
+            case 'Cancellata':
+              // finale forte
+              return ['Cancellata'];
+            default:
+              return [status];
+          }
+        } else {
+          // DEALER
+          switch (status) {
+            case 'Aperta':
+              // iniziale: può andare a Sospesa / Inviata / Cancellata
+              return ['Aperta', 'Sospesa', 'Inviata', 'Cancellata'];
+            case 'Sospesa':
+              // non può più tornare ad Aperta
+              return ['Sospesa', 'Inviata', 'Cancellata'];
+            default:
+              // dagli altri stati il dealer non può più cambiare stato
+              return [status];
+          }
+        }
+      }
+
+      function refreshClaimCardStatusControl() {
+        const select = document.getElementById('claimStatus');
+        if (!select || !currentClaimStatus) return;
+
+        const options = getAllowedStatusOptions(currentClaimStatus, isDistributor);
+        select.innerHTML = '';
+        options.forEach(st => {
+          const opt = document.createElement('option');
+          opt.value = st;
+          opt.textContent = st;
+          select.appendChild(opt);
+        });
+
+        select.value = currentClaimStatus;
+        select.disabled = (options.length <= 1);
+      }
+
+      function applyStatusLocks() {
+        const isLocked =
+          currentClaimStatus === 'Conclusa' ||
+          currentClaimStatus === 'Cancellata';
+
+        const editableFieldIds = [
+          'registrationPlate',
+          'registrationDate',
+          'vehicleKm',
+          'engineHours'
+        ];
+        editableFieldIds.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.disabled = isLocked;
+        });
+
+        const btnSave = document.getElementById('btnSave');
+        if (btnSave) btnSave.disabled = isLocked;
+
+        const btnAddRepair = document.getElementById('btnAddRepair');
+        if (btnAddRepair) btnAddRepair.disabled = isLocked;
       }
 
       async function loadClaimCard() {
@@ -611,7 +652,6 @@
 
           const status = data.status || 'Aperta';
           currentClaimStatus = status;
-          document.getElementById('claimStatus').value = status;
 
           const veh = data.vehicle || {};
           document.getElementById('vin').value      = veh.vin || data.vin || '';
@@ -640,16 +680,16 @@
           document.getElementById('vehicleKm').value   = km;
           document.getElementById('engineHours').value = hours;
 
-          // Inizializza combo tipologia claim in base al tipo di claim card
           if (typeof initClaimTypeControls === 'function') {
             initClaimTypeControls(currentClaimCardType, {
               containerId: 'claimTypeContainer',
               selectId: 'claimType',
               fixedId: 'fixedClaimType'
             });
-          } else {
-            console.warn('initClaimTypeControls non è definita. Controlla ftclaims-claims.js.');
           }
+
+          refreshClaimCardStatusControl();
+          applyStatusLocks();
 
           showMessage('Pratica caricata correttamente.', 'success');
 
@@ -688,7 +728,7 @@
             const claimStatus = data.status || 'Aperto';
 
             const card = document.createElement('div');
-            card.className = 'claim-card collapsed'; // di default CHIUSA
+            card.className = 'claim-card collapsed';
 
             const header = document.createElement('div');
             header.className = 'claim-card-header';
@@ -697,7 +737,6 @@
             title.className = 'claim-title';
             title.textContent = 'Riparazione ' + code + (type ? ' (' + type + ')' : '');
 
-            // bottone Mostra/Nascondi dettagli
             const toggleBtn = document.createElement('button');
             toggleBtn.className = 'btn btn-secondary btn-small';
             toggleBtn.textContent = 'Mostra dettagli';
@@ -732,7 +771,6 @@
             headerRight.style.gap = '6px';
             headerRight.style.alignItems = 'center';
 
-            // STATO CLAIM - sempre visibile in header
             const statusContainer = document.createElement('div');
             statusContainer.style.display = 'flex';
             statusContainer.style.alignItems = 'center';
@@ -743,18 +781,19 @@
             statusLabel.className = 'small-text';
 
             const canEditClaimStatus =
-              isDistributor && currentClaimStatus === 'In Valutazione';
+              isDistributor && currentClaimStatus === 'In Valutazione' &&
+              !(currentClaimStatus === 'Conclusa' || currentClaimStatus === 'Cancellata');
 
             if (canEditClaimStatus) {
               const statusSelect = document.createElement('select');
 
               const statusOptions = [
                 'Aperto',
-                'Inviato',
-                'Sospeso',
+                'Inviata',
+                'Sospesa',
                 'In Valutazione',
-                'Concluso',
-                'Cancellato'
+                'Conclusa',
+                'Cancellata'
               ];
 
               statusOptions.forEach(st => {
@@ -789,7 +828,6 @@
             header.appendChild(title);
             header.appendChild(headerRight);
 
-            // cliccando ovunque sull'intestazione (tranne i bottoni) apro/chiudo
             header.addEventListener('click', (e) => {
               if (e.target === toggleBtn || e.target === btnDelete) return;
               setExpanded(!expanded);
@@ -802,7 +840,6 @@
             card.appendChild(details);
             list.appendChild(card);
 
-            // Dettagli specifici del claim (RSA, Garanzia, Garanzia Ricambio, ...)
             if (typeof renderClaimDetails === 'function') {
               renderClaimDetails(type, details, data, {
                 claimCardId: currentClaimId,
@@ -817,11 +854,19 @@
         }
       }
 
-      // Aggiorna lo stato di UN singolo claim (solo distributore, pratica "In Valutazione")
       async function updateSingleClaimStatus(claimCode, newStatus, selectEl) {
         if (!currentClaimId || !claimCode) return;
 
-        if (selectEl) selectEl.disabled = true;
+        if (currentClaimStatus === 'Conclusa' || currentClaimStatus === 'Cancellata') {
+          showMessage('La pratica è ' + currentClaimStatus.toLowerCase() + ': i claim non sono modificabili.', 'error');
+          if (selectEl) selectEl.value = selectEl.dataset.oldValue || selectEl.value;
+          return;
+        }
+
+        if (selectEl) {
+          selectEl.disabled = true;
+          selectEl.dataset.oldValue = selectEl.dataset.oldValue || selectEl.value;
+        }
 
         try {
           const claimRef = db
@@ -842,6 +887,7 @@
             'Errore nell\'aggiornare lo stato della riparazione: ' + err.message,
             'error'
           );
+          if (selectEl) selectEl.value = selectEl.dataset.oldValue || selectEl.value;
         } finally {
           if (selectEl) selectEl.disabled = false;
         }
@@ -851,6 +897,11 @@
         clearMessage();
         if (!currentClaimId) {
           showMessage('Impossibile salvare: nessuna pratica caricata.', 'error');
+          return;
+        }
+
+        if (currentClaimStatus === 'Conclusa' || currentClaimStatus === 'Cancellata') {
+          showMessage('La pratica è ' + currentClaimStatus.toLowerCase() + ': non può più essere modificata.', 'error');
           return;
         }
 
@@ -884,7 +935,6 @@
         }
       }
 
-      // Aggiorna stato CLAIM CARD + storico
       async function updateClaimStatusWithHistory(newStatus) {
         clearMessage();
 
@@ -907,7 +957,7 @@
             const oldStatus = data.status || null;
 
             if (oldStatus === newStatus) {
-              return; // nessun cambiamento, nessuna versione
+              return;
             }
 
             const historyCounter = data.historyCounter || 0;
@@ -935,15 +985,14 @@
           });
 
           currentClaimStatus = newStatus;
-          const statusInput = document.getElementById('claimStatus');
-          if (statusInput) statusInput.value = newStatus;
+          refreshClaimCardStatusControl();
+          applyStatusLocks();
 
           showMessage(
             'Stato pratica aggiornato a "' + newStatus + '" e versione salvata nello storico.',
             'success'
           );
 
-          // Ricarico i claim per aggiornare le select di stato (se pratica passa a/da "In Valutazione")
           await loadClaims();
         } catch (err) {
           console.error(err);
@@ -965,7 +1014,6 @@
           return;
         }
 
-        // Imposta lo stato pratica su "Cancellata" + salva nello storico
         await updateClaimStatusWithHistory('Cancellata');
       }
 
@@ -977,6 +1025,11 @@
         clearMessage();
         if (!currentClaimId) {
           showMessage('Impossibile aggiungere: nessuna pratica caricata.', 'error');
+          return;
+        }
+
+        if (currentClaimStatus === 'Conclusa' || currentClaimStatus === 'Cancellata') {
+          showMessage('La pratica è ' + currentClaimStatus.toLowerCase() + ': non è possibile aggiungere nuovi claim.', 'error');
           return;
         }
 
@@ -1041,6 +1094,11 @@
         clearMessage();
         if (!currentClaimId || !code) return;
 
+        if (currentClaimStatus === 'Conclusa' || currentClaimStatus === 'Cancellata') {
+          showMessage('La pratica è ' + currentClaimStatus.toLowerCase() + ': i claim non possono essere eliminati.', 'error');
+          return;
+        }
+
         if (!confirm('Vuoi davvero eliminare la riparazione ' + code + '?')) {
           return;
         }
@@ -1056,7 +1114,6 @@
         }
       }
 
-      // INIT AUTH
       auth.onAuthStateChanged(async (user) => {
         if (!user) {
           window.location.href = 'FTHUBAS.html';
@@ -1068,11 +1125,19 @@
         await loadClaims();
       });
 
-      // LISTENER BOTTONI
       document.getElementById('btnSave').addEventListener('click', saveChanges);
       document.getElementById('btnDelete').addEventListener('click', cancelRequest);
       document.getElementById('btnHome').addEventListener('click', goHome);
       document.getElementById('btnAddRepair').addEventListener('click', addRepair);
+
+      const statusSelect = document.getElementById('claimStatus');
+      if (statusSelect) {
+        statusSelect.addEventListener('change', () => {
+          const newStatus = statusSelect.value;
+          if (!currentClaimStatus || newStatus === currentClaimStatus) return;
+          updateClaimStatusWithHistory(newStatus);
+        });
+      }
     });
   </script>
 </body>
