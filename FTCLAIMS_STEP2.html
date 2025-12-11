@@ -346,7 +346,7 @@
             <label for="claimStatus">Stato pratica</label>
             <input type="text" id="claimStatus" readonly>
             <div class="small-text">
-              Stati possibili: Aperto, Inviato, Sospeso, In Valutazione, Concluso, Chiuso, Cancellato.
+              Stati possibili: Aperta, Inviata, Sospesa, In Valutazione, Conclusa, Cancellata.
             </div>
           </div>
         </div>
@@ -511,6 +511,7 @@
       let currentClaimId = null;
       let currentClaimCardType = null;
       let isDistributor = false;
+      let currentClaimStatus = null; // stato della CLAIM CARD principale (Aperta, Inviata, ...)
 
       const messageArea = document.getElementById('messageArea');
 
@@ -608,7 +609,8 @@
           document.getElementById('openUser').value   = data.openUser || '';
           document.getElementById('openDealer').value = data.openDealer || data.dealerId || '';
 
-          const status = data.status || 'Aperto';
+          const status = data.status || 'Aperta';
+          currentClaimStatus = status;
           document.getElementById('claimStatus').value = status;
 
           const veh = data.vehicle || {};
@@ -683,6 +685,7 @@
             const data = docSnap.data() || {};
             const code = data.code || docSnap.id;
             const type = data.claimType || '';
+            const claimStatus = data.status || 'Aperto';
 
             const card = document.createElement('div');
             card.className = 'claim-card collapsed'; // di default CHIUSA
@@ -726,7 +729,60 @@
 
             const headerRight = document.createElement('div');
             headerRight.style.display = 'flex';
-            headerRight.style.gap = '4px';
+            headerRight.style.gap = '6px';
+            headerRight.style.alignItems = 'center';
+
+            // STATO CLAIM - sempre visibile in header
+            const statusContainer = document.createElement('div');
+            statusContainer.style.display = 'flex';
+            statusContainer.style.alignItems = 'center';
+            statusContainer.style.gap = '4px';
+
+            const statusLabel = document.createElement('span');
+            statusLabel.textContent = 'Stato:';
+            statusLabel.className = 'small-text';
+
+            const canEditClaimStatus =
+              isDistributor && currentClaimStatus === 'In Valutazione';
+
+            if (canEditClaimStatus) {
+              const statusSelect = document.createElement('select');
+
+              const statusOptions = [
+                'Aperto',
+                'Inviato',
+                'Sospeso',
+                'In Valutazione',
+                'Concluso',
+                'Cancellato'
+              ];
+
+              statusOptions.forEach(st => {
+                const opt = document.createElement('option');
+                opt.value = st;
+                opt.textContent = st;
+                statusSelect.appendChild(opt);
+              });
+
+              statusSelect.value = claimStatus;
+
+              statusSelect.addEventListener('change', () => {
+                const newStatus = statusSelect.value;
+                updateSingleClaimStatus(code, newStatus, statusSelect);
+              });
+
+              statusContainer.appendChild(statusLabel);
+              statusContainer.appendChild(statusSelect);
+            } else {
+              const statusValue = document.createElement('span');
+              statusValue.textContent = claimStatus;
+              statusValue.className = 'small-text';
+
+              statusContainer.appendChild(statusLabel);
+              statusContainer.appendChild(statusValue);
+            }
+
+            headerRight.appendChild(statusContainer);
             headerRight.appendChild(toggleBtn);
             headerRight.appendChild(btnDelete);
 
@@ -758,6 +814,36 @@
         } catch (err) {
           console.error(err);
           showMessage('Errore nel caricamento delle riparazioni: ' + err.message, 'error');
+        }
+      }
+
+      // Aggiorna lo stato di UN singolo claim (solo distributore, pratica "In Valutazione")
+      async function updateSingleClaimStatus(claimCode, newStatus, selectEl) {
+        if (!currentClaimId || !claimCode) return;
+
+        if (selectEl) selectEl.disabled = true;
+
+        try {
+          const claimRef = db
+            .collection('ClaimCards')
+            .doc(currentClaimId)
+            .collection('Claims')
+            .doc(claimCode);
+
+          await claimRef.update({ status: newStatus });
+
+          showMessage(
+            'Stato della riparazione ' + claimCode + ' aggiornato a "' + newStatus + '".',
+            'success'
+          );
+        } catch (err) {
+          console.error(err);
+          showMessage(
+            'Errore nell\'aggiornare lo stato della riparazione: ' + err.message,
+            'error'
+          );
+        } finally {
+          if (selectEl) selectEl.disabled = false;
         }
       }
 
@@ -798,6 +884,76 @@
         }
       }
 
+      // Aggiorna stato CLAIM CARD + storico
+      async function updateClaimStatusWithHistory(newStatus) {
+        clearMessage();
+
+        if (!currentClaimId) {
+          showMessage('Impossibile aggiornare lo stato: nessuna pratica caricata.', 'error');
+          return;
+        }
+
+        const user = currentUser || auth.currentUser || null;
+        const cardRef = db.collection('ClaimCards').doc(currentClaimId);
+
+        try {
+          await db.runTransaction(async (tx) => {
+            const snap = await tx.get(cardRef);
+            if (!snap.exists) {
+              throw new Error('ClaimCard non trovato.');
+            }
+
+            const data = snap.data() || {};
+            const oldStatus = data.status || null;
+
+            if (oldStatus === newStatus) {
+              return; // nessun cambiamento, nessuna versione
+            }
+
+            const historyCounter = data.historyCounter || 0;
+            const newVersion = historyCounter + 1;
+
+            const snapshotData = Object.assign({}, data);
+            delete snapshotData.historyCounter;
+
+            const historyRef = cardRef.collection('history').doc();
+
+            tx.update(cardRef, {
+              status: newStatus,
+              historyCounter: newVersion
+            });
+
+            tx.set(historyRef, {
+              version: newVersion,
+              status: newStatus,
+              changedAt: firebase.firestore.FieldValue.serverTimestamp(),
+              changedByUid: user ? user.uid : (data.openUserUid || null),
+              changedByName: (data.openUser || (user && (user.displayName || user.email)) || null),
+              changedDealerId: data.openDealer || data.dealerId || null,
+              snapshot: snapshotData
+            });
+          });
+
+          currentClaimStatus = newStatus;
+          const statusInput = document.getElementById('claimStatus');
+          if (statusInput) statusInput.value = newStatus;
+
+          showMessage(
+            'Stato pratica aggiornato a "' + newStatus + '" e versione salvata nello storico.',
+            'success'
+          );
+
+          // Ricarico i claim per aggiornare le select di stato (se pratica passa a/da "In Valutazione")
+          await loadClaims();
+        } catch (err) {
+          console.error(err);
+          showMessage(
+            'Errore durante l\'aggiornamento dello stato della pratica: ' + err.message,
+            'error'
+          );
+        }
+      }
+
       async function cancelRequest() {
         clearMessage();
         if (!currentClaimId) {
@@ -809,15 +965,8 @@
           return;
         }
 
-        try {
-          const ref = db.collection('ClaimCards').doc(currentClaimId);
-          await ref.update({ status: 'Cancellato' });
-          document.getElementById('claimStatus').value = 'Cancellato';
-          showMessage('Richiesta cancellata (stato impostato su "Cancellato").', 'success');
-        } catch (err) {
-          console.error(err);
-          showMessage('Errore durante la cancellazione della richiesta: ' + err.message, 'error');
-        }
+        // Imposta lo stato pratica su "Cancellata" + salva nello storico
+        await updateClaimStatusWithHistory('Cancellata');
       }
 
       function goHome() {
