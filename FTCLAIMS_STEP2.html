@@ -262,7 +262,6 @@
     }
   </style>
 </head>
-
 <body>
   <div class="container">
     <h2>Dettaglio Claim Card</h2>
@@ -319,7 +318,7 @@
           </div>
         </div>
 
-        <!-- Dati veicolo -->
+                <!-- Dati veicolo -->
         <div class="card">
           <h3>Dati veicolo</h3>
           <div class="form-row">
@@ -454,12 +453,13 @@
       </div>
     </div>
   </div>
-
-  <!-- JS esterni già esistenti -->
+  <!-- Script base -->
   <script src="ftclaims-claims.js?v=3"></script>
   <script src="ftclaims-claimforms.js?v=3"></script>
+  <!-- Hook manutenzione: deve stare DOPO claims + claimforms -->
+  <script src="ftclaims-maintenance.js?v=1"></script>
 
-    <script>
+  <script>
     window.addEventListener('load', function () {
       if (typeof firebase === 'undefined') {
         console.error('Firebase non è definito. Controlla gli script nel <head>.');
@@ -471,9 +471,15 @@
 
       let currentUser = null;
       let currentClaimId = null;
+
+      // 👇 tipo originale letto da Firestore (es: "Service Contract")
+      let currentClaimCardTypeRaw = null;
+
+      // 👇 tipo normalizzato usato per controlli / UI (WARRANTY / MAINTENANCE / FSA / GOODWILL)
       let currentClaimCardType = null;
-      let isDistributor = false;   // ORA: viene da dealers/<dealerId>.isDistributor
-      let currentClaimStatus = null; // stato CLAIM CARD (Aperta, Inviata, ...)
+
+      let isDistributor = false;
+      let currentClaimStatus = null;
 
       const messageArea = document.getElementById('messageArea');
 
@@ -502,9 +508,7 @@
           if (headerStr) {
             try {
               const header = JSON.parse(headerStr);
-              if (header && header.claimId) {
-                id = header.claimId;
-              }
+              if (header && header.claimId) id = header.claimId;
             } catch (e) {
               console.warn('Impossibile leggere currentClaimStep1:', e);
             }
@@ -515,66 +519,64 @@
           const params = new URLSearchParams(window.location.search);
           id = params.get('id');
         }
-
         return id;
       }
 
-      // ✅ MODIFICA: distributore da "dealers/<dealerId>.isDistributor"
+      // ✅ Normalizza tipo claim card:
+      // - "SERVICE CONTRACT" => "MAINTENANCE"
+      // - "MANUTENZIONE"     => "MAINTENANCE" (compatibilità vecchia)
+      function normalizeCardTypeForStep2(cardType) {
+        const t = (cardType || '').toString().trim().toUpperCase();
+        if (t === 'SERVICE CONTRACT') return 'MAINTENANCE';
+        if (t === 'MANUTENZIONE') return 'MAINTENANCE';
+        return t;
+      }
+
+      // ✅ Determina se l'utente è distributore:
+      // - legge Users/<uid> -> dealerId
+      // - poi legge dealers/<dealerId> -> isDistributor
       async function loadUserInfo(user) {
         try {
-          const doc = await db.collection('Users').doc(user.uid).get();
-          if (doc.exists) {
-            const data = doc.data() || {};
+          const uSnap = await db.collection('Users').doc(user.uid).get();
+          if (uSnap.exists) {
+            const u = uSnap.data() || {};
             const dealerId =
-              data.dealerId || data.dealerID || data.DealerID || data.DealerId || null;
+              u.dealerId || u.dealerID || u.DealerID || u.DealerId || null;
 
             if (dealerId) {
-              const dealerSnap = await db.collection('dealers').doc(dealerId).get();
-              if (dealerSnap.exists) {
-                const dd = dealerSnap.data() || {};
-                isDistributor = (dd.isDistributor === true);
+              const dSnap = await db.collection('dealers').doc(dealerId).get();
+              if (dSnap.exists) {
+                const d = dSnap.data() || {};
+                isDistributor = !!d.isDistributor;
               }
             }
           }
         } catch (err) {
-          console.error('Errore caricamento utente', err);
+          console.error('Errore caricamento utente/dealer', err);
         }
 
         const notesRow = document.getElementById('coverageNotesRow');
-        if (!isDistributor && notesRow) {
-          notesRow.style.display = 'none';
-        }
+        if (!isDistributor && notesRow) notesRow.style.display = 'none';
       }
 
-      // Macchina a stati per lo stato della CLAIM CARD
       function getAllowedStatusOptions(status, isDistributorFlag) {
         if (!status) return [];
 
         if (isDistributorFlag) {
           switch (status) {
-            case 'Aperta':
-              return ['Aperta', 'Inviata', 'Cancellata'];
-            case 'Sospesa':
-              return ['Sospesa', 'Inviata', 'In Valutazione', 'Cancellata'];
-            case 'Inviata':
-              return ['Inviata', 'Sospesa', 'In Valutazione', 'Cancellata'];
-            case 'In Valutazione':
-              return ['In Valutazione', 'Sospesa', 'Conclusa', 'Cancellata'];
-            case 'Conclusa':
-              return ['Conclusa', 'In Valutazione', 'Sospesa'];
-            case 'Cancellata':
-              return ['Cancellata'];
-            default:
-              return [status];
+            case 'Aperta':         return ['Aperta', 'Inviata', 'Cancellata'];
+            case 'Sospesa':        return ['Sospesa', 'Inviata', 'In Valutazione', 'Cancellata'];
+            case 'Inviata':        return ['Inviata', 'Sospesa', 'In Valutazione', 'Cancellata'];
+            case 'In Valutazione': return ['In Valutazione', 'Sospesa', 'Conclusa', 'Cancellata'];
+            case 'Conclusa':       return ['Conclusa', 'In Valutazione', 'Sospesa'];
+            case 'Cancellata':     return ['Cancellata'];
+            default:               return [status];
           }
         } else {
           switch (status) {
-            case 'Aperta':
-              return ['Aperta', 'Sospesa', 'Inviata', 'Cancellata'];
-            case 'Sospesa':
-              return ['Sospesa', 'Inviata', 'Cancellata'];
-            default:
-              return [status];
+            case 'Aperta':   return ['Aperta', 'Sospesa', 'Inviata', 'Cancellata'];
+            case 'Sospesa':  return ['Sospesa', 'Inviata', 'Cancellata'];
+            default:         return [status];
           }
         }
       }
@@ -639,11 +641,11 @@
 
           const data = snap.data() || {};
 
-          const rawType = data.type || '';
-          currentClaimCardType = rawType.toString().trim().toUpperCase();
+          currentClaimCardTypeRaw = (data.type || '').toString().trim();
+          currentClaimCardType = normalizeCardTypeForStep2(currentClaimCardTypeRaw);
 
-          document.getElementById('claimCode').value      = data.code || currentClaimId;
-          document.getElementById('claimCardType').value  = currentClaimCardType;
+          document.getElementById('claimCode').value     = data.code || currentClaimId;
+          document.getElementById('claimCardType').value = currentClaimCardTypeRaw || currentClaimCardType;
 
           if (data.openDate)  document.getElementById('openDate').value  = data.openDate;
           if (data.orderDate) document.getElementById('orderDate').value = data.orderDate;
@@ -681,6 +683,7 @@
           document.getElementById('vehicleKm').value   = km;
           document.getElementById('engineHours').value = hours;
 
+          // ✅ Usa il tipo normalizzato per popolare le tipologie claim
           if (typeof initClaimTypeControls === 'function') {
             initClaimTypeControls(currentClaimCardType, {
               containerId: 'claimTypeContainer',
@@ -950,16 +953,12 @@
         try {
           await db.runTransaction(async (tx) => {
             const snap = await tx.get(cardRef);
-            if (!snap.exists) {
-              throw new Error('ClaimCard non trovato.');
-            }
+            if (!snap.exists) throw new Error('ClaimCard non trovato.');
 
             const data = snap.data() || {};
             const oldStatus = data.status || null;
 
-            if (oldStatus === newStatus) {
-              return;
-            }
+            if (oldStatus === newStatus) return;
 
             const historyCounter = data.historyCounter || 0;
             const newVersion = historyCounter + 1;
@@ -1011,10 +1010,7 @@
           return;
         }
 
-        if (!confirm('Sei sicuro di voler cancellare questa richiesta?')) {
-          return;
-        }
-
+        if (!confirm('Sei sicuro di voler cancellare questa richiesta?')) return;
         await updateClaimStatusWithHistory('Cancellata');
       }
 
@@ -1022,6 +1018,7 @@
         window.location.href = 'FTHUBAS.html';
       }
 
+      // ✅ addRepair RESTA UGUALE: la logica manutenzione viene intercettata da ftclaims-maintenance.js
       async function addRepair() {
         clearMessage();
         if (!currentClaimId) {
@@ -1058,9 +1055,8 @@
 
           const newCode = await db.runTransaction(async (tx) => {
             const snap = await tx.get(cardRef);
-            if (!snap.exists) {
-              throw new Error('Pratica non trovata.');
-            }
+            if (!snap.exists) throw new Error('Pratica non trovata.');
+
             const data = snap.data() || {};
             let lastNum = data.lastClaimNumber || 0;
             const nextNum = lastNum + 1;
@@ -1100,9 +1096,7 @@
           return;
         }
 
-        if (!confirm('Vuoi davvero eliminare la riparazione ' + code + '?')) {
-          return;
-        }
+        if (!confirm('Vuoi davvero eliminare la riparazione ' + code + '?')) return;
 
         try {
           const cardRef = db.collection('ClaimCards').doc(currentClaimId);
@@ -1139,30 +1133,7 @@
           updateClaimStatusWithHistory(newStatus);
         });
       }
-
-      // ✅ EXPORT: permette a ftclaims-maintenance.js di agganciarsi SENZA cambiare nulla
-      window.ftclaimsStep2 = window.ftclaimsStep2 || {};
-      window.ftclaimsStep2.getCurrentClaimId = () => currentClaimId;
-      window.ftclaimsStep2.getCurrentClaimCardType = () => currentClaimCardType;
-      window.ftclaimsStep2.getCurrentClaimStatus = () => currentClaimStatus;
-      window.ftclaimsStep2.getIsDistributor = () => isDistributor;
-
-      window.ftclaimsStep2.addRepair = addRepair;
-      window.ftclaimsStep2.deleteRepair = deleteRepair;
-      window.ftclaimsStep2.loadClaims = loadClaims;
-      window.ftclaimsStep2.updateClaimStatusWithHistory = updateClaimStatusWithHistory;
-
-      // Per compatibilità: se il wrapper cerca direttamente queste
-      window.addRepair = addRepair;
-      window.deleteRepair = deleteRepair;
-      window.loadClaims = loadClaims;
-      window.showMessage = showMessage;
-
     });
   </script>
-
-    <!-- ✅ IMPORTANTISSIMO: maintenance hook dopo che tutto esiste -->
-  <script src="ftclaims-maintenance.js?v=1"></script>
-
 </body>
 </html>
