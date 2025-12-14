@@ -10,6 +10,9 @@
 function normalizeCardType(cardType) {
   const normalized = (cardType || '').toString().trim().toUpperCase();
   console.log('[ftclaims-claims] normalizeCardType:', cardType, '=>', normalized);
+
+  if (normalized === "MANUTENZIONE") return "MAINTENANCE";
+
   return normalized;
 }
 
