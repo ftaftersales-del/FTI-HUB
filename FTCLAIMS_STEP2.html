@@ -10,8 +10,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="ftclaims-maintenance.js"></script>
-  
+
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -263,6 +262,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h2>Dettaglio Claim Card</h2>
@@ -455,10 +455,11 @@
     </div>
   </div>
 
+  <!-- JS esterni già esistenti -->
   <script src="ftclaims-claims.js?v=3"></script>
   <script src="ftclaims-claimforms.js?v=3"></script>
 
-  <script>
+    <script>
     window.addEventListener('load', function () {
       if (typeof firebase === 'undefined') {
         console.error('Firebase non è definito. Controlla gli script nel <head>.');
@@ -471,7 +472,7 @@
       let currentUser = null;
       let currentClaimId = null;
       let currentClaimCardType = null;
-      let isDistributor = false;   // dealer FT001
+      let isDistributor = false;   // ORA: viene da dealers/<dealerId>.isDistributor
       let currentClaimStatus = null; // stato CLAIM CARD (Aperta, Inviata, ...)
 
       const messageArea = document.getElementById('messageArea');
@@ -518,6 +519,7 @@
         return id;
       }
 
+      // ✅ MODIFICA: distributore da "dealers/<dealerId>.isDistributor"
       async function loadUserInfo(user) {
         try {
           const doc = await db.collection('Users').doc(user.uid).get();
@@ -526,8 +528,12 @@
             const dealerId =
               data.dealerId || data.dealerID || data.DealerID || data.DealerId || null;
 
-            if (dealerId === 'FT001') {
-              isDistributor = true;
+            if (dealerId) {
+              const dealerSnap = await db.collection('dealers').doc(dealerId).get();
+              if (dealerSnap.exists) {
+                const dd = dealerSnap.data() || {};
+                isDistributor = (dd.isDistributor === true);
+              }
             }
           }
         } catch (err) {
@@ -555,25 +561,19 @@
             case 'In Valutazione':
               return ['In Valutazione', 'Sospesa', 'Conclusa', 'Cancellata'];
             case 'Conclusa':
-              // il distributore può riaprirla se serve
               return ['Conclusa', 'In Valutazione', 'Sospesa'];
             case 'Cancellata':
-              // finale forte
               return ['Cancellata'];
             default:
               return [status];
           }
         } else {
-          // DEALER
           switch (status) {
             case 'Aperta':
-              // iniziale: può andare a Sospesa / Inviata / Cancellata
               return ['Aperta', 'Sospesa', 'Inviata', 'Cancellata'];
             case 'Sospesa':
-              // non può più tornare ad Aperta
               return ['Sospesa', 'Inviata', 'Cancellata'];
             default:
-              // dagli altri stati il dealer non può più cambiare stato
               return [status];
           }
         }
@@ -1139,7 +1139,30 @@
           updateClaimStatusWithHistory(newStatus);
         });
       }
+
+      // ✅ EXPORT: permette a ftclaims-maintenance.js di agganciarsi SENZA cambiare nulla
+      window.ftclaimsStep2 = window.ftclaimsStep2 || {};
+      window.ftclaimsStep2.getCurrentClaimId = () => currentClaimId;
+      window.ftclaimsStep2.getCurrentClaimCardType = () => currentClaimCardType;
+      window.ftclaimsStep2.getCurrentClaimStatus = () => currentClaimStatus;
+      window.ftclaimsStep2.getIsDistributor = () => isDistributor;
+
+      window.ftclaimsStep2.addRepair = addRepair;
+      window.ftclaimsStep2.deleteRepair = deleteRepair;
+      window.ftclaimsStep2.loadClaims = loadClaims;
+      window.ftclaimsStep2.updateClaimStatusWithHistory = updateClaimStatusWithHistory;
+
+      // Per compatibilità: se il wrapper cerca direttamente queste
+      window.addRepair = addRepair;
+      window.deleteRepair = deleteRepair;
+      window.loadClaims = loadClaims;
+      window.showMessage = showMessage;
+
     });
   </script>
+
+    <!-- ✅ IMPORTANTISSIMO: maintenance hook dopo che tutto esiste -->
+  <script src="ftclaims-maintenance.js?v=1"></script>
+
 </body>
 </html>
