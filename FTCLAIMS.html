@@ -198,9 +198,7 @@
     <!-- Selezione tipologia claim card -->
     <div class="field-group" id="tipoPraticaGroup" style="display:none;">
       <label for="tipoPratica">Tipologia claim card</label>
-      <select id="tipoPratica">
-        <!-- opzioni riempite via JavaScript -->
-      </select>
+      <select id="tipoPratica"></select>
       <div id="tipoPraticaDescrizione"></div>
     </div>
 
@@ -365,7 +363,6 @@
             tipoClaimCard: tipoPratica
           };
           sessionStorage.setItem("currentClaimStep1", JSON.stringify(header));
-          // salviamo anche direttamente il codice pratica
           sessionStorage.setItem("ftclaims_claimCode", claimId);
 
           window.location.href = "FTCLAIMS_STEP2.html";
@@ -412,24 +409,16 @@
       function getDateFromField(value) {
         if (!value) return null;
 
-        // Firestore Timestamp
         if (value && value.toDate && typeof value.toDate === "function") {
           return startOfDay(value.toDate());
         }
-
-        // Date
         if (value instanceof Date) {
           return startOfDay(value);
         }
-
-        // Stringa o numero (millisecondi)
         if (typeof value === "string" || typeof value === "number") {
           const d = new Date(value);
-          if (!isNaN(d.getTime())) {
-            return startOfDay(d);
-          }
+          if (!isNaN(d.getTime())) return startOfDay(d);
         }
-
         return null;
       }
 
@@ -438,15 +427,11 @@
 
         let d = null;
 
-        if (value instanceof Date) {
-          d = startOfDay(value);
-        } else if (value && value.toDate && typeof value.toDate === "function") {
-          d = startOfDay(value.toDate());
-        } else if (typeof value === "string" || typeof value === "number") {
+        if (value instanceof Date) d = startOfDay(value);
+        else if (value && value.toDate && typeof value.toDate === "function") d = startOfDay(value.toDate());
+        else if (typeof value === "string" || typeof value === "number") {
           const tmp = new Date(value);
-          if (!isNaN(tmp.getTime())) {
-            d = startOfDay(tmp);
-          }
+          if (!isNaN(tmp.getTime())) d = startOfDay(tmp);
         }
 
         if (!d) return "";
@@ -487,52 +472,46 @@
         tipoPraticaSelect.appendChild(opt);
       }
 
-      // Menu quando VIN non trovato → solo PDI
-      function populateForVinNotFound() {
-        tipoPraticaSelect.innerHTML = "";
-
+      function addPlaceholder() {
         const placeholder = document.createElement("option");
         placeholder.value = "";
         placeholder.textContent = "-- Seleziona tipologia claim card --";
         placeholder.disabled = true;
         placeholder.selected = true;
         tipoPraticaSelect.appendChild(placeholder);
+      }
 
+      // Menu quando VIN non trovato → solo PDI
+      function populateForVinNotFound() {
+        tipoPraticaSelect.innerHTML = "";
+        addPlaceholder();
         addOptionToSelect("PDI", "PDI");
-
         showTipoPraticaUI();
       }
 
       // Menu quando NON c'è copertura attiva né contratto attivo → PDI, FSA, GOODWILL
       function populateForNoActiveCoverage() {
         tipoPraticaSelect.innerHTML = "";
-
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "-- Seleziona tipologia claim card --";
-        placeholder.disabled = true;
-        placeholder.selected = true;
-        tipoPraticaSelect.appendChild(placeholder);
-
+        addPlaceholder();
         addOptionToSelect("PDI", "PDI");
         addOptionToSelect("FSA", "FSA");
         addOptionToSelect("GOODWILL", "GOODWILL");
-
         showTipoPraticaUI();
       }
 
-      // Menu quando è presente copertura attiva o contratto attivo → WARRANTY, FSA, GOODWILL
-      function populateForActiveCoverageOrContract() {
+      // ✅ Menu quando è presente copertura attiva o contratto attivo
+      // - WARRANTY solo se FULL/DRIVE attivi
+      // - Service Contract solo se contratto attivo
+      // - sempre FSA + GOODWILL
+      function populateForActiveCoverageOrContract(opts) {
+        const { hasWarrantyActive, hasMaintActive } = opts || {};
+
         tipoPraticaSelect.innerHTML = "";
+        addPlaceholder();
 
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "-- Seleziona tipologia claim card --";
-        placeholder.disabled = true;
-        placeholder.selected = true;
-        tipoPraticaSelect.appendChild(placeholder);
+        if (hasWarrantyActive) addOptionToSelect("WARRANTY", "WARRANTY");
+        if (hasMaintActive) addOptionToSelect("Service Contract", "Service Contract");
 
-        addOptionToSelect("WARRANTY", "WARRANTY");
         addOptionToSelect("FSA", "FSA");
         addOptionToSelect("GOODWILL", "GOODWILL");
 
@@ -542,17 +521,9 @@
       // Menu quando "nessun dato è presente" → FSA, PDI
       function populateForNoDataAtAll() {
         tipoPraticaSelect.innerHTML = "";
-
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "-- Seleziona tipologia claim card --";
-        placeholder.disabled = true;
-        placeholder.selected = true;
-        tipoPraticaSelect.appendChild(placeholder);
-
+        addPlaceholder();
         addOptionToSelect("FSA", "FSA");
         addOptionToSelect("PDI", "PDI");
-
         showTipoPraticaUI();
       }
 
@@ -568,6 +539,9 @@
         switch (value) {
           case "WARRANTY":
             text = "Claim di garanzia su copertura attiva (FULL LINE o DRIVE LINE).";
+            break;
+          case "Service Contract":
+            text = "Claim relativo a manutenzione programmata (Service Contract attivo).";
             break;
           case "FSA":
             text = "Claim relativo a FSA (Field Service Action) da applicare al veicolo.";
@@ -638,8 +612,6 @@
 
             const appliedValue =
               data[FSA_APPLIED_FIELD_HINT] ??
-
-
               data.campagnaEseguita ?? data.CampagnaEseguita ??
               data.eseguita ?? data.Eseguita ??
               data.executed ?? data.Executed ??
@@ -651,9 +623,7 @@
               appliedValue === "SI"   || appliedValue === "S"   ||
               appliedValue === "YES"  || appliedValue === "Y";
 
-            if (isApplied) {
-              return;
-            }
+            if (isApplied) return;
 
             countPendenti++;
 
@@ -687,15 +657,9 @@
             let text = codice;
             if (descrizione) text += " – " + descrizione;
             let extra = [];
-            if (startStr || endStr) {
-              extra.push("Periodo: " + (startStr || "?") + " - " + (endStr || "?"));
-            }
-            if (tipologia) {
-              extra.push("Tipologia: " + tipologia);
-            }
-            if (extra.length > 0) {
-              text += " (" + extra.join(" | ") + ")";
-            }
+            if (startStr || endStr) extra.push("Periodo: " + (startStr || "?") + " - " + (endStr || "?"));
+            if (tipologia) extra.push("Tipologia: " + tipologia);
+            if (extra.length > 0) text += " (" + extra.join(" | ") + ")";
 
             const li = document.createElement("li");
             li.textContent = text;
@@ -742,9 +706,7 @@
         orderSnap.forEach(doc => {
           const d = doc.data() || {};
           const status = d.status || "";
-          if (status !== "Cancellata") {
-            hasActiveSameOrder = true;
-          }
+          if (status !== "Cancellata") hasActiveSameOrder = true;
         });
 
         if (hasActiveSameOrder) {
@@ -770,7 +732,6 @@
           const otherKm   = (typeof d.km === "number") ? d.km : null;
           const otherOre  = (typeof d.engineHours === "number") ? d.engineHours : null;
 
-          // Se i vecchi record non hanno km/ore, non facciamo controlli
           const hasOtherKm  = otherKm !== null;
           const hasOtherOre = otherOre !== null;
 
@@ -790,7 +751,6 @@
               );
             }
           } else if (older) {
-            // Pratica precedente nel tempo → i nuovi KM/ORE non possono essere inferiori
             if (hasOtherKm && km !== null && km < otherKm) {
               errorMessages.push(
                 `Per il telaio ${vin} esiste una pratica precedente (data ordine ${otherOrderDateStr}) con KM ${otherKm}. I nuovi KM (${km}) non possono essere inferiori.`
@@ -802,7 +762,6 @@
               );
             }
           } else if (newer) {
-            // Pratica successiva nel tempo → i nuovi KM/ORE non possono essere superiori
             if (hasOtherKm && km !== null && km > otherKm) {
               errorMessages.push(
                 `Per il telaio ${vin} esiste una pratica successiva (data ordine ${otherOrderDateStr}) con KM ${otherKm}. I nuovi KM (${km}) non possono essere superiori.`
@@ -816,11 +775,8 @@
           }
         });
 
-        if (errorMessages.length > 0) {
-          return errorMessages.join("<br>");
-        }
-
-        return null; // nessun errore
+        if (errorMessages.length > 0) return errorMessages.join("<br>");
+        return null;
       }
 
       // ===== LOGICA CONTROLLO COPERTURA / DATI VEICOLO + SALVATAGGIO SNAPSHOT =====
@@ -836,7 +792,6 @@
         const kmStr         = kmInput.value.trim();
         const oreStr        = oreMotoreInput.value.trim();
 
-        // Tutti i campi obbligatori
         if (!vin || !dataOrdineStr || !orderNumberStr || !kmStr || !oreStr) {
           showMessage('error', "Compila tutti i campi (VIN, data ordine, numero ordine, KM e ore motore) prima di procedere.");
           return;
@@ -848,7 +803,6 @@
           return;
         }
 
-        // KM / ORE: interi >= 0
         const kmVal  = parseInt(kmStr, 10);
         const oreVal = parseInt(oreStr, 10);
 
@@ -879,7 +833,6 @@
           showMessage('success', "Controlli in corso (ClaimCards + coperture)…");
           btnCheckCoverage.disabled = true;
 
-          // 1) Controlli su ClaimCards (ordine doppio, coerenza KM/ORE)
           const errClaims = await checkClaimCardsCoerenza(vin, dataOrdineStr, kmVal, oreVal, orderNumberStr);
           if (errClaims) {
             showMessage('error', errClaims);
@@ -887,10 +840,8 @@
             return;
           }
 
-          // 2) Carico FSA pendenti (in parallelo)
           await loadPendingFsaForVin(vin);
 
-          // 3) Ricerca VIN in DBVIN
           const snapshot = await db.collection(VIN_COLLECTION)
             .where("vin", "==", vin)
             .limit(1)
@@ -911,7 +862,6 @@
 
             populateForVinNotFound();
 
-            // Salvo snapshot minimo per ClaimCard (senza copertura)
             lastCheckData = {
               vin,
               orderDateStr: dataOrdineStr,
@@ -946,7 +896,6 @@
           const data = doc.data();
           console.log("[FTCLAIMS] Documento VIN:", doc.id, data);
 
-          // Dati di veicolo (se disponibili)
           const vehicleSnapshot = {
             registrationPlate: data.registrationPlate || data.targa || null,
             registrationDate:  data.registrationDate  || data.dataImm || null,
@@ -961,7 +910,6 @@
           let maintStartFs  = getDateFromField(data.contratto_data_start);
           let maintEndFs    = getDateFromField(data.contratto_data_end);
 
-          // Eventuali dati provenienti da backend (schema WARRANTY_*)
           const warrantyTypeRaw  = data.WARRANTY_TYPE       || data.warranty_type;
           const warrantyStartRaw = data.WARRANTY_START_DATE || data.warranty_start_date;
           const warrantyEndRaw   = data.WARRANTY_END_DATE   || data.warranty_end_date;
@@ -974,13 +922,11 @@
             fullStartFs = warrantyStart;
             fullEndFs   = warrantyEnd;
           }
-
           if (!driveStartFs && warrantyStart && warrantyEnd &&
               (warrantyType.includes("DRIVE") || warrantyType.includes("DRIVELINE"))) {
             driveStartFs = warrantyStart;
             driveEndFs   = warrantyEnd;
           }
-
           if (!maintStartFs && warrantyStart && warrantyEnd &&
               (warrantyType.includes("SERVICE") || warrantyType.includes("SC"))) {
             maintStartFs = warrantyStart;
@@ -998,8 +944,7 @@
           const hasDriveActive = isDateWithinRange(dataOrdine, driveStart, driveEnd);
           const hasMaintActive = isDateWithinRange(dataOrdine, maintStart, maintEnd);
 
-          const hasAnyActiveCoverageOrContract =
-            hasFullActive || hasDriveActive || hasMaintActive;
+          const hasAnyActiveCoverageOrContract = hasFullActive || hasDriveActive || hasMaintActive;
 
           const hasAnyCoverageData =
             (fullStart || fullEnd || driveStart || driveEnd ||
@@ -1011,10 +956,8 @@
           html += `<strong>Numero ordine di lavoro:</strong> ${orderNumberStr}<br>`;
           html += `<strong>KM veicolo:</strong> ${kmVal} – <strong>Ore motore:</strong> ${oreVal}<br><br>`;
 
-          // Dettaglio coperture attive
           if (hasAnyActiveCoverageOrContract) {
             html += `<strong>Coperture/contratti attivi alla data selezionata:</strong><br><ul>`;
-
             if (hasFullActive) {
               html += `<li><strong>FULL LINE</strong> (copertura completa): dal ${formatDateDDMMYYYY(fullStart)} al ${formatDateDDMMYYYY(fullEnd)}</li>`;
             }
@@ -1024,7 +967,6 @@
             if (hasMaintActive) {
               html += `<li><strong>SERVICE CONTRACT</strong>: dal ${formatDateDDMMYYYY(maintStart)} al ${formatDateDDMMYYYY(maintEnd)}</li>`;
             }
-
             html += `</ul><br>`;
           }
 
@@ -1043,9 +985,11 @@
             html += `Seleziona la tipologia di claim card dal menu.`;
             showMessage('success', html);
 
-            populateForActiveCoverageOrContract();
+            populateForActiveCoverageOrContract({
+              hasWarrantyActive: (hasFullActive || hasDriveActive),
+              hasMaintActive: hasMaintActive
+            });
 
-            // Per la ClaimCard: priorità FULL > DRIVE > SERVICE
             if (hasFullActive) {
               coverageTypeForClaim = "FULL LINE";
               coverageStartForClaim = fullStart;
@@ -1067,7 +1011,6 @@
             populateForNoActiveCoverage();
           }
 
-          // Snapshot copertura per ClaimCard / STEP2
           const coverageSummary = {
             hasAnyCoverageData,
             hasActiveCoverage: hasAnyActiveCoverageOrContract,
@@ -1104,10 +1047,9 @@
         }
       }
 
-      // ===== GENERAZIONE CODICE GARANZIA / SALVATAGGIO CLAIM =====
+      // ===== GENERAZIONE CODICE / SALVATAGGIO CLAIM =====
 
       async function getNextSequenceForYear(year) {
-        // Usa campo "year" nella collezione ClaimCards per calcolare la sequence
         const snap = await db.collection(CLAIMS_COLLECTION)
           .where("year", "==", year)
           .orderBy("sequence", "desc")
@@ -1125,14 +1067,9 @@
         return String(num).padStart(6, "0");
       }
 
-      // *** QUESTA È LA PARTE MODIFICATA ***
       async function createClaimCard(tipoPratica) {
-        if (!lastCheckData) {
-          throw new Error("Dati di controllo non presenti.");
-        }
-        if (!currentAccount) {
-          throw new Error("Utente non caricato.");
-        }
+        if (!lastCheckData) throw new Error("Dati di controllo non presenti.");
+        if (!currentAccount) throw new Error("Utente non caricato.");
 
         const user = currentAccount.firebaseUser;
         const userData = currentAccount.userData || {};
@@ -1152,7 +1089,7 @@
 
         const docData = {
           code,
-          year,                 // <--- campo root "year" (serve per getNextSequenceForYear)
+          year,
           sequence,
           status: "Aperta",
 
@@ -1193,11 +1130,8 @@
           notes: null
         };
 
-        // >>>> QUI USIAMO IL CODICE COME ID DOCUMENTO <<<<
         await db.collection(CLAIMS_COLLECTION).doc(code).set(docData);
         console.log("ClaimCard creata con ID (code):", code, docData);
-
-        // Ritorniamo il codice, che è anche l'ID del documento
         return code;
       }
 
