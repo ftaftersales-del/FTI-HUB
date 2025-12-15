@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>FTCLAIMS - Dettaglio Claim Card</title>
 
   <!-- Firebase compat -->
@@ -11,1109 +11,550 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
 
-  <!-- init firebase -->
+  <!-- tua init -->
   <script src="firebase-config.js"></script>
 
-  <!-- claim forms (RSA/Garanzia/...) -->
+  <!-- dettagli claim (RSA/Garanzia/Attachments/Notes ecc.) -->
   <script src="ftclaims-claimforms.js"></script>
 
   <style>
-    :root{
-      --bg:#f5f5f5;
-      --card:#ffffff;
-      --border:#e6e6e6;
-      --muted:#6b7280;
-      --primary:#0d6efd;
-      --danger:#dc3545;
-      --ok:#16a34a;
-      --shadow:0 2px 10px rgba(0,0,0,.06);
-    }
-    body{
-      margin:0;
-      font-family: Arial, sans-serif;
-      background:var(--bg);
-      color:#111;
-    }
-    .topbar{
-      padding:16px 18px 10px;
-      background:#fff;
-      border-bottom:1px solid var(--border);
-    }
-    h1{ margin:0; font-size:20px; }
-    .subtitle{ margin-top:3px; color:var(--muted); font-size:12px; }
-
-    .wrap{
-      display:flex;
-      gap:14px;
-      padding:14px;
-      box-sizing:border-box;
-    }
-    .left{
-      width:360px;
-      min-width:320px;
-    }
-    .right{
-      flex:1;
-      min-width:540px;
-    }
-
-    .card{
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:10px;
-      box-shadow:var(--shadow);
-      padding:12px;
-      margin-bottom:12px;
-    }
-    .card h3{
-      margin:0 0 10px;
-      font-size:13px;
-    }
-    .row{
-      display:flex;
-      gap:8px;
-      align-items:center;
-    }
-    .form-group{
-      margin-bottom:10px;
-    }
-    label{
-      display:block;
-      font-size:11px;
-      color:#111;
-      margin-bottom:4px;
-    }
-    input, select, textarea{
-      width:100%;
-      box-sizing:border-box;
-      padding:7px 8px;
-      border:1px solid #d9d9d9;
-      border-radius:6px;
-      font-size:12px;
-      background:#fff;
-    }
-    textarea{ resize:vertical; }
-    .small-text{
-      font-size:11px;
-      color:var(--muted);
-      margin-top:4px;
-    }
-
-    .btn{
-      display:inline-block;
-      border:0;
-      cursor:pointer;
-      border-radius:6px;
-      font-size:12px;
-      padding:7px 10px;
-      color:#fff;
-      user-select:none;
-    }
-    .btn-small{ padding:6px 9px; font-size:11px; }
-    .btn-primary{ background:var(--primary); }
-    .btn-secondary{ background:#6c757d; }
-    .btn-danger{ background:var(--danger); }
-    .btn-ok{ background:var(--ok); }
-    .btn:disabled{ opacity:.6; cursor:not-allowed; }
-
-    .banner{
-      background:#e9fbe9;
-      border:1px solid #b7efb7;
-      padding:8px 10px;
-      border-radius:6px;
-      font-size:12px;
-      margin-top:10px;
-    }
-    .banner.err{
-      background:#ffe9e9;
-      border-color:#ffb7b7;
-    }
-
-    .claimsHeader{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:10px;
-    }
-    .claimsHeader h2{
-      margin:0;
-      font-size:14px;
-    }
-
-    .repairCard{
-      border:1px solid var(--border);
-      border-radius:10px;
-      background:#fff;
-      box-shadow:var(--shadow);
-      margin-top:12px;
-      overflow:hidden;
-    }
-    .repairHead{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding:10px 12px;
-      border-bottom:1px solid var(--border);
-      background:#fafafa;
-      gap:10px;
-    }
-    .repairTitle{
-      font-size:12px;
-      font-weight:bold;
-    }
-    .repairMeta{
-      font-size:11px;
-      color:var(--muted);
-      margin-top:2px;
-    }
-    .repairBody{
-      padding:12px;
-      display:block;
-    }
-    .rightActions{
-      display:flex;
-      gap:6px;
-      align-items:center;
-      white-space:nowrap;
-    }
-
-    table{
-      width:100%;
-      border-collapse:collapse;
-      font-size:12px;
-    }
-    th, td{
-      border-bottom:1px solid #eee;
-      padding:6px 6px;
-      text-align:left;
-      vertical-align:top;
-    }
-    th{
-      font-size:11px;
-      color:#111;
-      background:#fbfbfb;
-    }
-
-    .footerBtns{
-      display:flex;
-      gap:8px;
-      justify-content:flex-start;
-      align-items:center;
-      margin-top:10px;
-    }
-    .mutedBox{
-      padding:8px 10px;
-      border:1px dashed #ddd;
-      border-radius:8px;
-      font-size:12px;
-      color:var(--muted);
-      background:#fff;
-    }
+    body{font-family:Arial, sans-serif;background:#f5f5f5;margin:0;}
+    .page{padding:16px;}
+    .title{font-size:18px;font-weight:700;margin:0 0 2px;}
+    .subtitle{font-size:12px;color:#666;margin:0 0 12px;}
+    .grid{display:grid;grid-template-columns:360px 1fr;gap:12px;align-items:start;}
+    .card{background:#fff;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);padding:12px;}
+    .sectionTitle{font-size:12px;font-weight:700;margin:0 0 8px;color:#222;}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .form-group{margin-bottom:8px;}
+    label{display:block;font-size:11px;color:#333;margin-bottom:4px;}
+    input,select,textarea{width:100%;box-sizing:border-box;border:1px solid #ddd;border-radius:6px;padding:7px 8px;font-size:12px;background:#fff;}
+    input[readonly],textarea[readonly]{background:#fafafa;}
+    textarea{resize:vertical;}
+    .small-text{font-size:11px;color:#666;}
+    .btn{border:0;border-radius:6px;padding:7px 10px;font-size:12px;cursor:pointer;}
+    .btn-small{padding:6px 8px;font-size:11px;}
+    .btn-primary{background:#1976d2;color:#fff;}
+    .btn-secondary{background:#6c757d;color:#fff;}
+    .btn-danger{background:#dc3545;color:#fff;}
+    .btn:disabled{opacity:.6;cursor:not-allowed;}
+    .toolbar{display:flex;gap:8px;justify-content:flex-end;align-items:center;}
+    .pill{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef2ff;color:#334155;font-size:11px;}
+    .hr{height:1px;background:#eee;margin:10px 0;}
+    .claimBlock{border:1px solid #eee;border-radius:10px;padding:10px;margin:10px 0;}
+    .claimHeader{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+    .claimHeader h4{margin:0;font-size:12px;}
+    .claimHeader .meta{display:flex;gap:8px;align-items:center;}
+    .collapseBtn{background:#e9ecef;color:#111;}
+    table{width:100%;border-collapse:collapse;font-size:12px;}
+    th,td{border-bottom:1px solid #eee;padding:6px 6px;text-align:left;}
+    th{font-size:11px;color:#444;background:#fafafa;}
+    .right{display:flex;justify-content:flex-end;}
+    .warn{background:#fff3cd;border:1px solid #ffeeba;color:#856404;border-radius:8px;padding:8px;font-size:12px;margin-bottom:10px;}
+    .ok{background:#d4edda;border:1px solid #c3e6cb;color:#155724;border-radius:8px;padding:8px;font-size:12px;margin-bottom:10px;}
+    .err{background:#f8d7da;border:1px solid #f5c6cb;color:#721c24;border-radius:8px;padding:8px;font-size:12px;margin-bottom:10px;}
   </style>
 </head>
 
 <body>
-  <div class="topbar">
-    <h1>Dettaglio Claim Card</h1>
-    <div class="subtitle">Visualizza e gestisci i dati della pratica.</div>
-    <div id="banner" class="banner" style="display:none;"></div>
-  </div>
+<div class="page">
+  <div class="title">Dettaglio Claim Card</div>
+  <div class="subtitle">Visualizza e gestisci i dati della pratica.</div>
 
-  <div class="wrap">
+  <div id="banner"></div>
+
+  <div class="grid">
     <!-- LEFT -->
-    <div class="left">
-      <div class="card">
-        <h3>Dati pratica</h3>
+    <div class="card">
+      <div class="sectionTitle">Dati pratica</div>
 
+      <div class="form-group">
+        <label>Codice pratica</label>
+        <input id="cc_code" readonly>
+      </div>
+
+      <div class="form-group">
+        <label>Tipologia</label>
+        <input id="cc_type" readonly>
+      </div>
+
+      <div class="form-row">
         <div class="form-group">
-          <label>Codice pratica</label>
-          <input id="cc_code" type="text" readonly />
+          <label>Data apertura</label>
+          <input id="cc_openDate" readonly>
         </div>
-
         <div class="form-group">
-          <label>Tipologia</label>
-          <input id="cc_type" type="text" readonly />
-        </div>
-
-        <div class="row">
-          <div class="form-group" style="flex:1;">
-            <label>Data apertura</label>
-            <input id="cc_openDate" type="text" readonly />
-          </div>
-          <div class="form-group" style="flex:1;">
-            <label>Data ordine di lavoro</label>
-            <input id="cc_orderDate" type="text" readonly />
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="form-group" style="flex:1;">
-            <label>Nome operatore apertura</label>
-            <input id="cc_openBy" type="text" readonly />
-          </div>
-          <div class="form-group" style="flex:1;">
-            <label>Dealer apertura</label>
-            <input id="cc_openDealer" type="text" readonly />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Stato pratica</label>
-          <select id="cc_status">
-            <option value="Aperta">Aperta</option>
-            <option value="Inviata">Inviata</option>
-            <option value="Sospesa">Sospesa</option>
-            <option value="In Valutazione">In Valutazione</option>
-            <option value="Conclusa">Conclusa</option>
-            <option value="Cancellata">Cancellata</option>
-          </select>
-          <div class="small-text">Stati: Aperta, Inviata, Sospesa, In Valutazione, Conclusa, Cancellata.</div>
+          <label>Data ordine di lavoro</label>
+          <input id="cc_orderDate" readonly>
         </div>
       </div>
 
-      <div class="card">
-        <h3>Dati veicolo</h3>
-        <div class="row">
-          <div class="form-group" style="flex:1;">
-            <label>VIN</label>
-            <input id="veh_vin" type="text" readonly />
-          </div>
-          <div class="form-group" style="flex:1;">
-            <label>Customer</label>
-            <input id="veh_customer" type="text" readonly />
-          </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nome operatore apertura</label>
+          <input id="cc_openBy" readonly>
         </div>
-
-        <div class="row">
-          <div class="form-group" style="flex:1;">
-            <label>Registration Plate</label>
-            <input id="veh_plate" type="text" />
-          </div>
-          <div class="form-group" style="flex:1;">
-            <label>Registration Date</label>
-            <input id="veh_regdate" type="date" />
-          </div>
+        <div class="form-group">
+          <label>Dealer apertura</label>
+          <input id="cc_openDealer" readonly>
         </div>
       </div>
 
-      <div class="card">
-        <h3>Copertura garanzia alla data dell'ordine di lavoro</h3>
-        <div class="row">
-          <div class="form-group" style="flex:1;">
-            <label>Tipo copertura</label>
-            <input id="cov_type" type="text" readonly />
-          </div>
-          <div class="form-group" style="flex:1;">
-            <label>Data inizio</label>
-            <input id="cov_start" type="text" readonly />
-          </div>
+      <div class="form-group">
+        <label>Stato pratica</label>
+        <select id="cc_status">
+          <option value="Aperta">Aperta</option>
+          <option value="Inviata">Inviata</option>
+          <option value="Sospesa">Sospesa</option>
+          <option value="In Valutazione">In Valutazione</option>
+          <option value="Conclusa">Conclusa</option>
+          <option value="Cancellata">Cancellata</option>
+        </select>
+        <div class="small-text">Stati: Aperta, Inviata, Sospesa, In Valutazione, Conclusa, Cancellata.</div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="sectionTitle">Dati veicolo</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>VIN</label>
+          <input id="cc_vin" readonly>
+        </div>
+        <div class="form-group">
+          <label>Customer</label>
+          <input id="cc_customer" readonly>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Registration Plate</label>
+          <input id="cc_plate" readonly>
+        </div>
+        <div class="form-group">
+          <label>Registration Date</label>
+          <input id="cc_regdate" readonly>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="sectionTitle">Copertura garanzia alla data dell'ordine di lavoro</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Tipo copertura</label>
+          <input id="cc_covType" readonly>
+        </div>
+        <div class="form-group">
+          <label>Data inizio</label>
+          <input id="cc_covStart" readonly>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Data fine</label>
+        <input id="cc_covEnd" readonly>
+      </div>
+      <div class="form-group">
+        <label>Note copertura (visibili solo al distributore)</label>
+        <textarea id="cc_covNotes" rows="2" readonly></textarea>
+        <div class="small-text">Copertura ricavata dai dati DBVIN / WARRANTY_* alla data dell'ordine di lavoro.</div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="sectionTitle">Service Contract (se presente)</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data inizio</label>
+          <input id="cc_scStart" readonly>
         </div>
         <div class="form-group">
           <label>Data fine</label>
-          <input id="cov_end" type="text" readonly />
+          <input id="cc_scEnd" readonly>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Opzioni presenti</label>
+        <textarea id="cc_scOptions" rows="2" readonly></textarea>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="sectionTitle">Chilometraggio / ore motore</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>KM veicolo</label>
+          <input id="cc_km" type="number" min="0">
         </div>
         <div class="form-group">
-          <label>Note copertura (visibili solo al distributore)</label>
-          <textarea id="cov_notes" rows="3" readonly></textarea>
-          <div class="small-text">Copertura ricavata dai dati DBVIN / WARRANTY_* alla data dell'ordine di lavoro.</div>
+          <label>Ore motore</label>
+          <input id="cc_hours" type="number" min="0">
         </div>
       </div>
 
-      <div class="card">
-        <h3>Service Contract (se presente)</h3>
-        <div class="row">
-          <div class="form-group" style="flex:1;">
-            <label>Data inizio</label>
-            <input id="sc_start" type="text" readonly />
-          </div>
-          <div class="form-group" style="flex:1;">
-            <label>Data fine</label>
-            <input id="sc_end" type="text" readonly />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Opzioni presenti</label>
-          <textarea id="sc_options" rows="3" readonly></textarea>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>Chilometraggio / ore motore</h3>
-        <div class="row">
-          <div class="form-group" style="flex:1;">
-            <label>KM veicolo</label>
-            <input id="veh_km" type="number" min="0" step="1" />
-          </div>
-          <div class="form-group" style="flex:1;">
-            <label>Ore motore</label>
-            <input id="veh_hours" type="number" min="0" step="1" />
-          </div>
-        </div>
-
-        <div class="footerBtns">
-          <button id="btn_home" class="btn btn-secondary btn-small" type="button">Home Page</button>
-          <button id="btn_save" class="btn btn-primary btn-small" type="button">Salva modifiche</button>
-          <button id="btn_delete" class="btn btn-danger btn-small" type="button">Cancella richiesta</button>
-        </div>
+      <div class="toolbar">
+        <button id="btnHome" class="btn btn-secondary btn-small">Home Page</button>
+        <button id="btnSave" class="btn btn-primary btn-small">Salva modifiche</button>
+        <button id="btnCancel" class="btn btn-danger btn-small">Cancella richiesta</button>
       </div>
     </div>
 
     <!-- RIGHT -->
-    <div class="right">
-      <div class="card">
-        <div class="claimsHeader">
-          <div>
-            <h2>Gestione claim collegati alla claim card</h2>
-            <div class="small-text">
-              Tipologia claim: la lista varia in base alla tipologia della claim card (WARRANTY, SERVICE CONTRACT, RSA...).
-            </div>
-          </div>
+    <div class="card">
+      <div class="sectionTitle">Gestione claim collegati alla claim card</div>
+      <div class="small-text" style="margin-bottom:8px;">
+        Tipologia claim: la lista varia in base alla tipologia della claim card (WARRANTY, SERVICE CONTRACT, RSA...).
+      </div>
 
-          <div style="width:320px;">
-            <div class="form-group">
-              <label>Nuovo claim</label>
-              <select id="newClaimType"></select>
-            </div>
-            <button id="btn_create_claim" class="btn btn-primary btn-small" type="button" style="float:right;">
-              Crea claim
-            </button>
-          </div>
+      <div class="form-row" style="align-items:end;">
+        <div class="form-group">
+          <label>Nuovo claim</label>
+          <select id="newClaimType">
+            <option value="">Seleziona...</option>
+            <option value="SERVICE CONTRACT">Service Contract (Manutenzione)</option>
+            <option value="RSA">RSA</option>
+            <option value="GARANZIA">Garanzia</option>
+            <option value="GARANZIA RICAMBIO">Garanzia Ricambio</option>
+          </select>
+        </div>
+        <div class="right">
+          <button id="btnCreateClaim" class="btn btn-primary btn-small">Crea claim</button>
         </div>
       </div>
 
-      <div id="repairsContainer"></div>
+      <div id="claimsContainer"></div>
     </div>
   </div>
+</div>
+
 <script>
-/* ===============================
-   FTCLAIMS_STEP2 - LOGICA PRINCIPALE
-=============================== */
+/* ============================================================
+   FTCLAIMS_STEP2 - versione robusta
+   ============================================================ */
 
-(function(){
-  const db = firebase.firestore();
+(function () {
+  const banner = document.getElementById("banner");
 
-  const bannerEl = document.getElementById("banner");
-  function showBanner(msg, isErr){
-    bannerEl.style.display = "block";
-    bannerEl.className = "banner" + (isErr ? " err" : "");
-    bannerEl.textContent = msg;
-  }
-  function hideBanner(){
-    bannerEl.style.display = "none";
-    bannerEl.textContent = "";
+  function setBanner(type, text) {
+    banner.innerHTML = "";
+    if (!text) return;
+    const div = document.createElement("div");
+    div.className = type;
+    div.textContent = text;
+    banner.appendChild(div);
   }
 
-  function qs(name){
-    const url = new URL(window.location.href);
-    return url.searchParams.get(name);
+  function qs(name) {
+    return new URLSearchParams(window.location.search).get(name);
   }
 
-  const claimCardId = qs("id") || qs("claimCardId");
-  if (!claimCardId){
-    showBanner("ID ClaimCard mancante nell'URL (?id=...)", true);
+  function fmtDate(d) {
+    if (!d) return "";
+    if (typeof d === "string") return d;
+    if (d.toDate) {
+      const t = d.toDate();
+      const yyyy = t.getFullYear();
+      const mm = String(t.getMonth() + 1).padStart(2, "0");
+      const dd = String(t.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    }
+    return "";
+  }
+
+  function safeStr(v) { return (v == null ? "" : String(v)); }
+
+  // ---- Firebase guards ----
+  if (typeof firebase === "undefined" || !firebase.auth || !firebase.firestore) {
+    setBanner("err", "Firebase non inizializzato. Controlla firebase-config.js");
     return;
   }
 
-  const el = {
-    cc_code: document.getElementById("cc_code"),
-    cc_type: document.getElementById("cc_type"),
-    cc_openDate: document.getElementById("cc_openDate"),
-    cc_orderDate: document.getElementById("cc_orderDate"),
-    cc_openBy: document.getElementById("cc_openBy"),
-    cc_openDealer: document.getElementById("cc_openDealer"),
-    cc_status: document.getElementById("cc_status"),
-
-    veh_vin: document.getElementById("veh_vin"),
-    veh_customer: document.getElementById("veh_customer"),
-    veh_plate: document.getElementById("veh_plate"),
-    veh_regdate: document.getElementById("veh_regdate"),
-
-    cov_type: document.getElementById("cov_type"),
-    cov_start: document.getElementById("cov_start"),
-    cov_end: document.getElementById("cov_end"),
-    cov_notes: document.getElementById("cov_notes"),
-
-    sc_start: document.getElementById("sc_start"),
-    sc_end: document.getElementById("sc_end"),
-    sc_options: document.getElementById("sc_options"),
-
-    veh_km: document.getElementById("veh_km"),
-    veh_hours: document.getElementById("veh_hours"),
-
-    btn_home: document.getElementById("btn_home"),
-    btn_save: document.getElementById("btn_save"),
-    btn_delete: document.getElementById("btn_delete"),
-
-    newClaimType: document.getElementById("newClaimType"),
-    btn_create_claim: document.getElementById("btn_create_claim"),
-    repairsContainer: document.getElementById("repairsContainer")
-  };
-
-  el.btn_home.addEventListener("click", () => {
-    window.location.href = "FTCLAIMS.html";
-  });
-
-  // ---- auth gate ----
-  firebase.auth().onAuthStateChanged(async (user) => {
-    if (!user){
-      showBanner("Non sei autenticato. Effettua login.", true);
-      return;
-    }
-    try{
-      hideBanner();
-      await bootstrap();
-    }catch(err){
-      console.error(err);
-      showBanner("Errore inizializzazione: " + err.message, true);
-    }
-  });
-
-  let claimCardData = null;
-
-  async function bootstrap(){
-    // carico claimcard
-    const ccRef = db.collection("ClaimCards").doc(claimCardId);
-    const ccSnap = await ccRef.get();
-    if (!ccSnap.exists){
-      showBanner("ClaimCard non trovata: " + claimCardId, true);
-      return;
-    }
-    claimCardData = ccSnap.data() || {};
-
-    // riempio UI sinistra
-    fillLeft(claimCardData);
-
-    // popolo menu nuovo claim coerente
-    await populateNewClaimMenu(claimCardData);
-
-    // listeners salva/cancella
-    el.btn_save.addEventListener("click", saveClaimCardEdits);
-    el.btn_delete.addEventListener("click", deleteClaimCard);
-
-    // create claim
-    el.btn_create_claim.addEventListener("click", createNewClaim);
-
-    // render elenco claims
-    await renderRepairs();
-  }
-
-  function asDateStr(v){
-    if (!v) return "";
-    if (typeof v === "string") return v;
-    if (v.toDate) {
-      const d = v.toDate();
-      const dd = String(d.getDate()).padStart(2,"0");
-      const mm = String(d.getMonth()+1).padStart(2,"0");
-      const yyyy = d.getFullYear();
-      return `${dd}/${mm}/${yyyy}`;
-    }
-    return String(v);
-  }
-
-  function fillLeft(d){
-    el.cc_code.value = d.code || "";
-    el.cc_type.value = d.type || "";
-    el.cc_openDate.value = asDateStr(d.openDate);
-    el.cc_orderDate.value = asDateStr(d.orderDate);
-    el.cc_openBy.value = d.openByName || d.openBy || "";
-    el.cc_openDealer.value = d.openDealer || d.dealerId || "";
-    el.cc_status.value = d.status || "Aperta";
-
-    el.veh_vin.value = d.vin || "";
-    el.veh_customer.value = (d.customer && (d.customer.name || d.customer)) || d.customerName || "";
-    el.veh_plate.value = d.registrationPlate || "";
-    el.veh_regdate.value = d.registrationDate || "";
-
-    const cov = d.coverage || {};
-    el.cov_type.value = cov.type || "";
-    el.cov_start.value = asDateStr(cov.startDate);
-    el.cov_end.value = asDateStr(cov.endDate);
-    el.cov_notes.value = cov.notes || "";
-
-    const sc = d.serviceContract || d.maintenanceContract || {};
-    el.sc_start.value = asDateStr(sc.startDate);
-    el.sc_end.value = asDateStr(sc.endDate);
-    el.sc_options.value = Array.isArray(sc.options) ? sc.options.join(", ") : (sc.options || "");
-
-    el.veh_km.value = (d.kmVehicle != null ? d.kmVehicle : (d.km != null ? d.km : "")) || "";
-    el.veh_hours.value = (d.engineHours != null ? d.engineHours : (d.oreMotore != null ? d.oreMotore : "")) || "";
-  }
-
-  async function saveClaimCardEdits(){
-    try{
-      el.btn_save.disabled = true;
-      const ccRef = db.collection("ClaimCards").doc(claimCardId);
-
-      const update = {
-        status: el.cc_status.value || "Aperta",
-        registrationPlate: (el.veh_plate.value || "").trim() || null,
-        registrationDate: el.veh_regdate.value || null,
-        kmVehicle: el.veh_km.value === "" ? null : Number(el.veh_km.value),
-        engineHours: el.veh_hours.value === "" ? null : Number(el.veh_hours.value)
-      };
-
-      await ccRef.update(update);
-      showBanner("Modifiche salvate.", false);
-      setTimeout(hideBanner, 1500);
-    }catch(err){
-      console.error(err);
-      showBanner("Errore salvataggio: " + err.message, true);
-    }finally{
-      el.btn_save.disabled = false;
-    }
-  }
-
-  async function deleteClaimCard(){
-    if (!confirm("Vuoi cancellare la richiesta? (Lato client: imposta stato Cancellata)")) return;
-    try{
-      el.btn_delete.disabled = true;
-      await db.collection("ClaimCards").doc(claimCardId).update({ status: "Cancellata" });
-      showBanner("Richiesta cancellata (status=Cancellata).", false);
-    }catch(err){
-      console.error(err);
-      showBanner("Errore: " + err.message, true);
-    }finally{
-      el.btn_delete.disabled = false;
-    }
-  }
-
-  async function populateNewClaimMenu(cc){
-    const type = (cc.type || "").toString().trim().toUpperCase();
-    el.newClaimType.innerHTML = "";
-
-    // Se claim card è Service Contract: permetto SOLO Service Contract
-    // Altrimenti: RSA / Garanzia / Garanzia Ricambio / ecc (aggiungi se vuoi)
-    const opts = [];
-    if (type === "SERVICE CONTRACT"){
-      opts.push({ value:"SERVICE CONTRACT", label:"Service Contract" });
-    } else {
-      opts.push({ value:"RSA", label:"RSA" });
-      opts.push({ value:"GARANZIA", label:"Garanzia" });
-      opts.push({ value:"GARANZIA RICAMBIO", label:"Garanzia Ricambio" });
-      // opts.push({ value:"ALTRO", label:"Altro" });
-    }
-
-    opts.forEach(o=>{
-      const op = document.createElement("option");
-      op.value = o.value;
-      op.textContent = o.label;
-      el.newClaimType.appendChild(op);
-    });
-  }
-
-  async function createNewClaim(){
-    const claimType = (el.newClaimType.value || "").trim();
-    if (!claimType){
-      alert("Seleziona una tipologia claim.");
-      return;
-    }
-
-    el.btn_create_claim.disabled = true;
-    try{
-      // calcolo progressivo riparazione
-      const claimsRef = db.collection("ClaimCards").doc(claimCardId).collection("Claims");
-      const snap = await claimsRef.get();
-      const next = snap.size + 1;
-      const code = String(next).padStart(3,"0");
-      const claimCode = `R${code}`;
-
-      const normalized = claimType.toUpperCase();
-
-      await claimsRef.doc(claimCode).set({
-        claimCode: claimCode,
-        claimType: claimType,
-        claimTypeNormalized: normalized,
-        status: "Aperto",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      showBanner(`Riparazione ${claimCode} (${claimType}) creata.`, false);
-      setTimeout(hideBanner, 1500);
-
-      await renderRepairs();
-    }catch(err){
-      console.error(err);
-      showBanner("Errore creazione claim: " + err.message, true);
-    }finally{
-      el.btn_create_claim.disabled = false;
-    }
-  }
-<script>
-/* ===============================
-   FTCLAIMS_STEP2 - LOGICA PRINCIPALE
-=============================== */
-
-(function(){
+  const auth = firebase.auth();
   const db = firebase.firestore();
 
-  const bannerEl = document.getElementById("banner");
-  function showBanner(msg, isErr){
-    bannerEl.style.display = "block";
-    bannerEl.className = "banner" + (isErr ? " err" : "");
-    bannerEl.textContent = msg;
+  // ---- DOM refs ----
+  const cc_code      = document.getElementById("cc_code");
+  const cc_type      = document.getElementById("cc_type");
+  const cc_openDate  = document.getElementById("cc_openDate");
+  const cc_orderDate = document.getElementById("cc_orderDate");
+  const cc_openBy    = document.getElementById("cc_openBy");
+  const cc_openDealer= document.getElementById("cc_openDealer");
+  const cc_status    = document.getElementById("cc_status");
+
+  const cc_vin       = document.getElementById("cc_vin");
+  const cc_customer  = document.getElementById("cc_customer");
+  const cc_plate     = document.getElementById("cc_plate");
+  const cc_regdate   = document.getElementById("cc_regdate");
+
+  const cc_covType   = document.getElementById("cc_covType");
+  const cc_covStart  = document.getElementById("cc_covStart");
+  const cc_covEnd    = document.getElementById("cc_covEnd");
+  const cc_covNotes  = document.getElementById("cc_covNotes");
+
+  const cc_scStart   = document.getElementById("cc_scStart");
+  const cc_scEnd     = document.getElementById("cc_scEnd");
+  const cc_scOptions = document.getElementById("cc_scOptions");
+
+  const cc_km        = document.getElementById("cc_km");
+  const cc_hours     = document.getElementById("cc_hours");
+
+  const btnHome      = document.getElementById("btnHome");
+  const btnSave      = document.getElementById("btnSave");
+  const btnCancel    = document.getElementById("btnCancel");
+
+  const newClaimType = document.getElementById("newClaimType");
+  const btnCreateClaim = document.getElementById("btnCreateClaim");
+  const claimsContainer = document.getElementById("claimsContainer");
+
+  // ---- State ----
+  let claimCardId = qs("id"); // es: ?id=W2025000019
+  let claimCard = null;
+  let currentUserInfo = null;
+
+  // Maintenance meta cache
+  let maintMeta = null; // {menuOptions:[{key,label:{it}}...]}
+  function getMaintLabel(key) {
+    if (!maintMeta || !Array.isArray(maintMeta.menuOptions)) return key;
+    const hit = maintMeta.menuOptions.find(x => x && x.key === key);
+    return hit && hit.label && hit.label.it ? hit.label.it : key;
   }
-  function hideBanner(){
-    bannerEl.style.display = "none";
-    bannerEl.textContent = "";
+
+  // ---- Read current user info (dealers) ----
+  async function loadCurrentUserInfo() {
+    const u = auth.currentUser;
+    if (!u) return { uid:null, dealerId:null, name:null };
+    let dealerId = null;
+    let name = u.displayName || null;
+    try {
+      const snap = await db.collection("Users").doc(u.uid).get();
+      if (snap.exists) {
+        const d = snap.data() || {};
+        dealerId = d.dealerId || d.DealerID || d.dealerID || null;
+        if (!name) name = d.fullName || d.name || d.displayName || null;
+      }
+    } catch(e){}
+    return { uid:u.uid, dealerId, name };
   }
 
-  function qs(name){
-    const url = new URL(window.location.href);
-    return url.searchParams.get(name);
-  }
-
-  const claimCardId = qs("id") || qs("claimCardId");
-  if (!claimCardId){
-    showBanner("ID ClaimCard mancante nell'URL (?id=...)", true);
-    return;
-  }
-
-  const el = {
-    cc_code: document.getElementById("cc_code"),
-    cc_type: document.getElementById("cc_type"),
-    cc_openDate: document.getElementById("cc_openDate"),
-    cc_orderDate: document.getElementById("cc_orderDate"),
-    cc_openBy: document.getElementById("cc_openBy"),
-    cc_openDealer: document.getElementById("cc_openDealer"),
-    cc_status: document.getElementById("cc_status"),
-
-    veh_vin: document.getElementById("veh_vin"),
-    veh_customer: document.getElementById("veh_customer"),
-    veh_plate: document.getElementById("veh_plate"),
-    veh_regdate: document.getElementById("veh_regdate"),
-
-    cov_type: document.getElementById("cov_type"),
-    cov_start: document.getElementById("cov_start"),
-    cov_end: document.getElementById("cov_end"),
-    cov_notes: document.getElementById("cov_notes"),
-
-    sc_start: document.getElementById("sc_start"),
-    sc_end: document.getElementById("sc_end"),
-    sc_options: document.getElementById("sc_options"),
-
-    veh_km: document.getElementById("veh_km"),
-    veh_hours: document.getElementById("veh_hours"),
-
-    btn_home: document.getElementById("btn_home"),
-    btn_save: document.getElementById("btn_save"),
-    btn_delete: document.getElementById("btn_delete"),
-
-    newClaimType: document.getElementById("newClaimType"),
-    btn_create_claim: document.getElementById("btn_create_claim"),
-    repairsContainer: document.getElementById("repairsContainer")
-  };
-
-  el.btn_home.addEventListener("click", () => {
-    window.location.href = "FTCLAIMS.html";
-  });
-
-  // ---- auth gate ----
-  firebase.auth().onAuthStateChanged(async (user) => {
-    if (!user){
-      showBanner("Non sei autenticato. Effettua login.", true);
-      return;
+  // ---- Load claim card ----
+  async function loadClaimCard() {
+    if (!claimCardId) {
+      setBanner("err", "Manca l'ID nella URL. Apri la pagina come: FTCLAIMS_STEP2.html?id=W2025xxxxxxx");
+      return null;
     }
-    try{
-      hideBanner();
-      await bootstrap();
-    }catch(err){
-      console.error(err);
-      showBanner("Errore inizializzazione: " + err.message, true);
+    const ref = db.collection("ClaimCards").doc(claimCardId);
+    const snap = await ref.get();
+    if (!snap.exists) {
+      setBanner("err", "ClaimCard non trovata: " + claimCardId);
+      return null;
     }
-  });
-
-  let claimCardData = null;
-
-  async function bootstrap(){
-    // carico claimcard
-    const ccRef = db.collection("ClaimCards").doc(claimCardId);
-    const ccSnap = await ccRef.get();
-    if (!ccSnap.exists){
-      showBanner("ClaimCard non trovata: " + claimCardId, true);
-      return;
-    }
-    claimCardData = ccSnap.data() || {};
-
-    // riempio UI sinistra
-    fillLeft(claimCardData);
-
-    // popolo menu nuovo claim coerente
-    await populateNewClaimMenu(claimCardData);
-
-    // listeners salva/cancella
-    el.btn_save.addEventListener("click", saveClaimCardEdits);
-    el.btn_delete.addEventListener("click", deleteClaimCard);
-
-    // create claim
-    el.btn_create_claim.addEventListener("click", createNewClaim);
-
-    // render elenco claims
-    await renderRepairs();
+    return { id: snap.id, data: snap.data() || {} };
   }
 
-  function asDateStr(v){
-    if (!v) return "";
-    if (typeof v === "string") return v;
-    if (v.toDate) {
-      const d = v.toDate();
-      const dd = String(d.getDate()).padStart(2,"0");
-      const mm = String(d.getMonth()+1).padStart(2,"0");
-      const yyyy = d.getFullYear();
-      return `${dd}/${mm}/${yyyy}`;
-    }
-    return String(v);
-  }
+  function fillLeftPanel(cc) {
+    const d = cc.data || {};
 
-  function fillLeft(d){
-    el.cc_code.value = d.code || "";
-    el.cc_type.value = d.type || "";
-    el.cc_openDate.value = asDateStr(d.openDate);
-    el.cc_orderDate.value = asDateStr(d.orderDate);
-    el.cc_openBy.value = d.openByName || d.openBy || "";
-    el.cc_openDealer.value = d.openDealer || d.dealerId || "";
-    el.cc_status.value = d.status || "Aperta";
+    cc_code.value       = safeStr(d.code || cc.id);
+    cc_type.value       = safeStr(d.type || d.tipologia || "");
+    cc_openDate.value   = safeStr(d.openDate || fmtDate(d.createdAt) || "");
+    cc_orderDate.value  = safeStr(d.orderDate || "");
+    cc_openBy.value     = safeStr(d.openByName || d.openBy || "");
+    cc_openDealer.value = safeStr(d.openDealer || "");
 
-    el.veh_vin.value = d.vin || "";
-    el.veh_customer.value = (d.customer && (d.customer.name || d.customer)) || d.customerName || "";
-    el.veh_plate.value = d.registrationPlate || "";
-    el.veh_regdate.value = d.registrationDate || "";
+    cc_status.value     = safeStr(d.status || "Aperta");
+
+    cc_vin.value        = safeStr(d.vin || d.VIN || "");
+    cc_customer.value   = safeStr(d.customer || d.Customer || "");
+    cc_plate.value      = safeStr(d.registrationPlate || d.plate || "");
+    cc_regdate.value    = safeStr(d.registrationDate || "");
 
     const cov = d.coverage || {};
-    el.cov_type.value = cov.type || "";
-    el.cov_start.value = asDateStr(cov.startDate);
-    el.cov_end.value = asDateStr(cov.endDate);
-    el.cov_notes.value = cov.notes || "";
+    cc_covType.value    = safeStr(cov.type || "");
+    cc_covStart.value   = safeStr(cov.startDate || "");
+    cc_covEnd.value     = safeStr(cov.endDate || "");
+    cc_covNotes.value   = safeStr(cov.notes || "");
 
-    const sc = d.serviceContract || d.maintenanceContract || {};
-    el.sc_start.value = asDateStr(sc.startDate);
-    el.sc_end.value = asDateStr(sc.endDate);
-    el.sc_options.value = Array.isArray(sc.options) ? sc.options.join(", ") : (sc.options || "");
+    const sc = d.maintenanceContract || {};
+    cc_scStart.value    = safeStr(sc.startDate || "");
+    cc_scEnd.value      = safeStr(sc.endDate || "");
+    cc_scOptions.value  = safeStr(sc.options || "");
 
-    el.veh_km.value = (d.kmVehicle != null ? d.kmVehicle : (d.km != null ? d.km : "")) || "";
-    el.veh_hours.value = (d.engineHours != null ? d.engineHours : (d.oreMotore != null ? d.oreMotore : "")) || "";
+    cc_km.value         = (d.kmVehicle != null ? d.kmVehicle : (d.km != null ? d.km : ""));
+    cc_hours.value      = (d.hoursEngine != null ? d.hoursEngine : (d.ore_motore != null ? d.ore_motore : ""));
   }
 
-  async function saveClaimCardEdits(){
-    try{
-      el.btn_save.disabled = true;
-      const ccRef = db.collection("ClaimCards").doc(claimCardId);
-
-      const update = {
-        status: el.cc_status.value || "Aperta",
-        registrationPlate: (el.veh_plate.value || "").trim() || null,
-        registrationDate: el.veh_regdate.value || null,
-        kmVehicle: el.veh_km.value === "" ? null : Number(el.veh_km.value),
-        engineHours: el.veh_hours.value === "" ? null : Number(el.veh_hours.value)
-      };
-
-      await ccRef.update(update);
-      showBanner("Modifiche salvate.", false);
-      setTimeout(hideBanner, 1500);
-    }catch(err){
-      console.error(err);
-      showBanner("Errore salvataggio: " + err.message, true);
-    }finally{
-      el.btn_save.disabled = false;
+  async function saveClaimCardEdits() {
+    if (!claimCardId) return;
+    btnSave.disabled = true;
+    try {
+      const ref = db.collection("ClaimCards").doc(claimCardId);
+      await ref.update({
+        status: cc_status.value || "Aperta",
+        kmVehicle: cc_km.value === "" ? null : Number(cc_km.value),
+        hoursEngine: cc_hours.value === "" ? null : Number(cc_hours.value),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      setBanner("ok", "Modifiche salvate.");
+      setTimeout(()=>setBanner("", ""), 2000);
+    } catch (e) {
+      console.error(e);
+      setBanner("err", "Errore salvataggio claim card: " + e.message);
+    } finally {
+      btnSave.disabled = false;
     }
   }
 
-  async function deleteClaimCard(){
-    if (!confirm("Vuoi cancellare la richiesta? (Lato client: imposta stato Cancellata)")) return;
-    try{
-      el.btn_delete.disabled = true;
-      await db.collection("ClaimCards").doc(claimCardId).update({ status: "Cancellata" });
-      showBanner("Richiesta cancellata (status=Cancellata).", false);
-    }catch(err){
-      console.error(err);
-      showBanner("Errore: " + err.message, true);
-    }finally{
-      el.btn_delete.disabled = false;
+  // ---- Maintenance meta ----
+  async function loadMaintenanceMeta() {
+    try {
+      const snap = await db.collection("Maintenance").doc("_meta").get();
+      if (snap.exists) maintMeta = snap.data() || null;
+    } catch(e) {
+      console.warn("Maintenance/_meta non leggibile:", e);
     }
   }
 
-  async function populateNewClaimMenu(cc){
-    const type = (cc.type || "").toString().trim().toUpperCase();
-    el.newClaimType.innerHTML = "";
+  // ============================================================
+  // RENDER CLAIMS LIST
+  // ============================================================
+  async function loadClaimsList() {
+    claimsContainer.innerHTML = "";
+    const ref = db.collection("ClaimCards").doc(claimCardId).collection("Claims");
+    const snap = await ref.orderBy("createdAt", "asc").get();
 
-    // Se claim card è Service Contract: permetto SOLO Service Contract
-    // Altrimenti: RSA / Garanzia / Garanzia Ricambio / ecc (aggiungi se vuoi)
-    const opts = [];
-    if (type === "SERVICE CONTRACT"){
-      opts.push({ value:"SERVICE CONTRACT", label:"Service Contract" });
-    } else {
-      opts.push({ value:"RSA", label:"RSA" });
-      opts.push({ value:"GARANZIA", label:"Garanzia" });
-      opts.push({ value:"GARANZIA RICAMBIO", label:"Garanzia Ricambio" });
-      // opts.push({ value:"ALTRO", label:"Altro" });
+    if (snap.empty) {
+      const div = document.createElement("div");
+      div.className = "small-text";
+      div.textContent = "Nessun claim presente.";
+      claimsContainer.appendChild(div);
+      return;
     }
 
-    opts.forEach(o=>{
-      const op = document.createElement("option");
-      op.value = o.value;
-      op.textContent = o.label;
-      el.newClaimType.appendChild(op);
+    snap.forEach(doc => {
+      const claim = doc.data() || {};
+      renderClaimBlock(doc.id, claim);
     });
   }
 
-  async function createNewClaim(){
-    const claimType = (el.newClaimType.value || "").trim();
-    if (!claimType){
-      alert("Seleziona una tipologia claim.");
-      return;
+  function renderClaimBlock(claimCode, claimData) {
+    const claimType = (claimData.claimType || claimData.type || "").toString();
+
+    const block = document.createElement("div");
+    block.className = "claimBlock";
+
+    const header = document.createElement("div");
+    header.className = "claimHeader";
+
+    const title = document.createElement("h4");
+    title.textContent = `${claimCode} (${claimType || "CLAIM"})`;
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+
+    const st = document.createElement("span");
+    st.className = "pill";
+    st.textContent = "Stato: " + (claimData.status || "Aperto");
+    meta.appendChild(st);
+
+    const btnCollapse = document.createElement("button");
+    btnCollapse.type = "button";
+    btnCollapse.className = "btn btn-small collapseBtn";
+    btnCollapse.textContent = "Nascondi dettagli";
+
+    const btnDelete = document.createElement("button");
+    btnDelete.type = "button";
+    btnDelete.className = "btn btn-small btn-danger";
+    btnDelete.textContent = "Elimina riparazione";
+
+    meta.appendChild(btnCollapse);
+    meta.appendChild(btnDelete);
+
+    header.appendChild(title);
+    header.appendChild(meta);
+    block.appendChild(header);
+
+    const body = document.createElement("div");
+    body.style.marginTop = "8px";
+    block.appendChild(body);
+
+    // Render specific
+    const ctx = { claimCardId, claimCode };
+
+    if (claimType.toUpperCase() === "SERVICE CONTRACT") {
+      renderMaintenanceDetails(body, claimData, ctx);
+    } else {
+      // RSA / Garanzia / Garanzia Ricambio ecc.
+      renderClaimDetails(claimType, body, claimData, ctx);
     }
 
-    el.btn_create_claim.disabled = true;
-    try{
-      // calcolo progressivo riparazione
-      const claimsRef = db.collection("ClaimCards").doc(claimCardId).collection("Claims");
-      const snap = await claimsRef.get();
-      const next = snap.size + 1;
-      const code = String(next).padStart(3,"0");
-      const claimCode = `R${code}`;
+    // Collapse
+    let collapsed = false;
+    btnCollapse.addEventListener("click", () => {
+      collapsed = !collapsed;
+      body.style.display = collapsed ? "none" : "block";
+      btnCollapse.textContent = collapsed ? "Mostra dettagli" : "Nascondi dettagli";
+    });
 
-      const normalized = claimType.toUpperCase();
+    // Delete
+    btnDelete.addEventListener("click", async () => {
+      if (!confirm(`Eliminare ${claimCode}?`)) return;
 
-      await claimsRef.doc(claimCode).set({
-        claimCode: claimCode,
-        claimType: claimType,
-        claimTypeNormalized: normalized,
-        status: "Aperto",
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      showBanner(`Riparazione ${claimCode} (${claimType}) creata.`, false);
-      setTimeout(hideBanner, 1500);
-
-      await renderRepairs();
-    }catch(err){
-      console.error(err);
-      showBanner("Errore creazione claim: " + err.message, true);
-    }finally{
-      el.btn_create_claim.disabled = false;
-    }
-  }
-  async function renderRepairs(){
-    el.repairsContainer.innerHTML = "";
-
-    const claimsRef = db.collection("ClaimCards").doc(claimCardId).collection("Claims");
-    const snap = await claimsRef.orderBy("createdAt","asc").get();
-
-    if (snap.empty){
-      el.repairsContainer.innerHTML = `<div class="mutedBox">Nessun claim presente.</div>`;
-      return;
-    }
-
-    snap.forEach((doc)=>{
-      const data = doc.data() || {};
-      const claimCode = doc.id;
-      const claimType = (data.claimType || data.claimTypeNormalized || "").toString();
-      const status = data.status || "Aperto";
-
-      const card = document.createElement("div");
-      card.className = "repairCard";
-
-      const head = document.createElement("div");
-      head.className = "repairHead";
-
-      const left = document.createElement("div");
-      left.innerHTML = `
-        <div class="repairTitle">Riparazione ${claimCode} (${claimType})</div>
-        <div class="repairMeta">Stato: ${status}</div>
-      `;
-
-      const right = document.createElement("div");
-      right.className = "rightActions";
-
-      const btnToggle = document.createElement("button");
-      btnToggle.className = "btn btn-secondary btn-small";
-      btnToggle.type = "button";
-      btnToggle.textContent = "Nascondi dettagli";
-
-      const btnDel = document.createElement("button");
-      btnDel.className = "btn btn-danger btn-small";
-      btnDel.type = "button";
-      btnDel.textContent = "Elimina riparazione";
-
-      right.appendChild(btnToggle);
-      right.appendChild(btnDel);
-
-      head.appendChild(left);
-      head.appendChild(right);
-
-      const body = document.createElement("div");
-      body.className = "repairBody";
-
-      btnToggle.addEventListener("click", ()=>{
-        const hidden = body.style.display === "none";
-        body.style.display = hidden ? "block" : "none";
-        btnToggle.textContent = hidden ? "Nascondi dettagli" : "Mostra dettagli";
-      });
-
-      btnDel.addEventListener("click", async ()=>{
-        if (!confirm(`Vuoi eliminare ${claimCode}?`)) return;
-        try{
-          await db.collection("ClaimCards").doc(claimCardId).collection("Claims").doc(claimCode).delete();
-          await renderRepairs();
-        }catch(err){
-          console.error(err);
-          alert("Errore eliminazione: " + err.message);
+      try {
+        // Se maintenance: rimuovi anche index VIN+template se presente
+        if ((claimType || "").toUpperCase() === "SERVICE CONTRACT") {
+          await deleteMaintenanceIndexIfNeeded(claimData);
         }
-      });
-
-      card.appendChild(head);
-      card.appendChild(body);
-      el.repairsContainer.appendChild(card);
-
-      // Render dettagli
-      const normalized = (data.claimTypeNormalized || claimType || "").toString().trim().toUpperCase();
-
-      if (normalized === "SERVICE CONTRACT"){
-        renderServiceContractDetails(body, data, { claimCardId, claimCode });
-      } else {
-        // usa il tuo ftclaims-claimforms.js
-        renderClaimDetails(claimType, body, data, { claimCardId, claimCode });
+        await db.collection("ClaimCards").doc(claimCardId)
+          .collection("Claims").doc(claimCode).delete();
+        setBanner("ok", "Riparazione eliminata.");
+        setTimeout(()=>setBanner("", ""), 1500);
+        await loadClaimsList();
+      } catch (e) {
+        console.error(e);
+        setBanner("err", "Errore eliminazione: " + e.message);
       }
     });
+
+    claimsContainer.appendChild(block);
   }
 
-  /* =========================================================
-     SERVICE CONTRACT
-     - menuOptions da Maintenance/_meta.menuOptions
-     - template doc da Maintenance/<family>_<key>
-     - blocco duplicati:
-        (A) stessa claim card
-        (B) storico VIN (tutte le ClaimCards con stesso VIN)
-  ========================================================= */
-
-  async function loadMaintenanceMeta(){
-    const snap = await db.collection("Maintenance").doc("_meta").get();
-    if (!snap.exists) return { menuOptions: [] };
-    const d = snap.data() || {};
-    return {
-      menuOptions: Array.isArray(d.menuOptions) ? d.menuOptions : []
-    };
-  }
-
-  function getMenuLabel(menuOptions, key){
-    const found = (menuOptions || []).find(x => String(x.key) === String(key));
-    if (!found) return key;
-    // preferisco label.it se presente
-    const labelObj = found.label || {};
-    return (labelObj.it || found.label_it || found.label || key);
-  }
-
-  async function loadFamilyDocs(){
-    // families = tutti i prefissi prima di "_"
-    // usiamo la lista docId (470_1m, 470_1s, ...)
-    const snap = await db.collection("Maintenance").get();
-    const ids = [];
-    snap.forEach(doc=>{
-      if (doc.id === "_meta") return;
-      ids.push(doc.id);
-    });
-    const famSet = new Set();
-    ids.forEach(id=>{
-      const parts = String(id).split("_");
-      if (parts[0]) famSet.add(parts[0]);
-    });
-    return Array.from(famSet).sort((a,b)=>a.localeCompare(b,"it"));
-  }
-
-  async function loadTemplatesForFamily(family){
-    if (!family) return [];
-    const snap = await db.collection("Maintenance").get();
-    const out = [];
-    snap.forEach(doc=>{
-      const id = doc.id;
-      if (id === "_meta") return;
-      if (!id.startsWith(family + "_")) return;
-      const key = id.substring((family + "_").length); // es. "1m"
-      out.push({ id, key, data: doc.data() || {} });
-    });
-    // ordino per key
-    out.sort((a,b)=>a.key.localeCompare(b.key,"it"));
-    return out;
-  }
-
-  function itemPassesVoithFilter(item, voithEnabled){
-    const cond = (item && item.conditions) ? item.conditions : {};
-    const voithOnly = !!cond.voithOnly;
-    if (voithOnly && !voithEnabled) return false;
-    return true;
-  }
-
-  async function serviceContractAlreadyExistsInSameClaimCard(templateId, currentClaimCode){
-    const claimsRef = db.collection("ClaimCards").doc(claimCardId).collection("Claims");
-    const snap = await claimsRef
-      .where("claimTypeNormalized","==","SERVICE CONTRACT")
-      .where("serviceContract.templateId","==", templateId)
-      .get();
-
-    // se c'è già (anche su un altro claim), blocco
-    let found = null;
-    snap.forEach(doc=>{
-      if (doc.id !== currentClaimCode) found = doc.id;
-    });
-    return found; // claimCode oppure null
-  }
-
-  async function serviceContractAlreadyExistsOnVIN(vin, templateId){
-    if (!vin) return null;
-
-    // prendo tutte le claimcards di quel VIN
-    const cardsSnap = await db.collection("ClaimCards").where("vin","==",vin).get();
-    if (cardsSnap.empty) return null;
-
-    for (const ccDoc of cardsSnap.docs){
-      const ccId = ccDoc.id;
-      const claimsSnap = await db.collection("ClaimCards").doc(ccId).collection("Claims")
-        .where("claimTypeNormalized","==","SERVICE CONTRACT")
-        .where("serviceContract.templateId","==",templateId)
-        .limit(1)
-        .get();
-
-      if (!claimsSnap.empty){
-        // ritorno info minima
-        const ccData = ccDoc.data() || {};
-        return {
-          claimCardId: ccId,
-          claimCardCode: ccData.code || ccId,
-          foundClaimCode: claimsSnap.docs[0].id
-        };
-      }
-    }
-    return null;
-  }
-
-  function renderServiceContractDetails(container, claimData, ctx){
-    const sc = claimData.serviceContract || {};
-    const prefix = "sc_" + ctx.claimCode + "_";
+  // ============================================================
+  // SERVICE CONTRACT (MAINTENANCE) UI
+  // ============================================================
+  function renderMaintenanceDetails(container, claimData, ctx) {
+    const m = claimData.maintenance || {};
+    const prefix = "mnt_" + ctx.claimCode + "_";
 
     container.innerHTML = `
-      <h4 style="margin: 4px 0 10px; font-size: 13px;">Dati Service Contract</h4>
-
-      <div class="small-text">
+      <div class="sectionTitle">Dati Service Contract</div>
+      <div class="small-text" style="margin-bottom:8px;">
         Seleziona il pacchetto di manutenzione. Le righe (ricambi/manodopera) vengono caricate dal template.
       </div>
 
-      <div class="row" style="margin-top:10px;">
-        <div class="form-group" style="flex:1;">
+      <div class="form-row">
+        <div class="form-group">
           <label for="${prefix}family">Famiglia</label>
-          <select id="${prefix}family"></select>
+          <select id="${prefix}family">
+            <option value="">Seleziona...</option>
+            <option value="470">470</option>
+            <option value="510">510</option>
+          </select>
         </div>
-        <div class="form-group" style="flex:1;">
-          <label for="${prefix}type">Tipo manutenzione</label>
-          <select id="${prefix}type"></select>
+        <div class="form-group">
+          <label for="${prefix}key">Tipo manutenzione</label>
+          <select id="${prefix}key">
+            <option value="">Seleziona...</option>
+          </select>
         </div>
       </div>
 
       <div class="form-group">
         <label>
-          <input type="checkbox" id="${prefix}voith">
+          <input type="checkbox" id="${prefix}voith" />
           Veicolo con rallentatore VOITH (Intarder/Retarder)
         </label>
         <div class="small-text">
-          Se attivo, vengono incluse le righe VOITH (se presenti nel pacchetto).
+          Se attivo, verranno incluse le righe previste per VOITH (se presenti nel pacchetto).
         </div>
       </div>
 
@@ -1121,252 +562,392 @@
         <button type="button" id="${prefix}save" class="btn btn-primary btn-small">Salva manutenzione</button>
       </div>
 
-      <hr>
+      <div class="hr"></div>
 
-      <h4 style="margin: 4px 0 6px; font-size: 13px;">Righe precompilate</h4>
+      <div class="sectionTitle">Righe precompilate</div>
       <div class="small-text">Ricambi e manodopera provenienti dal template selezionato.</div>
 
-      <div id="${prefix}preview" class="mutedBox" style="margin-top:8px;">Seleziona una famiglia e un tipo manutenzione.</div>
+      <div style="margin-top:8px;">
+        <div class="sectionTitle" style="margin:8px 0 6px;">Manodopera</div>
+        <table>
+          <thead><tr><th>Codice</th><th>Descrizione</th><th style="text-align:right;">Q.tà</th><th>Note</th></tr></thead>
+          <tbody id="${prefix}labBody"><tr><td colspan="4" class="small-text">Nessuna riga.</td></tr></tbody>
+        </table>
+
+        <div class="sectionTitle" style="margin:12px 0 6px;">Ricambi</div>
+        <table>
+          <thead><tr><th>Codice</th><th>Descrizione</th><th style="text-align:right;">Q.tà</th><th>Note</th></tr></thead>
+          <tbody id="${prefix}parBody"><tr><td colspan="4" class="small-text">Nessuna riga.</td></tr></tbody>
+        </table>
+      </div>
     `;
 
-    const familySel = container.querySelector("#"+prefix+"family");
-    const typeSel   = container.querySelector("#"+prefix+"type");
-    const voithChk  = container.querySelector("#"+prefix+"voith");
-    const saveBtn   = container.querySelector("#"+prefix+"save");
-    const preview   = container.querySelector("#"+prefix+"preview");
+    const familySel = container.querySelector("#" + prefix + "family");
+    const keySel    = container.querySelector("#" + prefix + "key");
+    const voithChk  = container.querySelector("#" + prefix + "voith");
+    const saveBtn   = container.querySelector("#" + prefix + "save");
+    const labBody   = container.querySelector("#" + prefix + "labBody");
+    const parBody   = container.querySelector("#" + prefix + "parBody");
 
-    // per Service Contract NON vogliamo Ticket/Sinistro:
-    // -> lo gestiamo così: NON chiamiamo addAttachmentsAndNotesSection da ftclaims-claimforms.js
-    // ma lo chiamiamo qui, con showGeneral:false
-    addAttachmentsAndNotesSection(container, ctx, { showGeneral: false });
+    // preload
+    if (m.family) familySel.value = m.family;
+    if (m.key) {
+      // key options loaded after meta
+      // set later
+    }
+    voithChk.checked = !!m.voith;
 
-    (async ()=>{
-      const meta = await loadMaintenanceMeta();
-      const menuOptions = meta.menuOptions || [];
-
-      const families = await loadFamilyDocs();
-      familySel.innerHTML = "";
-      families.forEach(f=>{
-        const op = document.createElement("option");
-        op.value = f;
-        op.textContent = f;
-        familySel.appendChild(op);
+    function fillKeyOptions() {
+      keySel.innerHTML = `<option value="">Seleziona...</option>`;
+      if (!maintMeta || !Array.isArray(maintMeta.menuOptions)) return;
+      // menuOptions keys: "1s","1m","2s","2m","3s","3m"
+      maintMeta.menuOptions.forEach(opt => {
+        const o = document.createElement("option");
+        o.value = opt.key;
+        o.textContent = (opt.label && opt.label.it) ? opt.label.it : opt.key;
+        keySel.appendChild(o);
       });
+      if (m.key) keySel.value = m.key;
+    }
 
-      // prefill famiglia
-      if (sc.family && families.includes(String(sc.family))) {
-        familySel.value = String(sc.family);
-      }
+    function renderItems(items) {
+      const labour = (items || []).filter(x => (x.kind || "").toUpperCase() === "LABOUR");
+      const parts  = (items || []).filter(x => (x.kind || "").toUpperCase() === "PART");
 
-      // prefill voith
-      voithChk.checked = !!sc.voith;
-
-      async function refreshTypes(){
-        const family = familySel.value || "";
-        const templates = await loadTemplatesForFamily(family);
-
-        typeSel.innerHTML = "";
-        const empty = document.createElement("option");
-        empty.value = "";
-        empty.textContent = "Seleziona...";
-        typeSel.appendChild(empty);
-
-        templates.forEach(t=>{
-          const op = document.createElement("option");
-          op.value = t.key;                    // es "1m"
-          op.textContent = getMenuLabel(menuOptions, t.key); // es "1° Manutenzione Meccanica"
-          typeSel.appendChild(op);
+      function fill(tbody, arr) {
+        tbody.innerHTML = "";
+        if (!arr.length) {
+          tbody.innerHTML = `<tr><td colspan="4" class="small-text">Nessuna riga.</td></tr>`;
+          return;
+        }
+        arr.forEach(it => {
+          const tr = document.createElement("tr");
+          const code = it.code || "";
+          const desc = it.description || "";
+          const qty  = (it.qty != null ? it.qty : "");
+          const note = it.note || "";
+          tr.innerHTML = `
+            <td>${code}</td>
+            <td>${desc}</td>
+            <td style="text-align:right;">${qty}</td>
+            <td>${note}</td>
+          `;
+          tbody.appendChild(tr);
         });
-
-        if (sc.key){
-          typeSel.value = String(sc.key);
-        }
-
-        await refreshPreview();
       }
 
-      async function refreshPreview(){
-        const family = familySel.value || "";
-        const key = typeSel.value || "";
-        if (!family || !key){
-          preview.className = "mutedBox";
-          preview.textContent = "Seleziona una famiglia e un tipo manutenzione.";
-          return;
-        }
+      fill(labBody, labour);
+      fill(parBody, parts);
+    }
 
-        const templateId = family + "_" + key;
-        const tSnap = await db.collection("Maintenance").doc(templateId).get();
-        if (!tSnap.exists){
-          preview.className = "banner err";
-          preview.textContent = "Template non trovato: " + templateId;
-          return;
-        }
-
-        const tData = tSnap.data() || {};
-        const items = Array.isArray(tData.items) ? tData.items : [];
-        const voithEnabled = !!voithChk.checked;
-
-        const labour = items
-          .filter(x => (x.kind || "").toUpperCase() === "LABOUR")
-          .filter(x => itemPassesVoithFilter(x, voithEnabled));
-
-        const parts  = items
-          .filter(x => (x.kind || "").toUpperCase() === "PART")
-          .filter(x => itemPassesVoithFilter(x, voithEnabled));
-
-        const html = [];
-
-        html.push(`<div style="margin-bottom:8px;"><strong>Template:</strong> ${templateId} — ${getMenuLabel(menuOptions, key)}</div>`);
-
-        html.push(`<div style="margin-top:10px;"><strong>Manodopera</strong></div>`);
-        if (!labour.length){
-          html.push(`<div class="small-text">(nessuna riga)</div>`);
-        } else {
-          html.push(`
-            <table>
-              <thead>
-                <tr>
-                  <th style="width:140px;">Codice</th>
-                  <th>Descrizione</th>
-                  <th style="width:80px;">Q.tà</th>
-                  <th style="width:220px;">Note</th>
-                </tr>
-              </thead>
-              <tbody>
-          `);
-          labour.forEach(it=>{
-            html.push(`
-              <tr>
-                <td>${(it.code||"")}</td>
-                <td>${(it.description||"")}</td>
-                <td>${(it.qty!=null ? it.qty : "")}</td>
-                <td>${(it.note && it.note !== "(vuoto)" ? it.note : "")}</td>
-              </tr>
-            `);
-          });
-          html.push(`</tbody></table>`);
-        }
-
-        html.push(`<div style="margin-top:12px;"><strong>Ricambi</strong></div>`);
-        if (!parts.length){
-          html.push(`<div class="small-text">(nessuna riga)</div>`);
-        } else {
-          html.push(`
-            <table>
-              <thead>
-                <tr>
-                  <th style="width:140px;">Codice</th>
-                  <th>Descrizione</th>
-                  <th style="width:80px;">Q.tà</th>
-                  <th style="width:220px;">Note</th>
-                </tr>
-              </thead>
-              <tbody>
-          `);
-          parts.forEach(it=>{
-            html.push(`
-              <tr>
-                <td>${(it.code||"")}</td>
-                <td>${(it.description||"")}</td>
-                <td>${(it.qty!=null ? it.qty : "")}</td>
-                <td>${(it.note && it.note !== "(vuoto)" ? it.note : "")}</td>
-              </tr>
-            `);
-          });
-          html.push(`</tbody></table>`);
-        }
-
-        preview.className = "";
-        preview.innerHTML = html.join("");
+    async function loadTemplatePreview() {
+      const family = familySel.value;
+      const key = keySel.value;
+      const voith = !!voithChk.checked;
+      if (!family || !key) {
+        renderItems([]);
+        return;
       }
 
-      familySel.addEventListener("change", refreshTypes);
-      typeSel.addEventListener("change", refreshPreview);
-      voithChk.addEventListener("change", refreshPreview);
-
-      await refreshTypes();
-
-      saveBtn.addEventListener("click", async ()=>{
-        const family = familySel.value || "";
-        const key = typeSel.value || "";
-        if (!family || !key){
-          alert("Seleziona famiglia e tipo manutenzione.");
+      const docId = `${family}_${key}`;
+      try {
+        const snap = await db.collection("Maintenance").doc(docId).get();
+        if (!snap.exists) {
+          renderItems([]);
           return;
         }
+        const tpl = snap.data() || {};
+        let items = Array.isArray(tpl.items) ? tpl.items.slice() : [];
 
-        const templateId = family + "_" + key;
-        const label = getMenuLabel(menuOptions, key);
-        const voithEnabled = !!voithChk.checked;
-
-        // BLOCCO DUPLICATI:
-        // A) nella stessa claim card
-        const dupSame = await serviceContractAlreadyExistsInSameClaimCard(templateId, ctx.claimCode);
-        if (dupSame){
-          alert(`Non è possibile inserire due manutenzioni identiche nella stessa Claim Card.\nGià presente nel claim: ${dupSame}`);
-          return;
+        // filtro VOITH
+        if (!voith) {
+          items = items.filter(x => !(x.conditions && x.conditions.voithOnly === true));
         }
 
-        // B) nello storico VIN (qualsiasi altra claim card con stesso VIN)
-        const vin = (claimCardData && claimCardData.vin) ? String(claimCardData.vin) : "";
-        const dupVin = await serviceContractAlreadyExistsOnVIN(vin, templateId);
-        if (dupVin){
-          alert(
-            "Non è possibile reclamare questa manutenzione: risulta già reclamata in passato sullo stesso telaio.\n\n" +
-            `ClaimCard: ${dupVin.claimCardCode}\nClaim: ${dupVin.foundClaimCode}`
-          );
-          return;
-        }
+        // filtro visibilità dealer/distributor: lato UI teniamo dealer=true
+        items = items.filter(x => !(x.visibility && x.visibility.dealer === false));
 
-        // salvo su claim
-        try{
-          saveBtn.disabled = true;
+        renderItems(items);
+      } catch (e) {
+        console.error(e);
+        renderItems([]);
+      }
+    }
 
-          // prendo template items e salvo uno snapshot (opzionale ma utile)
-          const tSnap = await db.collection("Maintenance").doc(templateId).get();
-          if (!tSnap.exists){
-            alert("Template non trovato: " + templateId);
-            return;
-          }
-          const tData = tSnap.data() || {};
-          const items = Array.isArray(tData.items) ? tData.items : [];
-          const filteredItems = items.filter(it => itemPassesVoithFilter(it, voithEnabled));
+    familySel.addEventListener("change", () => loadTemplatePreview());
+    keySel.addEventListener("change", () => loadTemplatePreview());
+    voithChk.addEventListener("change", () => loadTemplatePreview());
 
-          const claimRef = db.collection("ClaimCards").doc(ctx.claimCardId).collection("Claims").doc(ctx.claimCode);
+    // load options from meta then preview
+    fillKeyOptions();
+    loadTemplatePreview();
 
-          await claimRef.update({
-            claimType: "Service Contract",
-            claimTypeNormalized: "SERVICE CONTRACT",
-            serviceContract: {
-              family: family,
-              key: key,
-              label: label,
-              voith: voithEnabled,
-              templateId: templateId,
-              schemaVersion: tData.schemaVersion || 1,
-              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-              items: filteredItems
+    saveBtn.addEventListener("click", async () => {
+      const family = familySel.value;
+      const key = keySel.value;
+      const voith = !!voithChk.checked;
+
+      if (!family || !key) {
+        alert("Seleziona famiglia e tipo manutenzione.");
+        return;
+      }
+
+      // 1) blocco doppione dentro la stessa claim card
+      const existsInCard = await maintenanceAlreadyInThisClaimCard(family, key);
+      // se esiste ed è un altro claim (non quello che stiamo salvando)
+      if (existsInCard && existsInCard !== ctx.claimCode) {
+        alert("Questa manutenzione è già presente nella claim card (" + existsInCard + ").");
+        return;
+      }
+
+      // 2) blocco doppione VIN storico (globale)
+      const vin = (claimCard && claimCard.data && (claimCard.data.vin || claimCard.data.VIN)) ? (claimCard.data.vin || claimCard.data.VIN) : "";
+      if (!vin) {
+        alert("VIN mancante sulla claim card: non posso verificare lo storico manutenzioni.");
+        return;
+      }
+
+      saveBtn.disabled = true;
+      try {
+        // transaction su index VIN+template (serve regola)
+        await reserveMaintenanceIndexOrFail(vin, family, key, ctx);
+
+        // salva su claim
+        const label = getMaintLabel(key);
+        const docId = `${family}_${key}`;
+
+        await db.collection("ClaimCards").doc(ctx.claimCardId)
+          .collection("Claims").doc(ctx.claimCode)
+          .update({
+            maintenance: {
+              family,
+              key,
+              keyLabel: label,
+              templateDocId: docId,
+              voith,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }
           });
 
-          alert("Service Contract salvato.");
-          await renderRepairs();
-        }catch(err){
-          console.error(err);
-          alert("Errore salvataggio Service Contract: " + err.message);
-        }finally{
-          saveBtn.disabled = false;
-        }
-      });
+        setBanner("ok", "Manutenzione salvata.");
+        setTimeout(()=>setBanner("", ""), 1500);
+        await loadClaimsList();
+      } catch (e) {
+        console.error(e);
+        alert(e.message || String(e));
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
 
-    })().catch(err=>{
-      console.error(err);
-      preview.className = "banner err";
-      preview.textContent = "Errore caricamento Maintenance: " + err.message;
+    // IMPORTANTE: su Service Contract NON vogliamo Ticket/Sinistro ecc.
+    // Quindi NON chiamiamo addAttachmentsAndNotesSection qui: lo gestiamo sotto con showGeneral=false
+    addAttachmentsAndNotesSection(container, ctx, { showGeneral: false });
+  }
+
+  async function maintenanceAlreadyInThisClaimCard(family, key) {
+    const snap = await db.collection("ClaimCards").doc(claimCardId)
+      .collection("Claims")
+      .where("claimType", "==", "SERVICE CONTRACT")
+      .get();
+
+    let found = null;
+    snap.forEach(doc => {
+      const d = doc.data() || {};
+      const m = d.maintenance || {};
+      if (m.family === family && m.key === key) {
+        found = doc.id;
+      }
+    });
+    return found;
+  }
+
+  // ============================
+  // VIN+MAINTENANCE UNIQUE INDEX
+  // ============================
+  function makeIndexId(vin, family, key) {
+    // id stabile e safe
+    const v = String(vin).trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+    return `${v}__${family}_${key}`;
+  }
+
+  async function reserveMaintenanceIndexOrFail(vin, family, key, ctx) {
+    const idxId = makeIndexId(vin, family, key);
+    const idxRef = db.collection("MaintenanceIndex").doc(idxId);
+
+    // Transaction: se esiste e non è questo claim -> blocca.
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(idxRef);
+      if (snap.exists) {
+        const d = snap.data() || {};
+        // se è già riservata da un'altra claim, blocca
+        const same =
+          d.claimCardId === ctx.claimCardId &&
+          d.claimCode === ctx.claimCode;
+        if (!same) {
+          throw new Error(
+            `Manutenzione già reclamata in passato su questo VIN. Riferimento: ${d.claimCardId || ""} / ${d.claimCode || ""}`
+          );
+        }
+        // se same, ok (update claim)
+        return;
+      }
+
+      tx.set(idxRef, {
+        vin: String(vin).trim().toUpperCase(),
+        family, key,
+        claimCardId: ctx.claimCardId,
+        claimCode: ctx.claimCode,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
     });
   }
 
+  async function deleteMaintenanceIndexIfNeeded(claimData) {
+    try {
+      const m = claimData.maintenance || {};
+      if (!m.family || !m.key) return;
+      const vin = (claimCard && claimCard.data && (claimCard.data.vin || claimCard.data.VIN)) ? (claimCard.data.vin || claimCard.data.VIN) : "";
+      if (!vin) return;
+
+      const idxId = makeIndexId(vin, m.family, m.key);
+      const idxRef = db.collection("MaintenanceIndex").doc(idxId);
+
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(idxRef);
+        if (!snap.exists) return;
+        const d = snap.data() || {};
+        // cancella solo se è proprio questa riparazione
+        if (d.claimCardId === claimCardId && d.claimCode === claimData.code) {
+          tx.delete(idxRef);
+        } else {
+          // fallback: se claimCode non è salvato come code, prova con doc id
+          // (non facciamo delete aggressivo)
+        }
+      });
+    } catch(e) {
+      console.warn("Impossibile cancellare MaintenanceIndex:", e);
+    }
+  }
+
+  // ============================================================
+  // CREATE CLAIM
+  // ============================================================
+  function nextClaimCodeFromExisting(existingCount) {
+    const n = existingCount + 1;
+    return "R" + String(n).padStart(3, "0");
+  }
+
+  async function createClaim(type) {
+    const t = (type || "").trim().toUpperCase();
+    if (!t) return;
+
+    btnCreateClaim.disabled = true;
+    try {
+      const claimsRef = db.collection("ClaimCards").doc(claimCardId).collection("Claims");
+      const snap = await claimsRef.get();
+      const claimCode = nextClaimCodeFromExisting(snap.size);
+
+      const base = {
+        code: claimCode,
+        claimType: t === "SERVICE CONTRACT" ? "SERVICE CONTRACT" : type, // mantieni label coerente
+        status: "Aperto",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (t === "SERVICE CONTRACT") {
+        base.claimType = "SERVICE CONTRACT";
+        base.maintenance = {
+          family: null,
+          key: null,
+          keyLabel: null,
+          templateDocId: null,
+          voith: false
+        };
+      }
+
+      await claimsRef.doc(claimCode).set(base);
+
+      setBanner("ok", claimCode + " creato.");
+      setTimeout(()=>setBanner("", ""), 1500);
+      await loadClaimsList();
+    } catch (e) {
+      console.error(e);
+      setBanner("err", "Errore creazione claim: " + e.message);
+    } finally {
+      btnCreateClaim.disabled = false;
+    }
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  async function init() {
+    setBanner("warn", "Caricamento...");
+
+    // auth guard
+    await new Promise((resolve) => {
+      const unsub = auth.onAuthStateChanged(async (user) => {
+        unsub();
+        if (!user) {
+          setBanner("err", "Non sei autenticato. Torna al login.");
+          resolve();
+          return;
+        }
+        resolve();
+      });
+    });
+
+    currentUserInfo = await loadCurrentUserInfo();
+    await loadMaintenanceMeta();
+
+    const cc = await loadClaimCard();
+    if (!cc) return;
+
+    claimCard = cc;
+    fillLeftPanel(cc);
+
+    setBanner("", "");
+
+    await loadClaimsList();
+  }
+
+  // events
+  btnHome.addEventListener("click", () => {
+    window.location.href = "index.html";
+  });
+
+  btnSave.addEventListener("click", saveClaimCardEdits);
+
+  btnCancel.addEventListener("click", async () => {
+    if (!confirm("Vuoi cancellare la richiesta? (non elimina la claim card: imposta stato Cancellata)")) return;
+    try {
+      await db.collection("ClaimCards").doc(claimCardId).update({
+        status: "Cancellata",
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      setBanner("ok", "Richiesta cancellata.");
+      setTimeout(()=>setBanner("", ""), 1500);
+    } catch (e) {
+      setBanner("err", "Errore: " + e.message);
+    }
+  });
+
+  btnCreateClaim.addEventListener("click", async () => {
+    const type = newClaimType.value;
+    if (!type) {
+      alert("Seleziona un tipo di claim.");
+      return;
+    }
+    await createClaim(type);
+  });
+
+  // start
+  init().catch(e => {
+    console.error(e);
+    setBanner("err", "Errore inizializzazione: " + (e.message || e));
+  });
 })();
 </script>
-
 </body>
 </html>
