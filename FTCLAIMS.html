@@ -39,119 +39,7 @@
     .topbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
   </style>
 </head>
-<body>
-  <div class="container">
-    <div class="topbar">
-      <div>
-        <h1>FTCLAIMS</h1>
-        <p class="sub">Crea e gestisci Claim Card e relativi claim (RSA / Garanzia / Service Contract).</p>
-      </div>
-      <div class="small" id="userInfo">Non autenticato</div>
-    </div>
 
-    <div id="msg" class="status"></div>
-
-    <div class="row">
-      <div class="box">
-        <h3>Crea nuova Claim Card</h3>
-
-        <div class="form-group">
-          <label for="vin">VIN</label>
-          <input id="vin" type="text" placeholder="Es: NM0..." />
-        </div>
-
-        <div class="form-group">
-          <label for="orderDate">Data ordine di lavoro</label>
-          <input id="orderDate" type="date" />
-        </div>
-
-        <div class="form-group">
-          <label for="type">Tipologia</label>
-          <select id="type">
-            <option value="WARRANTY">Warranty</option>
-            <option value="SERVICE CONTRACT">Service Contract</option>
-            <option value="FSA">FSA</option>
-            <option value="GOODWILL">Goodwill</option>
-          </select>
-        </div>
-
-        <button id="btnCreate" class="btn btn-primary">Crea Claim Card</button>
-        <div class="small" style="margin-top:8px;">
-          Dopo la creazione verrai portato al dettaglio (STEP2).
-        </div>
-      </div>
-
-      <div class="box">
-        <h3>Le mie Claim Card</h3>
-
-        <div class="form-group">
-          <label for="search">Cerca per codice / VIN / targa</label>
-          <input id="search" type="text" placeholder="Es: W2025..., NM0..., targa..." />
-        </div>
-
-        <div class="small" style="margin-bottom:8px;">
-          Mostra le ultime Claim Card del tuo dealer (o tutte se FT001).
-        </div>
-
-        <div style="overflow:auto; max-height:420px;">
-          <table>
-            <thead>
-              <tr>
-                <th>Codice</th>
-                <th>VIN</th>
-                <th>Tipologia</th>
-                <th>Stato</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="cardsBody">
-              <tr><td colspan="5" class="small">Caricamento...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FTCLAIMS</title>
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
-  <script src="firebase-config.js"></script>
-
-  <style>
-    body { font-family: Arial, sans-serif; background:#f5f5f5; margin:20px; }
-    .container { max-width: 1100px; margin:auto; background:#fff; padding:18px 22px 26px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,.08); }
-    h1 { margin: 0 0 6px; font-size: 20px; }
-    .sub { color:#666; margin:0 0 12px; font-size:13px; }
-    .row { display:flex; gap:12px; flex-wrap:wrap; }
-    .box { flex: 1; min-width: 320px; border:1px solid #e6e6e6; border-radius:10px; padding:12px; background:#fafafa; }
-    .box h3 { margin:0 0 10px; font-size: 14px; }
-    .form-group { margin-bottom:10px; }
-    label { display:block; font-size:12px; margin-bottom:4px; color:#333; }
-    input, select { width:100%; padding:8px; border:1px solid #ddd; border-radius:6px; font-size:13px; background:#fff; box-sizing:border-box; }
-    .btn { border:0; border-radius:6px; padding:8px 12px; font-size:13px; cursor:pointer; }
-    .btn-primary { background:#0d6efd; color:#fff; }
-    .btn-secondary { background:#6c757d; color:#fff; }
-    .btn-danger { background:#dc3545; color:#fff; }
-    .btn:disabled { opacity:.6; cursor:not-allowed; }
-    .status { margin:10px 0; padding:10px; border-radius:6px; font-size:13px; display:none; }
-    .status.ok { background:#eaffea; border:1px solid #bde5bd; color:#1f7a1f; display:block; }
-    .status.err { background:#ffecec; border:1px solid #f0b3b3; color:#a21f1f; display:block; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { border-bottom:1px solid #eee; padding:8px; font-size:13px; text-align:left; }
-    th { background:#f7f7f7; }
-    .small { font-size:12px; color:#666; }
-    a { color:#0d6efd; text-decoration:none; }
-    a:hover { text-decoration:underline; }
-    .topbar { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
-  </style>
-</head>
 <body>
   <div class="container">
     <div class="topbar">
@@ -251,29 +139,29 @@
       msg.className = "status";
     }
 
-    function qs(name) {
-      const u = new URL(window.location.href);
-      return u.searchParams.get(name);
-    }
-
     async function getCurrentUserDealerId() {
       const u = auth.currentUser;
       if (!u) return null;
       const snap = await db.collection("Users").doc(u.uid).get();
       if (!snap.exists) return null;
       const d = snap.data() || {};
-      return d.dealerId || d.DealerID || d.dealerID || d.dealerID || d.DealerId || null;
+      return d.dealerId || d.DealerID || d.dealerID || d.DealerId || null;
     }
 
     async function generateNextClaimCardCode() {
-      // semplice: Settings/claimcardCounter -> increment
-      // solo FT001 Admin potrebbe gestirlo “canonico”, ma qui facciamo fallback locale:
       const now = new Date();
       const yyyy = now.getFullYear();
       const mm = String(now.getMonth()+1).padStart(2,"0");
       const dd = String(now.getDate()).padStart(2,"0");
       const rnd = Math.floor(Math.random()*9000)+1000;
       return "W" + yyyy + mm + dd + "-" + rnd;
+    }
+
+    function openStep2(cardId) {
+      // ✅ Coerente con FTCLAIMS_STEP2 “funzionante”
+      sessionStorage.setItem("ftclaims_claimCode", cardId);
+      sessionStorage.setItem("currentClaimStep1", JSON.stringify({ claimId: cardId }));
+      window.location.href = "FTCLAIMS_STEP2.html";
     }
 
     function renderRow(cardId, card) {
@@ -284,22 +172,19 @@
       const type = card.type || "";
       const status = card.status || "Aperta";
 
-      const td1 = document.createElement("td");
-      td1.textContent = code;
-
-      const td2 = document.createElement("td");
-      td2.textContent = vin;
-
-      const td3 = document.createElement("td");
-      td3.textContent = type;
-
-      const td4 = document.createElement("td");
-      td4.textContent = status;
+      const td1 = document.createElement("td"); td1.textContent = code;
+      const td2 = document.createElement("td"); td2.textContent = vin;
+      const td3 = document.createElement("td"); td3.textContent = type;
+      const td4 = document.createElement("td"); td4.textContent = status;
 
       const td5 = document.createElement("td");
       const a = document.createElement("a");
-      a.href = "FTCLAIMS_STEP2.html?id=" + encodeURIComponent(cardId);
+      a.href = "#";
       a.textContent = "Apri";
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        openStep2(cardId);
+      });
       td5.appendChild(a);
 
       tr.appendChild(td1);
@@ -316,6 +201,7 @@
     function applyFilter() {
       const q = (searchInput.value || "").trim().toUpperCase();
       cardsBody.innerHTML = "";
+
       const rows = _allCardsCache.filter(x => {
         if (!q) return true;
         const d = x.data || {};
@@ -349,9 +235,7 @@
       }
 
       let q = db.collection("ClaimCards").orderBy("createdAt", "desc").limit(50);
-      if (dealerId !== "FT001") {
-        q = q.where("openDealer", "==", dealerId);
-      }
+      if (dealerId !== "FT001") q = q.where("openDealer", "==", dealerId);
 
       const snap = await q.get();
       _allCardsCache = [];
@@ -387,13 +271,13 @@
         const code = await generateNextClaimCardCode();
 
         const payload = {
-          code: code,
-          vin: vin,
-          type: type,
+          code,
+          vin,
+          type,
           status: "Aperta",
           openDealer: dealerId,
           openDate: new Date().toISOString().slice(0,10),
-          orderDate: orderDate,
+          orderDate,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           createdByUid: auth.currentUser ? auth.currentUser.uid : null
         };
@@ -401,7 +285,7 @@
         const docRef = await db.collection("ClaimCards").add(payload);
 
         showMsg("Claim Card creata. Apro il dettaglio…", true);
-        window.location.href = "FTCLAIMS_STEP2.html?id=" + encodeURIComponent(docRef.id);
+        openStep2(docRef.id);
 
       } catch (err) {
         console.error(err);
@@ -418,7 +302,8 @@
       }
 
       const dealerId = await getCurrentUserDealerId();
-      userInfoDiv.textContent = (user.displayName || user.email || user.uid) + (dealerId ? (" • " + dealerId) : "");
+      userInfoDiv.textContent =
+        (user.displayName || user.email || user.uid) + (dealerId ? (" • " + dealerId) : "");
 
       clearMsg();
       await loadCards();
