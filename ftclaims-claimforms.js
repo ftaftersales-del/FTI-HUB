@@ -22,10 +22,17 @@ function renderClaimDetails(claimType, container, claimData, ctx) {
 
   if (type === "RSA") {
     renderRSADetails(container, claimData, ctx);
+
   } else if (type === "GARANZIA") {
     renderGaranziaDetails(container, claimData, ctx);
+
   } else if (type === "GARANZIA RICAMBIO") {
     renderGaranziaRicambioDetails(container, claimData, ctx);
+
+  } else if (type === "SERVICE OPTION") {
+    // ✅ NUOVO: opzioni Service Contract
+    renderServiceOptionDetails(container, claimData, ctx);
+
   } else if (type) {
     const info = document.createElement("div");
     info.className = "small-text";
@@ -35,6 +42,7 @@ function renderClaimDetails(claimType, container, claimData, ctx) {
 
     // Tipi generici: Dati generali + Allegati + Note
     addAttachmentsAndNotesSection(container, ctx, { showGeneral: true });
+
   } else {
     const info = document.createElement("div");
     info.className = "small-text";
@@ -43,6 +51,101 @@ function renderClaimDetails(claimType, container, claimData, ctx) {
 
     addAttachmentsAndNotesSection(container, ctx, { showGeneral: true });
   }
+}
+
+/* ===============================
+   SERVICE OPTION (Service Contract)
+=============================== */
+
+function renderServiceOptionDetails(container, claimData, ctx) {
+  const so = claimData.serviceOption || {};
+  const prefix = "so_" + ctx.claimCode + "_";
+
+  const label = so.label || so.key || "Opzione (non definita)";
+
+  const html = `
+    <h4 style="margin: 4px 0 6px; font-size: 13px;">Opzione Service Contract</h4>
+
+    <div class="form-group">
+      <label>Opzione</label>
+      <input type="text" id="${prefix}label" readonly>
+      <div class="small-text">
+        Questa riparazione è stata creata come opzione del Service Contract.
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input type="checkbox" id="${prefix}done">
+        Eseguita
+      </label>
+      <div class="small-text">
+        Spunta se l’opzione è stata effettivamente eseguita (utile anche per report futuri).
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="${prefix}note">Note opzione</label>
+      <textarea id="${prefix}note" rows="3" placeholder="Note tecniche / dettagli intervento..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <button type="button" id="${prefix}saveBtn" class="btn btn-primary btn-small">
+        Salva opzione
+      </button>
+    </div>
+  `;
+
+  container.innerHTML = html;
+
+  const labelInput = container.querySelector("#" + prefix + "label");
+  const doneInput  = container.querySelector("#" + prefix + "done");
+  const noteInput  = container.querySelector("#" + prefix + "note");
+  const saveBtn    = container.querySelector("#" + prefix + "saveBtn");
+
+  if (labelInput) labelInput.value = label;
+
+  // prefill
+  if (so.done === true) doneInput.checked = true;
+  if (so.note) noteInput.value = so.note;
+
+  if (saveBtn) {
+    saveBtn.addEventListener("click", async function () {
+      if (typeof firebase === "undefined" || !firebase.firestore) {
+        alert("Firebase non disponibile.");
+        return;
+      }
+
+      const db = firebase.firestore();
+
+      try {
+        const claimRef = db
+          .collection("ClaimCards")
+          .doc(ctx.claimCardId)
+          .collection("Claims")
+          .doc(ctx.claimCode);
+
+        const payload = {
+          serviceOption: {
+            key: so.key || null,
+            label: label || null,
+            done: !!doneInput.checked,
+            note: (noteInput.value || "").trim() || null,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          }
+        };
+
+        await claimRef.update(payload);
+        alert("Opzione salvata.");
+      } catch (err) {
+        console.error(err);
+        alert("Errore nel salvataggio opzione: " + err.message);
+      }
+    });
+  }
+
+  // Service Option: Dati generali + Allegati + Note (coerente con gli altri)
+  addAttachmentsAndNotesSection(container, ctx, { showGeneral: true });
 }
 
 /* ===============================
