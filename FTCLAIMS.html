@@ -347,12 +347,19 @@
         showTipoPraticaUI();
       }
 
-      function populateForActiveCoverageOrContract() {
+      // ✅ QUI: aggiungiamo SERVICE CONTRACT solo se hasMaintActive === true
+      function populateForActiveCoverageOrContract(hasMaintActive) {
         tipoPraticaSelect.innerHTML = "";
         addPlaceholder();
+
         addOptionToSelect("WARRANTY", "WARRANTY");
         addOptionToSelect("FSA", "FSA");
         addOptionToSelect("GOODWILL", "GOODWILL");
+
+        if (hasMaintActive) {
+          addOptionToSelect("SERVICE CONTRACT", "SERVICE CONTRACT");
+        }
+
         showTipoPraticaUI();
       }
 
@@ -370,13 +377,26 @@
           tipoPraticaDesc.textContent = "";
           return;
         }
+
         let text = "";
         switch (value) {
-          case "WARRANTY": text = "Claim di garanzia su copertura attiva (FULL LINE o DRIVE LINE)."; break;
-          case "FSA": text = "Claim relativo a FSA (Field Service Action) da applicare al veicolo."; break;
-          case "GOODWILL": text = "Richiesta di partecipazione goodwill fuori copertura contrattuale."; break;
-          case "PDI": text = "Claim per controlli/attività di Pre-Delivery Inspection (PDI)."; break;
+          case "WARRANTY":
+            text = "Claim di garanzia su copertura attiva (FULL LINE o DRIVE LINE).";
+            break;
+          case "FSA":
+            text = "Claim relativo a FSA (Field Service Action) da applicare al veicolo.";
+            break;
+          case "GOODWILL":
+            text = "Richiesta di partecipazione goodwill fuori copertura contrattuale.";
+            break;
+          case "PDI":
+            text = "Claim per controlli/attività di Pre-Delivery Inspection (PDI).";
+            break;
+          case "SERVICE CONTRACT":
+            text = "Claim di manutenzione su contratto attivo (Service Contract).";
+            break;
         }
+
         if (text) {
           tipoPraticaDesc.style.display = "block";
           tipoPraticaDesc.textContent = text;
@@ -729,10 +749,13 @@
             html += `<strong>Informazioni:</strong> nessun dato copertura/contratto associato al telaio.<br>Puoi comunque creare una claim card.`;
             showMessage('success', html);
             populateForNoDataAtAll();
+
           } else if (hasAnyActive) {
             html += `<strong>Informazioni:</strong> è presente almeno una copertura/contratto <strong>attivo</strong> alla data selezionata.<br>Seleziona la tipologia dal menu.`;
             showMessage('success', html);
-            populateForActiveCoverageOrContract();
+
+            // ✅ passiamo hasMaintActive: se true aggiunge la voce nel menu
+            populateForActiveCoverageOrContract(hasMaintActive);
 
             // priorità FULL > DRIVE > SERVICE
             if (hasFullActive) {
@@ -744,10 +767,12 @@
               coverageStartForClaim = driveStart;
               coverageEndForClaim = driveEnd;
             } else if (hasMaintActive) {
+              // Nota: questa è la "copertura" (info), non la tipologia claim card
               coverageTypeForClaim = "SERVICE CONTRACT";
               coverageStartForClaim = maintStart;
               coverageEndForClaim = maintEnd;
             }
+
           } else {
             html += `<strong>Informazioni:</strong> nessuna copertura/contratto <strong>attivo</strong> alla data selezionata.<br>Puoi creare una claim card.`;
             showMessage('success', html);
@@ -865,6 +890,7 @@
             year: year
           },
 
+          // ✅ QUI: la tipologia claim card scelta (incluso "SERVICE CONTRACT")
           type: tipoPratica,
           notes: null
         };
