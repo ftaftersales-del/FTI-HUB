@@ -1007,95 +1007,96 @@
         voithChk.addEventListener("change", renderTemplateItems);
 
         // ✅ FIX: crea/valida MaintenanceIndex (lock) in transaction PRIMA del set sul claim
-        saveBtn.addEventListener("click", async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
+saveBtn.addEventListener("click", async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
 
-          try {
-            const fam = familySel.value;
-            const key = typeSel.value;
-            if (!fam || !key) {
-              alert("Seleziona famiglia e tipo manutenzione.");
-              return;
-            }
+  saveBtn.disabled = true;
 
-            const vin = (claimCard && claimCard.vehicle && claimCard.vehicle.vin) ? String(claimCard.vehicle.vin) : null;
+  try {
+    const fam = familySel.value;
+    const key = typeSel.value;
+    if (!fam || !key) {
+      alert("Seleziona famiglia e tipo manutenzione.");
+      return;
+    }
 
-            // blocco doppioni nella stessa claimcard
-            const dupSameCard = await existsSameServiceContractInSameCard(ctx.claimCardId, ctx.claimCode, fam, key);
-            if (dupSameCard) {
-              alert("ATTENZIONE: esiste già una manutenzione identica (stessa famiglia + stesso tipo) in questa pratica.");
-              return;
-            }
+    const vin = (claimCard && claimCard.vehicle && claimCard.vehicle.vin) ? String(claimCard.vehicle.vin) : null;
 
-            // blocco doppioni sullo stesso VIN (globale)
-            const dupVin = await existsSameServiceContractOnVinGlobal(vin, fam, key, ctx.claimCardId, ctx.claimCode);
-            if (dupVin) {
-              alert("ATTENZIONE: questa manutenzione risulta già reclamata in passato su questo VIN.");
-              return;
-            }
+    // blocco doppioni nella stessa claimcard
+    const dupSameCard = await existsSameServiceContractInSameCard(ctx.claimCardId, ctx.claimCode, fam, key);
+    if (dupSameCard) {
+      alert("ATTENZIONE: esiste già una manutenzione identica (stessa famiglia + stesso tipo) in questa pratica.");
+      return;
+    }
 
-            const labelObj = menuOptions.find(x => x.key === key);
-            const labelIt = (labelObj && labelObj.label_it) ? labelObj.label_it : key;
+    // blocco doppioni sullo stesso VIN (globale)
+    const dupVin = await existsSameServiceContractOnVinGlobal(vin, fam, key, ctx.claimCardId, ctx.claimCode);
+    if (dupVin) {
+      alert("ATTENZIONE: questa manutenzione risulta già reclamata in passato su questo VIN.");
+      return;
+    }
 
-            const docId = fam + "_" + key;
-            const idxId = docId;
+    const labelObj = menuOptions.find(x => x.key === key);
+    const labelIt = (labelObj && labelObj.label_it) ? labelObj.label_it : key;
 
-            const scObj = {
-              family: fam,
-              key: key,
-              label_it: labelIt,
-              templateDocId: docId,
-              voith: !!voithChk.checked,
-              savedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
+    const docId = fam + "_" + key;   // es: 470_1M
+    const idxId = docId;
 
-            const payload = {
-              vin: vin || null,
-              claimType: "SERVICE CONTRACT",
-              serviceContract: scObj,
-              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            };
+    const scObj = {
+      family: fam,
+      key: key,
+      label_it: labelIt,
+      templateDocId: docId,
+      voith: !!voithChk.checked,
+      savedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-            saveBtn.disabled = true;
+    const payload = {
+      vin: vin || null,
+      claimType: "SERVICE CONTRACT",
+      serviceContract: scObj,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
 
-            const idxRef = db.collection("ClaimCards").doc(ctx.claimCardId).collection("MaintenanceIndex").doc(idxId);
+    const idxRef = db.collection("ClaimCards").doc(ctx.claimCardId).collection("MaintenanceIndex").doc(idxId);
+    const claimRef = db.collection("ClaimCards").doc(ctx.claimCardId).collection("Claims").doc(ctx.claimCode);
 
-            await db.runTransaction(async (tx) => {
-              const idxSnap = await tx.get(idxRef);
+    // 1) CREA / VALIDA LOCK MAINTENANCEINDEX (fuori da transaction)
+    const idxSnap = await idxRef.get();
+    if (!idxSnap.exists) {
+      // create (le rules vogliono che non esista già)
+      await idxRef.set({
+        claimCode: ctx.claimCode,
+        family: fam,
+        key: key,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdByUid: currentUser.uid || null,
+        createdByDealerId: currentUser.dealerId || null
+      });
+    } else {
+      const lockedBy = (idxSnap.data() || {}).claimCode || null;
+      if (lockedBy && lockedBy !== ctx.claimCode) {
+        throw new Error(`Questa manutenzione è già assegnata alla riparazione ${lockedBy} (lock MaintenanceIndex).`);
+      }
+      // se lockedBy è nullo o uguale, proseguiamo (se nullo = indice vecchio “rotto”, vedi nota sotto)
+    }
 
-              if (!idxSnap.exists) {
-                // crea lock
-                tx.set(idxRef, {
-                  claimCode: ctx.claimCode,
-                  family: fam,
-                  key: key,
-                  createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                  createdByUid: currentUser.uid || null,
-                  createdByDealerId: currentUser.dealerId || null
-                });
-              } else {
-                const lockedBy = (idxSnap.data() || {}).claimCode || null;
-                if (lockedBy && lockedBy !== ctx.claimCode) {
-                  throw new Error(`Questa manutenzione è già assegnata alla riparazione ${lockedBy} (lock MaintenanceIndex).`);
-                }
-              }
+    // 2) ORA salva il claim: le rules vedono exists() e claimCode ok
+    await claimRef.set(payload, { merge: true });
 
-              // ora il set sul claim rispetta le rules (lock presente e claimCode combacia)
-              tx.set(claimRef, payload, { merge: true });
-            });
+    // 3) storico (non deve bloccare il salvataggio)
+    await writeMaintenanceHistory(db, claimCard, scObj);
 
-            // storico (non blocca il salvataggio)
-            await writeMaintenanceHistory(db, claimCard, scObj);
+    banner("success", "Manutenzione salvata.");
+  } catch (e2) {
+    console.error("[SAVE MAINT] error:", e2);
+    banner("error", "Errore salvataggio manutenzione: " + (e2.message || e2));
+  } finally {
+    saveBtn.disabled = false;
+  }
+});
 
-            banner("success", "Manutenzione salvata.");
-          } catch (e2) {
-            console.error("[SAVE MAINT] error:", e2);
-            banner("error", "Errore salvataggio manutenzione: " + (e2.message || e2));
-          } finally {
-            saveBtn.disabled = false;
-          }
-        });
 
         // --- Allegati ---
         const attRefBase = claimRef.collection("Attachments");
