@@ -257,6 +257,101 @@
       }
       function normalizeType(t) { return (t || "").toString().trim().toUpperCase(); }
 
+      function parseDateLoose(v) {
+        // Accetta: "YYYY-MM-DD", Date, timestamp, Firestore Timestamp
+        try {
+          if (!v) return null;
+          if (typeof v === "string") {
+            const d = new Date(v);
+            return isNaN(d.getTime()) ? null : d;
+          }
+          if (v instanceof Date) return isNaN(v.getTime()) ? null : v;
+          if (typeof v === "number") {
+            const d = new Date(v);
+            return isNaN(d.getTime()) ? null : d;
+          }
+          if (v && typeof v.toDate === "function") {
+            const d = v.toDate();
+            return isNaN(d.getTime()) ? null : d;
+          }
+          const d = new Date(v);
+          return isNaN(d.getTime()) ? null : d;
+        } catch { return null; }
+      }
+
+      function diffMonths(a, b) {
+        // mesi interi tra date a -> b (b successiva)
+        if (!a || !b) return null;
+        const ay = a.getFullYear(), am = a.getMonth();
+        const by = b.getFullYear(), bm = b.getMonth();
+        return (by - ay) * 12 + (bm - am);
+      }
+
+      function mapOptionKeyToLabel(key) {
+        const k = normalizeType(key).replace(/\s+/g, "");
+        if (k === "BATTERIE") return "Batterie";
+        if (k === "FUSIBILI/LAMPADINE" || k === "FUSIBILI_LAMPADINE" || k === "FUSIBILILAMPADINE") return "Fusibili / Lampadine";
+        if (k === "PARTIDIUSURA" || k === "PARTIUSURA" || k === "PARTI_DI_USURA") return "Parti di Usura";
+        if (k === "PULIZIAFAP/DPF" || k === "PULIZIAFAPDPF" || k === "PULIZIA_FAP_DPF") return "Pulizia FAP/DPF";
+        if (k === "RABBOCCOOLIO" || k === "RABBOCCO_OLIO") return "Rabbocco Olio";
+        if (k === "TERGICRISTALLO" || k === "TERGICRISTALLI") return "Tergicristallo";
+        if (k === "UPTIMESERVICE" || k === "UPTIME_SERVICE") return "Uptime Service";
+        // fallback: mostrala come arriva
+        return key;
+      }
+
+      function normalizeOptionKey(key) {
+        // chiave stabile da salvare nel claim (senza spazi)
+        return (key || "").toString().trim();
+      }
+
+      function getServiceOptionsFromMaintenanceContract(sc) {
+        // sc.options può essere: stringa, JSON string, array, object
+        const out = [];
+
+        if (!sc) return out;
+        const raw = sc.options;
+
+        if (!raw) return out;
+
+        // stringa JSON?
+        if (typeof raw === "string") {
+          const s = raw.trim();
+          if (!s) return out;
+
+          // prova parse JSON
+          if ((s.startsWith("{") && s.endsWith("}")) || (s.startsWith("[") && s.endsWith("]"))) {
+            try {
+              const parsed = JSON.parse(s);
+              return getServiceOptionsFromMaintenanceContract({ options: parsed });
+            } catch (e) {
+              // se non è JSON valido, prosegui come CSV
+            }
+          }
+
+          // CSV / multiline
+          s.split(/[,;\n]/g).map(x => x.trim()).filter(Boolean).forEach(x => out.push(x));
+          return Array.from(new Set(out));
+        }
+
+        // array
+        if (Array.isArray(raw)) {
+          raw.map(x => (x == null ? "" : String(x).trim())).filter(Boolean).forEach(x => out.push(x));
+          return Array.from(new Set(out));
+        }
+
+        // oggetto con booleani
+        if (typeof raw === "object") {
+          Object.keys(raw).forEach(k => {
+            const v = raw[k];
+            if (v === true || v === "true" || v === 1 || v === "1" || v === "YES" || v === "Yes") out.push(k);
+          });
+          return Array.from(new Set(out));
+        }
+
+        return out;
+      }
+
       async function getUserInfo(db, auth) {
         const u = auth.currentUser;
         if (!u) return { uid:null, name:null, dealerId:null };
@@ -271,6 +366,31 @@
           }
         } catch(e) {}
         return { uid: u.uid, name, dealerId };
+      }
+
+      async function writeMaintenanceHistory(db, claimCard, sc) {
+        try {
+          const vin = claimCard && claimCard.vehicle && claimCard.vehicle.vin ? String(claimCard.vehicle.vin) : "";
+          if (!vin) return;
+
+          const orderDate = claimCard.orderDate || null;
+
+          await db.collection("MaintenanceHistory")
+            .doc(vin)
+            .collection("Records")
+            .add({
+              vin: vin,
+              orderDate: orderDate,
+              km: (claimCard.km != null) ? claimCard.km : null,
+              engineHours: (claimCard.engineHours != null) ? claimCard.engineHours : null,
+              label_it: sc && sc.label_it ? sc.label_it : "",
+              family: sc && sc.family ? sc.family : "",
+              voith: sc && (sc.voith === true) ? true : false
+            });
+        } catch (e) {
+          console.error("writeMaintenanceHistory error:", e);
+          // non blocchiamo il salvataggio manutenzione se fallisce lo storico
+        }
       }
 
       // ---------- Firebase ----------
@@ -348,9 +468,28 @@
       function allowedClaimTypesByCardType(cardType) {
         const ct = normalizeType(cardType);
 
-        // NOTA: qui mettiamo SOLO le tipologie davvero gestite
+        // ✅ MODIFICA MINIMA: per SERVICE CONTRACT invece di un solo tipo,
+        // proponiamo Manutenzione / Traino / Opzioni (dinamiche).
         if (ct === "SERVICE CONTRACT") {
-          return [{ value: "SERVICE CONTRACT", label: "Service Contract" }];
+          const out = [
+            { value: "__SC_MANUTENZIONE__", label: "Manutenzione" },
+            { value: "__SC_TRAINO__", label: "Traino" }
+          ];
+
+          // Opzioni dinamiche (dipendono dal contratto in claimCard.maintenanceContract.options)
+          const sc = claimCard && claimCard.maintenanceContract ? claimCard.maintenanceContract : {};
+          const opts = getServiceOptionsFromMaintenanceContract(sc);
+
+          // Mostra solo opzioni presenti
+          opts.forEach(k => {
+            const key = normalizeOptionKey(k);
+            if (!key) return;
+            out.push({ value: "__SC_OPTION__|" + key, label: "Opzioni - " + mapOptionKeyToLabel(key) });
+          });
+
+          // Se nessuna opzione presente, manteniamo comunque il sistema “minimo” senza rompere UI
+          // (quindi: solo Manutenzione/Traino)
+          return out;
         }
 
         if (ct === "WARRANTY") {
@@ -513,15 +652,56 @@
         return { repairIndex: next, repairCode: "R" + pad3(next) };
       }
 
+      function getFullLineStartDateForTowBlock() {
+        // Regola: l'immatricolazione corrisponde alla data di partenza Full Line.
+        // In questo file non abbiamo DBVIN: usiamo il dato più coerente già salvato in claimCard.
+        // 1) claimCard.coverage.startDate (di solito Full Line start)
+        // 2) claimCard.vehicle.registrationDate (fallback)
+        const cov = claimCard && claimCard.coverage ? claimCard.coverage : {};
+        const v = claimCard && claimCard.vehicle ? claimCard.vehicle : {};
+        return parseDateLoose(cov.startDate) || parseDateLoose(v.registrationDate) || null;
+      }
+
       async function createClaim() {
         const t = newClaimType.value;
         if (!t) { alert("Seleziona una tipologia claim."); return; }
 
-        // hard guard: se la claimCard è SERVICE CONTRACT, NON creare altro
         const cardType = normalizeType(claimCard && claimCard.type);
-        if (cardType === "SERVICE CONTRACT" && normalizeType(t) !== "SERVICE CONTRACT") {
-          alert("Questa pratica è Service Contract: puoi creare solo claim Service Contract.");
-          return;
+
+        // ✅ MODIFICA MINIMA: gestione speciale SERVICE CONTRACT
+        let realClaimType = t;
+        let serviceOptionPayload = null;
+
+        if (cardType === "SERVICE CONTRACT") {
+          if (t === "__SC_MANUTENZIONE__") {
+            realClaimType = "SERVICE CONTRACT";
+          } else if (t === "__SC_TRAINO__") {
+            // Check 24 mesi: se nei primi 24 mesi -> NON creare
+            const start = getFullLineStartDateForTowBlock();
+            const now = new Date();
+            const months = diffMonths(start, now);
+
+            if (!start) {
+              alert("Impossibile verificare i 24 mesi (manca data Full Line start).");
+              return;
+            }
+            if (months != null && months < 24) {
+              alert("Nei primi 24 mesi dall’immatricolazione (Full Line start) il traino va aperto come normale claim card WARRANTY. Creazione inibita.");
+              return;
+            }
+            realClaimType = "RSA";
+          } else if (t.startsWith("__SC_OPTION__|")) {
+            realClaimType = "SERVICE OPTION";
+            const key = t.split("|")[1] || "";
+            serviceOptionPayload = {
+              key: key,
+              label: mapOptionKeyToLabel(key)
+            };
+          } else {
+            // fallback (non dovrebbe succedere)
+            alert("Tipologia non valida per Service Contract.");
+            return;
+          }
         }
 
         const { repairIndex, repairCode } = await getNextRepairCode();
@@ -529,10 +709,10 @@
         const vin = (claimCard && claimCard.vehicle && claimCard.vehicle.vin) ? String(claimCard.vehicle.vin) : null;
 
         const docData = {
-          claimType: t,
+          claimType: realClaimType,
           repairIndex,
           status: "Aperto",
-          vin: vin || null,                 // <-- fondamentale per check globali
+          vin: vin || null,                 // <-- fondamentale per query globali
           claimCardType: claimCard.type || null,
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
           createdByUid: currentUser.uid || null,
@@ -540,8 +720,12 @@
           createdByDealerId: currentUser.dealerId || null
         };
 
+        if (serviceOptionPayload) {
+          docData.serviceOption = serviceOptionPayload;
+        }
+
         await db.collection("ClaimCards").doc(claimId).collection("Claims").doc(repairCode).set(docData);
-        banner("success", `Riparazione ${repairCode} (${t}) creata.`);
+        banner("success", `Riparazione ${repairCode} (${docData.claimType}) creata.`);
       }
 
       btnCreateClaim.addEventListener("click", () => {
@@ -877,21 +1061,27 @@
           const labelIt = labelObj ? labelObj.label_it : key;
 
           const docId = fam + "_" + key;
+          const scObj = {
+            family: fam,
+            key: key,
+            label_it: labelIt,
+            templateDocId: docId,
+            voith: !!voithChk.checked,
+            savedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+
           const payload = {
             vin: vin || null, // assicuriamolo sempre sul claim
-            serviceContract: {
-              family: fam,
-              key: key,
-              label_it: labelIt,
-              templateDocId: docId,
-              voith: !!voithChk.checked,
-              savedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }
+            serviceContract: scObj
           };
 
           try {
             saveBtn.disabled = true;
             await claimRef.update(payload);
+
+            // ✅ NUOVO: scrittura storico manutenzioni (non rompe nulla se fallisce)
+            await writeMaintenanceHistory(db, claimCard, scObj);
+
             banner("success", "Manutenzione salvata.");
           } catch (e) {
             console.error(e);
