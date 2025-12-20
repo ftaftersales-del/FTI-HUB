@@ -763,18 +763,26 @@
         return Array.from(families).sort();
       }
 
-      async function loadMaintenanceMenuOptions() {
-        const metaSnap = await db.collection("Maintenance").doc("_meta").get();
-        if (!metaSnap.exists) return [];
-        const d = metaSnap.data() || {};
-        const arr = Array.isArray(d.menuOptions) ? d.menuOptions : [];
-        return arr
-          .filter(x => x && x.key)
-          .map(x => ({
-            key: String(x.key),
-            label_it: (x.label && x.label.it) ? String(x.label.it) : String(x.key)
-          }));
-      }
+async function loadMaintenanceMenuOptions() {
+  const metaSnap = await db.collection("Maintenance").doc("_meta").get();
+  if (!metaSnap.exists) return [];
+
+  const d = metaSnap.data() || {};
+  const arr = Array.isArray(d.menuOptions) ? d.menuOptions : [];
+
+  return arr
+    .filter(x => x && x.key)
+    .map(x => {
+      // ✅ supporta sia {label_it:"..."} sia {label:{it:"..."}}
+      const label =
+        (x.label_it != null && String(x.label_it).trim() !== "")
+          ? String(x.label_it)
+          : (x.label && x.label.it != null ? String(x.label.it) : String(x.key));
+
+      return { key: String(x.key), label_it: label };
+    });
+}
+
 
       async function loadMaintenanceTemplate(docId) {
         const snap = await db.collection("Maintenance").doc(docId).get();
