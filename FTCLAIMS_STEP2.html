@@ -984,7 +984,7 @@
           menuOptions.forEach(m => {
             const o = document.createElement("option");
             o.value = m.key;
-            o.textContent = (m.label_it && String(m.label_it).trim() !== "") ? m.label_it : m.key; // ✅ fallback solido
+            o.textContent = (m.label_it && String(m.label_it).trim() !== "") ? m.label_it : m.key;
             typeSel.appendChild(o);
           });
 
@@ -1006,7 +1006,7 @@
         typeSel.addEventListener("change", refreshTemplate);
         voithChk.addEventListener("change", renderTemplateItems);
 
-        // ✅ FIX: TUTTO dentro try/catch e salvataggio robusto con set(merge)
+        // ✅ FIX: crea/valida MaintenanceIndex (lock) in transaction PRIMA del set sul claim
         saveBtn.addEventListener("click", async (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -1021,14 +1021,14 @@
 
             const vin = (claimCard && claimCard.vehicle && claimCard.vehicle.vin) ? String(claimCard.vehicle.vin) : null;
 
-            // ✅ blocco doppioni nella stessa claimcard
+            // blocco doppioni nella stessa claimcard
             const dupSameCard = await existsSameServiceContractInSameCard(ctx.claimCardId, ctx.claimCode, fam, key);
             if (dupSameCard) {
               alert("ATTENZIONE: esiste già una manutenzione identica (stessa famiglia + stesso tipo) in questa pratica.");
               return;
             }
 
-            // ✅ blocco doppioni sullo stesso VIN (globale)
+            // blocco doppioni sullo stesso VIN (globale)
             const dupVin = await existsSameServiceContractOnVinGlobal(vin, fam, key, ctx.claimCardId, ctx.claimCode);
             if (dupVin) {
               alert("ATTENZIONE: questa manutenzione risulta già reclamata in passato su questo VIN.");
@@ -1039,6 +1039,8 @@
             const labelIt = (labelObj && labelObj.label_it) ? labelObj.label_it : key;
 
             const docId = fam + "_" + key;
+            const idxId = docId;
+
             const scObj = {
               family: fam,
               key: key,
@@ -1050,17 +1052,40 @@
 
             const payload = {
               vin: vin || null,
-              claimType: "SERVICE CONTRACT", // (non cambia se già lo è, ma rende consistente)
+              claimType: "SERVICE CONTRACT",
               serviceContract: scObj,
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
 
             saveBtn.disabled = true;
 
-            // ✅ più robusto di update: crea/merge e non fallisce se campo mancante
-            await claimRef.set(payload, { merge: true });
+            const idxRef = db.collection("ClaimCards").doc(ctx.claimCardId).collection("MaintenanceIndex").doc(idxId);
 
-            // ✅ storico (non blocca il salvataggio)
+            await db.runTransaction(async (tx) => {
+              const idxSnap = await tx.get(idxRef);
+
+              if (!idxSnap.exists) {
+                // crea lock
+                tx.set(idxRef, {
+                  claimCode: ctx.claimCode,
+                  family: fam,
+                  key: key,
+                  createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                  createdByUid: currentUser.uid || null,
+                  createdByDealerId: currentUser.dealerId || null
+                });
+              } else {
+                const lockedBy = (idxSnap.data() || {}).claimCode || null;
+                if (lockedBy && lockedBy !== ctx.claimCode) {
+                  throw new Error(`Questa manutenzione è già assegnata alla riparazione ${lockedBy} (lock MaintenanceIndex).`);
+                }
+              }
+
+              // ora il set sul claim rispetta le rules (lock presente e claimCode combacia)
+              tx.set(claimRef, payload, { merge: true });
+            });
+
+            // storico (non blocca il salvataggio)
             await writeMaintenanceHistory(db, claimCard, scObj);
 
             banner("success", "Manutenzione salvata.");
