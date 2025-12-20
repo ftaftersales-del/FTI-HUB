@@ -238,6 +238,7 @@
 
   <script>
     (function () {
+
       // ---------- Helpers ----------
       function banner(type, msg) {
         const b = document.getElementById("banner");
@@ -247,6 +248,8 @@
       }
       function pad3(n) { return String(n).padStart(3, "0"); }
       function safeStr(v) { return (v == null) ? "" : String(v); }
+      function normalizeType(t) { return (t || "").toString().trim().toUpperCase(); }
+
       function fmtDateISO(iso) {
         if (!iso) return "";
         try {
@@ -256,7 +259,6 @@
           return d.toISOString().slice(0,10);
         } catch { return ""; }
       }
-      function normalizeType(t) { return (t || "").toString().trim().toUpperCase(); }
 
       function parseDateLoose(v) {
         try {
@@ -355,12 +357,69 @@
         return { uid: u.uid, name, dealerId };
       }
 
+      // ---------- Firebase (IMPORTANTE: db definito PRIMA di ogni funzione che lo usa) ----------
+      if (typeof firebase === "undefined") {
+        banner("error", "Errore: Firebase non caricato.");
+        return;
+      }
+      const auth = window.auth || firebase.auth();
+      const db = window.db || firebase.firestore();
+      const storage = firebase.storage();
+      window.auth = auth;
+      window.db = db;
+
+      // ---------- Utils date per storico ----------
+      function normalizeOrderDateForHistory(orderDateValue) {
+        if (!orderDateValue) return null;
+
+        // Firestore Timestamp
+        if (orderDateValue && typeof orderDateValue.toDate === "function") {
+          const d = orderDateValue.toDate();
+          if (isNaN(d.getTime())) return null;
+          return d.toISOString().slice(0,10);
+        }
+
+        // Date
+        if (orderDateValue instanceof Date) {
+          if (isNaN(orderDateValue.getTime())) return null;
+          return orderDateValue.toISOString().slice(0,10);
+        }
+
+        // String
+        if (typeof orderDateValue === "string") {
+          const s = orderDateValue.trim();
+          if (!s) return null;
+          // se già ISO "YYYY-MM-DD" la teniamo
+          if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+          const d = new Date(s);
+          if (isNaN(d.getTime())) return s; // fallback: lascio com'è
+          return d.toISOString().slice(0,10);
+        }
+
+        // Number
+        if (typeof orderDateValue === "number") {
+          const d = new Date(orderDateValue);
+          if (isNaN(d.getTime())) return null;
+          return d.toISOString().slice(0,10);
+        }
+
+        // fallback
+        try {
+          const d = new Date(orderDateValue);
+          if (isNaN(d.getTime())) return null;
+          return d.toISOString().slice(0,10);
+        } catch {
+          return null;
+        }
+      }
+
       /**
-       * ✅ FIX DEFINITIVO:
-       * - legge la ClaimCard fresh dal server (niente race su claimCard in memoria)
-       * - se manca orderDate o vin, SKIP (non rompe il salvataggio)
+       * ✅ Scrive una riga in MaintenanceHistory/{vin}/Records
+       * - legge la ClaimCard fresh dal server
+       * - se manca orderDate o vin, SKIP
+       * - salva anche key + riferimenti (claimCardId/claimCode)
        */
-      async function writeMaintenanceHistoryFresh(db, claimCardId, sc) {
+      async function writeMaintenanceHistoryFresh(db, claimCardId, sc, claimCode) {
         const ccSnap = await db.collection("ClaimCards").doc(claimCardId).get();
         if (!ccSnap.exists) {
           console.warn("MaintenanceHistory skip: ClaimCard non trovata", claimCardId);
@@ -374,22 +433,28 @@
           return;
         }
 
-        let orderDate = cc.orderDate ?? null;
-        if (typeof orderDate === "string" && orderDate.trim() === "") orderDate = null;
-
-        if (!orderDate) {
+        const orderDateIso = normalizeOrderDateForHistory(cc.orderDate ?? null);
+        if (!orderDateIso) {
           console.warn("MaintenanceHistory skip: orderDate mancante sulla ClaimCard");
           return;
         }
 
         const record = {
           vin: vin,
-          orderDate: orderDate,
+          orderDate: orderDateIso, // ✅ sempre stringa ISO YYYY-MM-DD
+
           km: (cc.km != null) ? cc.km : null,
           engineHours: (cc.engineHours != null) ? cc.engineHours : null,
+
           label_it: sc && sc.label_it ? String(sc.label_it) : "",
           family: sc && sc.family ? String(sc.family) : "",
+          key: sc && sc.key ? String(sc.key) : "",
           voith: sc && (sc.voith === true) ? true : false,
+
+          claimCardId: String(claimCardId),
+          claimCode: claimCode ? String(claimCode) : null,
+          openDealer: cc.openDealer || null,
+
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -399,16 +464,33 @@
           .add(record);
       }
 
-      // ---------- Firebase ----------
-      if (typeof firebase === "undefined") {
-        banner("error", "Errore: Firebase non caricato.");
-        return;
+      /**
+       * ✅ Check doppioni globali su VIN usando MaintenanceHistory (NO collectionGroup)
+       * - ordina per orderDate (campo SEMPRE presente) così non esplode
+       * - esclude lo stesso claim (claimCardId + claimCode)
+       */
+      async function existsSameServiceContractOnVinGlobal(db, vin, fam, key, claimCardId, claimCode) {
+        if (!vin) return false;
+
+        const ref = db.collection("MaintenanceHistory").doc(vin).collection("Records");
+        const snap = await ref.orderBy("orderDate", "desc").limit(300).get();
+        if (snap.empty) return false;
+
+        let foundOther = false;
+
+        snap.forEach(doc => {
+          const r = doc.data() || {};
+          const rFam = String(r.family || "");
+          const rKey = String(r.key || "");
+          if (rFam !== String(fam) || rKey !== String(key)) return;
+
+          const sameCard = String(r.claimCardId || "") === String(claimCardId || "");
+          const sameCode = String(r.claimCode || "") === String(claimCode || "");
+          if (!(sameCard && sameCode)) foundOther = true;
+        });
+
+        return foundOther;
       }
-      const auth = window.auth || firebase.auth();
-      const db = window.db || firebase.firestore();
-      const storage = firebase.storage();
-      window.auth = auth;
-      window.db = db;
 
       // ---------- DOM refs ----------
       const ui = {
@@ -480,7 +562,8 @@
             { value: "__SC_TRAINO__", label: "Traino" }
           ];
 
-          const sc = claimCard && claimCard.maintenanceContract ? claimCard.maintenanceContract : {};
+          // ✅ COERENZA: maintenanceContract ovunque
+          const sc = (claimCard && claimCard.maintenanceContract) ? claimCard.maintenanceContract : {};
           const opts = getServiceOptionsFromMaintenanceContract(sc);
 
           opts.forEach(k => {
@@ -575,6 +658,7 @@
         ui.covEnd.value = fmtDateISO(cov.endDate);
         ui.covNotes.value = cov.notes || "";
 
+        // ✅ COERENZA: maintenanceContract ovunque
         const sc = claimCard.maintenanceContract || {};
         ui.scStart.value = fmtDateISO(sc.startDate);
         ui.scEnd.value = fmtDateISO(sc.endDate);
@@ -685,10 +769,7 @@
           } else if (t.startsWith("__SC_OPTION__|")) {
             realClaimType = "SERVICE OPTION";
             const key = t.split("|")[1] || "";
-            serviceOptionPayload = {
-              key: key,
-              label: mapOptionKeyToLabel(key)
-            };
+            serviceOptionPayload = { key: key, label: mapOptionKeyToLabel(key) };
           } else {
             alert("Tipologia non valida per Service Contract.");
             return;
@@ -710,9 +791,7 @@
           createdByDealerId: currentUser.dealerId || null
         };
 
-        if (serviceOptionPayload) {
-          docData.serviceOption = serviceOptionPayload;
-        }
+        if (serviceOptionPayload) docData.serviceOption = serviceOptionPayload;
 
         await db.collection("ClaimCards").doc(claimId).collection("Claims").doc(repairCode).set(docData);
         banner("success", `Riparazione ${repairCode} (${docData.claimType}) creata.`);
@@ -804,30 +883,6 @@
         });
         return found;
       }
-
-      async function existsSameServiceContractOnVinGlobal(vin, fam, key, claimCardId, claimCode) {
-        if (!vin) return false;
-
-        const q = db.collectionGroup("Claims")
-          .where("claimType", "==", "SERVICE CONTRACT")
-          .where("vin", "==", vin)
-          .where("serviceContract.family", "==", fam)
-          .where("serviceContract.key", "==", key)
-          .limit(5);
-
-        const snap = await q.get();
-        if (snap.empty) return false;
-
-        let foundOther = false;
-        snap.forEach(doc => {
-          const path = doc.ref.path || "";
-          const isSame = path.includes("/ClaimCards/" + claimCardId + "/Claims/" + claimCode);
-          if (!isSame) foundOther = true;
-        });
-
-        return foundOther;
-      }
-
       function renderServiceContractDetails(container, claimDoc, ctx, isDistributor) {
         const prefix = "sc_" + ctx.claimCode + "_";
 
@@ -1039,17 +1094,26 @@
               return;
             }
 
-            const vin = (claimCard && claimCard.vehicle && claimCard.vehicle.vin) ? String(claimCard.vehicle.vin) : null;
+            const vin = (claimCard && claimCard.vehicle && claimCard.vehicle.vin)
+              ? String(claimCard.vehicle.vin)
+              : null;
 
-            // blocco doppioni nella stessa claimcard
+            // 1) blocco doppioni nella stessa claimcard
             const dupSameCard = await existsSameServiceContractInSameCard(ctx.claimCardId, ctx.claimCode, fam, key);
             if (dupSameCard) {
               alert("ATTENZIONE: esiste già una manutenzione identica (stessa famiglia + stesso tipo) in questa pratica.");
               return;
             }
 
-            // blocco doppioni sullo stesso VIN (globale)
-            const dupVin = await existsSameServiceContractOnVinGlobal(vin, fam, key, ctx.claimCardId, ctx.claimCode);
+            // 2) blocco doppioni sul VIN (globale) usando MaintenanceHistory (NON BLOCCANTE se fallisce)
+            let dupVin = false;
+            try {
+              dupVin = await existsSameServiceContractOnVinGlobal(db, vin, fam, key, ctx.claimCardId, ctx.claimCode);
+            } catch (err) {
+              console.warn("Check dup VIN fallito (non bloccante):", err?.code, err?.message || err);
+              banner("warn", "⚠ Impossibile verificare doppioni su VIN (controllo non bloccante).");
+            }
+
             if (dupVin) {
               alert("ATTENZIONE: questa manutenzione risulta già reclamata in passato su questo VIN.");
               return;
@@ -1077,14 +1141,14 @@
 
             saveBtn.disabled = true;
 
-            // 1) salva il claim (PRIMARIO)
+            // A) salva il claim (PRIMARIO)
             await claimRef.set(payload, { merge: true });
 
-            // 2) prova a scrivere lo storico (DERIVATO, non deve rompere)
+            // B) prova a scrivere lo storico (DERIVATO, non deve rompere)
             try {
-              await writeMaintenanceHistoryFresh(db, ctx.claimCardId, scObj);
+              await writeMaintenanceHistoryFresh(db, ctx.claimCardId, scObj, ctx.claimCode);
             } catch (eHist) {
-              console.warn("MaintenanceHistory non scritto (non bloccante):", eHist.code, eHist.message);
+              console.warn("MaintenanceHistory non scritto (non bloccante):", eHist?.code, eHist?.message || eHist);
               banner("warn", "Manutenzione salvata. ⚠ Storico VIN non aggiornato (non bloccante).");
               return;
             }
@@ -1100,6 +1164,7 @@
 
         // --- Allegati ---
         const attRefBase = claimRef.collection("Attachments");
+
         async function loadAttachments() {
           try {
             const snap = await attRefBase.orderBy("createdAt", "asc").get();
@@ -1117,6 +1182,7 @@
             const ul = document.createElement("ul");
             ul.style.listStyleType = "none";
             ul.style.paddingLeft = "0";
+
             items.forEach(it => {
               const li = document.createElement("li");
               li.style.marginBottom = "6px";
@@ -1132,6 +1198,7 @@
               del.type = "button";
               del.style.marginLeft = "8px";
               del.textContent = "Elimina";
+
               del.addEventListener("click", async () => {
                 if (!confirm("Vuoi eliminare l'allegato?")) return;
                 try {
@@ -1161,6 +1228,7 @@
         upBtn.addEventListener("click", async () => {
           const files = fileInp.files;
           if (!files || !files.length) { alert("Seleziona almeno un file."); return; }
+
           upBtn.disabled = true;
           try {
             const basePath = "ClaimCards/" + ctx.claimCardId + "/Claims/" + ctx.claimCode + "/Attachments/";
@@ -1168,8 +1236,10 @@
               const f = files[i];
               const path = basePath + Date.now() + "_" + i + "_" + f.name;
               const ref = storage.ref(path);
+
               await ref.put(f);
               const url = await ref.getDownloadURL();
+
               await attRefBase.add({
                 name: f.name,
                 path,
@@ -1194,6 +1264,7 @@
 
         // --- Note ---
         const notesRef = claimRef.collection("Notes");
+
         function renderNotes(snap) {
           if (snap.empty) {
             notesList.textContent = "Nessuna nota.";
@@ -1237,6 +1308,7 @@
         sendNote.addEventListener("click", async () => {
           const txt = (noteText.value || "").trim();
           if (!txt) return;
+
           sendNote.disabled = true;
           try {
             await notesRef.add({
