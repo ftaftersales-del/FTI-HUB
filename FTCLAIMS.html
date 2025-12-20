@@ -108,11 +108,8 @@
 
   <script>
     (function () {
-      console.log("FTCLAIMS – STEP1 con controlli + coperture + FSA + creazione ClaimCard");
-
       const userInfoDiv = document.getElementById('userInfo');
 
-      // --- Firebase guard ---
       if (typeof firebase === 'undefined') {
         userInfoDiv.textContent = "Errore: Firebase non è caricato (controlla gli script in <head>).";
         return;
@@ -128,7 +125,6 @@
       const FSA_COLLECTION    = "FTFSA";
       const CLAIMS_COLLECTION = "ClaimCards";
 
-      // FSA mapping
       const FSA_VIN_FIELD          = "Telaio";
       const FSA_APPLIED_FIELD_HINT = "campagnaEseguita";
       const FSA_CODE_FIELD_HINT    = "CodiceFSA";
@@ -347,19 +343,14 @@
         showTipoPraticaUI();
       }
 
-      // ✅ QUI: aggiungiamo SERVICE CONTRACT solo se hasMaintActive === true
+      // ✅ QUI: include SERVICE CONTRACT solo se attivo
       function populateForActiveCoverageOrContract(hasMaintActive) {
         tipoPraticaSelect.innerHTML = "";
         addPlaceholder();
-
         addOptionToSelect("WARRANTY", "WARRANTY");
+        if (hasMaintActive) addOptionToSelect("SERVICE CONTRACT", "SERVICE CONTRACT");
         addOptionToSelect("FSA", "FSA");
         addOptionToSelect("GOODWILL", "GOODWILL");
-
-        if (hasMaintActive) {
-          addOptionToSelect("SERVICE CONTRACT", "SERVICE CONTRACT");
-        }
-
         showTipoPraticaUI();
       }
 
@@ -377,26 +368,14 @@
           tipoPraticaDesc.textContent = "";
           return;
         }
-
         let text = "";
         switch (value) {
-          case "WARRANTY":
-            text = "Claim di garanzia su copertura attiva (FULL LINE o DRIVE LINE).";
-            break;
-          case "FSA":
-            text = "Claim relativo a FSA (Field Service Action) da applicare al veicolo.";
-            break;
-          case "GOODWILL":
-            text = "Richiesta di partecipazione goodwill fuori copertura contrattuale.";
-            break;
-          case "PDI":
-            text = "Claim per controlli/attività di Pre-Delivery Inspection (PDI).";
-            break;
-          case "SERVICE CONTRACT":
-            text = "Claim di manutenzione su contratto attivo (Service Contract).";
-            break;
+          case "WARRANTY": text = "Claim di garanzia su copertura attiva (FULL LINE o DRIVE LINE)."; break;
+          case "SERVICE CONTRACT": text = "Claim card di manutenzione (Service Contract) se il contratto è attivo alla data ordine."; break;
+          case "FSA": text = "Claim relativo a FSA (Field Service Action) da applicare al veicolo."; break;
+          case "GOODWILL": text = "Richiesta di partecipazione goodwill fuori copertura contrattuale."; break;
+          case "PDI": text = "Claim per controlli/attività di Pre-Delivery Inspection (PDI)."; break;
         }
-
         if (text) {
           tipoPraticaDesc.style.display = "block";
           tipoPraticaDesc.textContent = text;
@@ -526,7 +505,6 @@
         const dataOrdine = parseDateYMD(dataOrdineStr);
         if (!dataOrdine) return "Data ordine non valida.";
 
-        // 1) ordine duplicato (non Cancellata)
         const orderSnap = await db.collection(CLAIMS_COLLECTION)
           .where("orderNumber", "==", orderNumberStr)
           .get();
@@ -541,7 +519,6 @@
           return "Esiste già una pratica (non cancellata) con lo stesso numero di ordine di lavoro. Non è possibile procedere.";
         }
 
-        // 2) coerenza km/ore per VIN
         const claimsSnap = await db.collection(CLAIMS_COLLECTION)
           .where("vehicle.vin", "==", vin)
           .get();
@@ -626,7 +603,6 @@
           showMessage('success', "Controlli in corso (ClaimCards + coperture)…");
           btnCheckCoverage.disabled = true;
 
-          // 1) controlli su pratiche
           const errClaims = await checkClaimCardsCoerenza(vin, dataOrdineStr, kmVal, oreVal, orderNumberStr);
           if (errClaims) {
             showMessage('error', errClaims);
@@ -634,10 +610,8 @@
             return;
           }
 
-          // 2) FSA pendenti
           await loadPendingFsaForVin(vin);
 
-          // 3) VIN su DBVIN
           const snap = await db.collection(VIN_COLLECTION)
             .where("vin", "==", vin)
             .limit(1)
@@ -687,7 +661,6 @@
             customer: data.customer || data.cliente || null
           };
 
-          // Coperture da campi “storici”
           let fullStartFs  = getDateFromField(data.completa_data_start);
           let fullEndFs    = getDateFromField(data.completa_data_end);
           let driveStartFs = getDateFromField(data.catcinematica_data_start);
@@ -695,7 +668,6 @@
           let maintStartFs = getDateFromField(data.contratto_data_start);
           let maintEndFs   = getDateFromField(data.contratto_data_end);
 
-          // Coperture alternative WARRANTY_*
           const warrantyTypeRaw  = data.WARRANTY_TYPE || data.warranty_type;
           const warrantyStartRaw = data.WARRANTY_START_DATE || data.warranty_start_date;
           const warrantyEndRaw   = data.WARRANTY_END_DATE || data.warranty_end_date;
@@ -749,12 +721,9 @@
             html += `<strong>Informazioni:</strong> nessun dato copertura/contratto associato al telaio.<br>Puoi comunque creare una claim card.`;
             showMessage('success', html);
             populateForNoDataAtAll();
-
           } else if (hasAnyActive) {
             html += `<strong>Informazioni:</strong> è presente almeno una copertura/contratto <strong>attivo</strong> alla data selezionata.<br>Seleziona la tipologia dal menu.`;
             showMessage('success', html);
-
-            // ✅ passiamo hasMaintActive: se true aggiunge la voce nel menu
             populateForActiveCoverageOrContract(hasMaintActive);
 
             // priorità FULL > DRIVE > SERVICE
@@ -767,12 +736,10 @@
               coverageStartForClaim = driveStart;
               coverageEndForClaim = driveEnd;
             } else if (hasMaintActive) {
-              // Nota: questa è la "copertura" (info), non la tipologia claim card
               coverageTypeForClaim = "SERVICE CONTRACT";
               coverageStartForClaim = maintStart;
               coverageEndForClaim = maintEnd;
             }
-
           } else {
             html += `<strong>Informazioni:</strong> nessuna copertura/contratto <strong>attivo</strong> alla data selezionata.<br>Puoi creare una claim card.`;
             showMessage('success', html);
@@ -890,14 +857,11 @@
             year: year
           },
 
-          // ✅ QUI: la tipologia claim card scelta (incluso "SERVICE CONTRACT")
           type: tipoPratica,
           notes: null
         };
 
-        // ID documento = code (W2025xxxxxx)
         await db.collection(CLAIMS_COLLECTION).doc(code).set(docData);
-        console.log("ClaimCard creata:", code, docData);
         return code;
       }
 
