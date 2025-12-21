@@ -8,6 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <!-- ✅ AGGIUNTO per allegati circolari -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
 
@@ -37,7 +38,7 @@
       border: 1px solid #ccc;
       background: #fff;
       cursor: pointer;
-      font-weight: bold;
+      margin-left: 8px;
     }
     button:hover {
       background: #f0f0f0;
@@ -144,6 +145,7 @@
       background: #fff;
       cursor: pointer;
       font-weight: 600;
+      margin-left: 0;
     }
     #mandatory-circular-modal .btn.primary {
       background: #16a34a;
@@ -178,24 +180,32 @@
 
     <!-- AREA FTDMS (solo con permessi) -->
     <div id="admin-section" class="section" style="display:none;">
-      <h3>FTDMS</h3>
-      <p>Sezione di amministrazione (solo utenti autorizzati).</p>
-      <button onclick="goToDMS()">Apri FTDMS</button>
+      <h3>Area Amministratore (FTDMS)</h3>
+      <p>Da qui puoi accedere al pannello di gestione Dealer e Utenze (DMS).</p>
+      <button onclick="goToDMS()">Apri DMS</button>
     </div>
 
     <!-- AREA FTVIN -->
     <div id="ftvin-section" class="section">
-      <h3>Ricerca Telaio (FTVIN)</h3>
-      <p>Verifica informazioni veicolo e dati associati partendo dal VIN.</p>
+      <h3>Verifica Copertura VIN (FTVIN)</h3>
+      <p>Accedi alla ricerca dei contratti per telaio.</p>
       <button onclick="goToFTVIN()">Apri FTVIN</button>
     </div>
 
     <!-- AREA FTCLAIMS -->
     <div id="ftclaims-section" class="section">
-      <h3>Gestione Claim (FTCLAIMS)</h3>
-      <p>Apri e gestisci claim card, riparazioni, allegati e note.</p>
+      <h3>Reclamo di Garanzia (FTCLAIMS)</h3>
+      <p>Gestisci le nuove pratiche di garanzia e service contract.</p>
       <button onclick="goToFTCLAIMS()">Apri FTCLAIMS</button>
     </div>
+
+    <!-- 🔹 AREA FTMANAG (Gestione reclami esistenti) -->
+    <div id="ftmanag-section" class="section">
+      <h3>Gestione Reclami (FTMANAG)</h3>
+      <p>Accedi alla gestione e consultazione dei reclami esistenti.</p>
+      <button onclick="goToFTMANAG()">Apri Gestione Reclami</button>
+    </div>
+    <!-- 🔹 FINE AREA -->
 
     <!-- AREA FTCLAIMS HISTORY VIN -->
     <div id="ftclaims-history-section" class="section">
@@ -204,7 +214,8 @@
       <button onclick="goToFTCLAIMS_HISTORY_VIN()">Apri Storico Manutenzioni VIN</button>
     </div>
 
-    <div id="circulars-section" class="section">
+    <!-- ✅ AREA CIRCOLARI -->
+    <div id="ftcircas-section" class="section">
       <h3>Circolari (FTCIRCAS)</h3>
       <p>Consulta le circolari pubblicate dal distributore.</p>
       <button onclick="goToFTCIRCAS()">Apri Circolari</button>
@@ -219,8 +230,8 @@
 
     <!-- AREA FTHOTLINE -->
     <div id="fthotline-section" class="section">
-      <h3>Assistenza Tecnica (FTHOTLINE)</h3>
-      <p>Apri ticket di assistenza tra dealer e distributore.</p>
+      <h3>Hotline Tecnica (FTHOTLINE)</h3>
+      <p>Gestisci i ticket di assistenza tra dealer e distributore.</p>
       <button onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
     </div>
 
@@ -252,15 +263,73 @@
 
   <script>
     let currentAccount = null;
+
+    // ✅ AGGIUNTO: storage per allegati circolari
     const storage = firebase.storage();
 
-    // ===================== CIRCOLARI OBBLIGATORIE (POPUP BLOCCANTE) =====================
+    async function loadCurrentUserInfo(user) {
+      const userRef = db.collection('Users').doc(user.uid);
+      const userSnap = await userRef.get();
+      if (!userSnap.exists) throw new Error("Profilo utente non trovato.");
+
+      const userData = userSnap.data();
+      const roleId   = userData.role || "User";
+
+      let permissions = {};
+      try {
+        const roleRef = db.collection('roles').doc(roleId);
+        const roleSnap = await roleRef.get();
+        if (roleSnap.exists) {
+          const roleData = roleSnap.data() || {};
+          const effective = roleData.basePermissions || {};
+          const extra = roleData.extraPermissions || {};
+          permissions = Object.keys({ ...effective, ...extra }).reduce((acc, section) => {
+            acc[section] = {
+              ...(effective[section] || { read: false, write: false }),
+              ...extra[section]
+            };
+            return acc;
+          }, {});
+        }
+      } catch (e) {
+        console.warn("Errore lettura ruolo:", e);
+      }
+
+      currentAccount = { firebaseUser: user, userData, roleId, permissions };
+      return currentAccount;
+    }
+
+    function canRead(section) {
+      if (!currentAccount || !currentAccount.permissions) return false;
+      const p = currentAccount.permissions[section];
+      return !!(p && p.read);
+    }
+
+    function renderUserInfo() {
+      const { firebaseUser, userData, roleId } = currentAccount;
+
+      document.getElementById('user-info').innerHTML = `
+        <p><strong>Email:</strong> ${firebaseUser.email}</p>
+        <p><strong>Dealer ID:</strong> ${userData.dealerId || '-'}</p>
+        <p><strong>Ruolo:</strong> ${roleId}</p>
+        <p><strong>Stato:</strong> ${userData.Status || '-'}</p>
+      `;
+    }
+
+    function updateUI() {
+      // area admin (DMS)
+      document.getElementById('admin-section').style.display =
+        canRead('FTDMS') ? 'block' : 'none';
+    }
+
+    /* ===================== CIRCOLARI OBBLIGATORIE (POPUP BLOCCANTE) ===================== */
+
     function formatDateIT(ts) {
       try {
         const d = ts && ts.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
         if (!d) return "-";
         const dd = String(d.getDate()).padStart(2, "0");
-        const mm = String(d.getMonth()+1).padStart(2, "0");
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
         const yyyy = d.getFullYear();
         return `${dd}/${mm}/${yyyy}`;
       } catch (e) {
@@ -268,27 +337,35 @@
       }
     }
 
+    function hideMandatoryCircularModal() {
+      const ov = document.getElementById("mandatory-circular-overlay");
+      if (ov) ov.style.display = "none";
+    }
+
     async function enforceCircularAcknowledgements() {
       if (!currentAccount || !currentAccount.userData) return;
+
       const dealerId = currentAccount.userData.dealerId;
       if (!dealerId) return;
 
+      // carico tutte le circolari in ordine (la più vecchia non letta per prima)
       const snap = await db.collection("Circulars").orderBy("publishDate", "asc").get();
+
       for (const doc of snap.docs) {
         const circularId = doc.id;
+
+        // Se per quel dealer non esiste ack -> popup bloccante
         const ackRef = db.collection("Circulars").doc(circularId).collection("ack").doc(dealerId);
         const ackSnap = await ackRef.get();
+
         if (!ackSnap.exists) {
           await showMandatoryCircularModal(circularId, doc.data(), dealerId);
           return; // blocca finché non accetta
         }
       }
-      hideMandatoryCircularModal();
-    }
 
-    function hideMandatoryCircularModal() {
-      const ov = document.getElementById("mandatory-circular-overlay");
-      if (ov) ov.style.display = "none";
+      // tutte lette
+      hideMandatoryCircularModal();
     }
 
     async function showMandatoryCircularModal(circularId, data, dealerId) {
@@ -323,6 +400,7 @@
           for (const adoc of attSnap.docs) {
             const a = adoc.data();
             const li = document.createElement("li");
+
             const link = document.createElement("a");
             link.href = "#";
             link.textContent = a.name || "Allegato";
@@ -335,6 +413,7 @@
                 alert("Impossibile aprire l'allegato: " + e.message);
               }
             };
+
             li.appendChild(link);
             attList.appendChild(li);
           }
@@ -351,13 +430,14 @@
         btnAcc.disabled = true;
         btnOpen.disabled = true;
         status.textContent = "Registrazione presa visione...";
+
         try {
           const ackRef = db.collection("Circulars").doc(circularId).collection("ack").doc(dealerId);
           await ackRef.set({
             dealerId,
             acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
             acceptedByUid: currentAccount.firebaseUser.uid,
-            acceptedByName: currentAccount.userData.displayName || "",
+            acceptedByName: currentAccount.userData.displayName || ""
           }, { merge: true });
 
           status.textContent = "OK. Controllo altre circolari...";
@@ -375,60 +455,6 @@
       ov.style.display = "flex";
     }
 
-    async function loadCurrentUserInfo(user) {
-      const userRef = db.collection('Users').doc(user.uid);
-      const userSnap = await userRef.get();
-      if (!userSnap.exists) {
-        throw new Error("Nessun documento trovato in Users/" + user.uid);
-      }
-      const userData = userSnap.data();
-
-      // ruolo: usa role string o fallback
-      const roleId = (userData.role || "User");
-
-      // prova a leggere permessi da roles/<roleId> se esiste, altrimenti default
-      let permissions = {};
-      try {
-        const roleSnap = await db.collection("roles").doc(roleId).get();
-        if (roleSnap.exists) {
-          const r = roleSnap.data() || {};
-          const base = (r.basePermissions || {});
-          const extra = (r.extraPermissions || {});
-          // merge base+extra (se presente)
-          const merged = {};
-          const keys = new Set([...Object.keys(base), ...Object.keys(extra)]);
-          keys.forEach(k => merged[k] = { ...(base[k] || { read:false, write:false }), ...(extra[k] || {}) });
-          permissions = merged;
-        }
-      } catch(e) {
-        console.warn("Impossibile leggere doc ruolo:", e);
-      }
-
-      currentAccount = { firebaseUser: user, userData, roleId, permissions };
-      return currentAccount;
-    }
-
-    function canRead(section) {
-      if (!currentAccount || !currentAccount.permissions) return false;
-      const p = currentAccount.permissions[section];
-      return !!(p && p.read);
-    }
-
-    function renderUserInfo() {
-      const userData = currentAccount.userData;
-      document.getElementById('user-info').innerHTML = `
-        <p><strong>Email:</strong> ${currentAccount.firebaseUser.email}</p>
-        <p><strong>Dealer ID:</strong> ${userData.dealerId || '-'}</p>
-        <p><strong>Ruolo:</strong> ${currentAccount.roleId}</p>
-        <p><strong>Stato:</strong> ${userData.Status || '-'}</p>
-      `;
-    }
-
-    function updateUI() {
-      document.getElementById('admin-section').style.display =
-        canRead('FTDMS') ? 'block' : 'none';
-    }
-
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
         window.location.href = "index.html";
@@ -438,7 +464,10 @@
         await loadCurrentUserInfo(user);
         renderUserInfo();
         updateUI();
+
+        // ✅ BLOCCO UI finché non prende visione delle circolari
         await enforceCircularAcknowledgements();
+
       } catch (e) {
         console.error(e);
         document.getElementById('user-info').textContent =
@@ -451,9 +480,22 @@
     function goToFTVIN()  { window.location.href = "FTVIN.html"; }
     function goToFTCLAIMS() { window.location.href = "FTCLAIMS.html"; }
     function goToFTFSA()  { window.location.href = "FTFSA.html"; }
-    function goToFTCIRCAS() { window.location.href = "FTCIRCAS.html"; }
     function goToFTHOTLINE() { window.location.href = "FTHOTLINE.html"; }
+
+    // ✅ NUOVA PAGINA CIRCOLARI
+    function goToFTCIRCAS() { window.location.href = "FTCIRCAS.html"; }
+
     function goToFTCLAIMS_HISTORY_VIN() { window.location.href = "FTCLAIMS_HISTORY_VIN.html"; }
+
+    // ⭐ NAVIGAZIONE FTMANAG
+    function goToFTMANAG() {
+      window.location.href = "FTMANAG.html";
+    }
+
+    // ✅ NUOVA NAVIGAZIONE: STORICO MANUTENZIONI VIN
+    function goToFTCLAIMS_HISTORY_VIN() {
+      window.location.href = "FTCLAIMS_HISTORY_VIN.html";
+    }
   </script>
 
 </body>
