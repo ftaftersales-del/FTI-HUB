@@ -8,33 +8,46 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
 
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px;
       background: #f5f5f5;
     }
     .card {
-      background: #fff;
-      padding: 16px 24px 24px;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
       max-width: 900px;
-      margin: 0 auto 16px auto;
+      margin: 20px auto;
+      background: white;
+      padding: 18px 24px;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     .header {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      justify-content: space-between;
+      gap: 12px;
     }
     button {
       padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      background: #fff;
       cursor: pointer;
-      margin-left: 8px;
+      font-weight: bold;
+    }
+    button:hover {
+      background: #f0f0f0;
+    }
+    #user-info {
+      margin-top: 10px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
     }
     hr {
       margin: 16px -24px;
@@ -49,6 +62,102 @@
     }
     .section p {
       margin: 0 0 8px 0;
+    }
+
+    /* ===================== POPUP CIRCOLARI OBBLIGATORIE ===================== */
+    #mandatory-circular-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    #mandatory-circular-modal {
+      width: min(900px, 100%);
+      max-height: 92vh;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+    }
+    #mandatory-circular-modal .mhead {
+      padding: 14px 16px;
+      background: #0f172a;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    #mandatory-circular-modal .mhead h3 { margin: 0; font-size: 16px; }
+    #mandatory-circular-modal .mbody {
+      padding: 14px 16px;
+      overflow: auto;
+      flex: 1;
+      background: #fff;
+    }
+    #mandatory-circular-modal .meta {
+      font-size: 13px;
+      color: #334155;
+      margin-bottom: 10px;
+    }
+    #mandatory-circular-modal .text {
+      white-space: pre-wrap;
+      line-height: 1.35;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+    #mandatory-circular-modal .attachments {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #e2e8f0;
+    }
+    #mandatory-circular-modal .attachments h4 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+    }
+    #mandatory-circular-modal .attachments ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    #mandatory-circular-modal .mfoot {
+      padding: 12px 16px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      align-items: center;
+      background: #fff;
+    }
+    #mandatory-circular-modal .btn {
+      padding: 9px 12px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    #mandatory-circular-modal .btn.primary {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: #fff;
+    }
+    #mandatory-circular-modal .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    #mandatory-circular-status {
+      font-size: 12px;
+      color: #64748b;
+      margin-right: auto;
     }
   </style>
 </head>
@@ -69,38 +178,36 @@
 
     <!-- AREA FTDMS (solo con permessi) -->
     <div id="admin-section" class="section" style="display:none;">
-      <h3>Area Amministratore (FTDMS)</h3>
-      <p>Da qui puoi accedere al pannello di gestione Dealer e Utenze (DMS).</p>
-      <button onclick="goToDMS()">Apri DMS</button>
+      <h3>FTDMS</h3>
+      <p>Sezione di amministrazione (solo utenti autorizzati).</p>
+      <button onclick="goToDMS()">Apri FTDMS</button>
     </div>
 
     <!-- AREA FTVIN -->
     <div id="ftvin-section" class="section">
-      <h3>Verifica Copertura VIN (FTVIN)</h3>
-      <p>Accedi alla ricerca dei contratti per telaio.</p>
+      <h3>Ricerca Telaio (FTVIN)</h3>
+      <p>Verifica informazioni veicolo e dati associati partendo dal VIN.</p>
       <button onclick="goToFTVIN()">Apri FTVIN</button>
     </div>
 
     <!-- AREA FTCLAIMS -->
     <div id="ftclaims-section" class="section">
-      <h3>Reclamo di Garanzia (FTCLAIMS)</h3>
-      <p>Apri una nuova pratica di garanzia.</p>
-      <button onclick="goToFTCLAIMS()">Apri Reclamo di Garanzia</button>
+      <h3>Gestione Claim (FTCLAIMS)</h3>
+      <p>Apri e gestisci claim card, riparazioni, allegati e note.</p>
+      <button onclick="goToFTCLAIMS()">Apri FTCLAIMS</button>
     </div>
-
-    <!-- 🔹 AREA FTMANAG (Gestione reclami esistenti) -->
-    <div id="ftmanag-section" class="section">
-      <h3>Gestione Reclami (FTMANAG)</h3>
-      <p>Consulta, filtra e modifica le pratiche già create.</p>
-      <button onclick="goToFTMANAG()">Apri Gestione Reclami</button>
-    </div>
-    <!-- 🔹 FINE AREA -->
 
     <!-- AREA FTCLAIMS HISTORY VIN -->
     <div id="ftclaims-history-section" class="section">
       <h3>Storico Manutenzioni VIN (FTCLAIMS HISTORY)</h3>
       <p>Consulta lo storico delle manutenzioni reclamate (Service Contract) per un telaio.</p>
       <button onclick="goToFTCLAIMS_HISTORY_VIN()">Apri Storico Manutenzioni VIN</button>
+    </div>
+
+    <div id="circulars-section" class="section">
+      <h3>Circolari (FTCIRCAS)</h3>
+      <p>Consulta le circolari pubblicate dal distributore.</p>
+      <button onclick="goToFTCIRCAS()">Apri Circolari</button>
     </div>
 
     <!-- AREA FTFSA -->
@@ -112,44 +219,188 @@
 
     <!-- AREA FTHOTLINE -->
     <div id="fthotline-section" class="section">
-      <h3>Hotline Tecnica (FTHOTLINE)</h3>
-      <p>Gestisci i ticket di assistenza tra dealer e distributore.</p>
+      <h3>Assistenza Tecnica (FTHOTLINE)</h3>
+      <p>Apri ticket di assistenza tra dealer e distributore.</p>
       <button onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
     </div>
 
   </div>
 
+  <!-- ===================== POPUP CIRCOLARI OBBLIGATORIE ===================== -->
+  <div id="mandatory-circular-overlay">
+    <div id="mandatory-circular-modal">
+      <div class="mhead">
+        <h3 id="mandatory-circular-title">Circolare obbligatoria</h3>
+        <span style="font-size:12px; opacity:.9;">Presa visione richiesta</span>
+      </div>
+      <div class="mbody">
+        <div class="meta" id="mandatory-circular-meta"></div>
+        <div class="text" id="mandatory-circular-text"></div>
+
+        <div class="attachments" id="mandatory-circular-attachments" style="display:none;">
+          <h4>Allegati</h4>
+          <ul id="mandatory-circular-attachments-list"></ul>
+        </div>
+      </div>
+      <div class="mfoot">
+        <span id="mandatory-circular-status"></span>
+        <button class="btn" id="mandatory-circular-open" type="button">Apri in Circolari</button>
+        <button class="btn primary" id="mandatory-circular-accept" type="button">Ho letto e preso visione</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let currentAccount = null;
+    const storage = firebase.storage();
+
+    // ===================== CIRCOLARI OBBLIGATORIE (POPUP BLOCCANTE) =====================
+    function formatDateIT(ts) {
+      try {
+        const d = ts && ts.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+        if (!d) return "-";
+        const dd = String(d.getDate()).padStart(2, "0");
+        const mm = String(d.getMonth()+1).padStart(2, "0");
+        const yyyy = d.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+      } catch (e) {
+        return "-";
+      }
+    }
+
+    async function enforceCircularAcknowledgements() {
+      if (!currentAccount || !currentAccount.userData) return;
+      const dealerId = currentAccount.userData.dealerId;
+      if (!dealerId) return;
+
+      const snap = await db.collection("Circulars").orderBy("publishDate", "asc").get();
+      for (const doc of snap.docs) {
+        const circularId = doc.id;
+        const ackRef = db.collection("Circulars").doc(circularId).collection("ack").doc(dealerId);
+        const ackSnap = await ackRef.get();
+        if (!ackSnap.exists) {
+          await showMandatoryCircularModal(circularId, doc.data(), dealerId);
+          return; // blocca finché non accetta
+        }
+      }
+      hideMandatoryCircularModal();
+    }
+
+    function hideMandatoryCircularModal() {
+      const ov = document.getElementById("mandatory-circular-overlay");
+      if (ov) ov.style.display = "none";
+    }
+
+    async function showMandatoryCircularModal(circularId, data, dealerId) {
+      const ov = document.getElementById("mandatory-circular-overlay");
+      const titleEl = document.getElementById("mandatory-circular-title");
+      const metaEl  = document.getElementById("mandatory-circular-meta");
+      const textEl  = document.getElementById("mandatory-circular-text");
+      const attWrap = document.getElementById("mandatory-circular-attachments");
+      const attList = document.getElementById("mandatory-circular-attachments-list");
+      const btnOpen = document.getElementById("mandatory-circular-open");
+      const btnAcc  = document.getElementById("mandatory-circular-accept");
+      const status  = document.getElementById("mandatory-circular-status");
+
+      titleEl.textContent = `Circolare obbligatoria: ${data.number || circularId}`;
+      metaEl.textContent = `Data pubblicazione: ${formatDateIT(data.publishDate)}${data.folderName ? " • Cartella: " + data.folderName : ""}`;
+      textEl.textContent = data.text || "";
+
+      // reset allegati
+      attList.innerHTML = "";
+      attWrap.style.display = "none";
+      status.textContent = "Caricamento allegati...";
+      btnAcc.disabled = true;
+
+      btnOpen.onclick = () => {
+        window.location.href = `FTCIRCAS.html?circular=${encodeURIComponent(circularId)}`;
+      };
+
+      try {
+        const attSnap = await db.collection("Circulars").doc(circularId).collection("attachments").orderBy("uploadedAt", "asc").get();
+        if (!attSnap.empty) {
+          attWrap.style.display = "block";
+          for (const adoc of attSnap.docs) {
+            const a = adoc.data();
+            const li = document.createElement("li");
+            const link = document.createElement("a");
+            link.href = "#";
+            link.textContent = a.name || "Allegato";
+            link.onclick = async (ev) => {
+              ev.preventDefault();
+              try {
+                const url = await storage.ref(a.storagePath).getDownloadURL();
+                window.open(url, "_blank");
+              } catch (e) {
+                alert("Impossibile aprire l'allegato: " + e.message);
+              }
+            };
+            li.appendChild(link);
+            attList.appendChild(li);
+          }
+        }
+        status.textContent = "Devi confermare la presa visione per continuare.";
+        btnAcc.disabled = false;
+      } catch (e) {
+        console.error(e);
+        status.textContent = "Errore caricamento allegati. Puoi comunque confermare la presa visione.";
+        btnAcc.disabled = false;
+      }
+
+      btnAcc.onclick = async () => {
+        btnAcc.disabled = true;
+        btnOpen.disabled = true;
+        status.textContent = "Registrazione presa visione...";
+        try {
+          const ackRef = db.collection("Circulars").doc(circularId).collection("ack").doc(dealerId);
+          await ackRef.set({
+            dealerId,
+            acceptedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            acceptedByUid: currentAccount.firebaseUser.uid,
+            acceptedByName: currentAccount.userData.displayName || "",
+          }, { merge: true });
+
+          status.textContent = "OK. Controllo altre circolari...";
+          btnOpen.disabled = false;
+          await enforceCircularAcknowledgements();
+        } catch (e) {
+          console.error(e);
+          alert("Errore presa visione: " + e.message);
+          btnAcc.disabled = false;
+          btnOpen.disabled = false;
+          status.textContent = "Errore. Riprova.";
+        }
+      };
+
+      ov.style.display = "flex";
+    }
 
     async function loadCurrentUserInfo(user) {
       const userRef = db.collection('Users').doc(user.uid);
       const userSnap = await userRef.get();
-      if (!userSnap.exists) throw new Error("Profilo utente non trovato.");
-
+      if (!userSnap.exists) {
+        throw new Error("Nessun documento trovato in Users/" + user.uid);
+      }
       const userData = userSnap.data();
-      const roleId   = userData.role || "User";
 
+      // ruolo: usa role string o fallback
+      const roleId = (userData.role || "User");
+
+      // prova a leggere permessi da roles/<roleId> se esiste, altrimenti default
       let permissions = {};
       try {
-        const roleRef = db.collection('roles').doc(roleId);
-        const roleSnap = await roleRef.get();
+        const roleSnap = await db.collection("roles").doc(roleId).get();
         if (roleSnap.exists) {
-          const roleData = roleSnap.data() || {};
-          const basePerm = roleData.permission || {};
-          const extra    = userData.extraPermissions || {};
-
-          const effective = JSON.parse(JSON.stringify(basePerm));
-          Object.keys(extra).forEach(section => {
-            effective[section] = {
-              ...(effective[section] || { read: false, write: false }),
-              ...extra[section]
-            };
-          });
-
-          permissions = effective;
+          const r = roleSnap.data() || {};
+          const base = (r.basePermissions || {});
+          const extra = (r.extraPermissions || {});
+          // merge base+extra (se presente)
+          const merged = {};
+          const keys = new Set([...Object.keys(base), ...Object.keys(extra)]);
+          keys.forEach(k => merged[k] = { ...(base[k] || { read:false, write:false }), ...(extra[k] || {}) });
+          permissions = merged;
         }
-      } catch (e) {
+      } catch(e) {
         console.warn("Impossibile leggere doc ruolo:", e);
       }
 
@@ -158,25 +409,22 @@
     }
 
     function canRead(section) {
-      if (!currentAccount) return false;
-      if (currentAccount.permissions[section]?.read) return true;
-      if (currentAccount.roleId === 'Admin') return true;
-      return false;
+      if (!currentAccount || !currentAccount.permissions) return false;
+      const p = currentAccount.permissions[section];
+      return !!(p && p.read);
     }
 
     function renderUserInfo() {
-      const { firebaseUser, userData, roleId } = currentAccount;
+      const userData = currentAccount.userData;
       document.getElementById('user-info').innerHTML = `
-        <p><strong>Nome:</strong> ${userData.displayName || firebaseUser.email}</p>
-        <p><strong>Email:</strong> ${firebaseUser.email}</p>
+        <p><strong>Email:</strong> ${currentAccount.firebaseUser.email}</p>
         <p><strong>Dealer ID:</strong> ${userData.dealerId || '-'}</p>
-        <p><strong>Ruolo:</strong> ${roleId}</p>
+        <p><strong>Ruolo:</strong> ${currentAccount.roleId}</p>
         <p><strong>Stato:</strong> ${userData.Status || '-'}</p>
       `;
     }
 
     function updateUI() {
-      // area admin (DMS)
       document.getElementById('admin-section').style.display =
         canRead('FTDMS') ? 'block' : 'none';
     }
@@ -190,6 +438,7 @@
         await loadCurrentUserInfo(user);
         renderUserInfo();
         updateUI();
+        await enforceCircularAcknowledgements();
       } catch (e) {
         console.error(e);
         document.getElementById('user-info').textContent =
@@ -202,18 +451,9 @@
     function goToFTVIN()  { window.location.href = "FTVIN.html"; }
     function goToFTCLAIMS() { window.location.href = "FTCLAIMS.html"; }
     function goToFTFSA()  { window.location.href = "FTFSA.html"; }
+    function goToFTCIRCAS() { window.location.href = "FTCIRCAS.html"; }
     function goToFTHOTLINE() { window.location.href = "FTHOTLINE.html"; }
     function goToFTCLAIMS_HISTORY_VIN() { window.location.href = "FTCLAIMS_HISTORY_VIN.html"; }
-
-    // ⭐ NAVIGAZIONE FTMANAG
-    function goToFTMANAG() {
-      window.location.href = "FTMANAG.html";
-    }
-
-    // ✅ NUOVA NAVIGAZIONE: STORICO MANUTENZIONI VIN
-    function goToFTCLAIMS_HISTORY_VIN() {
-      window.location.href = "FTCLAIMS_HISTORY_VIN.html";
-    }
   </script>
 
 </body>
