@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>FTCIRCAS - Circolari</title>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <style>
+    body{
+      font-family: Arial, sans-serif;
+      background:#f5f5f5;
+      margin:0;
+      padding:0;
+    }
+    .wrap{
+      max-width:1200px;
+      margin:0 auto;
+      padding:18px;
+      box-sizing:border-box;
+    }
+    .card{
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 2px 10px rgba(0,0,0,.08);
+      padding:16px;
+    }
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+    .topbar h2{ margin:0; }
+    .btn{
+      padding:9px 12px;
+      border-radius:10px;
+      border:1px solid #cbd5e1;
+      background:#fff;
+      cursor:pointer;
+      font-weight:600;
+    }
+    .btn.primary{
+      background:#0ea5e9;
+      border-color:#0ea5e9;
+      color:#fff;
+    }
+    .btn.danger{
+      background:#ef4444;
+      border-color:#ef4444;
+      color:#fff;
+    }
+    .muted{ color:#64748b; font-size:13px; }
+    .grid{
+      display:grid;
+      grid-template-columns: 280px 1fr;
+      gap:14px;
+    }
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+    .panel{
+      background:#fff;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:12px;
+    }
+    .panel h3{ margin:0 0 10px 0; font-size:15px; }
+    .folders{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      max-height:55vh;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .folder{
+      border:1px solid #e2e8f0;
+      border-radius:10px;
+      padding:10px;
+      cursor:pointer;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+    }
+    .folder.active{
+      border-color:#0ea5e9;
+      background:#f0f9ff;
+    }
+    .badge{
+      background:#e2e8f0;
+      color:#0f172a;
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:flex-end;
+    }
+    label{ font-size:12px; color:#334155; display:block; margin-bottom:4px; }
+    input[type="text"], input[type="date"], select, textarea{
+      width:100%;
+      padding:9px 10px;
+      border:1px solid #cbd5e1;
+      border-radius:10px;
+      box-sizing:border-box;
+      font-family:inherit;
+      font-size:14px;
+      background:#fff;
+    }
+    textarea{ min-height:130px; resize:vertical; }
+    .col{ flex:1; min-width:200px; }
+    .col.small{ max-width:220px; }
+    hr{ border:none; border-top:1px solid #e2e8f0; margin:12px 0; }
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .circular{
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      padding:12px;
+      background:#fff;
+    }
+    .circular .head{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:flex-start;
+    }
+    .circular .head h4{ margin:0; }
+    .meta{
+      font-size:12px;
+      color:#475569;
+      margin-top:4px;
+    }
+    .text{
+      margin-top:10px;
+      white-space:pre-wrap;
+      background:#f8fafc;
+      border:1px solid #e2e8f0;
+      border-radius:10px;
+      padding:10px;
+      line-height:1.35;
+    }
+    .attachments{
+      margin-top:10px;
+      border-top:1px solid #e2e8f0;
+      padding-top:10px;
+    }
+    .attachments ul{
+      margin:6px 0 0 0;
+      padding-left:18px;
+    }
+    .attachments li{
+      margin:3px 0;
+    }
+    .actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top:10px;
+    }
+    .smallnote{ font-size:12px; color:#64748b; }
+    .hidden{ display:none; }
+    .toast{
+      padding:10px 12px;
+      background:#0f172a;
+      color:#fff;
+      border-radius:10px;
+      position:fixed;
+      bottom:16px;
+      right:16px;
+      max-width:min(520px, calc(100% - 32px));
+      box-shadow:0 12px 30px rgba(0,0,0,.25);
+      display:none;
+      z-index:9999;
+      font-size:13px;
+      line-height:1.35;
+      white-space:pre-wrap;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="topbar">
+        <div>
+          <h2>FTCIRCAS - Circolari</h2>
+          <div class="muted" id="userLine">Caricamento utente...</div>
+        </div>
+        <div class="row">
+          <button class="btn" onclick="goHome()">⬅ Torna alla Home</button>
+          <button class="btn" onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <div class="grid">
+        <!-- Sidebar cartelle -->
+        <div class="panel">
+          <h3>Cartelle</h3>
+          <div class="muted">Clicca per filtrare. “Tutte” mostra tutto.</div>
+          <div style="height:10px"></div>
+          <div class="folders" id="foldersList"></div>
+
+          <div id="folderCreateBox" class="hidden">
+            <hr>
+            <h3>Crea cartella</h3>
+            <label>Nome cartella</label>
+            <input id="newFolderName" type="text" placeholder="Es. Tecniche, Commerciali, Garanzia..." />
+            <div style="height:10px"></div>
+            <button class="btn primary" onclick="createFolder()">Crea cartella</button>
+          </div>
+        </div>
+
+        <!-- Main -->
+        <div class="panel">
+          <h3>Ricerca e filtri</h3>
+
+          <div class="row">
+            <div class="col">
+              <label>Ricerca (numero, testo, cartella)</label>
+              <input id="searchInput" type="text" placeholder="Es. FT-2025-001, parola nel testo..." oninput="applyFilters()" />
+            </div>
+            <div class="col small">
+              <label>Cartella</label>
+              <select id="folderFilter" onchange="applyFilters()"></select>
+            </div>
+            <div class="col small">
+              <label>Dal</label>
+              <input id="dateFrom" type="date" onchange="applyFilters()" />
+            </div>
+            <div class="col small">
+              <label>Al</label>
+              <input id="dateTo" type="date" onchange="applyFilters()" />
+            </div>
+          </div>
+
+          <div style="height:10px"></div>
+          <div class="muted" id="resultsInfo"></div>
+
+          <div id="circularCreateBox" class="hidden">
+            <hr>
+            <h3>Pubblica nuova circolare (solo Distributore)</h3>
+
+            <div class="row">
+              <div class="col small">
+                <label>Numero circolare</label>
+                <input id="cNumber" type="text" placeholder="FT-2025-001" />
+              </div>
+              <div class="col small">
+                <label>Data pubblicazione</label>
+                <input id="cPublishDate" type="date" />
+              </div>
+              <div class="col">
+                <label>Cartella</label>
+                <select id="cFolder"></select>
+              </div>
+            </div>
+
+            <div style="height:10px"></div>
+            <label>Testo circolare</label>
+            <textarea id="cText" placeholder="Scrivi qui il testo della circolare..."></textarea>
+
+            <div style="height:10px"></div>
+            <label>Allegati (PDF o ZIP, max 100MB ciascuno)</label>
+            <input id="cFiles" type="file" multiple accept=".pdf,.zip,application/pdf,application/zip,application/x-zip-compressed" />
+
+            <div class="actions">
+              <button class="btn primary" id="btnPublish" onclick="publishCircular()">Pubblica circolare</button>
+              <span class="smallnote" id="publishStatus"></span>
+            </div>
+          </div>
+
+          <hr>
+
+          <h3>Circolari</h3>
+          <div class="list" id="circularsList"></div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  const storage = firebase.storage();
+
+  let currentUser = null;
+  let currentUserData = null;
+
+  let folders = [];      // [{id, name}]
+  let circulars = [];    // [{id, ...data}]
+  let filtered = [];
+
+  let selectedFolderId = "ALL"; // per click sidebar
+
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.style.display = "block";
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(() => t.style.display = "none", 3500);
+  }
+
+  function goHome() { window.location.href = "FTHUBAS.html"; }
+  function logout() { auth.signOut().then(() => window.location.href = "index.html"); }
+
+  function isDistributor() {
+    return !!(currentUserData && currentUserData.isDistributorUser === true);
+  }
+
+  function formatDateIT(ts) {
+    try {
+      const d = ts && ts.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
+      if (!d) return "-";
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth()+1).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      return `${dd}/${mm}/${yyyy}`;
+    } catch(e) { return "-"; }
+  }
+
+  function parseDateInputToTimestamp(value) {
+    // value: yyyy-mm-dd
+    if (!value) return null;
+    const d = new Date(value + "T00:00:00");
+    return firebase.firestore.Timestamp.fromDate(d);
+  }
+
+  function normalizeText(s) {
+    return (s || "")
+      .toString()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
+  }
+
+  async function loadUser(user) {
+    const snap = await db.collection("Users").doc(user.uid).get();
+    if (!snap.exists) throw new Error("Profilo utente non trovato in /Users");
+    currentUserData = snap.data();
+    currentUser = user;
+
+    const dealerId = currentUserData.dealerId || "-";
+    const role = currentUserData.role || "-";
+    document.getElementById("userLine").textContent =
+      `Utente: ${currentUser.email} • DealerID: ${dealerId} • Ruolo: ${role}${isDistributor() ? " • Distributore" : ""}`;
+
+    // abilita box distributore
+    document.getElementById("folderCreateBox").classList.toggle("hidden", !isDistributor());
+    document.getElementById("circularCreateBox").classList.toggle("hidden", !isDistributor());
+  }
+
+  async function loadFolders() {
+    const snap = await db.collection("CircularFolders").orderBy("name", "asc").get();
+    folders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderFolders();
+    fillFolderSelects();
+  }
+
+  async function loadCirculars() {
+    const snap = await db.collection("Circulars").orderBy("publishDate", "desc").get();
+    circulars = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    applyFilters();
+  }
+
+  function fillFolderSelects() {
+    // filtro
+    const ff = document.getElementById("folderFilter");
+    ff.innerHTML = "";
+    const optAll = document.createElement("option");
+    optAll.value = "ALL";
+    optAll.textContent = "Tutte";
+    ff.appendChild(optAll);
+    for (const f of folders) {
+      const o = document.createElement("option");
+      o.value = f.id;
+      o.textContent = f.name || f.id;
+      ff.appendChild(o);
+    }
+    // publish form
+    const cf = document.getElementById("cFolder");
+    if (cf) {
+      cf.innerHTML = "";
+      const o0 = document.createElement("option");
+      o0.value = "";
+      o0.textContent = "Seleziona cartella...";
+      cf.appendChild(o0);
+      for (const f of folders) {
+        const o = document.createElement("option");
+        o.value = f.id;
+        o.textContent = f.name || f.id;
+        cf.appendChild(o);
+      }
+    }
+  }
+
+  function renderFolders() {
+    const root = document.getElementById("foldersList");
+    root.innerHTML = "";
+
+    const countByFolder = {};
+    for (const c of circulars) {
+      const fid = c.folderId || "NONE";
+      countByFolder[fid] = (countByFolder[fid] || 0) + 1;
+    }
+
+    const all = document.createElement("div");
+    all.className = "folder" + (selectedFolderId === "ALL" ? " active" : "");
+    all.onclick = () => { selectedFolderId = "ALL"; document.getElementById("folderFilter").value = "ALL"; applyFilters(); renderFolders(); };
+    all.innerHTML = `<div><strong>Tutte</strong></div><div class="badge">${circulars.length}</div>`;
+    root.appendChild(all);
+
+    for (const f of folders) {
+      const el = document.createElement("div");
+      el.className = "folder" + (selectedFolderId === f.id ? " active" : "");
+      const cnt = countByFolder[f.id] || 0;
+      el.onclick = () => {
+        selectedFolderId = f.id;
+        document.getElementById("folderFilter").value = f.id;
+        applyFilters();
+        renderFolders();
+      };
+      el.innerHTML = `<div><strong>${(f.name || f.id)}</strong></div><div class="badge">${cnt}</div>`;
+      root.appendChild(el);
+    }
+  }
+
+  function applyFilters() {
+    const q = normalizeText(document.getElementById("searchInput").value);
+    const folderSel = document.getElementById("folderFilter").value || "ALL";
+    const df = document.getElementById("dateFrom").value;
+    const dt = document.getElementById("dateTo").value;
+    const fromTs = df ? new Date(df + "T00:00:00").getTime() : null;
+    const toTs   = dt ? new Date(dt + "T23:59:59").getTime() : null;
+
+    filtered = circulars.filter(c => {
+      const folderOk = (folderSel === "ALL") ? true : (c.folderId === folderSel);
+      if (!folderOk) return false;
+
+      const pub = c.publishDate && c.publishDate.toDate ? c.publishDate.toDate().getTime() : null;
+      if (fromTs && pub && pub < fromTs) return false;
+      if (toTs && pub && pub > toTs) return false;
+
+      if (!q) return true;
+
+      const hay = normalizeText(
+        (c.number || "") + " " +
+        (c.folderName || "") + " " +
+        (c.text || "")
+      );
+      return hay.includes(q);
+    });
+
+    document.getElementById("resultsInfo").textContent =
+      `Risultati: ${filtered.length} / ${circulars.length}`;
+
+    renderCirculars();
+  }
+
+  async function renderCirculars() {
+    const root = document.getElementById("circularsList");
+    root.innerHTML = "";
+
+    // deep link circular=...
+    const url = new URL(window.location.href);
+    const targetId = url.searchParams.get("circular");
+
+    for (const c of filtered) {
+      const box = document.createElement("div");
+      box.className = "circular";
+      box.id = "circ_" + c.id;
+
+      const head = document.createElement("div");
+      head.className = "head";
+
+      const left = document.createElement("div");
+      left.innerHTML = `
+        <h4>${c.number || c.id}</h4>
+        <div class="meta">Pubblicazione: ${formatDateIT(c.publishDate)} • Cartella: ${c.folderName || "-"}</div>
+      `;
+
+      const right = document.createElement("div");
+      right.className = "actions";
+
+      const btnOpen = document.createElement("button");
+      btnOpen.className = "btn";
+      btnOpen.textContent = "Apri dettaglio";
+      btnOpen.onclick = () => {
+        document.getElementById("circ_" + c.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+      right.appendChild(btnOpen);
+
+      if (isDistributor()) {
+        const btnDel = document.createElement("button");
+        btnDel.className = "btn danger";
+        btnDel.textContent = "Elimina circolare";
+        btnDel.onclick = () => deleteCircular(c.id);
+        right.appendChild(btnDel);
+      }
+
+      head.appendChild(left);
+      head.appendChild(right);
+
+      const text = document.createElement("div");
+      text.className = "text";
+      text.textContent = c.text || "";
+
+      const att = document.createElement("div");
+      att.className = "attachments";
+      att.innerHTML = `<div><strong>Allegati</strong> <span class="smallnote">(clicca per scaricare)</span></div><ul id="att_${c.id}"><li class="smallnote">Caricamento...</li></ul>`;
+
+      box.appendChild(head);
+      box.appendChild(text);
+      box.appendChild(att);
+
+      root.appendChild(box);
+
+      loadAttachmentsInto(c.id);
+
+      if (targetId && targetId === c.id) {
+        setTimeout(() => {
+          document.getElementById("circ_" + c.id)?.scrollIntoView({ behavior:"smooth", block:"start" });
+        }, 250);
+      }
+    }
+
+    if (!filtered.length) {
+      root.innerHTML = `<div class="muted">Nessuna circolare trovata con i filtri attuali.</div>`;
+    }
+  }
+
+  async function loadAttachmentsInto(circularId) {
+    const ul = document.getElementById("att_" + circularId);
+    if (!ul) return;
+
+    ul.innerHTML = `<li class="smallnote">Caricamento...</li>`;
+    try {
+      const snap = await db.collection("Circulars").doc(circularId).collection("attachments").orderBy("uploadedAt", "asc").get();
+      if (snap.empty) {
+        ul.innerHTML = `<li class="smallnote">Nessun allegato.</li>`;
+        return;
+      }
+      ul.innerHTML = "";
+      for (const d of snap.docs) {
+        const a = d.data();
+        const li = document.createElement("li");
+
+        const link = document.createElement("a");
+        link.href = "#";
+        link.textContent = a.name || "Allegato";
+        link.onclick = async (ev) => {
+          ev.preventDefault();
+          try {
+            const url = await storage.ref(a.storagePath).getDownloadURL();
+            window.open(url, "_blank");
+          } catch (e) {
+            alert("Impossibile scaricare: " + e.message);
+          }
+        };
+
+        li.appendChild(link);
+
+        if (isDistributor()) {
+          const del = document.createElement("button");
+          del.className = "btn danger";
+          del.style.marginLeft = "10px";
+          del.style.padding = "6px 10px";
+          del.textContent = "Elimina";
+          del.onclick = () => deleteAttachment(circularId, d.id, a.storagePath);
+          li.appendChild(del);
+        }
+
+        ul.appendChild(li);
+      }
+    } catch (e) {
+      console.error(e);
+      ul.innerHTML = `<li class="smallnote">Errore caricamento allegati: ${e.message}</li>`;
+    }
+  }
+
+  async function createFolder() {
+    const name = (document.getElementById("newFolderName").value || "").trim();
+    if (name.length < 2) return alert("Nome cartella troppo corto.");
+    try {
+      await db.collection("CircularFolders").add({
+        name,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdByUid: currentUser.uid,
+        createdByName: currentUserData.displayName || ""
+      });
+      document.getElementById("newFolderName").value = "";
+      toast("Cartella creata.");
+      await loadFolders();
+    } catch (e) {
+      console.error(e);
+      alert("Errore creazione cartella: " + e.message);
+    }
+  }
+
+  function validateCircularNumber(num) {
+    // FT-2025-001
+    return /^FT-\d{4}-\d{3}$/.test(num);
+  }
+
+  async function publishCircular() {
+    const btn = document.getElementById("btnPublish");
+    const status = document.getElementById("publishStatus");
+
+    const number = (document.getElementById("cNumber").value || "").trim().toUpperCase();
+    const dateStr = document.getElementById("cPublishDate").value;
+    const folderId = document.getElementById("cFolder").value;
+    const text = (document.getElementById("cText").value || "").trim();
+    const files = document.getElementById("cFiles").files;
+
+    if (!validateCircularNumber(number)) return alert("Numero circolare non valido. Formato richiesto: FT-2025-001");
+    if (!dateStr) return alert("Seleziona la data di pubblicazione.");
+    if (!folderId) return alert("Seleziona una cartella.");
+    if (!text) return alert("Inserisci il testo della circolare.");
+
+    const publishDate = parseDateInputToTimestamp(dateStr);
+    const folder = folders.find(f => f.id === folderId);
+    const folderName = folder ? (folder.name || folder.id) : "";
+
+    // validazione allegati
+    for (const file of files) {
+      const okType = (file.type === "application/pdf" || file.type === "application/zip" || file.type === "application/x-zip-compressed");
+      const okExt = file.name.toLowerCase().endsWith(".pdf") || file.name.toLowerCase().endsWith(".zip");
+      if (!okType && !okExt) return alert("Sono ammessi solo PDF o ZIP.");
+      if (file.size >= 100 * 1024 * 1024) return alert("Un allegato supera i 100MB: " + file.name);
+    }
+
+    btn.disabled = true;
+    status.textContent = "Pubblicazione in corso...";
+
+    try {
+      const circularRef = db.collection("Circulars").doc(number);
+
+      const existing = await circularRef.get();
+      if (existing.exists) {
+        btn.disabled = false;
+        status.textContent = "";
+        return alert("Esiste già una circolare con questo numero (univoco).");
+      }
+
+      await circularRef.set({
+        number,
+        publishDate,
+        folderId,
+        folderName,
+        text,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        createdByUid: currentUser.uid,
+        createdByName: currentUserData.displayName || "",
+        requiresAck: true,
+      });
+
+      // upload allegati
+      if (files && files.length) {
+        status.textContent = `Caricamento allegati (0/${files.length})...`;
+        let i = 0;
+        for (const file of files) {
+          i += 1;
+          const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+          const path = `circulars/${number}/${Date.now()}_${safeName}`;
+          await storage.ref(path).put(file);
+          await circularRef.collection("attachments").add({
+            name: file.name,
+            storagePath: path,
+            size: file.size,
+            contentType: file.type || "",
+            uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            uploadedByUid: currentUser.uid,
+            uploadedByName: currentUserData.displayName || ""
+          });
+          status.textContent = `Caricamento allegati (${i}/${files.length})...`;
+        }
+      }
+
+      // reset form
+      document.getElementById("cNumber").value = "";
+      document.getElementById("cPublishDate").value = "";
+      document.getElementById("cFolder").value = "";
+      document.getElementById("cText").value = "";
+      document.getElementById("cFiles").value = "";
+
+      toast("Circolare pubblicata.");
+      status.textContent = "";
+      await loadCirculars();
+      renderFolders();
+
+    } catch (e) {
+      console.error(e);
+      alert("Errore pubblicazione: " + e.message);
+      status.textContent = "";
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteAttachment(circularId, attDocId, storagePath) {
+    if (!confirm("Eliminare questo allegato?")) return;
+    try {
+      if (storagePath) {
+        await storage.ref(storagePath).delete();
+      }
+      await db.collection("Circulars").doc(circularId).collection("attachments").doc(attDocId).delete();
+      toast("Allegato eliminato.");
+      loadAttachmentsInto(circularId);
+    } catch (e) {
+      console.error(e);
+      alert("Errore eliminazione allegato: " + e.message);
+    }
+  }
+
+  async function deleteCircular(circularId) {
+    if (!confirm(`Eliminare la circolare ${circularId}?\nVerranno eliminati anche gli allegati.`)) return;
+
+    try {
+      const cRef = db.collection("Circulars").doc(circularId);
+
+      // 1) elimina allegati (storage + firestore)
+      const attSnap = await cRef.collection("attachments").get();
+      for (const d of attSnap.docs) {
+        const a = d.data();
+        if (a.storagePath) {
+          try { await storage.ref(a.storagePath).delete(); } catch(e) { console.warn("delete storage fail", e); }
+        }
+        await d.ref.delete();
+      }
+
+      // 2) elimina ack (se presenti)
+      const ackSnap = await cRef.collection("ack").get();
+      for (const d of ackSnap.docs) {
+        await d.ref.delete();
+      }
+
+      // 3) elimina circolare
+      await cRef.delete();
+
+      toast("Circolare eliminata.");
+      await loadCirculars();
+      renderFolders();
+    } catch (e) {
+      console.error(e);
+      alert("Errore eliminazione circolare: " + e.message);
+    }
+  }
+
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      window.location.href = "index.html";
+      return;
+    }
+    try {
+      await loadUser(user);
+      await loadFolders();
+      await loadCirculars();
+      renderFolders();
+    } catch (e) {
+      console.error(e);
+      alert("Errore caricamento FTCIRCAS: " + e.message);
+    }
+  });
+
+</script>
+</body>
+</html>
