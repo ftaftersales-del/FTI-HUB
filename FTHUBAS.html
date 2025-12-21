@@ -8,7 +8,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
-  <!-- ✅ AGGIUNTO per allegati circolari -->
+  <!-- ✅ Serve per aprire gli allegati delle circolari dal popup -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
 
@@ -38,11 +38,10 @@
       border: 1px solid #ccc;
       background: #fff;
       cursor: pointer;
-      margin-left: 8px;
+      font-weight: bold;
     }
-    button:hover {
-      background: #f0f0f0;
-    }
+    button:hover { background: #f0f0f0; }
+
     #user-info {
       margin-top: 10px;
       background: #f8fafc;
@@ -50,22 +49,18 @@
       border-radius: 10px;
       padding: 10px 12px;
     }
+
     hr {
       margin: 16px -24px;
       border: none;
       border-top: 1px solid #eee;
     }
-    .section {
-      margin-top: 8px;
-    }
-    .section h3 {
-      margin: 0 0 4px 0;
-    }
-    .section p {
-      margin: 0 0 8px 0;
-    }
 
-    /* ===================== POPUP CIRCOLARI OBBLIGATORIE ===================== */
+    .section { margin-top: 10px; }
+    .section h3 { margin: 0 0 4px 0; }
+    .section p { margin: 0 0 8px 0; }
+
+    /* ===================== POPUP CIRCOLARI OBBLIGATORIE (BLOCCANTE) ===================== */
     #mandatory-circular-overlay {
       position: fixed;
       inset: 0;
@@ -137,6 +132,7 @@
       justify-content: flex-end;
       align-items: center;
       background: #fff;
+      flex-wrap: wrap;
     }
     #mandatory-circular-modal .btn {
       padding: 9px 12px;
@@ -145,7 +141,6 @@
       background: #fff;
       cursor: pointer;
       font-weight: 600;
-      margin-left: 0;
     }
     #mandatory-circular-modal .btn.primary {
       background: #16a34a;
@@ -165,7 +160,6 @@
 </head>
 
 <body>
-
   <div class="card">
     <div class="header">
       <h2>Benvenuto in FTI-HUB</h2>
@@ -178,63 +172,55 @@
 
     <hr>
 
-    <!-- AREA FTDMS (solo con permessi) -->
-    <div id="admin-section" class="section" style="display:none;">
-      <h3>Area Amministratore (FTDMS)</h3>
-      <p>Da qui puoi accedere al pannello di gestione Dealer e Utenze (DMS).</p>
-      <button onclick="goToDMS()">Apri DMS</button>
+    <!-- ===================== DMS (GESTIONE) ===================== -->
+    <div id="dms-section" class="section" style="display:none;">
+      <h3>DMS (Gestione)</h3>
+      <p>Gestione dealer / utenze / configurazioni (solo utenti autorizzati).</p>
+      <button onclick="goToDMS()">Apri FTDMS</button>
+      <button onclick="goToFTMANAG()">Apri FTMANAG</button>
     </div>
 
-    <!-- AREA FTVIN -->
+    <!-- ===================== FTVIN ===================== -->
     <div id="ftvin-section" class="section">
       <h3>Verifica Copertura VIN (FTVIN)</h3>
-      <p>Accedi alla ricerca dei contratti per telaio.</p>
+      <p>Ricerca coperture e informazioni legate al telaio.</p>
       <button onclick="goToFTVIN()">Apri FTVIN</button>
     </div>
 
-    <!-- AREA FTCLAIMS -->
+    <!-- ===================== FTCLAIMS ===================== -->
     <div id="ftclaims-section" class="section">
       <h3>Reclamo di Garanzia (FTCLAIMS)</h3>
-      <p>Gestisci le nuove pratiche di garanzia e service contract.</p>
+      <p>Gestisci nuove pratiche di garanzia e service contract.</p>
       <button onclick="goToFTCLAIMS()">Apri FTCLAIMS</button>
     </div>
 
-    <!-- 🔹 AREA FTMANAG (Gestione reclami esistenti) -->
-    <div id="ftmanag-section" class="section">
-      <h3>Gestione Reclami (FTMANAG)</h3>
-      <p>Accedi alla gestione e consultazione dei reclami esistenti.</p>
-      <button onclick="goToFTMANAG()">Apri Gestione Reclami</button>
-    </div>
-    <!-- 🔹 FINE AREA -->
-
-    <!-- AREA FTCLAIMS HISTORY VIN -->
+    <!-- ===================== STORICO VIN ===================== -->
     <div id="ftclaims-history-section" class="section">
       <h3>Storico Manutenzioni VIN (FTCLAIMS HISTORY)</h3>
-      <p>Consulta lo storico delle manutenzioni reclamate (Service Contract) per un telaio.</p>
+      <p>Consulta lo storico manutenzioni reclamate per un telaio.</p>
       <button onclick="goToFTCLAIMS_HISTORY_VIN()">Apri Storico Manutenzioni VIN</button>
     </div>
 
-    <!-- ✅ AREA CIRCOLARI -->
+    <!-- ===================== CIRCOLARI ===================== -->
     <div id="ftcircas-section" class="section">
       <h3>Circolari (FTCIRCAS)</h3>
       <p>Consulta le circolari pubblicate dal distributore.</p>
       <button onclick="goToFTCIRCAS()">Apri Circolari</button>
     </div>
 
-    <!-- AREA FTFSA -->
+    <!-- ===================== FTFSA ===================== -->
     <div id="ftfsa-section" class="section">
       <h3>Verifica FSA (FTFSA)</h3>
       <p>Verifica e gestisci le campagne FSA associate a un telaio.</p>
       <button onclick="goToFTFSA()">Verifica FSA</button>
     </div>
 
-    <!-- AREA FTHOTLINE -->
+    <!-- ===================== FTHOTLINE ===================== -->
     <div id="fthotline-section" class="section">
       <h3>Hotline Tecnica (FTHOTLINE)</h3>
-      <p>Gestisci i ticket di assistenza tra dealer e distributore.</p>
+      <p>Gestisci ticket di assistenza tra dealer e distributore.</p>
       <button onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
     </div>
-
   </div>
 
   <!-- ===================== POPUP CIRCOLARI OBBLIGATORIE ===================== -->
@@ -244,6 +230,7 @@
         <h3 id="mandatory-circular-title">Circolare obbligatoria</h3>
         <span style="font-size:12px; opacity:.9;">Presa visione richiesta</span>
       </div>
+
       <div class="mbody">
         <div class="meta" id="mandatory-circular-meta"></div>
         <div class="text" id="mandatory-circular-text"></div>
@@ -253,6 +240,7 @@
           <ul id="mandatory-circular-attachments-list"></ul>
         </div>
       </div>
+
       <div class="mfoot">
         <span id="mandatory-circular-status"></span>
         <button class="btn" id="mandatory-circular-open" type="button">Apri in Circolari</button>
@@ -262,37 +250,39 @@
   </div>
 
   <script>
+    // Firebase handles (da firebase-config.js)
+    // const auth = firebase.auth();
+    // const db   = firebase.firestore();
+
+    const storage = firebase.storage();
+
     let currentAccount = null;
 
-    // ✅ AGGIUNTO: storage per allegati circolari
-    const storage = firebase.storage();
+    /* ===================== UTENTE / PERMESSI ===================== */
 
     async function loadCurrentUserInfo(user) {
       const userRef = db.collection('Users').doc(user.uid);
       const userSnap = await userRef.get();
-      if (!userSnap.exists) throw new Error("Profilo utente non trovato.");
+      if (!userSnap.exists) throw new Error("Profilo utente non trovato in Users/" + user.uid);
 
       const userData = userSnap.data();
       const roleId   = userData.role || "User";
 
+      // Permessi: roles/<roleId> con basePermissions + extraPermissions (come nel tuo portale)
       let permissions = {};
       try {
-        const roleRef = db.collection('roles').doc(roleId);
-        const roleSnap = await roleRef.get();
+        const roleSnap = await db.collection("roles").doc(roleId).get();
         if (roleSnap.exists) {
-          const roleData = roleSnap.data() || {};
-          const effective = roleData.basePermissions || {};
-          const extra = roleData.extraPermissions || {};
-          permissions = Object.keys({ ...effective, ...extra }).reduce((acc, section) => {
-            acc[section] = {
-              ...(effective[section] || { read: false, write: false }),
-              ...extra[section]
-            };
-            return acc;
-          }, {});
+          const r = roleSnap.data() || {};
+          const base  = r.basePermissions || {};
+          const extra = r.extraPermissions || {};
+          const merged = {};
+          const keys = new Set([...Object.keys(base), ...Object.keys(extra)]);
+          keys.forEach(k => merged[k] = { ...(base[k] || {read:false,write:false}), ...(extra[k] || {}) });
+          permissions = merged;
         }
       } catch (e) {
-        console.warn("Errore lettura ruolo:", e);
+        console.warn("Impossibile leggere roles/" + roleId, e);
       }
 
       currentAccount = { firebaseUser: user, userData, roleId, permissions };
@@ -306,30 +296,30 @@
     }
 
     function renderUserInfo() {
-      const { firebaseUser, userData, roleId } = currentAccount;
-
+      const u = currentAccount.firebaseUser;
+      const d = currentAccount.userData;
       document.getElementById('user-info').innerHTML = `
-        <p><strong>Email:</strong> ${firebaseUser.email}</p>
-        <p><strong>Dealer ID:</strong> ${userData.dealerId || '-'}</p>
-        <p><strong>Ruolo:</strong> ${roleId}</p>
-        <p><strong>Stato:</strong> ${userData.Status || '-'}</p>
+        <p><strong>Email:</strong> ${u.email}</p>
+        <p><strong>Dealer ID:</strong> ${d.dealerId || '-'}</p>
+        <p><strong>Ruolo:</strong> ${currentAccount.roleId}</p>
+        <p><strong>Stato:</strong> ${d.Status || '-'}</p>
       `;
     }
 
     function updateUI() {
-      // area admin (DMS)
-      document.getElementById('admin-section').style.display =
-        canRead('FTDMS') ? 'block' : 'none';
+      // DMS: usa permesso FTDMS se esiste
+      const showDMS = canRead('FTDMS');
+      document.getElementById('dms-section').style.display = showDMS ? 'block' : 'none';
     }
 
-    /* ===================== CIRCOLARI OBBLIGATORIE (POPUP BLOCCANTE) ===================== */
+    /* ===================== CIRCOLARI OBBLIGATORIE (BLOCCO UI) ===================== */
 
     function formatDateIT(ts) {
       try {
         const d = ts && ts.toDate ? ts.toDate() : (ts ? new Date(ts) : null);
         if (!d) return "-";
         const dd = String(d.getDate()).padStart(2, "0");
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const mm = String(d.getMonth()+1).padStart(2, "0");
         const yyyy = d.getFullYear();
         return `${dd}/${mm}/${yyyy}`;
       } catch (e) {
@@ -348,23 +338,19 @@
       const dealerId = currentAccount.userData.dealerId;
       if (!dealerId) return;
 
-      // carico tutte le circolari in ordine (la più vecchia non letta per prima)
+      // carico tutte le circolari (prima le più vecchie non lette)
       const snap = await db.collection("Circulars").orderBy("publishDate", "asc").get();
 
       for (const doc of snap.docs) {
         const circularId = doc.id;
-
-        // Se per quel dealer non esiste ack -> popup bloccante
         const ackRef = db.collection("Circulars").doc(circularId).collection("ack").doc(dealerId);
         const ackSnap = await ackRef.get();
-
         if (!ackSnap.exists) {
           await showMandatoryCircularModal(circularId, doc.data(), dealerId);
-          return; // blocca finché non accetta
+          return; // blocca
         }
       }
 
-      // tutte lette
       hideMandatoryCircularModal();
     }
 
@@ -380,8 +366,8 @@
       const status  = document.getElementById("mandatory-circular-status");
 
       titleEl.textContent = `Circolare obbligatoria: ${data.number || circularId}`;
-      metaEl.textContent = `Data pubblicazione: ${formatDateIT(data.publishDate)}${data.folderName ? " • Cartella: " + data.folderName : ""}`;
-      textEl.textContent = data.text || "";
+      metaEl.textContent  = `Data pubblicazione: ${formatDateIT(data.publishDate)}${data.folderName ? " • Cartella: " + data.folderName : ""}`;
+      textEl.textContent  = data.text || "";
 
       // reset allegati
       attList.innerHTML = "";
@@ -400,7 +386,6 @@
           for (const adoc of attSnap.docs) {
             const a = adoc.data();
             const li = document.createElement("li");
-
             const link = document.createElement("a");
             link.href = "#";
             link.textContent = a.name || "Allegato";
@@ -413,7 +398,6 @@
                 alert("Impossibile aprire l'allegato: " + e.message);
               }
             };
-
             li.appendChild(link);
             attList.appendChild(li);
           }
@@ -455,17 +439,20 @@
       ov.style.display = "flex";
     }
 
+    /* ===================== AUTH BOOT ===================== */
+
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
         window.location.href = "index.html";
         return;
       }
+
       try {
         await loadCurrentUserInfo(user);
         renderUserInfo();
         updateUI();
 
-        // ✅ BLOCCO UI finché non prende visione delle circolari
+        // ✅ BLOCCO UI finché non prende visione di tutte le circolari
         await enforceCircularAcknowledgements();
 
       } catch (e) {
@@ -475,28 +462,21 @@
       }
     });
 
-    function logout()     { auth.signOut().then(() => window.location.href = "index.html"); }
-    function goToDMS()    { window.location.href = "FTDMS.html"; }
-    function goToFTVIN()  { window.location.href = "FTVIN.html"; }
+    /* ===================== NAVIGAZIONE ===================== */
+
+    function logout() { auth.signOut().then(() => window.location.href = "index.html"); }
+
+    function goToDMS() { window.location.href = "FTDMS.html"; }
+    function goToFTMANAG() { window.location.href = "FTMANAG.html"; }
+
+    function goToFTVIN() { window.location.href = "FTVIN.html"; }
     function goToFTCLAIMS() { window.location.href = "FTCLAIMS.html"; }
-    function goToFTFSA()  { window.location.href = "FTFSA.html"; }
-    function goToFTHOTLINE() { window.location.href = "FTHOTLINE.html"; }
-
-    // ✅ NUOVA PAGINA CIRCOLARI
-    function goToFTCIRCAS() { window.location.href = "FTCIRCAS.html"; }
-
     function goToFTCLAIMS_HISTORY_VIN() { window.location.href = "FTCLAIMS_HISTORY_VIN.html"; }
 
-    // ⭐ NAVIGAZIONE FTMANAG
-    function goToFTMANAG() {
-      window.location.href = "FTMANAG.html";
-    }
+    function goToFTFSA() { window.location.href = "FTFSA.html"; }
+    function goToFTHOTLINE() { window.location.href = "FTHOTLINE.html"; }
 
-    // ✅ NUOVA NAVIGAZIONE: STORICO MANUTENZIONI VIN
-    function goToFTCLAIMS_HISTORY_VIN() {
-      window.location.href = "FTCLAIMS_HISTORY_VIN.html";
-    }
+    function goToFTCIRCAS() { window.location.href = "FTCIRCAS.html"; }
   </script>
-
 </body>
 </html>
