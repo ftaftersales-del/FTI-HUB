@@ -1,0 +1,195 @@
+/* ===============================
+   FTSTYLE - CSS globale HUB
+   Obiettivo: stile coerente, semplice, riusabile
+   =============================== */
+
+:root{
+  --bg: #f5f5f5;
+  --card: #ffffff;
+  --text: #111;
+  --muted: #666;
+  --border: #e5e5e5;
+  --border2: #ededed;
+
+  --primary: #007bff;
+  --secondary: #6c757d;
+  --danger: #dc3545;
+  --light: #e9ecef;
+
+  --ok-bg: #e9fff0;
+  --ok-bd: #bfeccc;
+  --ok-tx: #0f6a2a;
+
+  --err-bg:#ffe9ea;
+  --err-bd:#f1b7bb;
+  --err-tx:#8a1f28;
+
+  --warn-bg:#fff6e6;
+  --warn-bd:#ffd18a;
+  --warn-tx:#8a5a00;
+
+  --radius: 8px;
+  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --font: Arial, sans-serif;
+}
+
+*{ box-sizing:border-box; }
+
+body{
+  font-family: var(--font);
+  margin:0;
+  padding:18px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+h1{
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+.subtitle{
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+/* layout base */
+.layout{
+  display:grid;
+  grid-template-columns: 360px 1fr;
+  gap:12px;
+  align-items:start;
+}
+@media (max-width: 980px){
+  .layout{ grid-template-columns: 1fr; }
+}
+
+/* card */
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 10px 12px;
+  box-shadow: none;
+}
+.card h3{
+  font-size: 13px;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+/* grid / row */
+.grid2{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:6px;
+}
+.row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+/* form */
+label{
+  display:block;
+  font-size:11px;
+  font-weight:bold;
+  margin-bottom:4px;
+  color:#333;
+}
+input, select, textarea{
+  width:100%;
+  padding:7px 8px;
+  border:1px solid #d6d6d6;
+  border-radius:4px;
+  font-size:13px;
+  background:#fff;
+}
+textarea{ resize:vertical; }
+
+/* buttons */
+.btn{
+  border:none;
+  border-radius:4px;
+  padding:7px 10px;
+  font-size:12px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.btn.primary{ background: var(--primary); color:#fff; }
+.btn.secondary{ background: var(--secondary); color:#fff; }
+.btn.danger{ background: var(--danger); color:#fff; }
+.btn.light{ background: var(--light); color:#111; }
+.btn:disabled{ opacity:.6; cursor:not-allowed; }
+
+/* helper */
+.small{ font-size:12px; color:#555; }
+.mutedBox{
+  background:#f8f8f8;
+  border:1px dashed #ddd;
+  padding:8px;
+  border-radius:6px;
+  font-size:12px;
+  color:#444;
+}
+.hr{ height:1px; background:#eee; margin:10px 0; }
+
+/* banner */
+.banner{
+  margin:10px 0 12px;
+  padding:10px 12px;
+  border-radius:6px;
+  font-size:13px;
+  display:none;
+}
+.banner.success{ background: var(--ok-bg); border:1px solid var(--ok-bd); color: var(--ok-tx); display:block; }
+.banner.error{ background: var(--err-bg); border:1px solid var(--err-bd); color: var(--err-tx); display:block; }
+.banner.warn{ background: var(--warn-bg); border:1px solid var(--warn-bd); color: var(--warn-tx); display:block; }
+
+/* claims list */
+.claimItem{
+  border:1px solid #e6e6e6;
+  border-radius: var(--radius);
+  margin-top:10px;
+  background:#fff;
+  overflow:hidden;
+}
+.claimItemTop{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:8px 10px;
+  background:#fafafa;
+  border-bottom:1px solid var(--border2);
+}
+.claimTitle{ font-size:13px; font-weight:bold; color:#222; }
+.claimMeta{ font-size:12px; color: var(--muted); }
+.claimBody{ padding:10px; display:block; }
+.rightTopBox{ padding:10px; }
+
+/* table */
+table{ width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; }
+th, td{ border-bottom:1px solid #eee; padding:6px 6px; text-align:left; vertical-align:top; }
+th{ background:#fafafa; font-weight:bold; }
+
+/* notes */
+.notesBox{
+  max-height:160px;
+  overflow-y:auto;
+  border:1px solid #ddd;
+  background:#fff;
+  padding:6px;
+  border-radius:6px;
+  font-size:12px;
+}
+.noteLine{ border-bottom:1px solid #f0f0f0; padding:6px 0; }
+.noteHeader{ font-weight:bold; margin-bottom:2px; font-size:12px; }
+
+/* link */
+a{ color: var(--primary); text-decoration:none; }
+a:hover{ text-decoration:underline; }
