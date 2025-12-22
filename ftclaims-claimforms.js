@@ -562,7 +562,14 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
   const saveBtn         = container.querySelector("#" + prefix + "saveBtn");
 
   let causaPartId   = gar.causaPart && gar.causaPart.id ? gar.causaPart.id : null;
-  let labourRateStd = typeof gar.labourRateStd === "number" ? gar.labourRateStd : null;
+
+  // ✅ MODIFICA MINIMA: se non c’è in garanzia, prova a prenderla dal profilo utente già caricato
+  let labourRateStd =
+    (typeof gar.labourRateStd === "number")
+      ? gar.labourRateStd
+      : (typeof window !== "undefined" && typeof window.LABOR_RATE_STD === "number")
+        ? window.LABOR_RATE_STD
+        : null;
 
   function toNumberOrNull(v) {
     if (v === null || v === undefined) return null;
@@ -848,6 +855,26 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
       labourRateLabel.textContent = "Tariffa oraria dealer: " + formatMoney(labourRateStd) + " €/h";
       return labourRateStd;
     }
+
+    // ✅ MODIFICA MINIMA: prova prima dall’utente già caricato (window.LABOR_RATE_STD / getCurrentUserInfo)
+    try {
+      if (typeof window !== "undefined" && typeof window.LABOR_RATE_STD === "number") {
+        labourRateStd = window.LABOR_RATE_STD;
+        labourRateLabel.textContent = "Tariffa oraria dealer: " + formatMoney(labourRateStd) + " €/h";
+        return labourRateStd;
+      }
+    } catch (e) {}
+
+    try {
+      const uinfo = await getCurrentUserInfo();
+      if (uinfo && typeof uinfo.laborRateStd === "number") {
+        labourRateStd = uinfo.laborRateStd;
+        labourRateLabel.textContent = "Tariffa oraria dealer: " + formatMoney(labourRateStd) + " €/h";
+        return labourRateStd;
+      }
+    } catch (e) {}
+
+    // fallback originale: da ClaimCard -> dealers/{id}
     try {
       const cardSnap = await db.collection("ClaimCards").doc(ctx.claimCardId).get();
       if (!cardSnap.exists) {
@@ -1495,18 +1522,23 @@ let _ftclaimsUserInfoPromise = null;
 
 function getCurrentUserInfo() {
   if (typeof firebase === "undefined" || !firebase.auth || !firebase.firestore) {
-    return Promise.resolve({ uid: null, name: null, dealerId: null });
+    return Promise.resolve({ uid: null, name: null, dealerId: null, laborRateStd: null });
   }
 
   if (!_ftclaimsUserInfoPromise) {
     _ftclaimsUserInfoPromise = (async function () {
       const auth = firebase.auth();
       const user = auth.currentUser;
-      if (!user) return { uid: null, name: null, dealerId: null };
+      if (!user) return { uid: null, name: null, dealerId: null, laborRateStd: null };
 
       const db = firebase.firestore();
       let name = user.displayName || null;
       let dealerId = null;
+
+      // ✅ NUOVO: valore LaborRateStd (globale)
+      let laborRateStd = (typeof window !== "undefined" && typeof window.LABOR_RATE_STD === "number")
+        ? window.LABOR_RATE_STD
+        : null;
 
       try {
         const snap = await db.collection("Users").doc(user.uid).get();
@@ -1519,7 +1551,31 @@ function getCurrentUserInfo() {
         console.warn("Errore lettura utente per allegati/note:", err);
       }
 
-      return { uid: user.uid, name: name, dealerId: dealerId };
+      // ✅ NUOVO: se non ho la tariffa, la leggo dal documento dealers/{dealerId}.LaborRateStd
+      if (laborRateStd == null && dealerId) {
+        try {
+          const dealerSnap = await db.collection("dealers").doc(dealerId).get();
+          if (dealerSnap.exists) {
+            const dd = dealerSnap.data() || {};
+            const raw = dd.LaborRateStd;
+            if (raw != null) {
+              const n = Number(String(raw).replace(",", ".").trim());
+              laborRateStd = isNaN(n) ? null : n;
+            }
+          }
+        } catch (e) {
+          console.warn("Errore lettura LaborRateStd dal dealer:", e);
+        }
+      }
+
+      // ✅ NUOVO: metto anche su window per uso immediato altrove
+      try {
+        if (typeof window !== "undefined" && typeof laborRateStd === "number") {
+          window.LABOR_RATE_STD = laborRateStd;
+        }
+      } catch (e) {}
+
+      return { uid: user.uid, name: name, dealerId: dealerId, laborRateStd: laborRateStd };
     })();
   }
 
