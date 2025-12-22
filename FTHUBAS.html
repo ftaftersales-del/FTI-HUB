@@ -13,12 +13,8 @@
   <script src="firebase-config.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: #f5f5f5;
-    }
+    /* ✅ NON tocchiamo più il body qui: lo gestisce ftstyle.css + wrapper layout */
+
     .card {
       background: #fff;
       padding: 16px 24px 24px;
@@ -103,89 +99,97 @@
 </head>
 
 <body class="ft-page">
+  <!-- ✅ WRAPPER GLOBALE: SIDEBAR + CONTENUTO -->
+  <div class="ft-layout">
+    <div class="ft-sidebar"></div>
 
-<div class="card">
-  <div class="header">
-    <h2>Benvenuto in FTI-HUB</h2>
-    <button onclick="logout()">Logout</button>
-  </div>
+    <div class="ft-content">
 
-  <div id="user-info">Caricamento dati utente...</div>
+      <div class="card">
+        <div class="header">
+          <h2>Benvenuto in FTI-HUB</h2>
+          <button onclick="logout()">Logout</button>
+        </div>
 
-  <hr>
+        <div id="user-info">Caricamento dati utente...</div>
 
-  <!-- FTDMS -->
-  <div id="admin-section" class="section" style="display:none;">
-    <h3>FTDMS</h3>
-    <p>Gestione Dealer e Utenze.</p>
-    <button onclick="goToDMS()">Apri FTDMS</button>
-  </div>
+        <hr>
 
-  <!-- FTCIRCAS -->
-  <div class="section">
-    <h3>FTCIRCAS</h3>
-    <p>Circolari ufficiali.</p>
-    <button onclick="goToFTCIRCAS()">Apri Circolari</button>
-  </div>
+        <!-- FTDMS -->
+        <div id="admin-section" class="section" style="display:none;">
+          <h3>FTDMS</h3>
+          <p>Gestione Dealer e Utenze.</p>
+          <button onclick="goToDMS()">Apri FTDMS</button>
+        </div>
 
-  <!-- FTVIN -->
-  <div class="section">
-    <h3>FTVIN</h3>
-    <p>Verifica copertura VIN.</p>
-    <button onclick="goToFTVIN()">Apri FTVIN</button>
-  </div>
+        <!-- FTCIRCAS -->
+        <div class="section">
+          <h3>FTCIRCAS</h3>
+          <p>Circolari ufficiali.</p>
+          <button onclick="goToFTCIRCAS()">Apri Circolari</button>
+        </div>
 
-  <!-- FTFSA -->
-  <div class="section">
-    <h3>FTFSA</h3>
-    <p>Campagne FSA.</p>
-    <button onclick="goToFTFSA()">Apri FTFSA</button>
-  </div>
+        <!-- FTVIN -->
+        <div class="section">
+          <h3>FTVIN</h3>
+          <p>Verifica copertura VIN.</p>
+          <button onclick="goToFTVIN()">Apri FTVIN</button>
+        </div>
 
-  <!-- FTCLAIMS HISTORY -->
-  <div class="section">
-    <h3>FTCLAIMS HISTORY VIN</h3>
-    <p>Storico manutenzioni per telaio.</p>
-    <button onclick="goToFTCLAIMS_HISTORY_VIN()">Apri Storico VIN</button>
-  </div>
+        <!-- FTFSA -->
+        <div class="section">
+          <h3>FTFSA</h3>
+          <p>Campagne FSA.</p>
+          <button onclick="goToFTFSA()">Apri FTFSA</button>
+        </div>
 
-  <!-- FTCLAIMS -->
-  <div class="section">
-    <h3>FTCLAIMS</h3>
-    <p>Nuove pratiche di garanzia.</p>
-    <button onclick="goToFTCLAIMS()">Apri FTCLAIMS</button>
-  </div>
+        <!-- FTCLAIMS HISTORY -->
+        <div class="section">
+          <h3>FTCLAIMS HISTORY VIN</h3>
+          <p>Storico manutenzioni per telaio.</p>
+          <button onclick="goToFTCLAIMS_HISTORY_VIN()">Apri Storico VIN</button>
+        </div>
 
-  <!-- FTMANAG -->
-  <div class="section">
-    <h3>FTMANAG</h3>
-    <p>Gestione pratiche esistenti.</p>
-    <button onclick="goToFTMANAG()">Apri FTMANAG</button>
-  </div>
+        <!-- FTCLAIMS -->
+        <div class="section">
+          <h3>FTCLAIMS</h3>
+          <p>Nuove pratiche di garanzia.</p>
+          <button onclick="goToFTCLAIMS()">Apri FTCLAIMS</button>
+        </div>
 
-  <!-- FTHOTLINE -->
-  <div class="section">
-    <h3>FTHOTLINE</h3>
-    <p>Hotline tecnica.</p>
-    <button onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
-  </div>
+        <!-- FTMANAG -->
+        <div class="section">
+          <h3>FTMANAG</h3>
+          <p>Gestione pratiche esistenti.</p>
+          <button onclick="goToFTMANAG()">Apri FTMANAG</button>
+        </div>
 
-</div>
+        <!-- FTHOTLINE -->
+        <div class="section">
+          <h3>FTHOTLINE</h3>
+          <p>Hotline tecnica.</p>
+          <button onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
+        </div>
 
-<!-- POPUP CIRCOLARI -->
-<div id="circular-overlay">
-  <div id="circular-modal">
-    <header id="circular-title">Circolare obbligatoria</header>
-    <div class="body">
-      <div id="circular-meta"></div>
-      <div id="circular-text"></div>
-    </div>
-    <div class="footer">
-      <span id="circular-status"></span>
-      <button onclick="acceptCircular()">Ho letto e preso visione</button>
-    </div>
-  </div>
-</div>
+      </div>
+
+      <!-- POPUP CIRCOLARI -->
+      <div id="circular-overlay">
+        <div id="circular-modal">
+          <header id="circular-title">Circolare obbligatoria</header>
+          <div class="body">
+            <div id="circular-meta"></div>
+            <div id="circular-text"></div>
+          </div>
+          <div class="footer">
+            <span id="circular-status"></span>
+            <button onclick="acceptCircular()">Ho letto e preso visione</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /ft-content -->
+  </div><!-- /ft-layout -->
 
 <script>
   let currentAccount = null;
