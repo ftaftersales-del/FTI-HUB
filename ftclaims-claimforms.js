@@ -1768,7 +1768,7 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
         <label for="${genPrefix}sinistro">Sinistro</label>
         <input type="text" id="${genPrefix}sinistro">
         <div class="small-text">
-          Campo modificabile solo dal distributore (dealer FT001).
+          Campo modificabile solo dal distributore (FT001 oppure utenti con flag isDistributorUser).
         </div>
       </div>
 
