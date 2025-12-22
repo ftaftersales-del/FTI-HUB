@@ -1,6 +1,6 @@
 /* ===============================
-   FTSTYLE - CSS globale HUB
-   Obiettivo: stile coerente, semplice, riusabile
+   FTSTYLE - CSS globale FTI-HUB
+   Obiettivo: stile coerente + sidebar elegante (no index)
    =============================== */
 
 :root{
@@ -35,14 +35,18 @@
 
 *{ box-sizing:border-box; }
 
+html, body{ height:100%; }
+
 body{
   font-family: var(--font);
   margin:0;
-  padding:18px;
   background: var(--bg);
   color: var(--text);
 }
 
+/* ===============================
+   Tipografia base
+   =============================== */
 h1{
   font-size: 18px;
   margin: 0 0 4px;
@@ -53,7 +57,100 @@ h1{
   margin-bottom: 10px;
 }
 
-/* layout base */
+/* link */
+a{ color: var(--primary); text-decoration:none; }
+a:hover{ text-decoration:underline; }
+
+/* ===============================
+   LAYOUT con SIDEBAR (elegante)
+   Usa:
+   <div class="ft-layout">
+     <div class="ft-sidebar"></div>
+     <div class="ft-content">...</div>
+   </div>
+   =============================== */
+.ft-layout{
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 20% 1fr;
+  background: var(--bg);
+}
+
+/* colonna sinistra: immagine + overlay */
+.ft-sidebar{
+  position: relative;
+  min-height: 100vh;
+  background: #0b1220;
+  overflow: hidden;
+}
+
+/* immagine */
+.ft-sidebar::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("assets/thunderstruck.png") center/cover no-repeat;
+  filter: saturate(0.8) contrast(0.95) brightness(0.55);
+  transform: scale(1.03);
+}
+
+/* overlay “premium” */
+.ft-sidebar::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg,
+      rgba(11,18,32,0.88) 0%,
+      rgba(11,18,32,0.55) 55%,
+      rgba(11,18,32,0.88) 100%
+    ),
+    radial-gradient(60% 40% at 50% 45%,
+      rgba(255,140,0,0.10) 0%,
+      rgba(0,0,0,0) 60%
+    );
+}
+
+/* contenuto */
+.ft-content{
+  min-height: 100vh;
+  padding: 22px;
+}
+
+/* se vuoi un header “sticky” in futuro */
+.ft-topbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom: 12px;
+}
+
+/* mobile: sidebar sparisce */
+@media (max-width: 980px){
+  .ft-layout{ grid-template-columns: 1fr; }
+  .ft-sidebar{ display:none; }
+  .ft-content{ padding: 18px; }
+}
+
+/* ===============================
+   Componenti base (card / form / buttons)
+   =============================== */
+.card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 10px 12px;
+  box-shadow: var(--shadow);
+}
+
+.card h3{
+  font-size: 13px;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+/* layout base interno (tipo FTCLAIMS_STEP2) */
 .layout{
   display:grid;
   grid-template-columns: 360px 1fr;
@@ -62,20 +159,6 @@ h1{
 }
 @media (max-width: 980px){
   .layout{ grid-template-columns: 1fr; }
-}
-
-/* card */
-.card{
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 10px 10px 12px;
-  box-shadow: none;
-}
-.card h3{
-  font-size: 13px;
-  margin: 0 0 8px;
-  color: var(--text);
 }
 
 /* grid / row */
@@ -90,6 +173,18 @@ h1{
   flex-wrap:wrap;
   align-items:center;
 }
+
+/* helper */
+.small{ font-size:12px; color:#555; }
+.mutedBox{
+  background:#f8f8f8;
+  border:1px dashed #ddd;
+  padding:8px;
+  border-radius:6px;
+  font-size:12px;
+  color:#444;
+}
+.hr{ height:1px; background:#eee; margin:10px 0; }
 
 /* form */
 label{
@@ -126,19 +221,9 @@ textarea{ resize:vertical; }
 .btn.light{ background: var(--light); color:#111; }
 .btn:disabled{ opacity:.6; cursor:not-allowed; }
 
-/* helper */
-.small{ font-size:12px; color:#555; }
-.mutedBox{
-  background:#f8f8f8;
-  border:1px dashed #ddd;
-  padding:8px;
-  border-radius:6px;
-  font-size:12px;
-  color:#444;
-}
-.hr{ height:1px; background:#eee; margin:10px 0; }
-
-/* banner */
+/* ===============================
+   Banner
+   =============================== */
 .banner{
   margin:10px 0 12px;
   padding:10px 12px;
@@ -150,7 +235,16 @@ textarea{ resize:vertical; }
 .banner.error{ background: var(--err-bg); border:1px solid var(--err-bd); color: var(--err-tx); display:block; }
 .banner.warn{ background: var(--warn-bg); border:1px solid var(--warn-bd); color: var(--warn-tx); display:block; }
 
-/* claims list */
+/* ===============================
+   Tabelle
+   =============================== */
+table{ width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; }
+th, td{ border-bottom:1px solid #eee; padding:6px 6px; text-align:left; vertical-align:top; }
+th{ background:#fafafa; font-weight:bold; }
+
+/* ===============================
+   Claims list (FTCLAIMS)
+   =============================== */
 .claimItem{
   border:1px solid #e6e6e6;
   border-radius: var(--radius);
@@ -172,12 +266,9 @@ textarea{ resize:vertical; }
 .claimBody{ padding:10px; display:block; }
 .rightTopBox{ padding:10px; }
 
-/* table */
-table{ width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; }
-th, td{ border-bottom:1px solid #eee; padding:6px 6px; text-align:left; vertical-align:top; }
-th{ background:#fafafa; font-weight:bold; }
-
-/* notes */
+/* ===============================
+   Note (chat-like)
+   =============================== */
 .notesBox{
   max-height:160px;
   overflow-y:auto;
@@ -189,51 +280,3 @@ th{ background:#fafafa; font-weight:bold; }
 }
 .noteLine{ border-bottom:1px solid #f0f0f0; padding:6px 0; }
 .noteHeader{ font-weight:bold; margin-bottom:2px; font-size:12px; }
-
-/* link */
-a{ color: var(--primary); text-decoration:none; }
-a:hover{ text-decoration:underline; }
-
-/* ===============================
-   FTI-HUB: SIDEBAR SINISTRA (1/5)
-   Da usare su tutte le pagine tranne index.html
-   Immagine: assets/thunderstruck.png
-   =============================== */
-
-.ft-layout{
-  display: flex;
-  min-height: 100vh;
-  width: 100%;
-}
-
-/* fascia sinistra */
-.ft-sidebar{
-  width: 20%;
-  min-width: 220px;
-  background-image: url("assets/thunderstruck.png");
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-}
-
-/* contenuto pagina */
-.ft-content{
-  width: 80%;
-  padding: 18px;          /* mantiene lo stesso padding che avevi sul body */
-  background: var(--bg);
-  overflow-x: hidden;
-}
-
-/* IMPORTANTISSIMO:
-   quando usi .ft-layout, il body non deve aggiungere padding o background extra */
-body.ft-page{
-  padding: 0;
-  background: var(--bg);
-}
-
-/* opzionale: su schermi piccoli nascondi la fascia */
-@media (max-width: 980px){
-  .ft-sidebar{ display: none; }
-  .ft-content{ width: 100%; }
-}
-
