@@ -1,21 +1,25 @@
 /* ===============================
-   FTSTYLE - CSS globale FTI-HUB
-   Obiettivo: stile coerente + sidebar elegante (no index)
+   FTSTYLE - CSS globale HUB (v2)
+   Moderno, coerente, riusabile
+   + Sidebar immagine (1/5)
+   + Dashboard card grandi Ford Blue
    =============================== */
 
 :root{
-  --bg: #f5f5f5;
+  /* base */
+  --bg: #f5f6f8;
   --card: #ffffff;
   --text: #111;
-  --muted: #666;
-  --border: #e5e5e5;
-  --border2: #ededed;
+  --muted: #667085;
+  --border: #e6e8ec;
+  --border2: #eef0f3;
 
-  --primary: #007bff;
-  --secondary: #6c757d;
-  --danger: #dc3545;
-  --light: #e9ecef;
+  /* Ford */
+  --ford-blue: #003478;
+  --ford-blue-hover: #00285e;
+  --ford-accent: #005edc;
 
+  /* states */
   --ok-bg: #e9fff0;
   --ok-bd: #bfeccc;
   --ok-tx: #0f6a2a;
@@ -28,14 +32,25 @@
   --warn-bd:#ffd18a;
   --warn-tx:#8a5a00;
 
-  --radius: 8px;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  /* misc */
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 10px 26px rgba(16,24,40,0.08);
+  --shadow2: 0 14px 34px rgba(16,24,40,0.12);
+
   --font: Arial, sans-serif;
+
+  /* sidebar */
+  --side-w: 20vw;         /* 1/5 */
+  --side-min: 220px;
+  --side-max: 360px;
 }
 
 *{ box-sizing:border-box; }
 
-html, body{ height:100%; }
+html, body{
+  height:100%;
+}
 
 body{
   font-family: var(--font);
@@ -45,238 +60,395 @@ body{
 }
 
 /* ===============================
-   Tipografia base
+   PAGE WRAPPER + SIDEBAR
    =============================== */
+
+/* usa questa classe sul body: <body class="ft-page with-side"> */
+.ft-page{
+  padding: 18px;
+}
+
+/* layout con sidebar */
+.with-side{
+  padding: 0; /* gestito da wrapper */
+}
+
+.ft-shell{
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: clamp(var(--side-min), var(--side-w), var(--side-max)) 1fr;
+}
+
+/* colonna sinistra */
+.ft-side{
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: #0b1220;
+}
+
+.ft-side img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display:block;
+  filter: saturate(1.05) contrast(1.05);
+}
+
+/* colonna destra */
+.ft-main{
+  padding: 22px 22px 28px;
+}
+
+/* mobile: sidebar sopra */
+@media (max-width: 980px){
+  .ft-shell{
+    grid-template-columns: 1fr;
+  }
+  .ft-side{
+    position: relative;
+    height: 240px;
+  }
+  .ft-main{
+    padding: 18px;
+  }
+}
+
+/* ===============================
+   TYPO
+   =============================== */
+
 h1{
+  font-size: 20px;
+  margin: 0 0 6px;
+}
+h2{
   font-size: 18px;
-  margin: 0 0 4px;
+  margin: 0;
 }
 .subtitle{
   font-size: 13px;
   color: var(--muted);
-  margin-bottom: 10px;
-}
-
-/* link */
-a{ color: var(--primary); text-decoration:none; }
-a:hover{ text-decoration:underline; }
-
-/* ===============================
-   LAYOUT con SIDEBAR (elegante)
-   Usa:
-   <div class="ft-layout">
-     <div class="ft-sidebar"></div>
-     <div class="ft-content">...</div>
-   </div>
-   =============================== */
-.ft-layout{
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: 20% 1fr;
-  background: var(--bg);
-}
-
-/* colonna sinistra: immagine + overlay */
-.ft-sidebar{
-  position: relative;
-  min-height: 100vh;
-  background: #0b1220;
-  overflow: hidden;
-}
-
-/* immagine */
-.ft-sidebar::before{
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: url("assets/thunderstruck.png") center/cover no-repeat;
-  filter: saturate(0.8) contrast(0.95) brightness(0.55);
-  transform: scale(1.03);
-}
-
-/* overlay “premium” */
-.ft-sidebar::after{
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(180deg,
-      rgba(11,18,32,0.88) 0%,
-      rgba(11,18,32,0.55) 55%,
-      rgba(11,18,32,0.88) 100%
-    ),
-    radial-gradient(60% 40% at 50% 45%,
-      rgba(255,140,0,0.10) 0%,
-      rgba(0,0,0,0) 60%
-    );
-}
-
-/* contenuto */
-.ft-content{
-  min-height: 100vh;
-  padding: 22px;
-}
-
-/* se vuoi un header “sticky” in futuro */
-.ft-topbar{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom: 12px;
-}
-
-/* mobile: sidebar sparisce */
-@media (max-width: 980px){
-  .ft-layout{ grid-template-columns: 1fr; }
-  .ft-sidebar{ display:none; }
-  .ft-content{ padding: 18px; }
+  margin: 0 0 14px;
 }
 
 /* ===============================
-   Componenti base (card / form / buttons)
+   CONTAINERS / CARD
    =============================== */
+
 .card{
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 10px 10px 12px;
+  padding: 16px 18px;
   box-shadow: var(--shadow);
 }
 
+.card.compact{
+  padding: 12px 14px;
+  box-shadow: none;
+}
+
 .card h3{
-  font-size: 13px;
-  margin: 0 0 8px;
+  font-size: 14px;
+  margin: 0 0 10px;
   color: var(--text);
 }
 
-/* layout base interno (tipo FTCLAIMS_STEP2) */
+.hr{
+  height: 1px;
+  background: var(--border2);
+  margin: 16px 0;
+}
+
+/* helper */
+.small{ font-size: 12px; color: #555; }
+.mutedBox{
+  background:#f8fafc;
+  border:1px dashed #d7dce3;
+  padding:10px;
+  border-radius: var(--radius-sm);
+  font-size:12px;
+  color:#445;
+}
+
+/* ===============================
+   GRID / ROW
+   =============================== */
+
 .layout{
   display:grid;
   grid-template-columns: 360px 1fr;
-  gap:12px;
+  gap: 14px;
   align-items:start;
 }
-@media (max-width: 980px){
-  .layout{ grid-template-columns: 1fr; }
-}
 
-/* grid / row */
 .grid2{
   display:grid;
   grid-template-columns: 1fr 1fr;
-  gap:6px;
+  gap: 10px;
 }
+
 .row{
   display:flex;
-  gap:8px;
+  gap:10px;
   flex-wrap:wrap;
   align-items:center;
 }
 
-/* helper */
-.small{ font-size:12px; color:#555; }
-.mutedBox{
-  background:#f8f8f8;
-  border:1px dashed #ddd;
-  padding:8px;
-  border-radius:6px;
-  font-size:12px;
-  color:#444;
+@media (max-width: 980px){
+  .layout{ grid-template-columns: 1fr; }
 }
-.hr{ height:1px; background:#eee; margin:10px 0; }
 
-/* form */
+/* ===============================
+   FORMS
+   =============================== */
+
 label{
   display:block;
-  font-size:11px;
-  font-weight:bold;
-  margin-bottom:4px;
-  color:#333;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color:#2b2f36;
 }
+
 input, select, textarea{
   width:100%;
-  padding:7px 8px;
-  border:1px solid #d6d6d6;
-  border-radius:4px;
-  font-size:13px;
+  padding: 10px 10px;
+  border: 1px solid #d6dbe3;
+  border-radius: 10px;
+  font-size: 13px;
   background:#fff;
+  outline: none;
+  transition: border-color .12s ease, box-shadow .12s ease;
 }
-textarea{ resize:vertical; }
 
-/* buttons */
+input:focus, select:focus, textarea:focus{
+  border-color: rgba(0,94,220,0.55);
+  box-shadow: 0 0 0 4px rgba(0,94,220,0.12);
+}
+
+textarea{ resize: vertical; }
+
+/* ===============================
+   BUTTONS (global)
+   =============================== */
+
 .btn{
   border:none;
-  border-radius:4px;
-  padding:7px 10px;
-  font-size:12px;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
   cursor:pointer;
   display:inline-flex;
   align-items:center;
-  gap:6px;
+  justify-content:center;
+  gap:8px;
+  transition: transform .08s ease, filter .12s ease, background .12s ease;
+  user-select:none;
 }
-.btn.primary{ background: var(--primary); color:#fff; }
-.btn.secondary{ background: var(--secondary); color:#fff; }
-.btn.danger{ background: var(--danger); color:#fff; }
-.btn.light{ background: var(--light); color:#111; }
-.btn:disabled{ opacity:.6; cursor:not-allowed; }
+
+.btn:active{ transform: translateY(1px); }
+.btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+.btn.primary{
+  color:#fff;
+  background: linear-gradient(180deg, var(--ford-accent), var(--ford-blue));
+}
+.btn.primary:hover{ filter: brightness(0.98); }
+
+.btn.secondary{
+  background:#64748b;
+  color:#fff;
+}
+.btn.secondary:hover{ filter: brightness(0.98); }
+
+.btn.danger{
+  background:#dc3545;
+  color:#fff;
+}
+.btn.light{
+  background:#e9eef6;
+  color:#0f172a;
+}
 
 /* ===============================
-   Banner
+   DASHBOARD (FTHUBAS)
    =============================== */
+
+.dashboard{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.dashboard-card{
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px 16px 18px;
+  box-shadow: var(--shadow);
+  display:flex;
+  flex-direction:column;
+  min-height: 150px;
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+
+.dashboard-card:hover{
+  transform: translateY(-2px);
+  box-shadow: var(--shadow2);
+}
+
+.dashboard-card h3{
+  font-size: 15px;
+  margin: 0 0 6px;
+}
+
+.dashboard-card p{
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 14px;
+}
+
+.btn-dashboard{
+  margin-top: auto;
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  background: linear-gradient(180deg, var(--ford-accent), var(--ford-blue));
+  transition: transform .08s ease, filter .12s ease;
+}
+.btn-dashboard:hover{ filter: brightness(0.98); }
+.btn-dashboard:active{ transform: translateY(1px); }
+
+/* badge admin */
+.badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(0,52,120,0.10);
+  color: var(--ford-blue);
+  border: 1px solid rgba(0,52,120,0.18);
+}
+
+.topbar{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.userbox{
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ===============================
+   BANNER
+   =============================== */
+
 .banner{
-  margin:10px 0 12px;
-  padding:10px 12px;
-  border-radius:6px;
-  font-size:13px;
+  margin: 0 0 14px;
+  padding: 12px 12px;
+  border-radius: 12px;
+  font-size: 13px;
   display:none;
 }
+
 .banner.success{ background: var(--ok-bg); border:1px solid var(--ok-bd); color: var(--ok-tx); display:block; }
 .banner.error{ background: var(--err-bg); border:1px solid var(--err-bd); color: var(--err-tx); display:block; }
 .banner.warn{ background: var(--warn-bg); border:1px solid var(--warn-bd); color: var(--warn-tx); display:block; }
 
 /* ===============================
-   Tabelle
+   CLAIMS LIST (FTCLAIMS_STEP2 etc.)
    =============================== */
-table{ width:100%; border-collapse:collapse; font-size:12px; margin-top:6px; }
-th, td{ border-bottom:1px solid #eee; padding:6px 6px; text-align:left; vertical-align:top; }
-th{ background:#fafafa; font-weight:bold; }
 
-/* ===============================
-   Claims list (FTCLAIMS)
-   =============================== */
 .claimItem{
-  border:1px solid #e6e6e6;
-  border-radius: var(--radius);
-  margin-top:10px;
+  border:1px solid var(--border);
+  border-radius: 16px;
+  margin-top: 12px;
   background:#fff;
   overflow:hidden;
+  box-shadow: none;
 }
 .claimItemTop{
   display:flex;
   justify-content:space-between;
   align-items:center;
   gap:10px;
-  padding:8px 10px;
-  background:#fafafa;
+  padding: 10px 12px;
+  background:#f8fafc;
   border-bottom:1px solid var(--border2);
 }
-.claimTitle{ font-size:13px; font-weight:bold; color:#222; }
-.claimMeta{ font-size:12px; color: var(--muted); }
-.claimBody{ padding:10px; display:block; }
-.rightTopBox{ padding:10px; }
+.claimTitle{ font-size: 13px; font-weight: 800; color:#222; }
+.claimMeta{ font-size: 12px; color: var(--muted); }
+.claimBody{ padding: 12px; display:block; }
+.rightTopBox{ padding: 6px; }
 
 /* ===============================
-   Note (chat-like)
+   TABLES
    =============================== */
-.notesBox{
-  max-height:160px;
-  overflow-y:auto;
-  border:1px solid #ddd;
-  background:#fff;
-  padding:6px;
-  border-radius:6px;
-  font-size:12px;
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size: 12px;
+  margin-top: 8px;
 }
-.noteLine{ border-bottom:1px solid #f0f0f0; padding:6px 0; }
-.noteHeader{ font-weight:bold; margin-bottom:2px; font-size:12px; }
+
+th, td{
+  border-bottom:1px solid #eef2f6;
+  padding: 8px 8px;
+  text-align:left;
+  vertical-align:top;
+}
+
+th{
+  background:#f8fafc;
+  font-weight: 800;
+  color:#1f2937;
+}
+
+/* ===============================
+   NOTES
+   =============================== */
+
+.notesBox{
+  max-height: 170px;
+  overflow-y:auto;
+  border:1px solid #dfe5ee;
+  background:#fff;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.noteLine{
+  border-bottom:1px solid #f0f2f6;
+  padding: 8px 0;
+}
+.noteHeader{
+  font-weight: 800;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+/* ===============================
+   LINKS
+   =============================== */
+
+a{ color: var(--ford-accent); text-decoration:none; }
+a:hover{ text-decoration:underline; }
