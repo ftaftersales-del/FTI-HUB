@@ -19,6 +19,7 @@
       --muted: #666;
       --border: #e6e6e6;
       --shadow: 0 2px 10px rgba(0,0,0,.08);
+      --shadowSoft: 0 0 20px rgba(0,0,0,.08);
       --radius: 12px;
       --btn: #1d4ed8;
       --btnHover: #1e40af;
@@ -43,23 +44,36 @@
       min-height: 100vh;
     }
 
-    /* ===== Immagine divisa (metà sx / metà dx) ===== */
+    /* ===== Fasce laterali: immagine NON deformata, “spezzata” ===== */
     .side{
-      /* CAMBIA QUI il path dell'immagine di sfondo */
-      background-image: url("assets/login-side.jpg");
-      background-repeat: no-repeat;
-      background-size: 200% 100%;
-      background-position: left center;
+      position: relative;
+      overflow: hidden;       /* fondamentale: taglia l'eccesso */
+      background: #000;       /* fallback mentre carica */
     }
-    .side.right{
-      background-position: right center;
+    .sideImg{
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 200%;            /* doppia larghezza per avere metà+metà */
+      height: 100%;
+      object-fit: cover;      /* riempie lo schermo senza deformare */
+      object-position: center;
+      display: block;
+      user-select: none;
+      pointer-events: none;
+    }
+    .side.right .sideImg{
+      left: -100%;            /* mostra la metà destra */
     }
 
-    /* ===== Colonna centrale ===== */
+    /* ===== Colonna centrale: bianca ===== */
     .center{
+      background: #fff;       /* richiesto: fascia bianca */
       display: flex;
       flex-direction: column;
       padding: 22px 18px;
+      box-shadow: var(--shadowSoft); /* separazione visiva dalle immagini */
+      z-index: 1;
     }
 
     .topBrand{
@@ -75,9 +89,12 @@
       display: block;
     }
     .topBrand .subtitle{
-      font-weight: 800;
-      letter-spacing: .8px;
-      color: #222;
+      font-weight: 900;
+      letter-spacing: 1px;
+      color: #111;
+      font-size: 22px;        /* ↑ più grande (prima era troppo piccola) */
+      line-height: 1;
+      margin-top: 2px;
     }
 
     .content{
@@ -88,7 +105,6 @@
       padding: 18px 0;
     }
 
-    /* ===== Card login (prima era .box) ===== */
     .box{
       background: var(--card);
       padding: 22px 20px 16px;
@@ -164,31 +180,30 @@
       display: block;
     }
 
-    /* Mobile: nasconde bande laterali */
+    /* Mobile: nasconde fasce laterali */
     @media (max-width: 900px){
       .side{ display: none; }
       .col{ width: 100vw; }
-      .center{ padding: 18px 14px; }
+      .center{ padding: 18px 14px; box-shadow: none; }
+      .topBrand .subtitle{ font-size: 20px; }
     }
   </style>
 </head>
 
 <body>
   <div class="page">
-    <!-- Colonna sinistra: metà immagine -->
-    <div class="col side left" aria-hidden="true"></div>
+    <!-- Colonna sinistra: mostra metà sinistra immagine -->
+    <div class="col side left" aria-hidden="true">
+      <img class="sideImg" src="assets/login-side.jpg" alt="">
+    </div>
 
     <!-- Colonna centrale -->
     <div class="col center">
-
-      <!-- Top: logo Ford Trucks + FTWMS -->
       <div class="topBrand">
-        <!-- CAMBIA QUI il path del logo Ford Trucks -->
         <img src="assets/ford-trucks-logo.png" alt="Ford Trucks">
         <div class="subtitle">FTWMS</div>
       </div>
 
-      <!-- Centro: box login -->
       <div class="content">
         <div class="box">
           <h2>Login FTI-HUB</h2>
@@ -207,16 +222,15 @@
         </div>
       </div>
 
-      <!-- Bottom: logo F-Trucks Italia SpA -->
       <div class="bottomBrand">
-        <!-- CAMBIA QUI il path del logo F-Trucks Italia SpA -->
         <img src="assets/f-trucks-italia.png" alt="F-Trucks Italia SpA">
       </div>
-
     </div>
 
-    <!-- Colonna destra: metà immagine -->
-    <div class="col side right" aria-hidden="true"></div>
+    <!-- Colonna destra: mostra metà destra immagine -->
+    <div class="col side right" aria-hidden="true">
+      <img class="sideImg" src="assets/login-side.jpg" alt="">
+    </div>
   </div>
 
   <script>
