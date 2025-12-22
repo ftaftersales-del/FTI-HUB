@@ -1,8 +1,9 @@
 /* ===============================
-   FTSTYLE - CSS globale HUB (v2)
+   FTSTYLE - CSS globale HUB (v2+compat)
    Moderno, coerente, riusabile
    + Sidebar immagine (1/5)
-   + Dashboard card grandi Ford Blue
+   + Mantiene TUTTE le classi v2
+   + Compatibilità per FTHUBAS: ft-layout / ft-sidebar / ft-content
    =============================== */
 
 :root{
@@ -48,9 +49,7 @@
 
 *{ box-sizing:border-box; }
 
-html, body{
-  height:100%;
-}
+html, body{ height:100%; }
 
 body{
   font-family: var(--font);
@@ -60,18 +59,14 @@ body{
 }
 
 /* ===============================
-   PAGE WRAPPER + SIDEBAR
+   PAGE WRAPPER + SIDEBAR (v2)
    =============================== */
 
 /* usa questa classe sul body: <body class="ft-page with-side"> */
-.ft-page{
-  padding: 18px;
-}
+.ft-page{ padding: 18px; }
 
 /* layout con sidebar */
-.with-side{
-  padding: 0; /* gestito da wrapper */
-}
+.with-side{ padding: 0; /* gestito da wrapper */ }
 
 .ft-shell{
   min-height: 100vh;
@@ -97,36 +92,67 @@ body{
 }
 
 /* colonna destra */
-.ft-main{
-  padding: 22px 22px 28px;
-}
+.ft-main{ padding: 22px 22px 28px; }
 
 /* mobile: sidebar sopra */
 @media (max-width: 980px){
-  .ft-shell{
-    grid-template-columns: 1fr;
-  }
-  .ft-side{
-    position: relative;
-    height: 240px;
-  }
-  .ft-main{
-    padding: 18px;
-  }
+  .ft-shell{ grid-template-columns: 1fr; }
+  .ft-side{ position: relative; height: 240px; }
+  .ft-main{ padding: 18px; }
+}
+
+/* ===============================
+   COMPATIBILITÀ FTHUBAS (il tuo wrapper attuale)
+   =============================== */
+/* In FTHUBAS hai:
+   <body class="ft-page">
+     <div class="ft-layout">
+       <div class="ft-sidebar"></div>
+       <div class="ft-content">...</div>
+*/
+.ft-layout{
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: clamp(var(--side-min), var(--side-w), var(--side-max)) 1fr;
+}
+
+/* colonna sinistra: usa la tua immagine assets/thunderstruck.png */
+.ft-sidebar{
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  background: #0b1220;
+  background-image: url("assets/thunderstruck.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* filtro per renderla più “elegante” */
+.ft-sidebar::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background: linear-gradient(180deg, rgba(11,18,32,0.18), rgba(11,18,32,0.34));
+  pointer-events:none;
+}
+
+.ft-content{ padding: 22px 22px 28px; }
+
+@media (max-width: 980px){
+  .ft-layout{ grid-template-columns: 1fr; }
+  .ft-sidebar{ position: relative; height: 240px; }
+  .ft-content{ padding: 18px; }
 }
 
 /* ===============================
    TYPO
    =============================== */
 
-h1{
-  font-size: 20px;
-  margin: 0 0 6px;
-}
-h2{
-  font-size: 18px;
-  margin: 0;
-}
+h1{ font-size: 20px; margin: 0 0 6px; }
+h2{ font-size: 18px; margin: 0; }
+
 .subtitle{
   font-size: 13px;
   color: var(--muted);
@@ -164,6 +190,7 @@ h2{
 
 /* helper */
 .small{ font-size: 12px; color: #555; }
+
 .mutedBox{
   background:#f8fafc;
   border:1px dashed #d7dce3;
@@ -232,7 +259,7 @@ input:focus, select:focus, textarea:focus{
 textarea{ resize: vertical; }
 
 /* ===============================
-   BUTTONS (global)
+   BUTTONS (framework .btn)
    =============================== */
 
 .btn{
@@ -274,7 +301,47 @@ textarea{ resize: vertical; }
 }
 
 /* ===============================
-   DASHBOARD (FTHUBAS)
+   BOTTONI HTML NATIVI (per pagine che usano <button> senza .btn)
+   -> Questo ti serve in FTHUBAS, perché lì usi <button onclick=...> senza classi
+   -> Li rendiamo moderni e “grossi”, senza rompere .btn
+   =============================== */
+
+button:not(.btn):not(.btn-dashboard){
+  height: 46px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+
+  background: linear-gradient(180deg, var(--ford-accent), var(--ford-blue));
+  box-shadow: 0 10px 20px rgba(0,52,120,0.18);
+
+  transition: transform .08s ease, filter .12s ease, box-shadow .12s ease;
+}
+
+button:not(.btn):not(.btn-dashboard):hover{
+  filter: brightness(0.98);
+  box-shadow: 0 14px 28px rgba(0,52,120,0.22);
+}
+
+button:not(.btn):not(.btn-dashboard):active{ transform: translateY(1px); }
+button:not(.btn):not(.btn-dashboard):disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; }
+
+/* Logout più sobrio dentro header */
+.header button:not(.btn):not(.btn-dashboard){
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: #64748b;
+  box-shadow: none;
+}
+
+/* ===============================
+   DASHBOARD (FTHUBAS - se la usi in altre versioni)
    =============================== */
 
 .dashboard{
@@ -445,6 +512,21 @@ th{
   margin-bottom: 4px;
   font-size: 12px;
 }
+
+/* ===============================
+   SEZIONI "GROSSE" (per pagine come FTHUBAS che usano .section)
+   -> Non cambia funzionalità: solo look più moderno e “riempitivo”
+   =============================== */
+
+.section{
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 16px 14px;
+  background: #fff;
+}
+
+.section h3{ font-size: 15px; margin: 0 0 6px 0; }
+.section p{ color: var(--muted); margin: 0 0 12px 0; font-size: 13px; }
 
 /* ===============================
    LINKS
