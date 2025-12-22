@@ -2,6 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Login FTI-HUB</title>
 
   <!-- Firebase SDKs -->
@@ -11,74 +12,211 @@
   <script src="firebase-config.js"></script>
 
   <style>
+    :root{
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #111;
+      --muted: #666;
+      --border: #e6e6e6;
+      --shadow: 0 2px 10px rgba(0,0,0,.08);
+      --radius: 12px;
+      --btn: #1d4ed8;
+      --btnHover: #1e40af;
+    }
+
     * { box-sizing: border-box; }
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ===== Layout 3 colonne uguali ===== */
+    .page{
+      min-height: 100vh;
+      display: flex;
+    }
+    .col{
+      width: 33.3333vw;
+      min-height: 100vh;
+    }
+
+    /* ===== Immagine divisa (metà sx / metà dx) ===== */
+    .side{
+      /* CAMBIA QUI il path dell'immagine di sfondo */
+      background-image: url("assets/login-side.jpg");
+      background-repeat: no-repeat;
+      background-size: 200% 100%;
+      background-position: left center;
+    }
+    .side.right{
+      background-position: right center;
+    }
+
+    /* ===== Colonna centrale ===== */
+    .center{
+      display: flex;
+      flex-direction: column;
+      padding: 22px 18px;
+    }
+
+    .topBrand{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding-top: 6px;
+    }
+    .topBrand img{
+      max-width: 210px;
+      height: auto;
+      display: block;
+    }
+    .topBrand .subtitle{
+      font-weight: 800;
+      letter-spacing: .8px;
+      color: #222;
+    }
+
+    .content{
+      flex: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      background: #f5f5f5;
+      padding: 18px 0;
     }
-    .box {
-      background: #ffffff;
-      padding: 24px;
-      max-width: 360px;
+
+    /* ===== Card login (prima era .box) ===== */
+    .box{
+      background: var(--card);
+      padding: 22px 20px 16px;
+      max-width: 380px;
       width: 100%;
-      border-radius: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
     }
-    .box h2 {
-      margin-top: 0;
-      margin-bottom: 16px;
+
+    .box h2{
+      margin: 0 0 14px 0;
       text-align: center;
+      font-size: 18px;
     }
-    input {
+
+    input{
       width: 100%;
-      padding: 8px;
-      margin: 4px 0;
+      padding: 10px 12px;
+      margin: 6px 0;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+      background: #fff;
     }
-    button {
-      margin-top: 8px;
-      padding: 8px 12px;
+    input:focus{
+      border-color: #cbd5e1;
+      box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+    }
+
+    button{
+      margin-top: 10px;
+      padding: 10px 12px;
       cursor: pointer;
       width: 100%;
+      border: none;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 14px;
+      background: var(--btn);
+      color: #fff;
     }
-    hr {
+    button:hover{ background: var(--btnHover); }
+
+    hr{
       margin: 16px 0;
+      border: none;
+      border-top: 1px solid var(--border);
     }
-    #reset-message {
-      color: green;
+
+    #reset-message{
+      color: #0f7a2a;
+      margin-top: 10px;
+      min-height: 18px;
+      font-size: 0.92em;
+    }
+    #login-error{
+      color: #b91c1c;
       margin-top: 8px;
       min-height: 18px;
-      font-size: 0.9em;
+      font-size: 0.92em;
     }
-    #login-error {
-      color: red;
-      margin-top: 8px;
-      min-height: 18px;
-      font-size: 0.9em;
+
+    .bottomBrand{
+      display: flex;
+      justify-content: center;
+      padding: 8px 0 4px;
+    }
+    .bottomBrand img{
+      max-width: 220px;
+      height: auto;
+      display: block;
+    }
+
+    /* Mobile: nasconde bande laterali */
+    @media (max-width: 900px){
+      .side{ display: none; }
+      .col{ width: 100vw; }
+      .center{ padding: 18px 14px; }
     }
   </style>
 </head>
+
 <body>
+  <div class="page">
+    <!-- Colonna sinistra: metà immagine -->
+    <div class="col side left" aria-hidden="true"></div>
 
-  <div class="box">
-    <h2>Login FTI-HUB</h2>
+    <!-- Colonna centrale -->
+    <div class="col center">
 
-    <input type="email" id="email" placeholder="Email" required>
-    <input type="password" id="password" placeholder="Password" required>
-    <button onclick="login()">Login</button>
+      <!-- Top: logo Ford Trucks + FTWMS -->
+      <div class="topBrand">
+        <!-- CAMBIA QUI il path del logo Ford Trucks -->
+        <img src="assets/ford-trucks-logo.png" alt="Ford Trucks">
+        <div class="subtitle">FTWMS</div>
+      </div>
 
-    <hr>
+      <!-- Centro: box login -->
+      <div class="content">
+        <div class="box">
+          <h2>Login FTI-HUB</h2>
 
-    <input type="email" id="email_reset" placeholder="Email per reset password">
-    <button onclick="resetPassword()">Reimposta Password</button>
+          <input type="email" id="email" placeholder="Email" required>
+          <input type="password" id="password" placeholder="Password" required>
+          <button onclick="login()">Login</button>
 
-    <div id="reset-message"></div>
-    <div id="login-error"></div>
+          <hr>
+
+          <input type="email" id="email_reset" placeholder="Email per reset password">
+          <button onclick="resetPassword()">Reimposta Password</button>
+
+          <div id="reset-message"></div>
+          <div id="login-error"></div>
+        </div>
+      </div>
+
+      <!-- Bottom: logo F-Trucks Italia SpA -->
+      <div class="bottomBrand">
+        <!-- CAMBIA QUI il path del logo F-Trucks Italia SpA -->
+        <img src="assets/f-trucks-italia.png" alt="F-Trucks Italia SpA">
+      </div>
+
+    </div>
+
+    <!-- Colonna destra: metà immagine -->
+    <div class="col side right" aria-hidden="true"></div>
   </div>
 
   <script>
@@ -156,6 +294,5 @@
         });
     }
   </script>
-
 </body>
 </html>
