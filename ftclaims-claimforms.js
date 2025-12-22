@@ -405,9 +405,6 @@ function renderRSADetails(container, claimData, ctx) {
 /* ===============================
    GARANZIA / GARANZIA RICAMBIO
 =============================== */
-/* (QUI SOTTO È IDENTICO AL TUO, CAMBIO SOLO IL MINIMO NECESSARIO
-   PER GESTIRE RIGHE DISTRIBUTORE SICURE IN SUBCOLLECTION)
-*/
 
 function renderGaranziaDetailsInternal(container, garData, ctx, options) {
   const gar = garData || {};
@@ -486,7 +483,6 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
             <th style="border-bottom:1px solid #ddd; text-align:right;">Quantità</th>
             <th style="border-bottom:1px solid #ddd; text-align:right;">Totale</th>
             <th style="border-bottom:1px solid #ddd; text-align:center;">Azioni</th>
-            <th id="${prefix}distPartsVisHead" style="border-bottom:1px solid #ddd; text-align:center; display:none;">Vis. Dealer</th>
           </tr>
         </thead>
         <tbody id="${prefix}partsBody"></tbody>
@@ -495,9 +491,34 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
 
     <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
       <button type="button" id="${prefix}addPart" class="btn btn-small btn-secondary">Aggiungi ricambio</button>
-      <div>
-        <strong>Totale ricambi: </strong><span id="${prefix}partsTotal">0.00</span> €
-        <span id="${prefix}partsTotalNote" class="small-text" style="margin-left:8px;"></span>
+      <div><strong>Totale ricambi: </strong><span id="${prefix}partsTotal">0.00</span> €</div>
+    </div>
+
+    <div id="${prefix}distPartsBox" style="display:none;">
+      <hr>
+      <h4 style="margin: 4px 0 6px; font-size: 13px;">Ricambi (solo distributore - interni)</h4>
+      <div class="small-text">Queste righe NON sono visibili al dealer.</div>
+
+      <div class="form-group">
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead>
+            <tr>
+              <th style="border-bottom:1px solid #ddd; text-align:left;">Codice</th>
+              <th style="border-bottom:1px solid #ddd; text-align:left;">Codice esteso</th>
+              <th style="border-bottom:1px solid #ddd; text-align:left;">Descrizione</th>
+              <th style="border-bottom:1px solid #ddd; text-align:right;">Rimborso garanzia (€/unità)</th>
+              <th style="border-bottom:1px solid #ddd; text-align:right;">Quantità</th>
+              <th style="border-bottom:1px solid #ddd; text-align:right;">Totale</th>
+              <th style="border-bottom:1px solid #ddd; text-align:center;">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="${prefix}distPartsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" id="${prefix}addDistPart" class="btn btn-small btn-secondary">Aggiungi ricambio (distributore)</button>
+        <div><strong>Totale ricambi interni: </strong><span id="${prefix}distPartsTotal">0.00</span> €</div>
       </div>
     </div>
 
@@ -515,7 +536,6 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
             <th style="border-bottom:1px solid #ddd; text-align:right;">Quantità</th>
             <th style="border-bottom:1px solid #ddd; text-align:right;">Totale</th>
             <th style="border-bottom:1px solid #ddd; text-align:center;">Azioni</th>
-            <th id="${prefix}distLabVisHead" style="border-bottom:1px solid #ddd; text-align:center; display:none;">Vis. Dealer</th>
           </tr>
         </thead>
         <tbody id="${prefix}labourBody"></tbody>
@@ -524,9 +544,32 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
 
     <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
       <button type="button" id="${prefix}addLabour" class="btn btn-small btn-secondary">Aggiungi manodopera</button>
-      <div>
-        <strong>Totale manodopera: </strong><span id="${prefix}labourTotal">0.00</span> €
-        <span id="${prefix}labourTotalNote" class="small-text" style="margin-left:8px;"></span>
+      <div><strong>Totale manodopera: </strong><span id="${prefix}labourTotal">0.00</span> €</div>
+    </div>
+
+    <div id="${prefix}distLabourBox" style="display:none;">
+      <hr>
+      <h4 style="margin: 4px 0 6px; font-size: 13px;">Manodopera (solo distributore - interni)</h4>
+      <div class="small-text">Queste righe NON sono visibili al dealer.</div>
+
+      <div class="form-group">
+        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+          <thead>
+            <tr>
+              <th style="border-bottom:1px solid #ddd; text-align:left;">Codice labour</th>
+              <th style="border-bottom:1px solid #ddd; text-align:left;">Descrizione</th>
+              <th style="border-bottom:1px solid #ddd; text-align:right;">Quantità</th>
+              <th style="border-bottom:1px solid #ddd; text-align:right;">Totale</th>
+              <th style="border-bottom:1px solid #ddd; text-align:center;">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="${prefix}distLabourBody"></tbody>
+        </table>
+      </div>
+
+      <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
+        <button type="button" id="${prefix}addDistLabour" class="btn btn-small btn-secondary">Aggiungi manodopera (distributore)</button>
+        <div><strong>Totale manodopera interna: </strong><span id="${prefix}distLabourTotal">0.00</span> €</div>
       </div>
     </div>
 
@@ -563,26 +606,38 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
   const partsBody       = container.querySelector("#" + prefix + "partsBody");
   const addPartBtn      = container.querySelector("#" + prefix + "addPart");
   const partsTotalSpan  = container.querySelector("#" + prefix + "partsTotal");
-  const partsTotalNote  = container.querySelector("#" + prefix + "partsTotalNote");
 
   const labourBody      = container.querySelector("#" + prefix + "labourBody");
   const addLabourBtn    = container.querySelector("#" + prefix + "addLabour");
   const labourTotalSpan = container.querySelector("#" + prefix + "labourTotal");
-  const labourTotalNote = container.querySelector("#" + prefix + "labourTotalNote");
   const labourRateLabel = container.querySelector("#" + prefix + "labourRateLabel");
+
+  // ✅ Distributore: box interni + tabelle separate
+  const distPartsBox     = container.querySelector("#" + prefix + "distPartsBox");
+  const distPartsBody    = container.querySelector("#" + prefix + "distPartsBody");
+  const addDistPartBtn   = container.querySelector("#" + prefix + "addDistPart");
+  const distPartsTotalSpan = container.querySelector("#" + prefix + "distPartsTotal");
+
+  const distLabourBox     = container.querySelector("#" + prefix + "distLabourBox");
+  const distLabourBody    = container.querySelector("#" + prefix + "distLabourBody");
+  const addDistLabourBtn  = container.querySelector("#" + prefix + "addDistLabour");
+  const distLabourTotalSpan = container.querySelector("#" + prefix + "distLabourTotal");
 
   const saveBtn         = container.querySelector("#" + prefix + "saveBtn");
 
-  const distPartsVisHead = container.querySelector("#" + prefix + "distPartsVisHead");
-  const distLabVisHead   = container.querySelector("#" + prefix + "distLabVisHead");
+  const claimRef = db
+    .collection("ClaimCards")
+    .doc(ctx.claimCardId)
+    .collection("Claims")
+    .doc(ctx.claimCode);
 
-  const claimRef = db.collection("ClaimCards").doc(ctx.claimCardId).collection("Claims").doc(ctx.claimCode);
   const distPartsRef = claimRef.collection("DistributorParts");
   const distLabRef   = claimRef.collection("DistributorLabour");
 
   let causaPartId   = gar.causaPart && gar.causaPart.id ? gar.causaPart.id : null;
   let labourRateStd = typeof gar.labourRateStd === "number" ? gar.labourRateStd : null;
 
+  // ✅ estensione distributore
   let isDistributor = false;
 
   function toNumberOrNull(v) {
@@ -598,15 +653,6 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const n = toNumberOrNull(v) || 0;
     return n.toFixed(2);
   }
-
-  // ✅ ruolo: distributore = FT001
-  getCurrentUserInfo().then(function (info) {
-    isDistributor = !!(info && info.dealerId === "FT001");
-    if (isDistributor) {
-      if (distPartsVisHead) distPartsVisHead.style.display = "";
-      if (distLabVisHead) distLabVisHead.style.display = "";
-    }
-  });
 
   async function loadSymptoms(selectedId) {
     if (!symptomSelect) return;
@@ -737,21 +783,10 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
   if (gar.commentoTecnico) commentoInput.value = gar.commentoTecnico;
   if (isRicambio && prevInvDateInput && gar.previousInvoiceDate) prevInvDateInput.value = gar.previousInvoiceDate;
 
-  // ==========================
-  // ✅ NUOVO: righe distributore sicure
-  // - Dealer vede SOLO docs con visibleToDealer==true
-  // - Dealer NON può modificarle (readonly)
-  // - Distributore può aggiungere e settare visibilità
-  // ==========================
-
-  function createPartRow(initialData, meta) {
-    // meta: { source: "DEALER"|"DISTRIBUTOR", docId: string|null, visibleToDealer: bool }
-    meta = meta || { source: "DEALER", docId: null, visibleToDealer: true };
-
+  // ----------------- PARTS (DEALER) -----------------
+  function createPartRow(initialData) {
     const tr = document.createElement("tr");
-    tr.dataset.source = meta.source || "DEALER";
-    tr.dataset.docId = meta.docId || "";
-    tr.dataset.visibleToDealer = meta.visibleToDealer ? "1" : "0";
+    tr.dataset.source = "DEALER";
 
     const tdCode = document.createElement("td");
     const codeInput = document.createElement("input");
@@ -825,14 +860,6 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     delBtn.className = "btn btn-small btn-danger";
     tdActions.appendChild(delBtn);
 
-    // colonna visibilità dealer (solo per distributore)
-    const tdVis = document.createElement("td");
-    tdVis.style.textAlign = "center";
-    const visChk = document.createElement("input");
-    visChk.type = "checkbox";
-    visChk.checked = !!meta.visibleToDealer;
-    tdVis.appendChild(visChk);
-
     tr.appendChild(tdCode);
     tr.appendChild(tdExt);
     tr.appendChild(tdDesc);
@@ -840,10 +867,6 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     tr.appendChild(tdQty);
     tr.appendChild(tdTotal);
     tr.appendChild(tdActions);
-    tr.appendChild(tdVis);
-
-    // visibilità colonna: default nascosta
-    tdVis.style.display = "none";
 
     partsBody.appendChild(tr);
 
@@ -879,84 +902,199 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
       recalcPartsTotals();
     });
 
-    // ✅ applica permessi UI in base al ruolo/source
-    function applyRowPermissions() {
-      const src = tr.dataset.source || "DEALER";
-
-      if (src === "DISTRIBUTOR") {
-        // dealer NON deve poter modificare righe distributore (anche se visibili)
-        if (!isDistributor) {
-          codeInput.readOnly = true;
-          qtyInput.readOnly = true;
-          searchBtn.disabled = true;
-          delBtn.disabled = true;
-          delBtn.style.display = "none";
-          tdVis.style.display = "none";
-        } else {
-          // distributore: può vedere e decidere visibilità
-          tdVis.style.display = "";
-          // su righe distributore, io permetto modifica qty, ricerca, elimina
-          codeInput.readOnly = false;
-          qtyInput.readOnly = false;
-          searchBtn.disabled = false;
-          delBtn.disabled = false;
-          delBtn.style.display = "";
-        }
-      } else {
-        // righe dealer: sempre visibili e gestibili da chi ha aperto (dealer o distributore)
-        tdVis.style.display = "none";
-      }
-    }
-
-    // vis flag toggle (solo distributore, su righe distributore)
-    visChk.addEventListener("change", function () {
-      tr.dataset.visibleToDealer = visChk.checked ? "1" : "0";
-      recalcPartsTotals();
-    });
-
     recalcRow();
-
-    // aspetto che isDistributor sia valorizzato
-    getCurrentUserInfo().then(function (info) {
-      isDistributor = !!(info && info.dealerId === "FT001");
-      applyRowPermissions();
-    });
-
-    return tr;
   }
 
   function recalcPartsTotals() {
     let tot = 0;
-    let totVisibleDealer = 0;
-
     const rows = partsBody.querySelectorAll("tr");
     rows.forEach(function (tr) {
       const totalInput = tr.querySelector("td:nth-child(6) input");
-      const rowTot = totalInput ? (toNumberOrNull(totalInput.value) || 0) : 0;
-      tot += rowTot;
+      tot += totalInput ? (toNumberOrNull(totalInput.value) || 0) : 0;
+    });
+    partsTotalSpan.textContent = formatMoney(tot);
+  }
 
-      const src = tr.dataset.source || "DEALER";
-      const vtd = tr.dataset.visibleToDealer === "1";
+  if (Array.isArray(gar.parts)) {
+    gar.parts.forEach(function (p) { createPartRow(p); });
+    recalcPartsTotals();
+  }
+  if (addPartBtn) addPartBtn.addEventListener("click", function () { createPartRow(null); });
 
-      // Totale "dealer-view": include righe dealer + righe dist visibili dealer
-      if (src === "DEALER" || (src === "DISTRIBUTOR" && vtd)) {
-        totVisibleDealer += rowTot;
+  // ----------------- PARTS (DISTRIBUTOR - INTERNAL) -----------------
+  function createDistributorPartRow(initialData, docId) {
+    const tr = document.createElement("tr");
+    tr.dataset.source = "DISTRIBUTOR";
+    tr.dataset.docId = docId || "";
+
+    const tdCode = document.createElement("td");
+    const codeInput = document.createElement("input");
+    codeInput.type = "text";
+    codeInput.style.width = "100px";
+    codeInput.value = initialData && initialData.codice ? initialData.codice : "";
+    codeInput.dataset.partId = initialData && initialData.id ? initialData.id : "";
+
+    const searchBtn = document.createElement("button");
+    searchBtn.type = "button";
+    searchBtn.textContent = "Cerca";
+    searchBtn.className = "btn btn-small btn-secondary";
+    searchBtn.style.marginLeft = "4px";
+
+    tdCode.appendChild(codeInput);
+    tdCode.appendChild(searchBtn);
+
+    const tdExt = document.createElement("td");
+    const extInput = document.createElement("input");
+    extInput.type = "text";
+    extInput.readOnly = true;
+    extInput.style.width = "100%";
+    extInput.value = initialData && initialData.codice_esteso ? initialData.codice_esteso : "";
+    tdExt.appendChild(extInput);
+
+    const tdDesc = document.createElement("td");
+    const descInput = document.createElement("input");
+    descInput.type = "text";
+    descInput.readOnly = true;
+    descInput.style.width = "100%";
+    descInput.value = initialData && initialData.descrizione ? initialData.descrizione : "";
+    tdDesc.appendChild(descInput);
+
+    const tdRefund = document.createElement("td");
+    tdRefund.style.textAlign = "right";
+    const refundInput = document.createElement("input");
+    refundInput.type = "number";
+    refundInput.readOnly = true;
+    refundInput.style.width = "90px";
+    refundInput.step = "0.01";
+    refundInput.value = initialData && initialData.rimborso_garanzia != null
+      ? formatMoney(initialData.rimborso_garanzia)
+      : "";
+    tdRefund.appendChild(refundInput);
+
+    const tdQty = document.createElement("td");
+    tdQty.style.textAlign = "right";
+    const qtyInput = document.createElement("input");
+    qtyInput.type = "number";
+    qtyInput.min = "0";
+    qtyInput.step = "1";
+    qtyInput.style.width = "60px";
+    qtyInput.value = initialData && initialData.quantita != null ? String(initialData.quantita) : "1";
+    tdQty.appendChild(qtyInput);
+
+    const tdTotal = document.createElement("td");
+    tdTotal.style.textAlign = "right";
+    const totalInput = document.createElement("input");
+    totalInput.type = "number";
+    totalInput.readOnly = true;
+    totalInput.style.width = "90px";
+    totalInput.step = "0.01";
+    totalInput.value = initialData && initialData.totale != null ? formatMoney(initialData.totale) : "0.00";
+    tdTotal.appendChild(totalInput);
+
+    const tdActions = document.createElement("td");
+    tdActions.style.textAlign = "center";
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.textContent = "Elimina";
+    delBtn.className = "btn btn-small btn-danger";
+    tdActions.appendChild(delBtn);
+
+    tr.appendChild(tdCode);
+    tr.appendChild(tdExt);
+    tr.appendChild(tdDesc);
+    tr.appendChild(tdRefund);
+    tr.appendChild(tdQty);
+    tr.appendChild(tdTotal);
+    tr.appendChild(tdActions);
+
+    distPartsBody.appendChild(tr);
+
+    function recalcRow() {
+      const refund = toNumberOrNull(refundInput.value) || 0;
+      const qty = toNumberOrNull(qtyInput.value) || 0;
+      totalInput.value = formatMoney(refund * qty);
+      recalcDistributorPartsTotals();
+    }
+
+    qtyInput.addEventListener("input", recalcRow);
+
+    searchBtn.addEventListener("click", async function () {
+      const code = (codeInput.value || "").trim();
+      if (!code) { alert("Inserisci un codice ricambio."); return; }
+      try {
+        const found = await findPartByCode(code);
+        if (!found) { alert("Ricambio non trovato in FTPartsCodes."); return; }
+        const d = found.data;
+        codeInput.dataset.partId = found.id;
+        extInput.value = d.codice_esteso || "";
+        descInput.value = d.descrizione || "";
+        refundInput.value = d.rimborso_garanzia != null ? formatMoney(d.rimborso_garanzia) : "";
+        recalcRow();
+      } catch (err) {
+        console.error(err);
+        alert("Errore ricerca ricambio: " + err.message);
       }
     });
 
-    // cosa mostrare dipende da ruolo:
-    // - dealer: mostra solo totale visibile dealer
-    // - distributore: mostra totale interno (tutto) ma aggiunge nota con totale dealer-view
-    if (!isDistributor) {
-      partsTotalSpan.textContent = formatMoney(totVisibleDealer);
-      if (partsTotalNote) partsTotalNote.textContent = "";
-    } else {
-      partsTotalSpan.textContent = formatMoney(tot);
-      if (partsTotalNote) partsTotalNote.textContent = "Totale visibile dealer: " + formatMoney(totVisibleDealer) + " €";
+    // ✅ DELETE reale
+    delBtn.addEventListener("click", async function () {
+      if (!isDistributor) return;
+      if (!confirm("Vuoi eliminare questa riga ricambio (distributore)?")) return;
+
+      try {
+        const dId = tr.dataset.docId || "";
+        if (dId) {
+          await distPartsRef.doc(dId).delete();
+        }
+        tr.remove();
+        recalcDistributorPartsTotals();
+      } catch (err) {
+        console.error(err);
+        alert("Errore eliminazione riga distributore: " + err.message);
+      }
+    });
+
+    recalcRow();
+  }
+
+  function recalcDistributorPartsTotals() {
+    let tot = 0;
+    const rows = distPartsBody.querySelectorAll("tr");
+    rows.forEach(function (tr) {
+      const totalInput = tr.querySelector("td:nth-child(6) input");
+      tot += totalInput ? (toNumberOrNull(totalInput.value) || 0) : 0;
+    });
+    distPartsTotalSpan.textContent = formatMoney(tot);
+  }
+
+  async function loadDistributorParts() {
+    if (!isDistributor) return;
+    distPartsBody.innerHTML = "";
+    try {
+      const snap = await distPartsRef.orderBy("createdAt", "asc").get();
+      snap.forEach(function (doc) {
+        const d = doc.data() || {};
+        createDistributorPartRow(d, doc.id);
+      });
+      recalcDistributorPartsTotals();
+    } catch (err) {
+      console.error("Errore load DistributorParts:", err);
     }
   }
 
-  // >>> QUI CONTINUA NELLA PARTE 2/2 (manodopera + load/save subcollections + resto invariato)
+  async function createEmptyDistributorPartDoc() {
+    const userInfo = await getCurrentUserInfo();
+    const docRef = await distPartsRef.add({
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdByUid: userInfo.uid || null,
+      createdByName: userInfo.name || null,
+      createdByDealerId: userInfo.dealerId || null,
+      visibleToDealer: false
+    });
+    return docRef.id;
+  }
+
+  // ----------------- LABOUR RATE (dealer LaborRateStd) -----------------
   async function loadLabourRateStdIfNeeded() {
     if (labourRateStd != null) {
       labourRateLabel.textContent = "Tariffa oraria dealer: " + formatMoney(labourRateStd) + " €/h";
@@ -1002,14 +1140,10 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     return { id: doc.id, data: doc.data() || {} };
   }
 
-  function createLabourRow(initialData, meta) {
-    // meta: { source: "DEALER"|"DISTRIBUTOR", docId: string|null, visibleToDealer: bool }
-    meta = meta || { source: "DEALER", docId: null, visibleToDealer: true };
-
+  // ----------------- LABOUR (DEALER) -----------------
+  function createLabourRow(initialData) {
     const tr = document.createElement("tr");
-    tr.dataset.source = meta.source || "DEALER";
-    tr.dataset.docId = meta.docId || "";
-    tr.dataset.visibleToDealer = meta.visibleToDealer ? "1" : "0";
+    tr.dataset.source = "DEALER";
 
     const tdCode = document.createElement("td");
     const codeInput = document.createElement("input");
@@ -1062,22 +1196,11 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     delBtn.className = "btn btn-small btn-danger";
     tdActions.appendChild(delBtn);
 
-    // colonna visibilità dealer (solo per distributore)
-    const tdVis = document.createElement("td");
-    tdVis.style.textAlign = "center";
-    const visChk = document.createElement("input");
-    visChk.type = "checkbox";
-    visChk.checked = !!meta.visibleToDealer;
-    tdVis.appendChild(visChk);
-
     tr.appendChild(tdCode);
     tr.appendChild(tdDesc);
     tr.appendChild(tdQty);
     tr.appendChild(tdTotal);
     tr.appendChild(tdActions);
-    tr.appendChild(tdVis);
-
-    tdVis.style.display = "none";
 
     labourBody.appendChild(tr);
 
@@ -1140,224 +1263,274 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
       recalcLabourTotals();
     });
 
-    visChk.addEventListener("change", function () {
-      tr.dataset.visibleToDealer = visChk.checked ? "1" : "0";
-      recalcLabourTotals();
-    });
-
-    function applyRowPermissions() {
-      const src = tr.dataset.source || "DEALER";
-
-      if (src === "DISTRIBUTOR") {
-        if (!isDistributor) {
-          codeInput.readOnly = true;
-          qtyInput.readOnly = true;
-          totalInput.readOnly = true;
-          searchBtn.disabled = true;
-          delBtn.disabled = true;
-          delBtn.style.display = "none";
-          tdVis.style.display = "none";
-        } else {
-          tdVis.style.display = "";
-          // distributore: può gestire
-          codeInput.readOnly = false;
-
-          // per coerenza con la tua logica, lasciamo i vincoli di updateFieldModes,
-          // MA la riga può comunque essere creata e calcolata
-          searchBtn.disabled = false;
-          delBtn.disabled = false;
-          delBtn.style.display = "";
-        }
-      } else {
-        tdVis.style.display = "none";
-      }
-    }
-
     updateFieldModes();
     recalcRow(false);
-
-    getCurrentUserInfo().then(function (info) {
-      isDistributor = !!(info && info.dealerId === "FT001");
-      applyRowPermissions();
-    });
-
-    return tr;
   }
 
   function recalcLabourTotals() {
     let tot = 0;
-    let totVisibleDealer = 0;
-
     const rows = labourBody.querySelectorAll("tr");
     rows.forEach(function (tr) {
       const totalInput = tr.querySelector("td:nth-child(4) input");
-      const rowTot = totalInput ? (toNumberOrNull(totalInput.value) || 0) : 0;
-      tot += rowTot;
-
-      const src = tr.dataset.source || "DEALER";
-      const vtd = tr.dataset.visibleToDealer === "1";
-
-      if (src === "DEALER" || (src === "DISTRIBUTOR" && vtd)) {
-        totVisibleDealer += rowTot;
-      }
+      tot += totalInput ? (toNumberOrNull(totalInput.value) || 0) : 0;
     });
-
-    if (!isDistributor) {
-      labourTotalSpan.textContent = formatMoney(totVisibleDealer);
-      if (labourTotalNote) labourTotalNote.textContent = "";
-    } else {
-      labourTotalSpan.textContent = formatMoney(tot);
-      if (labourTotalNote) labourTotalNote.textContent = "Totale visibile dealer: " + formatMoney(totVisibleDealer) + " €";
-    }
+    labourTotalSpan.textContent = formatMoney(tot);
   }
 
-  // ==========================
-  // ✅ LOAD righe: dealer dal doc, distributore da subcollections
-  // ==========================
+  // ----------------- LABOUR (DISTRIBUTOR - INTERNAL) -----------------
+  function createDistributorLabourRow(initialData, docId) {
+    const tr = document.createElement("tr");
+    tr.dataset.source = "DISTRIBUTOR";
+    tr.dataset.docId = docId || "";
 
-  function clearBodies() {
-    partsBody.innerHTML = "";
-    labourBody.innerHTML = "";
-  }
+    const tdCode = document.createElement("td");
+    const codeInput = document.createElement("input");
+    codeInput.type = "text";
+    codeInput.style.width = "100px";
+    codeInput.value = initialData && initialData.codice_labour ? initialData.codice_labour : "";
+    codeInput.dataset.labourId = initialData && initialData.id ? initialData.id : "";
 
-  async function loadDistributorRows() {
-    // dealer: vede SOLO visibili
-    // distributore: vede tutte
-    const qParts = isDistributor
-      ? distPartsRef.orderBy("createdAt", "asc")
-      : distPartsRef.where("visibleToDealer", "==", true).orderBy("createdAt", "asc");
+    const searchBtn = document.createElement("button");
+    searchBtn.type = "button";
+    searchBtn.textContent = "Cerca";
+    searchBtn.className = "btn btn-small btn-secondary";
+    searchBtn.style.marginLeft = "4px";
 
-    const qLab = isDistributor
-      ? distLabRef.orderBy("createdAt", "asc")
-      : distLabRef.where("visibleToDealer", "==", true).orderBy("createdAt", "asc");
+    tdCode.appendChild(codeInput);
+    tdCode.appendChild(searchBtn);
 
-    try {
-      const [pSnap, lSnap] = await Promise.all([qParts.get(), qLab.get()]);
+    const tdDesc = document.createElement("td");
+    const descInput = document.createElement("input");
+    descInput.type = "text";
+    descInput.readOnly = true;
+    descInput.style.width = "100%";
+    descInput.value = initialData && initialData.descrizione_tradotta ? initialData.descrizione_tradotta : "";
+    tdDesc.appendChild(descInput);
 
-      pSnap.forEach(function (doc) {
-        const d = doc.data() || {};
-        createPartRow({
-          id: d.partId || null,
-          codice: d.codice || "",
-          codice_esteso: d.codice_esteso || "",
-          descrizione: d.descrizione || "",
-          rimborso_garanzia: d.rimborso_garanzia != null ? d.rimborso_garanzia : null,
-          quantita: d.quantita != null ? d.quantita : null,
-          totale: d.totale != null ? d.totale : null
-        }, {
-          source: "DISTRIBUTOR",
-          docId: doc.id,
-          visibleToDealer: d.visibleToDealer === true
-        });
-      });
+    const tdQty = document.createElement("td");
+    tdQty.style.textAlign = "right";
+    const qtyInput = document.createElement("input");
+    qtyInput.type = "number";
+    qtyInput.min = "0";
+    qtyInput.step = "0.1";
+    qtyInput.style.width = "60px";
+    qtyInput.value = initialData && initialData.quantita != null ? String(initialData.quantita) : "1";
+    tdQty.appendChild(qtyInput);
 
-      lSnap.forEach(function (doc) {
-        const d = doc.data() || {};
-        createLabourRow({
-          id: d.labourId || null,
-          codice_labour: d.codice_labour || "",
-          descrizione_tradotta: d.descrizione_tradotta || "",
-          quantita: d.quantita != null ? d.quantita : null,
-          totale: d.totale != null ? d.totale : null
-        }, {
-          source: "DISTRIBUTOR",
-          docId: doc.id,
-          visibleToDealer: d.visibleToDealer === true
-        });
-      });
+    const tdTotal = document.createElement("td");
+    tdTotal.style.textAlign = "right";
+    const totalInput = document.createElement("input");
+    totalInput.type = "number";
+    totalInput.style.width = "90px";
+    totalInput.step = "0.01";
+    totalInput.value = initialData && initialData.totale != null ? formatMoney(initialData.totale) : "0.00";
+    tdTotal.appendChild(totalInput);
 
-    } catch (err) {
-      console.error("Errore load righe distributore:", err);
-      // non blocchiamo
+    const tdActions = document.createElement("td");
+    tdActions.style.textAlign = "center";
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.textContent = "Elimina";
+    delBtn.className = "btn btn-small btn-danger";
+    tdActions.appendChild(delBtn);
+
+    tr.appendChild(tdCode);
+    tr.appendChild(tdDesc);
+    tr.appendChild(tdQty);
+    tr.appendChild(tdTotal);
+    tr.appendChild(tdActions);
+
+    distLabourBody.appendChild(tr);
+
+    function normalizedCode() { return (codeInput.value || "").replace(/\s+/g, "").toUpperCase(); }
+    function isCode96or94() { const c = normalizedCode(); return c === "96000000" || c === "94000000"; }
+    function isCodeOL000() { const c = normalizedCode(); return c === "OL000"; }
+
+    function updateFieldModes() {
+      const isSpecialQty = isCode96or94();
+      const isOL = isCodeOL000();
+
+      if (isOL) { qtyInput.readOnly = true; totalInput.readOnly = false; }
+      else if (isSpecialQty) { qtyInput.readOnly = false; totalInput.readOnly = true; }
+      else { qtyInput.readOnly = true; totalInput.readOnly = true; }
     }
 
-    recalcPartsTotals();
-    recalcLabourTotals();
-  }
+    function recalcRow(fromTotalChange) {
+      const rate = labourRateStd || 0;
 
-  async function initialLoadAllRows() {
-    clearBodies();
-
-    // 1) righe dealer (dal doc)
-    if (Array.isArray(gar.parts)) {
-      gar.parts.forEach(function (p) { createPartRow(p, { source: "DEALER", docId: null, visibleToDealer: true }); });
-    }
-    if (Array.isArray(gar.labour)) {
-      gar.labour.forEach(function (l) { createLabourRow(l, { source: "DEALER", docId: null, visibleToDealer: true }); });
-    }
-
-    // 2) righe distributore (da subcollections, filtrate)
-    await loadDistributorRows();
-
-    recalcPartsTotals();
-    recalcLabourTotals();
-  }
-
-  // ==========================
-  // ✅ bottoni "aggiungi": se distributore aggiunge, crea RIGA DISTRIBUTORE
-  // altrimenti riga dealer classica
-  // ==========================
-
-  if (addPartBtn) {
-    addPartBtn.addEventListener("click", async function () {
-      // distributore: aggiunge riga DIST (non visibile di default)
-      if (isDistributor) {
-        const userInfo = await getCurrentUserInfo();
-        const newDoc = await distPartsRef.add({
-          codice: "",
-          codice_esteso: "",
-          descrizione: "",
-          partId: null,
-          rimborso_garanzia: null,
-          quantita: 1,
-          totale: 0,
-          visibleToDealer: false,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          createdByUid: userInfo.uid || null
-        });
-
-        // aggiungo in UI
-        createPartRow(null, { source: "DISTRIBUTOR", docId: newDoc.id, visibleToDealer: false });
-        recalcPartsTotals();
+      if (isCodeOL000()) {
+        if (fromTotalChange) {
+          const tot = toNumberOrNull(totalInput.value) || 0;
+          qtyInput.value = (rate ? tot / rate : 0).toFixed(2);
+        }
       } else {
-        createPartRow(null, { source: "DEALER", docId: null, visibleToDealer: true });
-        recalcPartsTotals();
+        const qty = toNumberOrNull(qtyInput.value) || 0;
+        totalInput.value = formatMoney(rate * qty);
+      }
+      recalcDistributorLabourTotals();
+    }
+
+    qtyInput.addEventListener("input", function () { recalcRow(false); });
+    totalInput.addEventListener("input", function () { if (isCodeOL000()) recalcRow(true); });
+
+    searchBtn.addEventListener("click", async function () {
+      const code = (codeInput.value || "").trim();
+      if (!code) { alert("Inserisci un codice labour."); return; }
+      try {
+        const found = await findLabourByCode(code);
+        if (!found) { alert("Codice labour non trovato in FTLabourCodes."); return; }
+        const d = found.data;
+        codeInput.dataset.labourId = found.id;
+        descInput.value = d.descrizione_tradotta || d.descrizione || "";
+        if (d.quantita != null && !initialData) qtyInput.value = String(d.quantita);
+        updateFieldModes();
+        recalcRow(false);
+      } catch (err) {
+        console.error(err);
+        alert("Errore ricerca labour: " + err.message);
       }
     });
+
+    codeInput.addEventListener("change", function () {
+      updateFieldModes();
+      recalcRow(false);
+    });
+
+    // ✅ DELETE reale
+    delBtn.addEventListener("click", async function () {
+      if (!isDistributor) return;
+      if (!confirm("Vuoi eliminare questa riga manodopera (distributore)?")) return;
+
+      try {
+        const dId = tr.dataset.docId || "";
+        if (dId) {
+          await distLabRef.doc(dId).delete();
+        }
+        tr.remove();
+        recalcDistributorLabourTotals();
+      } catch (err) {
+        console.error(err);
+        alert("Errore eliminazione riga distributore: " + err.message);
+      }
+    });
+
+    updateFieldModes();
+    recalcRow(false);
   }
 
+  function recalcDistributorLabourTotals() {
+    let tot = 0;
+    const rows = distLabourBody.querySelectorAll("tr");
+    rows.forEach(function (tr) {
+      const totalInput = tr.querySelector("td:nth-child(4) input");
+      tot += totalInput ? (toNumberOrNull(totalInput.value) || 0) : 0;
+    });
+    distLabourTotalSpan.textContent = formatMoney(tot);
+  }
+
+  async function loadDistributorLabour() {
+    if (!isDistributor) return;
+    distLabourBody.innerHTML = "";
+    try {
+      const snap = await distLabRef.orderBy("createdAt", "asc").get();
+      snap.forEach(function (doc) {
+        const d = doc.data() || {};
+        createDistributorLabourRow(d, doc.id);
+      });
+      recalcDistributorLabourTotals();
+    } catch (err) {
+      console.error("Errore load DistributorLabour:", err);
+    }
+  }
+
+  async function createEmptyDistributorLabourDoc() {
+    const userInfo = await getCurrentUserInfo();
+    const docRef = await distLabRef.add({
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdByUid: userInfo.uid || null,
+      createdByName: userInfo.name || null,
+      createdByDealerId: userInfo.dealerId || null,
+      visibleToDealer: false
+    });
+    return docRef.id;
+  }
+
+  // ----------------- INIT DISTRIBUTOR FLAG + UI -----------------
+  (async function initDistributorUI() {
+    try {
+      const info = await getCurrentUserInfo();
+      isDistributor = !!(info && info.isDistributor === true);
+
+      if (isDistributor) {
+        if (distPartsBox) distPartsBox.style.display = "block";
+        if (distLabourBox) distLabourBox.style.display = "block";
+      } else {
+        if (distPartsBox) distPartsBox.style.display = "none";
+        if (distLabourBox) distLabourBox.style.display = "none";
+      }
+
+      await loadLabourRateStdIfNeeded();
+
+      if (Array.isArray(gar.labour)) {
+        gar.labour.forEach(function (l) { createLabourRow(l); });
+        recalcLabourTotals();
+      }
+
+      if (isDistributor) {
+        await loadDistributorParts();
+        await loadDistributorLabour();
+      }
+    } catch (e) {
+      console.warn("Init distributor UI failed:", e);
+      // prosegui comunque con labour rate e righe dealer
+      loadLabourRateStdIfNeeded().then(function () {
+        if (Array.isArray(gar.labour)) {
+          gar.labour.forEach(function (l) { createLabourRow(l); });
+          recalcLabourTotals();
+        }
+      });
+    }
+  })();
+
+  // ----------------- ADD LABOUR (dealer) -----------------
   if (addLabourBtn) {
     addLabourBtn.addEventListener("click", async function () {
       await loadLabourRateStdIfNeeded();
+      createLabourRow(null);
+    });
+  }
 
-      if (isDistributor) {
-        const userInfo = await getCurrentUserInfo();
-        const newDoc = await distLabRef.add({
-          codice_labour: "",
-          descrizione_tradotta: "",
-          labourId: null,
-          quantita: 1,
-          totale: 0,
-          visibleToDealer: false,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          createdByUid: userInfo.uid || null
-        });
-
-        createLabourRow(null, { source: "DISTRIBUTOR", docId: newDoc.id, visibleToDealer: false });
-        recalcLabourTotals();
-      } else {
-        createLabourRow(null, { source: "DEALER", docId: null, visibleToDealer: true });
-        recalcLabourTotals();
+  // ----------------- ADD DISTRIBUTOR PART/LAB -----------------
+  if (addDistPartBtn) {
+    addDistPartBtn.addEventListener("click", async function () {
+      if (!isDistributor) return;
+      try {
+        const docId = await createEmptyDistributorPartDoc();
+        createDistributorPartRow({}, docId);
+        recalcDistributorPartsTotals();
+      } catch (err) {
+        console.error(err);
+        alert("Errore creazione riga ricambio distributore: " + err.message);
       }
     });
   }
 
-  // ==========================
-  // ✅ SAVE:
-  // - salva SEMPRE garanziaData (solo righe DEALER, come prima)
-  // - se distributore: sincronizza anche subcollections DistributorParts/Labour
-  // ==========================
+  if (addDistLabourBtn) {
+    addDistLabourBtn.addEventListener("click", async function () {
+      if (!isDistributor) return;
+      try {
+        await loadLabourRateStdIfNeeded();
+        const docId = await createEmptyDistributorLabourDoc();
+        createDistributorLabourRow({}, docId);
+        recalcDistributorLabourTotals();
+      } catch (err) {
+        console.error(err);
+        alert("Errore creazione riga manodopera distributore: " + err.message);
+      }
+    });
+  }
 
+  // ----------------- SAVE GARANZIA (dealer) + SYNC distributor subcollections -----------------
   if (saveBtn) {
     saveBtn.addEventListener("click", async function () {
       try {
@@ -1396,15 +1569,11 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
 
         if (isRicambio && prevInvDateInput) garanziaData.previousInvoiceDate = prevInvDateInput.value || null;
 
-        // --------- PARTS (solo dealer nel doc) ---------
+        // -------- dealer parts (come prima) --------
         const parts = [];
         let partsTotal = 0;
-
         const partRows = partsBody.querySelectorAll("tr");
         partRows.forEach(function (tr) {
-          const src = tr.dataset.source || "DEALER";
-          if (src !== "DEALER") return;
-
           const codeInput = tr.querySelector("td:nth-child(1) input");
           const refundInput = tr.querySelector("td:nth-child(4) input");
           const qtyInput = tr.querySelector("td:nth-child(5) input");
@@ -1428,19 +1597,14 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
         garanziaData.parts = parts;
         garanziaData.totaleRicambi = partsTotal;
 
-        // --------- LABOUR (solo dealer nel doc) ---------
+        // -------- dealer labour (come prima) --------
         const labour = [];
         let labourTotal = 0;
-
         const labourRows = labourBody.querySelectorAll("tr");
         labourRows.forEach(function (tr) {
-          const src = tr.dataset.source || "DEALER";
-          if (src !== "DEALER") return;
-
           const codeInput = tr.querySelector("td:nth-child(1) input");
           const qtyInput = tr.querySelector("td:nth-child(3) input");
           const totalInput = tr.querySelector("td:nth-child(4) input");
-
           const codice = codeInput ? (codeInput.value || "").trim() : "";
           if (!codice) return;
 
@@ -1457,85 +1621,89 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
         garanziaData.labour = labour;
         garanziaData.totaleManodopera = labourTotal;
 
-        // --------- update doc principale ---------
+        // -------- salva garanzia principale --------
         const fieldName = isRicambio ? "garanziaRicambio" : "garanzia";
         const updateObj = {};
         updateObj[fieldName] = garanziaData;
-
         await claimRef.update(updateObj);
 
-        // --------- sync subcollections (solo distributore) ---------
+        // -------- sync subcollections distributore (solo se distributore) --------
         if (isDistributor) {
           const userInfo = await getCurrentUserInfo();
 
-          // Parts dist
-          const partRows2 = partsBody.querySelectorAll("tr");
-          for (let i = 0; i < partRows2.length; i++) {
-            const tr = partRows2[i];
-            const src = tr.dataset.source || "DEALER";
-            if (src !== "DISTRIBUTOR") continue;
-
+          // PARTS dist: upsert + cleanup righe vuote (codice vuoto => delete doc)
+          const distPartRows = distPartsBody.querySelectorAll("tr");
+          for (let i = 0; i < distPartRows.length; i++) {
+            const tr = distPartRows[i];
             const docId = tr.dataset.docId || "";
-            if (!docId) continue;
 
             const codeInput = tr.querySelector("td:nth-child(1) input");
-            const extInput  = tr.querySelector("td:nth-child(2) input");
-            const descInput = tr.querySelector("td:nth-child(3) input");
             const refundInput = tr.querySelector("td:nth-child(4) input");
-            const qtyInput    = tr.querySelector("td:nth-child(5) input");
-            const totalInput  = tr.querySelector("td:nth-child(6) input");
-            const visChk      = tr.querySelector("td:nth-child(8) input[type='checkbox']");
+            const qtyInput = tr.querySelector("td:nth-child(5) input");
+            const totalInput = tr.querySelector("td:nth-child(6) input");
+
+            const codice = codeInput ? (codeInput.value || "").trim() : "";
+
+            // ✅ cleanup: niente righe vuote in DB
+            if (!codice) {
+              if (docId) { try { await distPartsRef.doc(docId).delete(); } catch(e){} }
+              continue;
+            }
 
             const payload = {
-              partId: codeInput ? (codeInput.dataset.partId || null) : null,
-              codice: codeInput ? (codeInput.value || "").trim() : "",
-              codice_esteso: extInput ? (extInput.value || "") : "",
-              descrizione: descInput ? (descInput.value || "") : "",
-              rimborso_garanzia: refundInput ? toNumberOrNull(refundInput.value) : null,
-              quantita: qtyInput ? toNumberOrNull(qtyInput.value) : null,
-              totale: totalInput ? toNumberOrNull(totalInput.value) : null,
-              visibleToDealer: visChk ? !!visChk.checked : (tr.dataset.visibleToDealer === "1"),
+              id: codeInput.dataset.partId || null,
+              codice: codice,
+              codice_esteso: tr.querySelector("td:nth-child(2) input").value || null,
+              descrizione: tr.querySelector("td:nth-child(3) input").value || null,
+              rimborso_garanzia: toNumberOrNull(refundInput.value),
+              quantita: toNumberOrNull(qtyInput.value),
+              totale: toNumberOrNull(totalInput.value),
+              visibleToDealer: false,
               updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-              updatedByUid: userInfo.uid || null
+              updatedByUid: userInfo.uid || null,
+              updatedByName: userInfo.name || null,
+              updatedByDealerId: userInfo.dealerId || null
             };
 
-            await distPartsRef.doc(docId).set(payload, { merge: true });
+            if (docId) {
+              await distPartsRef.doc(docId).set(payload, { merge: true });
+            }
           }
 
-          // Labour dist
-          const labourRows2 = labourBody.querySelectorAll("tr");
-          for (let i = 0; i < labourRows2.length; i++) {
-            const tr = labourRows2[i];
-            const src = tr.dataset.source || "DEALER";
-            if (src !== "DISTRIBUTOR") continue;
-
+          // LABOUR dist: upsert + cleanup righe vuote
+          const distLabRows = distLabourBody.querySelectorAll("tr");
+          for (let i = 0; i < distLabRows.length; i++) {
+            const tr = distLabRows[i];
             const docId = tr.dataset.docId || "";
-            if (!docId) continue;
 
             const codeInput = tr.querySelector("td:nth-child(1) input");
-            const descInput = tr.querySelector("td:nth-child(2) input");
-            const qtyInput  = tr.querySelector("td:nth-child(3) input");
-            const totalInput= tr.querySelector("td:nth-child(4) input");
-            const visChk    = tr.querySelector("td:nth-child(6) input[type='checkbox']");
+            const qtyInput = tr.querySelector("td:nth-child(3) input");
+            const totalInput = tr.querySelector("td:nth-child(4) input");
+            const codice = codeInput ? (codeInput.value || "").trim() : "";
+
+            if (!codice) {
+              if (docId) { try { await distLabRef.doc(docId).delete(); } catch(e){} }
+              continue;
+            }
 
             const payload = {
-              labourId: codeInput ? (codeInput.dataset.labourId || null) : null,
-              codice_labour: codeInput ? (codeInput.value || "").trim() : "",
-              descrizione_tradotta: descInput ? (descInput.value || "") : "",
-              quantita: qtyInput ? toNumberOrNull(qtyInput.value) : null,
-              totale: totalInput ? toNumberOrNull(totalInput.value) : null,
-              visibleToDealer: visChk ? !!visChk.checked : (tr.dataset.visibleToDealer === "1"),
+              id: codeInput.dataset.labourId || null,
+              codice_labour: codice,
+              descrizione_tradotta: tr.querySelector("td:nth-child(2) input").value || null,
+              quantita: toNumberOrNull(qtyInput.value),
+              totale: toNumberOrNull(totalInput.value),
+              visibleToDealer: false,
               updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-              updatedByUid: userInfo.uid || null
+              updatedByUid: userInfo.uid || null,
+              updatedByName: userInfo.name || null,
+              updatedByDealerId: userInfo.dealerId || null
             };
 
-            await distLabRef.doc(docId).set(payload, { merge: true });
+            if (docId) {
+              await distLabRef.doc(docId).set(payload, { merge: true });
+            }
           }
         }
-
-        // refresh totals
-        recalcPartsTotals();
-        recalcLabourTotals();
 
         alert(labelSave + " salvati.");
       } catch (err) {
@@ -1544,19 +1712,6 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
       }
     });
   }
-
-  // ✅ init: carica labourRate, ruolo, righe
-  Promise.resolve()
-    .then(function () { return getCurrentUserInfo(); })
-    .then(function (info) {
-      isDistributor = !!(info && info.dealerId === "FT001");
-      if (isDistributor) {
-        if (distPartsVisHead) distPartsVisHead.style.display = "";
-        if (distLabVisHead) distLabVisHead.style.display = "";
-      }
-    })
-    .then(function () { return loadLabourRateStdIfNeeded(); })
-    .then(function () { return initialLoadAllRows(); });
 
   // Garanzia: Dati generali + Allegati + Note
   addAttachmentsAndNotesSection(container, ctx, { showGeneral: true });
@@ -1632,7 +1787,7 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
     let isDistributor = false;
 
     getCurrentUserInfo().then(function (info) {
-      if (info && info.dealerId === "FT001") {
+      if (info && info.isDistributor === true) {
         isDistributor = true;
       } else {
         if (sinistroInput) sinistroInput.disabled = true;
@@ -1909,31 +2064,35 @@ let _ftclaimsUserInfoPromise = null;
 
 function getCurrentUserInfo() {
   if (typeof firebase === "undefined" || !firebase.auth || !firebase.firestore) {
-    return Promise.resolve({ uid: null, name: null, dealerId: null });
+    return Promise.resolve({ uid: null, name: null, dealerId: null, isDistributorUser: false, isDistributor: false });
   }
 
   if (!_ftclaimsUserInfoPromise) {
     _ftclaimsUserInfoPromise = (async function () {
       const auth = firebase.auth();
       const user = auth.currentUser;
-      if (!user) return { uid: null, name: null, dealerId: null };
+      if (!user) return { uid: null, name: null, dealerId: null, isDistributorUser: false, isDistributor: false };
 
       const db = firebase.firestore();
       let name = user.displayName || null;
       let dealerId = null;
+      let isDistributorUser = false;
 
       try {
         const snap = await db.collection("Users").doc(user.uid).get();
         if (snap.exists) {
           const d = snap.data() || {};
           dealerId = d.dealerId || d.DealerID || d.dealerID || null;
+          isDistributorUser = (d.isDistributorUser === true);
           if (!name) name = d.fullName || d.name || d.displayName || null;
         }
       } catch (err) {
         console.warn("Errore lettura utente per allegati/note:", err);
       }
 
-      return { uid: user.uid, name: name, dealerId: dealerId };
+      const isDistributor = (dealerId === "FT001") || (isDistributorUser === true);
+
+      return { uid: user.uid, name: name, dealerId: dealerId, isDistributorUser: isDistributorUser, isDistributor: isDistributor };
     })();
   }
 
