@@ -11,149 +11,146 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
-
-  <style>
-    /* ===== POPUP CIRCOLARI BLOCCANTE (invariato) ===== */
-    #circular-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-    #circular-modal {
-      background: #fff;
-      max-width: 800px;
-      width: 100%;
-      max-height: 90vh;
-      border-radius: 14px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.22);
-    }
-    #circular-modal header {
-      background: #0b1220;
-      color: #fff;
-      padding: 12px 16px;
-      font-weight: 900;
-    }
-    #circular-modal .body {
-      padding: 16px;
-      overflow-y: auto;
-      flex: 1;
-    }
-    #circular-modal .footer {
-      padding: 12px 16px;
-      border-top: 1px solid #eee;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-    #circular-text {
-      white-space: pre-wrap;
-      background: #f9fafb;
-      padding: 12px;
-      border-radius: 12px;
-      border: 1px solid #e5e7eb;
-    }
-  </style>
 </head>
 
 <body class="ft-page">
-  <div class="ft-layout">
-    <div class="ft-sidebar"></div>
 
-    <div class="ft-content">
+  <div class="ft-container">
 
-      <div class="card">
+    <!-- TOPBAR -->
+    <div class="ft-topbar">
+      <div class="ft-brand">
+        <h1>FTI-HUB</h1>
+        <p class="subtitle">Portale After Sales • strumenti e servizi</p>
+      </div>
 
-        <div class="topbar">
-          <div>
-            <h1>FTI-HUB</h1>
-            <div class="subtitle">Portale After Sales • strumenti e servizi</div>
-          </div>
-          <button onclick="logout()">Logout</button>
-        </div>
+      <div class="ft-actions">
+        <span id="role-badge" class="badge" style="display:none;">ADMIN</span>
+        <button class="btn btn-primary btn-small" onclick="logout()">Logout</button>
+      </div>
+    </div>
 
-        <div id="user-info" class="userbox">Caricamento dati utente...</div>
+    <!-- MAIN SURFACE -->
+    <div class="card pad">
 
-        <div class="hr"></div>
+      <!-- user info -->
+      <div id="user-info" class="userbox">Caricamento dati utente...</div>
 
-        <div class="dashboard">
+      <div class="hr"></div>
 
-          <div id="tile-admin" class="tile" style="display:none;">
-            <div class="row" style="justify-content:space-between;">
-              <h3>FTDMS</h3>
+      <!-- dashboard grid (max 3 per riga) -->
+      <div class="dashboard">
+
+        <!-- FTDMS (solo Admin) -->
+        <div id="admin-section" style="display:none;">
+          <div class="dashCard">
+            <div class="dashHead">
+              <h3 class="dashTitle">FTDMS</h3>
               <span class="badge">ADMIN</span>
             </div>
-            <p>Gestione Dealer e Utenze.</p>
-            <button class="btn-tile" onclick="goToDMS()">Apri FTDMS</button>
-          </div>
-
-          <div class="tile">
-            <h3>FTCIRCAS</h3>
-            <p>Circolari ufficiali.</p>
-            <button class="btn-tile" onclick="goToFTCIRCAS()">Apri Circolari</button>
-          </div>
-
-          <div class="tile">
-            <h3>FTVIN</h3>
-            <p>Verifica copertura VIN.</p>
-            <button class="btn-tile" onclick="goToFTVIN()">Apri FTVIN</button>
-          </div>
-
-          <div class="tile">
-            <h3>FTFSA</h3>
-            <p>Campagne FSA.</p>
-            <button class="btn-tile" onclick="goToFTFSA()">Apri FTFSA</button>
-          </div>
-
-          <div class="tile">
-            <h3>FTCLAIMS HISTORY VIN</h3>
-            <p>Storico manutenzioni per telaio.</p>
-            <button class="btn-tile" onclick="goToFTCLAIMS_HISTORY_VIN()">Apri Storico VIN</button>
-          </div>
-
-          <div class="tile">
-            <h3>FTCLAIMS</h3>
-            <p>Nuove pratiche di garanzia.</p>
-            <button class="btn-tile" onclick="goToFTCLAIMS()">Apri FTCLAIMS</button>
-          </div>
-
-          <div class="tile">
-            <h3>FTMANAG</h3>
-            <p>Gestione pratiche esistenti.</p>
-            <button class="btn-tile" onclick="goToFTMANAG()">Apri FTMANAG</button>
-          </div>
-
-          <div class="tile">
-            <h3>FTHOTLINE</h3>
-            <p>Hotline tecnica.</p>
-            <button class="btn-tile" onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- POPUP CIRCOLARI -->
-      <div id="circular-overlay">
-        <div id="circular-modal">
-          <header id="circular-title">Circolare obbligatoria</header>
-          <div class="body">
-            <div id="circular-meta"></div>
-            <div id="circular-text"></div>
-          </div>
-          <div class="footer">
-            <span id="circular-status"></span>
-            <button onclick="acceptCircular()">Ho letto e preso visione</button>
+            <p class="dashDesc">Gestione Dealer e Utenze.</p>
+            <div class="dashFooter">
+              <button class="btn btn-primary btn-wide" onclick="goToDMS()">Apri FTDMS</button>
+            </div>
           </div>
         </div>
-      </div>
 
+        <!-- FTCIRCAS -->
+        <div class="dashCard">
+          <div class="dashHead">
+            <h3 class="dashTitle">FTCIRCAS</h3>
+          </div>
+          <p class="dashDesc">Circolari ufficiali.</p>
+          <div class="dashFooter">
+            <button class="btn btn-primary btn-wide" onclick="goToFTCIRCAS()">Apri Circolari</button>
+          </div>
+        </div>
+
+        <!-- FTVIN -->
+        <div class="dashCard">
+          <div class="dashHead">
+            <h3 class="dashTitle">FTVIN</h3>
+          </div>
+          <p class="dashDesc">Verifica copertura VIN.</p>
+          <div class="dashFooter">
+            <button class="btn btn-primary btn-wide" onclick="goToFTVIN()">Apri FTVIN</button>
+          </div>
+        </div>
+
+        <!-- FTFSA -->
+        <div class="dashCard">
+          <div class="dashHead">
+            <h3 class="dashTitle">FTFSA</h3>
+          </div>
+          <p class="dashDesc">Campagne FSA.</p>
+          <div class="dashFooter">
+            <button class="btn btn-primary btn-wide" onclick="goToFTFSA()">Apri FTFSA</button>
+          </div>
+        </div>
+
+        <!-- FTCLAIMS HISTORY -->
+        <div class="dashCard">
+          <div class="dashHead">
+            <h3 class="dashTitle">FTCLAIMS HISTORY VIN</h3>
+          </div>
+          <p class="dashDesc">Storico manutenzioni per telaio.</p>
+          <div class="dashFooter">
+            <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS_HISTORY_VIN()">Apri Storico VIN</button>
+          </div>
+        </div>
+
+        <!-- FTCLAIMS -->
+        <div class="dashCard">
+          <div class="dashHead">
+            <h3 class="dashTitle">FTCLAIMS</h3>
+          </div>
+          <p class="dashDesc">Nuove pratiche di garanzia.</p>
+          <div class="dashFooter">
+            <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS()">Apri FTCLAIMS</button>
+          </div>
+        </div>
+
+        <!-- FTMANAG -->
+        <div class="dashCard">
+          <div class="dashHead">
+            <h3 class="dashTitle">FTMANAG</h3>
+          </div>
+          <p class="dashDesc">Gestione pratiche esistenti.</p>
+          <div class="dashFooter">
+            <button class="btn btn-primary btn-wide" onclick="goToFTMANAG()">Apri FTMANAG</button>
+          </div>
+        </div>
+
+        <!-- FTHOTLINE -->
+        <div class="dashCard">
+          <div class="dashHead">
+            <h3 class="dashTitle">FTHOTLINE</h3>
+          </div>
+          <p class="dashDesc">Hotline tecnica.</p>
+          <div class="dashFooter">
+            <button class="btn btn-primary btn-wide" onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
+          </div>
+        </div>
+
+      </div><!-- /dashboard -->
+
+    </div><!-- /card -->
+
+  </div><!-- /ft-container -->
+
+
+  <!-- POPUP CIRCOLARI -->
+  <div id="circular-overlay">
+    <div id="circular-modal">
+      <header id="circular-title">Circolare obbligatoria</header>
+      <div class="body">
+        <div id="circular-meta"></div>
+        <div id="circular-text"></div>
+      </div>
+      <div class="footer">
+        <span id="circular-status"></span>
+        <button class="btn btn-primary" onclick="acceptCircular()">Ho letto e preso visione</button>
+      </div>
     </div>
   </div>
 
@@ -172,22 +169,22 @@
   function renderUserInfo() {
     const { user, userData } = currentAccount;
 
-    const role = userData.role || "User";
-    const dealer = userData.dealerId || "-";
-
     document.getElementById("user-info").innerHTML = `
       <div><strong>Email:</strong> ${user.email}</div>
-      <div><strong>Dealer ID:</strong> ${dealer}</div>
-      <div><strong>Ruolo:</strong> ${role}</div>
+      <div><strong>Dealer ID:</strong> ${userData.dealerId || "-"}</div>
+      <div><strong>Ruolo:</strong> ${userData.role || "User"}</div>
     `;
 
-    document.getElementById("tile-admin").style.display =
-      (role === "Admin") ? "flex" : "none";
+    const isAdmin = (userData.role === "Admin");
+
+    document.getElementById("admin-section").style.display = isAdmin ? "block" : "none";
+    document.getElementById("role-badge").style.display = isAdmin ? "inline-flex" : "none";
   }
 
   async function enforceCirculars() {
     const dealerId = currentAccount.userData.dealerId;
     const snap = await db.collection("Circulars").orderBy("publishDate","asc").get();
+
     for (const d of snap.docs) {
       const ack = await d.ref.collection("ack").doc(dealerId).get();
       if (!ack.exists) {
