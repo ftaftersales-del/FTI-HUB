@@ -193,3 +193,47 @@ th{ background:#fafafa; font-weight:bold; }
 /* link */
 a{ color: var(--primary); text-decoration:none; }
 a:hover{ text-decoration:underline; }
+
+/* ===============================
+   FTI-HUB: SIDEBAR SINISTRA (1/5)
+   Da usare su tutte le pagine tranne index.html
+   Immagine: assets/thunderstruck.png
+   =============================== */
+
+.ft-layout{
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* fascia sinistra */
+.ft-sidebar{
+  width: 20%;
+  min-width: 220px;
+  background-image: url("assets/thunderstruck.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* contenuto pagina */
+.ft-content{
+  width: 80%;
+  padding: 18px;          /* mantiene lo stesso padding che avevi sul body */
+  background: var(--bg);
+  overflow-x: hidden;
+}
+
+/* IMPORTANTISSIMO:
+   quando usi .ft-layout, il body non deve aggiungere padding o background extra */
+body.ft-page{
+  padding: 0;
+  background: var(--bg);
+}
+
+/* opzionale: su schermi piccoli nascondi la fascia */
+@media (max-width: 980px){
+  .ft-sidebar{ display: none; }
+  .ft-content{ width: 100%; }
+}
+
