@@ -1,148 +1,116 @@
 /* ===============================
-   FTSTYLE - CSS globale HUB (v2+compat)
-   Moderno, coerente, riusabile
-   + Sidebar immagine (1/5)
-   + Mantiene TUTTE le classi v2
-   + Compatibilità per FTHUBAS: ft-layout / ft-sidebar / ft-content
+   FTSTYLE - CSS globale HUB (v3)
+   Direzione: Dark Sidebar + Light App
+   - Sidebar 1/5 con immagine attenuata (elegante)
+   - UI moderna: spacing, typography, tiles a griglia
+   - Mantiene le classi usate nelle altre pagine (claims/forms/banner/table/notes)
    =============================== */
 
 :root{
-  /* base */
-  --bg: #f5f6f8;
-  --card: #ffffff;
-  --text: #111;
-  --muted: #667085;
-  --border: #e6e8ec;
-  --border2: #eef0f3;
+  /* neutrals */
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --surface-2: #fbfcfe;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: rgba(15, 23, 42, 0.10);
+  --border-2: rgba(15, 23, 42, 0.06);
 
-  /* Ford */
-  --ford-blue: #003478;
-  --ford-blue-hover: #00285e;
-  --ford-accent: #005edc;
+  /* ford */
+  --ford: #003478;
+  --ford-2: #005edc;
+  --ford-hover: #00285e;
 
   /* states */
-  --ok-bg: #e9fff0;
-  --ok-bd: #bfeccc;
-  --ok-tx: #0f6a2a;
+  --ok-bg: #e9fff0;  --ok-bd: #bfeccc;  --ok-tx: #0f6a2a;
+  --err-bg:#ffe9ea;  --err-bd:#f1b7bb;  --err-tx:#8a1f28;
+  --warn-bg:#fff6e6; --warn-bd:#ffd18a; --warn-tx:#8a5a00;
 
-  --err-bg:#ffe9ea;
-  --err-bd:#f1b7bb;
-  --err-tx:#8a1f28;
+  /* radius/shadow */
+  --r-lg: 18px;
+  --r-md: 14px;
+  --r-sm: 10px;
 
-  --warn-bg:#fff6e6;
-  --warn-bd:#ffd18a;
-  --warn-tx:#8a5a00;
-
-  /* misc */
-  --radius: 14px;
-  --radius-sm: 10px;
-  --shadow: 0 10px 26px rgba(16,24,40,0.08);
-  --shadow2: 0 14px 34px rgba(16,24,40,0.12);
-
-  --font: Arial, sans-serif;
+  --shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
+  --shadow-soft: 0 8px 18px rgba(2, 6, 23, 0.06);
 
   /* sidebar */
-  --side-w: 20vw;         /* 1/5 */
-  --side-min: 220px;
-  --side-max: 360px;
+  --side-w: 20vw;
+  --side-min: 240px;
+  --side-max: 380px;
+
+  /* typography */
+  --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 }
 
 *{ box-sizing:border-box; }
-
 html, body{ height:100%; }
 
 body{
-  font-family: var(--font);
   margin:0;
+  font-family: var(--font);
   background: var(--bg);
   color: var(--text);
 }
 
 /* ===============================
-   PAGE WRAPPER + SIDEBAR (v2)
+   GLOBAL WRAPPER (compat: ft-layout / ft-sidebar / ft-content)
    =============================== */
 
-/* usa questa classe sul body: <body class="ft-page with-side"> */
-.ft-page{ padding: 18px; }
+.ft-page{ min-height:100vh; }
 
-/* layout con sidebar */
-.with-side{ padding: 0; /* gestito da wrapper */ }
-
-.ft-shell{
-  min-height: 100vh;
-  display: grid;
-  grid-template-columns: clamp(var(--side-min), var(--side-w), var(--side-max)) 1fr;
-}
-
-/* colonna sinistra */
-.ft-side{
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow: hidden;
-  background: #0b1220;
-}
-
-.ft-side img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display:block;
-  filter: saturate(1.05) contrast(1.05);
-}
-
-/* colonna destra */
-.ft-main{ padding: 22px 22px 28px; }
-
-/* mobile: sidebar sopra */
-@media (max-width: 980px){
-  .ft-shell{ grid-template-columns: 1fr; }
-  .ft-side{ position: relative; height: 240px; }
-  .ft-main{ padding: 18px; }
-}
-
-/* ===============================
-   COMPATIBILITÀ FTHUBAS (il tuo wrapper attuale)
-   =============================== */
-/* In FTHUBAS hai:
-   <body class="ft-page">
-     <div class="ft-layout">
-       <div class="ft-sidebar"></div>
-       <div class="ft-content">...</div>
-*/
 .ft-layout{
   min-height: 100vh;
   display: grid;
   grid-template-columns: clamp(var(--side-min), var(--side-w), var(--side-max)) 1fr;
 }
 
-/* colonna sinistra: usa la tua immagine assets/thunderstruck.png */
+/* sidebar elegante (attenua l’immagine) */
 .ft-sidebar{
   position: sticky;
   top: 0;
   height: 100vh;
   overflow: hidden;
-  background: #0b1220;
+
+  background: #070b15;
   background-image: url("assets/thunderstruck.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
 }
 
-/* filtro per renderla più “elegante” */
+/* overlay/blur per renderla “premium” */
+.ft-sidebar::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:
+    radial-gradient(1200px 900px at 30% 20%, rgba(0,94,220,0.22), transparent 60%),
+    linear-gradient(180deg, rgba(2,6,23,0.55), rgba(2,6,23,0.78));
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events:none;
+}
+
+/* leggero “noise” (simula texture) */
 .ft-sidebar::after{
   content:"";
   position:absolute;
   inset:0;
-  background: linear-gradient(180deg, rgba(11,18,32,0.18), rgba(11,18,32,0.34));
+  opacity:0.10;
+  background-image: radial-gradient(rgba(255,255,255,0.35) 1px, transparent 1px);
+  background-size: 24px 24px;
   pointer-events:none;
 }
 
-.ft-content{ padding: 22px 22px 28px; }
+.ft-content{
+  padding: 26px 26px 34px;
+}
 
+/* mobile */
 @media (max-width: 980px){
   .ft-layout{ grid-template-columns: 1fr; }
-  .ft-sidebar{ position: relative; height: 240px; }
+  .ft-sidebar{ position: relative; height: 220px; }
   .ft-content{ padding: 18px; }
 }
 
@@ -150,8 +118,9 @@ body{
    TYPO
    =============================== */
 
-h1{ font-size: 20px; margin: 0 0 6px; }
-h2{ font-size: 18px; margin: 0; }
+h1{ font-size: 22px; margin: 0 0 6px; letter-spacing: -0.2px; }
+h2{ font-size: 18px; margin: 0; letter-spacing: -0.2px; }
+h3{ letter-spacing: -0.1px; }
 
 .subtitle{
   font-size: 13px;
@@ -160,14 +129,14 @@ h2{ font-size: 18px; margin: 0; }
 }
 
 /* ===============================
-   CONTAINERS / CARD
+   CARD
    =============================== */
 
 .card{
-  background: var(--card);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  padding: 18px 18px;
   box-shadow: var(--shadow);
 }
 
@@ -176,32 +145,25 @@ h2{ font-size: 18px; margin: 0; }
   box-shadow: none;
 }
 
-.card h3{
-  font-size: 14px;
-  margin: 0 0 10px;
-  color: var(--text);
-}
-
 .hr{
   height: 1px;
-  background: var(--border2);
+  background: var(--border-2);
   margin: 16px 0;
 }
 
 /* helper */
-.small{ font-size: 12px; color: #555; }
-
+.small{ font-size: 12px; color: var(--muted); }
 .mutedBox{
-  background:#f8fafc;
-  border:1px dashed #d7dce3;
-  padding:10px;
-  border-radius: var(--radius-sm);
-  font-size:12px;
-  color:#445;
+  background: var(--surface-2);
+  border: 1px dashed rgba(15,23,42,0.18);
+  padding: 12px;
+  border-radius: var(--r-md);
+  font-size: 12px;
+  color: #475569;
 }
 
 /* ===============================
-   GRID / ROW
+   LAYOUT / GRID
    =============================== */
 
 .layout{
@@ -237,14 +199,14 @@ label{
   font-size: 11px;
   font-weight: 700;
   margin-bottom: 6px;
-  color:#2b2f36;
+  color:#1f2937;
 }
 
 input, select, textarea{
   width:100%;
   padding: 10px 10px;
-  border: 1px solid #d6dbe3;
-  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,0.14);
+  border-radius: 12px;
   font-size: 13px;
   background:#fff;
   outline: none;
@@ -253,7 +215,7 @@ input, select, textarea{
 
 input:focus, select:focus, textarea:focus{
   border-color: rgba(0,94,220,0.55);
-  box-shadow: 0 0 0 4px rgba(0,94,220,0.12);
+  box-shadow: 0 0 0 4px rgba(0,94,220,0.14);
 }
 
 textarea{ resize: vertical; }
@@ -264,16 +226,17 @@ textarea{ resize: vertical; }
 
 .btn{
   border:none;
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: 12px;
+  height: 44px;
+  padding: 0 14px;
   font-size: 13px;
   cursor:pointer;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   gap:8px;
-  transition: transform .08s ease, filter .12s ease, background .12s ease;
   user-select:none;
+  transition: transform .08s ease, filter .12s ease, box-shadow .12s ease;
 }
 
 .btn:active{ transform: translateY(1px); }
@@ -281,7 +244,8 @@ textarea{ resize: vertical; }
 
 .btn.primary{
   color:#fff;
-  background: linear-gradient(180deg, var(--ford-accent), var(--ford-blue));
+  background: linear-gradient(180deg, var(--ford-2), var(--ford));
+  box-shadow: 0 10px 20px rgba(0,52,120,0.18);
 }
 .btn.primary:hover{ filter: brightness(0.98); }
 
@@ -289,131 +253,36 @@ textarea{ resize: vertical; }
   background:#64748b;
   color:#fff;
 }
-.btn.secondary:hover{ filter: brightness(0.98); }
+.btn.danger{ background:#dc3545; color:#fff; }
+.btn.light{ background:#e9eef6; color:#0f172a; }
 
-.btn.danger{
-  background:#dc3545;
-  color:#fff;
-}
-.btn.light{
-  background:#e9eef6;
-  color:#0f172a;
-}
-
-/* ===============================
-   BOTTONI HTML NATIVI (per pagine che usano <button> senza .btn)
-   -> Questo ti serve in FTHUBAS, perché lì usi <button onclick=...> senza classi
-   -> Li rendiamo moderni e “grossi”, senza rompere .btn
-   =============================== */
-
-button:not(.btn):not(.btn-dashboard){
-  height: 46px;
-  padding: 0 14px;
+/* Bottoni nativi <button> senza classi (come FTHUBAS originale) */
+button{
+  border:none;
   border-radius: 12px;
-  border: none;
-  cursor: pointer;
-
-  color: #fff;
+  height: 44px;
+  padding: 0 14px;
+  cursor:pointer;
   font-weight: 800;
   letter-spacing: 0.2px;
-
-  background: linear-gradient(180deg, var(--ford-accent), var(--ford-blue));
+  color:#fff;
+  background: linear-gradient(180deg, var(--ford-2), var(--ford));
   box-shadow: 0 10px 20px rgba(0,52,120,0.18);
-
   transition: transform .08s ease, filter .12s ease, box-shadow .12s ease;
 }
-
-button:not(.btn):not(.btn-dashboard):hover{
-  filter: brightness(0.98);
-  box-shadow: 0 14px 28px rgba(0,52,120,0.22);
-}
-
-button:not(.btn):not(.btn-dashboard):active{ transform: translateY(1px); }
-button:not(.btn):not(.btn-dashboard):disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; }
-
-/* Logout più sobrio dentro header */
-.header button:not(.btn):not(.btn-dashboard){
-  height: 40px;
-  padding: 0 12px;
-  border-radius: 10px;
-  background: #64748b;
-  box-shadow: none;
-}
+button:hover{ filter: brightness(0.98); box-shadow: 0 14px 28px rgba(0,52,120,0.22); }
+button:active{ transform: translateY(1px); }
+button:disabled{ opacity:.55; cursor:not-allowed; box-shadow:none; }
 
 /* ===============================
-   DASHBOARD (FTHUBAS - se la usi in altre versioni)
+   TOPBAR (header pagina)
    =============================== */
-
-.dashboard{
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 16px;
-  margin-top: 14px;
-}
-
-.dashboard-card{
-  background: #ffffff;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 16px 16px 18px;
-  box-shadow: var(--shadow);
-  display:flex;
-  flex-direction:column;
-  min-height: 150px;
-  transition: transform .14s ease, box-shadow .14s ease;
-}
-
-.dashboard-card:hover{
-  transform: translateY(-2px);
-  box-shadow: var(--shadow2);
-}
-
-.dashboard-card h3{
-  font-size: 15px;
-  margin: 0 0 6px;
-}
-
-.dashboard-card p{
-  font-size: 13px;
-  color: var(--muted);
-  margin: 0 0 14px;
-}
-
-.btn-dashboard{
-  margin-top: auto;
-  width: 100%;
-  height: 46px;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  color: #fff;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-  background: linear-gradient(180deg, var(--ford-accent), var(--ford-blue));
-  transition: transform .08s ease, filter .12s ease;
-}
-.btn-dashboard:hover{ filter: brightness(0.98); }
-.btn-dashboard:active{ transform: translateY(1px); }
-
-/* badge admin */
-.badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(0,52,120,0.10);
-  color: var(--ford-blue);
-  border: 1px solid rgba(0,52,120,0.18);
-}
 
 .topbar{
   display:flex;
   align-items:flex-start;
   justify-content:space-between;
-  gap: 12px;
+  gap: 14px;
   margin-bottom: 14px;
 }
 
@@ -423,6 +292,80 @@ button:not(.btn):not(.btn-dashboard):disabled{ opacity:.55; cursor:not-allowed; 
   line-height: 1.5;
 }
 
+/* badge */
+.badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0,52,120,0.10);
+  color: var(--ford);
+  border: 1px solid rgba(0,52,120,0.18);
+}
+
+/* ===============================
+   DASHBOARD TILES (moderno)
+   =============================== */
+
+.dashboard{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.tile{
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+  padding: 16px;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+
+.tile:hover{
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.tile h3{
+  margin: 0;
+  font-size: 14px;
+}
+
+.tile p{
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.tile .tile-actions{
+  margin-top: 6px;
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+
+/* bottone tile full-width */
+.btn-tile{
+  width: 100%;
+  height: 46px;
+  border-radius: 14px;
+  border:none;
+  cursor:pointer;
+  color:#fff;
+  font-weight: 900;
+  background: linear-gradient(180deg, var(--ford-2), var(--ford));
+  box-shadow: 0 10px 20px rgba(0,52,120,0.18);
+}
+.btn-tile:hover{ filter: brightness(0.98); }
+
 /* ===============================
    BANNER
    =============================== */
@@ -430,7 +373,7 @@ button:not(.btn):not(.btn-dashboard):disabled{ opacity:.55; cursor:not-allowed; 
 .banner{
   margin: 0 0 14px;
   padding: 12px 12px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   font-size: 13px;
   display:none;
 }
@@ -440,29 +383,31 @@ button:not(.btn):not(.btn-dashboard):disabled{ opacity:.55; cursor:not-allowed; 
 .banner.warn{ background: var(--warn-bg); border:1px solid var(--warn-bd); color: var(--warn-tx); display:block; }
 
 /* ===============================
-   CLAIMS LIST (FTCLAIMS_STEP2 etc.)
+   CLAIMS LIST
    =============================== */
 
 .claimItem{
   border:1px solid var(--border);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   margin-top: 12px;
   background:#fff;
   overflow:hidden;
   box-shadow: none;
 }
+
 .claimItemTop{
   display:flex;
   justify-content:space-between;
   align-items:center;
   gap:10px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   background:#f8fafc;
-  border-bottom:1px solid var(--border2);
+  border-bottom:1px solid var(--border-2);
 }
-.claimTitle{ font-size: 13px; font-weight: 800; color:#222; }
+
+.claimTitle{ font-size: 13px; font-weight: 900; color:#111827; }
 .claimMeta{ font-size: 12px; color: var(--muted); }
-.claimBody{ padding: 12px; display:block; }
+.claimBody{ padding: 14px; display:block; }
 .rightTopBox{ padding: 6px; }
 
 /* ===============================
@@ -477,15 +422,15 @@ table{
 }
 
 th, td{
-  border-bottom:1px solid #eef2f6;
-  padding: 8px 8px;
+  border-bottom:1px solid rgba(15,23,42,0.08);
+  padding: 9px 8px;
   text-align:left;
   vertical-align:top;
 }
 
 th{
   background:#f8fafc;
-  font-weight: 800;
+  font-weight: 900;
   color:#1f2937;
 }
 
@@ -496,41 +441,19 @@ th{
 .notesBox{
   max-height: 170px;
   overflow-y:auto;
-  border:1px solid #dfe5ee;
+  border:1px solid rgba(15,23,42,0.14);
   background:#fff;
   padding: 10px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   font-size: 12px;
 }
 
-.noteLine{
-  border-bottom:1px solid #f0f2f6;
-  padding: 8px 0;
-}
-.noteHeader{
-  font-weight: 800;
-  margin-bottom: 4px;
-  font-size: 12px;
-}
-
-/* ===============================
-   SEZIONI "GROSSE" (per pagine come FTHUBAS che usano .section)
-   -> Non cambia funzionalità: solo look più moderno e “riempitivo”
-   =============================== */
-
-.section{
-  border: 1px solid var(--border2);
-  border-radius: 16px;
-  padding: 16px 14px;
-  background: #fff;
-}
-
-.section h3{ font-size: 15px; margin: 0 0 6px 0; }
-.section p{ color: var(--muted); margin: 0 0 12px 0; font-size: 13px; }
+.noteLine{ border-bottom:1px solid rgba(15,23,42,0.06); padding: 8px 0; }
+.noteHeader{ font-weight: 900; margin-bottom: 4px; font-size: 12px; }
 
 /* ===============================
    LINKS
    =============================== */
 
-a{ color: var(--ford-accent); text-decoration:none; }
+a{ color: var(--ford-2); text-decoration:none; }
 a:hover{ text-decoration:underline; }
