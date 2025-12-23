@@ -492,16 +492,16 @@ a:hover{ text-decoration:underline; }
 /* ===============================
    FORCE GLOBAL BACKGROUND (solo sfondo)
    =============================== */
-
 html, body{
   background-color: #ffffff !important;
 }
 
 body{
   background-color: #ffffff !important;
-  background-image: url("assets/sfondo_FT.png") !important;
+  background-image: url("assets/Sfondo_FT.png") !important;
   background-repeat: repeat !important;
   background-position: center !important;
   background-size: auto !important;
 }
+
 
