@@ -6,7 +6,7 @@
 
 :root{
   /* base */
-  --bg: #f6f7fb;
+  --bg: #ffffff;              /* CHANGED: sfondo bianco */
   --surface: #ffffff;
   --text: #0f172a;
   --muted: #667085;
@@ -50,8 +50,14 @@ html, body{ height: 100%; }
 body{
   margin: 0;
   font-family: var(--font);
-  background: var(--bg);
   color: var(--text);
+
+  /* CHANGED: sfondo bianco + texture */
+  background-color: var(--bg);
+  background-image: url("../assets/sfondo_FT.png");
+  background-repeat: repeat;
+  background-position: center;
+  background-size: auto;
 }
 
 /* ===============================
