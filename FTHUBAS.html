@@ -11,9 +11,60 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
+
+  <!-- LEFT SEASON BAND (solo per FTHUBAS) -->
+  <style>
+    .ft-left-season-band{
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 16.6667vw;               /* circa 1/6 */
+      min-width: 200px;
+      max-width: 320px;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 3;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.18);
+    }
+
+    .ft-left-season-band .ft-season-date{
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      bottom: 14px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      padding: 8px 10px;
+      background: rgba(0,0,0,0.35);
+      border-radius: 10px;
+      backdrop-filter: blur(3px);
+      border: 1px solid rgba(255,255,255,0.18);
+    }
+
+    /* sposta solo questa pagina, senza toccare ftstyle.css */
+    .ft-page{
+      padding-left: clamp(200px, 16.6667vw, 320px);
+      box-sizing: border-box;
+    }
+
+    /* mobile: nascondi la banda e ripristina padding */
+    @media (max-width: 900px){
+      .ft-left-season-band{ display:none; }
+      .ft-page{ padding-left: 0; }
+    }
+  </style>
 </head>
 
 <body class="ft-page">
+
+  <!-- LEFT SEASON BAND -->
+  <div id="ftLeftSeasonBand" class="ft-left-season-band" aria-label="Season band">
+    <div id="ftSeasonDate" class="ft-season-date"></div>
+  </div>
 
   <div class="ft-container">
 
@@ -228,6 +279,41 @@
   function goToFTCLAIMS(){ location.href="FTCLAIMS.html"; }
   function goToFTMANAG(){ location.href="FTMANAG.html"; }
   function goToFTHOTLINE(){ location.href="FTHOTLINE.html"; }
+
+  /* ===== LEFT SEASON BAND LOGIC (solo per FTHUBAS) ===== */
+  (function(){
+    const band = document.getElementById("ftLeftSeasonBand");
+    const dateEl = document.getElementById("ftSeasonDate");
+    if (!band || !dateEl) return;
+
+    // >>> Cambia SOLO il path se le immagini non sono in assets/season/
+    const images = {
+      winter: "assets/FT_winter.png",
+      spring: "assets/FT_spring.png",
+      summer: "assets/FT_summer.png",
+      autumn: "assets/FT_autumn.png"
+    };
+
+    const now = new Date();
+    const month = now.getMonth() + 1;
+
+    let season = "winter";
+    if (month >= 3 && month <= 5) season = "spring";
+    else if (month >= 6 && month <= 8) season = "summer";
+    else if (month >= 9 && month <= 11) season = "autumn";
+
+    band.style.backgroundImage = `url('${images[season]}')`;
+
+    const fmt = new Intl.DateTimeFormat("it-IT", {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric"
+    });
+
+    const s = fmt.format(now);
+    dateEl.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+  })();
 </script>
 
 </body>
