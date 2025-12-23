@@ -19,14 +19,17 @@
       top: 0;
       left: 0;
       height: 100vh;
-      width: 16.6667vw;               /* circa 1/6 */
-      min-width: 200px;
-      max-width: 320px;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
+      width: auto;               /* larghezza variabile */
       z-index: 3;
       box-shadow: 2px 0 10px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+
+    /* mostra SEMPRE tutta l'immagine: no crop */
+    .ft-left-season-band img{
+      height: 100vh;
+      width: auto;
+      display: block;
     }
 
     .ft-left-season-band .ft-season-date{
@@ -45,9 +48,9 @@
       border: 1px solid rgba(255,255,255,0.18);
     }
 
-    /* sposta solo questa pagina, senza toccare ftstyle.css */
+    /* padding gestito da JS in base alla larghezza reale */
     .ft-page{
-      padding-left: clamp(200px, 16.6667vw, 320px);
+      padding-left: var(--ft-band-w, 0px);
       box-sizing: border-box;
     }
 
@@ -63,6 +66,7 @@
 
   <!-- LEFT SEASON BAND -->
   <div id="ftLeftSeasonBand" class="ft-left-season-band" aria-label="Season band">
+    <img id="ftSeasonImg" alt="FT Season Band">
     <div id="ftSeasonDate" class="ft-season-date"></div>
   </div>
 
@@ -283,10 +287,10 @@
   /* ===== LEFT SEASON BAND LOGIC (solo per FTHUBAS) ===== */
   (function(){
     const band = document.getElementById("ftLeftSeasonBand");
+    const imgEl = document.getElementById("ftSeasonImg");
     const dateEl = document.getElementById("ftSeasonDate");
-    if (!band || !dateEl) return;
+    if (!band || !imgEl || !dateEl) return;
 
-    // >>> Cambia SOLO il path se le immagini non sono in assets/season/
     const images = {
       winter: "assets/FT_winter.png",
       spring: "assets/FT_spring.png",
@@ -302,8 +306,10 @@
     else if (month >= 6 && month <= 8) season = "summer";
     else if (month >= 9 && month <= 11) season = "autumn";
 
-    band.style.backgroundImage = `url('${images[season]}')`;
+    // set immagine (no crop)
+    imgEl.src = images[season];
 
+    // data IT
     const fmt = new Intl.DateTimeFormat("it-IT", {
       weekday: "long",
       day: "2-digit",
@@ -313,6 +319,15 @@
 
     const s = fmt.format(now);
     dateEl.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+
+    // misura larghezza banda e sposta la pagina
+    function applyBandWidth(){
+      const w = band.getBoundingClientRect().width;
+      document.body.style.setProperty("--ft-band-w", w + "px");
+    }
+
+    imgEl.addEventListener("load", applyBandWidth);
+    window.addEventListener("resize", applyBandWidth);
   })();
 </script>
 
