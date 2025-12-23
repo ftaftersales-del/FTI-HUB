@@ -490,10 +490,13 @@ a:hover{ text-decoration:underline; }
 }
 
 /* ===============================
-   GLOBAL BACKGROUND OVERRIDE (solo sfondo)
+   FORCE GLOBAL BACKGROUND (solo sfondo)
    =============================== */
 
-/* forza lo sfondo FT anche se le pagine hanno CSS inline */
+html, body{
+  background-color: #ffffff !important;
+}
+
 body{
   background-color: #ffffff !important;
   background-image: url("assets/sfondo_FT.png") !important;
