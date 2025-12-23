@@ -54,7 +54,7 @@ body{
 
   /* CHANGED: sfondo bianco + texture */
   background-color: var(--bg);
-  background-image: url("assets/sfondo_FT.png");
+  background-image: url("assets/Sfondo_FT.png");
   background-repeat: repeat;
   background-position: center;
   background-size: auto;
