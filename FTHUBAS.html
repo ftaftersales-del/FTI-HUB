@@ -3,9 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>FTI-HUB - Main</title>
-
-  <!-- CSS globale (aggiunto v=4 per evitare cache) -->
-  <link rel="stylesheet" href="ftstyle.css?v=4">
+  <link rel="stylesheet" href="ftstyle.css?v=6">
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -21,19 +19,16 @@
       top: 0;
       left: 0;
       height: 100vh;
-      width: auto;               /* larghezza variabile */
+      width: auto;
       z-index: 3;
       box-shadow: 2px 0 10px rgba(0,0,0,0.18);
       overflow: hidden;
     }
-
-    /* mostra SEMPRE tutta l'immagine: no crop */
     .ft-left-season-band img{
       height: 100vh;
       width: auto;
       display: block;
     }
-
     .ft-left-season-band .ft-season-date{
       position: absolute;
       left: 14px;
@@ -49,14 +44,10 @@
       backdrop-filter: blur(3px);
       border: 1px solid rgba(255,255,255,0.18);
     }
-
-    /* padding gestito da JS in base alla larghezza reale */
     .ft-page{
       padding-left: var(--ft-band-w, 0px);
       box-sizing: border-box;
     }
-
-    /* mobile: nascondi la banda e ripristina padding */
     @media (max-width: 900px){
       .ft-left-season-band{ display:none; }
       .ft-page{ padding-left: 0; }
@@ -64,7 +55,6 @@
   </style>
 </head>
 
-<!-- ✅ CORREZIONE: marker per CSS FTHUBAS -->
 <body class="ft-page ft-hubas" id="page-fthubas">
 
   <!-- LEFT SEASON BAND -->
@@ -96,97 +86,71 @@
 
       <div class="hr"></div>
 
-      <!-- dashboard grid (max 3 per riga) -->
       <div class="dashboard">
 
         <!-- FTDMS (solo Admin) -->
         <div id="admin-section" style="display:none;">
           <div class="dashCard">
-            <div class="dashHead">
-              <h3 class="dashTitle">FTDMS</h3>
-              <span class="badge">ADMIN</span>
-            </div>
             <p class="dashDesc">Gestione Dealer e Utenze.</p>
             <div class="dashFooter">
-              <button class="btn btn-primary btn-wide" onclick="goToDMS()">Apri FTDMS</button>
+              <button class="btn btn-primary btn-wide" onclick="goToDMS()">FTDMS</button>
             </div>
           </div>
         </div>
 
         <!-- FTCIRCAS -->
         <div class="dashCard">
-          <div class="dashHead">
-            <h3 class="dashTitle">FTCIRCAS</h3>
-          </div>
           <p class="dashDesc">Circolari ufficiali.</p>
           <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTCIRCAS()">Apri Circolari</button>
+            <button class="btn btn-primary btn-wide" onclick="goToFTCIRCAS()">FTCIRCAS</button>
           </div>
         </div>
 
         <!-- FTVIN -->
         <div class="dashCard">
-          <div class="dashHead">
-            <h3 class="dashTitle">FTVIN</h3>
-          </div>
           <p class="dashDesc">Verifica copertura VIN.</p>
           <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTVIN()">Apri FTVIN</button>
+            <button class="btn btn-primary btn-wide" onclick="goToFTVIN()">FTVIN</button>
           </div>
         </div>
 
         <!-- FTFSA -->
         <div class="dashCard">
-          <div class="dashHead">
-            <h3 class="dashTitle">FTFSA</h3>
-          </div>
           <p class="dashDesc">Campagne FSA.</p>
           <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTFSA()">Apri FTFSA</button>
+            <button class="btn btn-primary btn-wide" onclick="goToFTFSA()">FTFSA</button>
           </div>
         </div>
 
         <!-- FTCLAIMS HISTORY -->
         <div class="dashCard">
-          <div class="dashHead">
-            <h3 class="dashTitle">FTCLAIMS HISTORY VIN</h3>
-          </div>
           <p class="dashDesc">Storico manutenzioni per telaio.</p>
           <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS_HISTORY_VIN()">Apri Storico VIN</button>
+            <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS_HISTORY_VIN()">FTCLAIMS HISTORY VIN</button>
           </div>
         </div>
 
         <!-- FTCLAIMS -->
         <div class="dashCard">
-          <div class="dashHead">
-            <h3 class="dashTitle">FTCLAIMS</h3>
-          </div>
           <p class="dashDesc">Nuove pratiche di garanzia.</p>
           <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS()">Apri FTCLAIMS</button>
+            <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS()">FTCLAIMS</button>
           </div>
         </div>
 
         <!-- FTMANAG -->
         <div class="dashCard">
-          <div class="dashHead">
-            <h3 class="dashTitle">FTMANAG</h3>
-          </div>
           <p class="dashDesc">Gestione pratiche esistenti.</p>
           <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTMANAG()">Apri FTMANAG</button>
+            <button class="btn btn-primary btn-wide" onclick="goToFTMANAG()">FTMANAG</button>
           </div>
         </div>
 
         <!-- FTHOTLINE -->
         <div class="dashCard">
-          <div class="dashHead">
-            <h3 class="dashTitle">FTHOTLINE</h3>
-          </div>
           <p class="dashDesc">Hotline tecnica.</p>
           <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTHOTLINE()">Apri FTHOTLINE</button>
+            <button class="btn btn-primary btn-wide" onclick="goToFTHOTLINE()">FTHOTLINE</button>
           </div>
         </div>
 
@@ -195,7 +159,6 @@
     </div><!-- /card -->
 
   </div><!-- /ft-container -->
-
 
   <!-- POPUP CIRCOLARI -->
   <div id="circular-overlay">
@@ -309,10 +272,8 @@
     else if (month >= 6 && month <= 8) season = "summer";
     else if (month >= 9 && month <= 11) season = "autumn";
 
-    // set immagine (no crop)
     imgEl.src = images[season];
 
-    // data IT
     const fmt = new Intl.DateTimeFormat("it-IT", {
       weekday: "long",
       day: "2-digit",
@@ -323,7 +284,6 @@
     const s = fmt.format(now);
     dateEl.textContent = s.charAt(0).toUpperCase() + s.slice(1);
 
-    // misura larghezza banda e sposta la pagina
     function applyBandWidth(){
       const w = band.getBoundingClientRect().width;
       document.body.style.setProperty("--ft-band-w", w + "px");
