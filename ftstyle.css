@@ -274,28 +274,6 @@ body{
   height: 46px;
 }
 
-/* =========================================================
-   FTHUBAS - Bottoni più "squadrati" e larghi (solo qui)
-   - Manteniamo altezza 46px come il resto del portale
-   - Aumentiamo il width per far stare "Apri XXXXX"
-   - Non tocchiamo le altre pagine
-   ========================================================= */
-.ft-hubas .dashFooter{
-  display:flex;
-  justify-content:flex-end;  /* bottone a destra */
-}
-
-.ft-hubas .btn.btn-wide{
-  width: 160px;              /* <<< QUI: aumenta/diminuisci a piacere */
-  max-width: 160px;
-  height: 46px;              /* coerente con btn-wide */
-  border-radius: 12px;
-  padding: 0 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* ===============================
    FORMS (manteniamo compatibilità)
    =============================== */
@@ -525,9 +503,10 @@ body{
   background-position: center !important;
   background-size: auto !important;
 }
+
 /* =========================================================
    FTHUBAS - override bottoni dashboard (FORZATO)
-   Mettilo in fondo al file per vincere su tutto.
+   Disinnesca la full-width di .btn-wide solo su FTHUBAS
    ========================================================= */
 
 /* footer allineamento */
@@ -537,11 +516,12 @@ body{
   justify-content: flex-end !important;
 }
 
-/* bottone: non full width, ma fisso e più largo */
+/* bottone: NON full width, ma fisso e più largo */
 .ft-hubas .btn.btn-wide,
 #page-fthubas .btn.btn-wide{
-  width: 180px !important;      /* <-- aumenta qui */
-  max-width: 180px !important;
+  width: auto !important;        /* <<< CORREZIONE CHIAVE */
+  min-width: 180px !important;   /* <-- aumenta qui */
+  max-width: 220px !important;
   height: 46px !important;
   padding: 0 14px !important;
   border-radius: 12px !important;
@@ -549,4 +529,3 @@ body{
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
-
