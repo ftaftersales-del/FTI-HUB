@@ -11,54 +11,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
 
+  <!-- Solo CSS "strutturale" che tipicamente NON è condiviso (pannelli fixed) -->
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 20px;
-    }
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h2 { margin-top: 0; }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      padding: 8px;
-      border-bottom: 1px solid #ddd;
-      text-align: left;
-    }
-    tr:hover { background: #f0f8ff; cursor: pointer; }
-
-    .toolbar button { margin-right: 8px; }
-    .section {
-      margin-top: 25px;
-      padding: 15px;
-      background: #fafafa;
-      border-radius: 8px;
-    }
-
-    .checkbox-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px;
-      margin: 8px 0;
-    }
-    .checkbox-row label {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
     /* pannello dealer */
     #dealer-form-panel {
       display: none;
@@ -68,14 +22,10 @@
       bottom: 0;
       width: 450px;
       max-height: 100vh;
-      background: white;
-      box-shadow: -3px 0 10px rgba(0,0,0,0.15);
-      padding: 20px 20px 60px;
       overflow-y: auto;
       z-index: 900;
       box-sizing: border-box;
     }
-    #dealer-form-panel h3 { margin-top: 0; }
 
     /* pannello utente */
     #user-form-panel {
@@ -86,331 +36,319 @@
       bottom: 0;
       width: 400px;
       max-height: 100vh;
-      background: white;
-      box-shadow: -3px 0 10px rgba(0,0,0,0.15);
-      padding: 20px 20px 60px;
       overflow-y: auto;
       z-index: 950;
       box-sizing: border-box;
-    }
-    #user-form-panel h3 { margin-top: 0; }
-
-    .field { margin-bottom: 12px; }
-    .field label { font-weight: bold; display: block; margin-bottom: 3px; }
-    input, select, textarea {
-      width: 100%;
-      padding: 6px;
-      box-sizing: border-box;
-    }
-
-    .two-columns {
-      display: flex;
-      gap: 12px;
-    }
-    .two-columns .field { flex: 1; }
-
-    .close-btn {
-      float: right;
-      background: #ccc;
-      padding: 4px 10px;
-      border: none;
-      cursor: pointer;
-    }
-
-    .top-bar {
-      width: 100%;
-      text-align: right;
-      margin-bottom: 15px;
-    }
-    .top-bar button {
-      padding: 6px 14px;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
     }
   </style>
 </head>
 
 <body class="ft-page">
-  <!-- 🔵 PULSANTE HOME -->
-  <div class="top-bar">
-    <button onclick="window.location.href='FTHUBAS.html'">🏠 Home</button>
+
+  <!-- TOP BAR -->
+  <div class="ft-topbar">
+    <button type="button" class="ft-btn" onclick="window.location.href='FTHUBAS.html'">🏠 Home</button>
   </div>
 
-  <!-- 🔵 CONTENUTO DELLA PAGINA (DMS) -->
-  <div class="container">
+  <div class="ft-container ft-card">
 
-    <h2>DMS - Gestione Dealers e Utenze</h2>
-    <p id="welcomeMsg"></p>
+    <div class="ft-header">
+      <h2 class="ft-title">DMS - Gestione Dealers e Utenze</h2>
+      <p id="welcomeMsg" class="ft-subtitle"></p>
+    </div>
 
     <!-- ====================== DEALERS ====================== -->
-    <div class="section">
-      <div class="toolbar">
-        <strong>Dealers</strong>
-        <button id="btn-new-dealer" onclick="openDealerFormNew()">Nuovo dealer</button>
-        <button id="btn-edit-dealer" onclick="openDealerFormEditWrapped()">Modifica dealer selezionato</button>
-        <button onclick="openDealerFormView()">Visualizza dealer</button>
+    <div class="ft-section">
+      <div class="ft-toolbar">
+        <div class="ft-toolbar-left">
+          <strong>Dealers</strong>
+        </div>
+        <div class="ft-toolbar-right">
+          <button type="button" class="ft-btn" id="btn-new-dealer" onclick="openDealerFormNew()">Nuovo dealer</button>
+          <button type="button" class="ft-btn" id="btn-edit-dealer" onclick="openDealerFormEditWrapped()">Modifica dealer selezionato</button>
+          <button type="button" class="ft-btn ft-btn-secondary" onclick="openDealerFormView()">Visualizza dealer</button>
+        </div>
       </div>
 
-      <table id="dealersTable">
-        <thead>
-          <tr>
-            <th>Codice</th>
-            <th>Nome</th>
-            <th>Città</th>
-            <th>Provincia</th>
-            <th>Regione</th>
-            <th>Dealer</th>
-            <th>Workshop</th>
-            <th>RSA</th>
-            <th>Stato</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <div class="ft-table-wrap">
+        <table class="ft-table" id="dealersTable">
+          <thead>
+            <tr>
+              <th>Codice</th>
+              <th>Nome</th>
+              <th>Città</th>
+              <th>Provincia</th>
+              <th>Regione</th>
+              <th>Dealer</th>
+              <th>Workshop</th>
+              <th>RSA</th>
+              <th>Stato</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ====================== DEALER SELEZIONATO ====================== -->
-    <div class="section">
-      <h3>Dealer selezionato</h3>
-      <p id="selected-dealer">Seleziona un dealer dalla tabella.</p>
+    <div class="ft-section">
+      <h3 class="ft-section-title">Dealer selezionato</h3>
+      <p id="selected-dealer" class="ft-muted">Seleziona un dealer dalla tabella.</p>
     </div>
 
     <!-- ====================== UTENTI DEALER ====================== -->
-    <div class="section">
-      <div class="toolbar">
-        <strong>Utenti del dealer</strong>
-        <button id="btn-new-user" onclick="openUserFormNew()">Nuovo utente</button>
-        <button id="btn-edit-user" onclick="openUserFormEdit()">Modifica utente selezionato</button>
+    <div class="ft-section">
+      <div class="ft-toolbar">
+        <div class="ft-toolbar-left">
+          <strong>Utenti del dealer</strong>
+        </div>
+        <div class="ft-toolbar-right">
+          <button type="button" class="ft-btn" id="btn-new-user" onclick="openUserFormNew()">Nuovo utente</button>
+          <button type="button" class="ft-btn" id="btn-edit-user" onclick="openUserFormEdit()">Modifica utente selezionato</button>
+        </div>
       </div>
 
-      <div id="users-container">Seleziona un dealer per vedere gli utenti.</div>
+      <div id="users-container" class="ft-muted">Seleziona un dealer per vedere gli utenti.</div>
     </div>
 
   </div> <!-- /container -->
 
   <!-- ====================== PANNELLO DEALER ====================== -->
-  <div id="dealer-form-panel">
-    <button class="close-btn" onclick="closeDealerForm()">Chiudi</button>
-    <h3 id="dealer-form-title">Dealer</h3>
-
-    <div class="field">
-      <label>Stato dealer</label>
-      <select id="dealerStatusSelect">
-        <option value="attivo">Attivo</option>
-        <option value="sospeso">Sospeso</option>
-        <option value="dismesso">Dismesso</option>
-      </select>
+  <div id="dealer-form-panel" class="ft-panel ft-card">
+    <div class="ft-panel-header">
+      <h3 id="dealer-form-title" class="ft-panel-title">Dealer</h3>
+      <button type="button" class="ft-btn ft-btn-secondary" onclick="closeDealerForm()">Chiudi</button>
     </div>
 
-    <h4>Main data</h4>
+    <div class="ft-panel-body">
 
-    <div class="field">
-      <label>Codice Dealer (dealerID)</label>
-      <div style="display:flex; gap:6px;">
-        <input id="dealerIDInput" type="text" placeholder="Es. FT001">
-        <button type="button" onclick="generateDealerCode()">Genera</button>
+      <div class="ft-field">
+        <label class="ft-label">Stato dealer</label>
+        <select id="dealerStatusSelect" class="ft-input">
+          <option value="attivo">Attivo</option>
+          <option value="sospeso">Sospeso</option>
+          <option value="dismesso">Dismesso</option>
+        </select>
       </div>
-    </div>
 
-    <div class="field">
-      <label>Sub-Dealer Name</label>
-      <input id="subDealerNameInput" type="text">
-    </div>
+      <h4 class="ft-subsection-title">Main data</h4>
 
-    <div class="field">
-      <label>Address1</label>
-      <input id="address1Input" type="text">
-    </div>
-
-    <div class="two-columns">
-      <div class="field">
-        <label>City</label>
-        <input id="cityInput" type="text">
+      <div class="ft-field">
+        <label class="ft-label">Codice Dealer (dealerID)</label>
+        <div class="ft-inline">
+          <input id="dealerIDInput" class="ft-input" type="text" placeholder="Es. FT001">
+          <button type="button" class="ft-btn ft-btn-secondary" onclick="generateDealerCode()">Genera</button>
+        </div>
       </div>
-      <div class="field">
-        <label>Province</label>
-        <input id="provinceInput" type="text">
+
+      <div class="ft-field">
+        <label class="ft-label">Sub-Dealer Name</label>
+        <input id="subDealerNameInput" class="ft-input" type="text">
       </div>
-    </div>
 
-    <div class="field">
-      <label>Region</label>
-      <select id="regionInput">
-        <option value="">-- seleziona --</option>
-        <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
-        <option>Campania</option><option>Emilia-Romagna</option>
-        <option>Friuli Venezia Giulia</option><option>Lazio</option><option>Liguria</option>
-        <option>Lombardia</option><option>Marche</option><option>Molise</option>
-        <option>Piemonte</option><option>Puglia</option><option>Sardegna</option>
-        <option>Sicilia</option><option>Toscana</option><option>Trentino-Alto Adige</option>
-        <option>Umbria</option><option>Valle d'Aosta</option><option>Veneto</option>
-      </select>
-    </div>
-
-    <div class="field">
-      <label>IBAN</label>
-      <input id="ibanInput" type="text" maxlength="27">
-    </div>
-
-    <div class="field">
-      <label>Vat Number</label>
-      <input id="vatNumberInput" type="text" maxlength="11">
-    </div>
-
-    <div class="field">
-      <label>LaborRateStd</label>
-      <input id="laborStdInput" type="number">
-    </div>
-
-    <div class="field" id="laborWarrantyField">
-      <label>LaborRateWarranty (solo distributore)</label>
-      <input id="laborWarrantyInput" type="number">
-    </div>
-
-    <div class="checkbox-row">
-      <label><input type="checkbox" id="dealerFlag"> Dealer</label>
-      <label><input type="checkbox" id="workshopFlag"> Workshop</label>
-      <label><input type="checkbox" id="rsaFlag"> RSA</label>
-      <label><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()"> Distributore</label>
-    </div>
-
-    <h4>Sezione Dealer</h4>
-
-    <div class="two-columns">
-      <div class="field">
-        <label>Dealer Contact</label>
-        <input id="dealerContactInput" type="text">
+      <div class="ft-field">
+        <label class="ft-label">Address1</label>
+        <input id="address1Input" class="ft-input" type="text">
       </div>
-      <div class="field">
-        <label>Dealer Email</label>
-        <input id="dealerEmailInput" type="text">
+
+      <div class="ft-two-cols">
+        <div class="ft-field">
+          <label class="ft-label">City</label>
+          <input id="cityInput" class="ft-input" type="text">
+        </div>
+        <div class="ft-field">
+          <label class="ft-label">Province</label>
+          <input id="provinceInput" class="ft-input" type="text">
+        </div>
       </div>
+
+      <div class="ft-field">
+        <label class="ft-label">Region</label>
+        <select id="regionInput" class="ft-input">
+          <option value="">-- seleziona --</option>
+          <option>Abruzzo</option><option>Basilicata</option><option>Calabria</option>
+          <option>Campania</option><option>Emilia-Romagna</option>
+          <option>Friuli Venezia Giulia</option><option>Lazio</option><option>Liguria</option>
+          <option>Lombardia</option><option>Marche</option><option>Molise</option>
+          <option>Piemonte</option><option>Puglia</option><option>Sardegna</option>
+          <option>Sicilia</option><option>Toscana</option><option>Trentino-Alto Adige</option>
+          <option>Umbria</option><option>Valle d'Aosta</option><option>Veneto</option>
+        </select>
+      </div>
+
+      <div class="ft-field">
+        <label class="ft-label">IBAN</label>
+        <input id="ibanInput" class="ft-input" type="text" maxlength="27">
+      </div>
+
+      <div class="ft-field">
+        <label class="ft-label">Vat Number</label>
+        <input id="vatNumberInput" class="ft-input" type="text" maxlength="11">
+      </div>
+
+      <div class="ft-field">
+        <label class="ft-label">LaborRateStd</label>
+        <input id="laborStdInput" class="ft-input" type="number">
+      </div>
+
+      <div class="ft-field" id="laborWarrantyField">
+        <label class="ft-label">LaborRateWarranty (solo distributore)</label>
+        <input id="laborWarrantyInput" class="ft-input" type="number">
+      </div>
+
+      <div class="ft-checkbox-row">
+        <label class="ft-check"><input type="checkbox" id="dealerFlag"> Dealer</label>
+        <label class="ft-check"><input type="checkbox" id="workshopFlag"> Workshop</label>
+        <label class="ft-check"><input type="checkbox" id="rsaFlag"> RSA</label>
+        <label class="ft-check"><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()"> Distributore</label>
+      </div>
+
+      <h4 class="ft-subsection-title">Sezione Dealer</h4>
+
+      <div class="ft-two-cols">
+        <div class="ft-field">
+          <label class="ft-label">Dealer Contact</label>
+          <input id="dealerContactInput" class="ft-input" type="text">
+        </div>
+        <div class="ft-field">
+          <label class="ft-label">Dealer Email</label>
+          <input id="dealerEmailInput" class="ft-input" type="text">
+        </div>
+      </div>
+
+      <div class="ft-two-cols">
+        <div class="ft-field">
+          <label class="ft-label">Dealer Phone</label>
+          <input id="dealerPhoneInput" class="ft-input" type="text">
+        </div>
+        <div class="ft-field">
+          <label class="ft-label">Dealer CloseTime</label>
+          <input id="dealerCloseInput" class="ft-input" type="text">
+        </div>
+      </div>
+
+      <div class="ft-field">
+        <label class="ft-label">Dealer OpenTime</label>
+        <input id="dealerOpenInput" class="ft-input" type="text">
+      </div>
+
+      <h4 class="ft-subsection-title">Sezione Workshop</h4>
+
+      <div class="ft-two-cols">
+        <div class="ft-field">
+          <label class="ft-label">Workshop Contact</label>
+          <input id="wsContactInput" class="ft-input" type="text">
+        </div>
+        <div class="ft-field">
+          <label class="ft-label">Workshop Email</label>
+          <input id="wsEmailInput" class="ft-input" type="text">
+        </div>
+      </div>
+
+      <div class="ft-two-cols">
+        <div class="ft-field">
+          <label class="ft-label">Workshop Phone</label>
+          <input id="wsPhoneInput" class="ft-input" type="text">
+        </div>
+        <div class="ft-field">
+          <label class="ft-label">Workshop CloseTime</label>
+          <input id="wsCloseInput" class="ft-input" type="text">
+        </div>
+      </div>
+
+      <div class="ft-field">
+        <label class="ft-label">Workshop OpenTime</label>
+        <input id="wsOpenInput" class="ft-input" type="text">
+      </div>
+
+      <h4 class="ft-subsection-title">Sezione RSA</h4>
+
+      <div class="ft-field">
+        <label class="ft-label">Coverage Radius (km)</label>
+        <input id="coverageRadiusInput" class="ft-input" type="text">
+      </div>
+
+      <div class="ft-two-cols">
+        <div class="ft-field">
+          <label class="ft-label">RSA Contact Name</label>
+          <input id="rsaContactInput" class="ft-input" type="text">
+        </div>
+        <div class="ft-field">
+          <label class="ft-label">RSA Email</label>
+          <input id="rsaEmailInput" class="ft-input" type="text">
+        </div>
+      </div>
+
+      <div class="ft-two-cols">
+        <div class="ft-field">
+          <label class="ft-label">RSA Phone</label>
+          <input id="rsaPhoneInput" class="ft-input" type="text">
+        </div>
+        <div class="ft-field">
+          <label class="ft-label">RSA CloseTime</label>
+          <input id="rsaCloseInput" class="ft-input" type="text">
+        </div>
+      </div>
+
+      <div class="ft-field">
+        <label class="ft-label">RSA OpenTime</label>
+        <input id="rsaOpenInput" class="ft-input" type="text">
+      </div>
+
+      <div class="ft-actions">
+        <button type="button" id="dealerSaveBtn" class="ft-btn" onclick="saveDealer()">Salva dealer</button>
+      </div>
+
     </div>
-
-    <div class="two-columns">
-      <div class="field">
-        <label>Dealer Phone</label>
-        <input id="dealerPhoneInput" type="text">
-      </div>
-      <div class="field">
-        <label>Dealer CloseTime</label>
-        <input id="dealerCloseInput" type="text">
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Dealer OpenTime</label>
-      <input id="dealerOpenInput" type="text">
-    </div>
-
-    <h4>Sezione Workshop</h4>
-
-    <div class="two-columns">
-      <div class="field">
-        <label>Workshop Contact</label>
-        <input id="wsContactInput" type="text">
-      </div>
-      <div class="field">
-        <label>Workshop Email</label>
-        <input id="wsEmailInput" type="text">
-      </div>
-    </div>
-
-    <div class="two-columns">
-      <div class="field">
-        <label>Workshop Phone</label>
-        <input id="wsPhoneInput" type="text">
-      </div>
-      <div class="field">
-        <label>Workshop CloseTime</label>
-        <input id="wsCloseInput" type="text">
-      </div>
-    </div>
-
-    <div class="field">
-      <label>Workshop OpenTime</label>
-      <input id="wsOpenInput" type="text">
-    </div>
-
-    <h4>Sezione RSA</h4>
-
-    <div class="field">
-      <label>Coverage Radius (km)</label>
-      <input id="coverageRadiusInput" type="text">
-    </div>
-
-    <div class="two-columns">
-      <div class="field">
-        <label>RSA Contact Name</label>
-        <input id="rsaContactInput" type="text">
-      </div>
-      <div class="field">
-        <label>RSA Email</label>
-        <input id="rsaEmailInput" type="text">
-      </div>
-    </div>
-
-    <div class="two-columns">
-      <div class="field">
-        <label>RSA Phone</label>
-        <input id="rsaPhoneInput" type="text">
-      </div>
-      <div class="field">
-        <label>RSA CloseTime</label>
-        <input id="rsaCloseInput" type="text">
-      </div>
-    </div>
-
-    <div class="field">
-      <label>RSA OpenTime</label>
-      <input id="rsaOpenInput" type="text">
-    </div>
-
-    <button id="dealerSaveBtn" onclick="saveDealer()">Salva dealer</button>
-    <br><br>
   </div>
 
   <!-- ====================== PANNELLO UTENTE ====================== -->
-  <div id="user-form-panel">
-    <button class="close-btn" onclick="closeUserForm()">Chiudi</button>
-    <h3 id="user-form-title">Utente</h3>
-
-    <div class="field">
-      <label>Email</label>
-      <input id="userEmailInput" type="email" placeholder="nome.cognome@dealer.it">
+  <div id="user-form-panel" class="ft-panel ft-card">
+    <div class="ft-panel-header">
+      <h3 id="user-form-title" class="ft-panel-title">Utente</h3>
+      <button type="button" class="ft-btn ft-btn-secondary" onclick="closeUserForm()">Chiudi</button>
     </div>
 
-    <div class="field">
-      <label>Nome visualizzato</label>
-      <input id="userDisplayNameInput" type="text" placeholder="Nome Cognome">
-    </div>
+    <div class="ft-panel-body">
 
-    <div class="two-columns">
-      <div class="field">
-        <label>Stato</label>
-        <select id="userStatusSelect">
-          <option value="active">Attivo</option>
-          <option value="suspended">Sospeso</option>
-          <option value="blocked">Bloccato</option>
-        </select>
+      <div class="ft-field">
+        <label class="ft-label">Email</label>
+        <input id="userEmailInput" class="ft-input" type="email" placeholder="nome.cognome@dealer.it">
       </div>
-      <div class="field">
-        <label>Ruolo</label>
-        <select id="userRoleSelect">
-          <option value="User">User</option>
-          <option value="Admin">Admin</option>
-        </select>
+
+      <div class="ft-field">
+        <label class="ft-label">Nome visualizzato</label>
+        <input id="userDisplayNameInput" class="ft-input" type="text" placeholder="Nome Cognome">
       </div>
-    </div>
 
-    <div class="field" id="userPasswordField">
-      <label>Password iniziale (solo in creazione)</label>
-      <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri">
-    </div>
+      <div class="ft-two-cols">
+        <div class="ft-field">
+          <label class="ft-label">Stato</label>
+          <select id="userStatusSelect" class="ft-input">
+            <option value="active">Attivo</option>
+            <option value="suspended">Sospeso</option>
+            <option value="blocked">Bloccato</option>
+          </select>
+        </div>
+        <div class="ft-field">
+          <label class="ft-label">Ruolo</label>
+          <select id="userRoleSelect" class="ft-input">
+            <option value="User">User</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+      </div>
 
-    <button onclick="saveUser()">Salva utente</button>
-    <br><br>
+      <div class="ft-field" id="userPasswordField">
+        <label class="ft-label">Password iniziale (solo in creazione)</label>
+        <input id="userPasswordInput" class="ft-input" type="password" placeholder="Min. 6 caratteri">
+      </div>
+
+      <div class="ft-actions">
+        <button type="button" class="ft-btn" onclick="saveUser()">Salva utente</button>
+      </div>
+
+    </div>
   </div>
 
   <script>
@@ -517,7 +455,6 @@
           return;
         }
 
-        const data = currentAccount.userData;
         document.getElementById("welcomeMsg").innerText =
           "Accesso al DMS come " + (currentAccount.roleId || "-") +
           (canWrite("FTDMS") ? " (permessi di modifica)" : " (sola lettura)");
@@ -1012,7 +949,7 @@
           knownDealerIds.push(id);
 
           const stato = d.DealerStatus || (d.active === false ? "dismesso" : "attivo");
-          const sel = (selectedDealer === id) ? " style='background:#e3f2fd;'" : "";
+          const sel = (selectedDealer === id) ? " class='ft-row-selected'" : "";
 
           html += `
             <tr${sel} onclick="selectDealer('${id}')">
@@ -1066,34 +1003,35 @@
         }
 
         let html = `
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Email</th>
-                <th>Dealer</th>
-                <th>Ruolo</th>
-                <th>Status</th>
-                <th>Admin</th>
-                <th>Distributore</th>
-                <th>Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div class="ft-table-wrap">
+            <table class="ft-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Dealer</th>
+                  <th>Ruolo</th>
+                  <th>Status</th>
+                  <th>Admin</th>
+                  <th>Distributore</th>
+                  <th>Azioni</th>
+                </tr>
+              </thead>
+              <tbody>
         `;
 
         snap.forEach(doc => {
           const u = doc.data();
           const id = doc.id;
-          const sel = (selectedUserId === id) ? " style='background:#e3f2fd;'" : "";
+          const sel = (selectedUserId === id) ? " class='ft-row-selected'" : "";
 
           // se non ha write su FTDMS, niente pulsanti di azione
           let actionButtons = "";
           if (canWrite("FTDMS")) {
             actionButtons = `
-              <button onclick="event.stopPropagation(); updateUserStatus('${id}','active')">Attiva</button>
-              <button onclick="event.stopPropagation(); updateUserStatus('${id}','suspended')">Sospendi</button>
-              <button onclick="event.stopPropagation(); updateUserStatus('${id}','blocked')">Blocca</button>
+              <button type="button" class="ft-btn ft-btn-small" onclick="event.stopPropagation(); updateUserStatus('${id}','active')">Attiva</button>
+              <button type="button" class="ft-btn ft-btn-small ft-btn-secondary" onclick="event.stopPropagation(); updateUserStatus('${id}','suspended')">Sospendi</button>
+              <button type="button" class="ft-btn ft-btn-small ft-btn-danger" onclick="event.stopPropagation(); updateUserStatus('${id}','blocked')">Blocca</button>
             `;
           }
 
@@ -1111,7 +1049,7 @@
           `;
         });
 
-        html += "</tbody></table>";
+        html += "</tbody></table></div>";
         container.innerHTML = html;
 
       } catch (e) {
