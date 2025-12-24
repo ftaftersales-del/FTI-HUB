@@ -529,3 +529,42 @@ body{
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
+
+/* =========================================================
+   FTHUBAS - DASHBOARD “BUTTON FIRST”
+   - Niente titolo nella card (solo descrizione)
+   - Bottone grande quasi-quadrato
+   ========================================================= */
+
+.ft-hubas .dashCard .dashDesc,
+#page-fthubas .dashCard .dashDesc{
+  margin: 0 0 12px;          /* descrizione sopra al bottone */
+}
+
+.ft-hubas .dashFooter,
+#page-fthubas .dashFooter{
+  display: flex !important;
+  justify-content: center !important;
+}
+
+/* bottone grande "quadrato" */
+.ft-hubas .btn.btn-wide,
+#page-fthubas .btn.btn-wide{
+  width: 210px !important;        /* LARGHEZZA */
+  height: 80px !important;        /* ALTEZZA (grossa) */
+  padding: 0 16px !important;
+  border-radius: 16px !important; /* più “box” */
+  font-size: 16px !important;
+  letter-spacing: 0.6px !important;
+  text-transform: uppercase;
+  line-height: 1.1 !important;
+  white-space: normal !important; /* permette 2 righe */
+  text-align: center;
+}
+
+/* opzionale: se un titolo è lungo (FTCLAIMS HISTORY VIN) lo rendiamo più piccolo */
+.ft-hubas .btn.btn-wide,
+#page-fthubas .btn.btn-wide{
+  overflow: hidden;
+}
+
