@@ -274,6 +274,28 @@ body{
   height: 46px;
 }
 
+/* =========================================================
+   FTHUBAS - Bottoni più "squadrati" e larghi (solo qui)
+   - Manteniamo altezza 46px come il resto del portale
+   - Aumentiamo il width per far stare "Apri XXXXX"
+   - Non tocchiamo le altre pagine
+   ========================================================= */
+.ft-hubas .dashFooter{
+  display:flex;
+  justify-content:flex-end;  /* bottone a destra */
+}
+
+.ft-hubas .btn.btn-wide{
+  width: 160px;              /* <<< QUI: aumenta/diminuisci a piacere */
+  max-width: 160px;
+  height: 46px;              /* coerente con btn-wide */
+  border-radius: 12px;
+  padding: 0 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ===============================
    FORMS (manteniamo compatibilità)
    =============================== */
@@ -503,5 +525,3 @@ body{
   background-position: center !important;
   background-size: auto !important;
 }
-
-
