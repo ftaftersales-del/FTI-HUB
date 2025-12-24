@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>FTI-HUB - Main</title>
-  <link rel="stylesheet" href="ftstyle.css">
+
+  <!-- CSS globale (aggiunto v=4 per evitare cache) -->
+  <link rel="stylesheet" href="ftstyle.css?v=4">
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -62,7 +64,8 @@
   </style>
 </head>
 
-<body class="ft-page">
+<!-- ✅ CORREZIONE: marker per CSS FTHUBAS -->
+<body class="ft-page ft-hubas" id="page-fthubas">
 
   <!-- LEFT SEASON BAND -->
   <div id="ftLeftSeasonBand" class="ft-left-season-band" aria-label="Season band">
