@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FTCIRCAS - Circolari</title>
 
-  <!-- Global style -->
   <link rel="stylesheet" href="ftstyle.css">
 
   <!-- Firebase (compat) -->
@@ -18,7 +17,6 @@
   <style>
     /* ===============================
        FTCIRCAS - Stili specifici pagina
-       (manteniamo SOLO ciò che non è già in ftstyle.css)
        =============================== */
 
     .ftcircas-wrap{
@@ -38,6 +36,7 @@
       margin: 0;
       letter-spacing: -0.2px;
     }
+
     .muted{
       color: var(--muted);
       font-size: 13px;
@@ -131,22 +130,26 @@
       box-shadow: var(--shadow);
     }
 
-    .circular .head{
+    /* ===== Accordion circolari ===== */
+    .circ-body{ display:none; margin-top: 10px; }
+    .circular.is-open .circ-body{ display:block; }
+
+    .circ-row{
       display:flex;
+      align-items:center;
       justify-content:space-between;
       gap:10px;
-      flex-wrap:wrap;
-      align-items:flex-start;
     }
-    .circular .head h4{
-      margin:0;
+
+    .circ-number{
+      font-weight: 900;
       letter-spacing: -0.1px;
     }
 
     .meta{
       font-size: 12px;
       color: var(--muted);
-      margin-top: 4px;
+      margin-top: 6px;
     }
 
     .text{
@@ -176,7 +179,6 @@
       gap: 8px;
       flex-wrap:wrap;
       align-items:center;
-      margin-top: 10px;
     }
 
     .smallnote{
@@ -203,15 +205,11 @@
       white-space: pre-wrap;
       border: 1px solid rgba(255,255,255,.08);
     }
-
-    /* se in qualche pagina non esiste .btn-primary globale, qui resti coperto dal global ftstyle */
   </style>
 </head>
 
 <body class="ft-page">
-
   <div class="ft-container ftcircas-wrap">
-
     <div class="card pad">
 
       <div class="page-head">
@@ -301,7 +299,7 @@
             <label>Allegati (PDF o ZIP, max 100MB ciascuno)</label>
             <input id="cFiles" type="file" multiple accept=".pdf,.zip,application/pdf,application/zip,application/x-zip-compressed" />
 
-            <div class="actions">
+            <div class="actions" style="margin-top:10px">
               <button class="btn btn-primary" id="btnPublish" onclick="publishCircular()">Pubblica circolare</button>
               <span class="smallnote" id="publishStatus"></span>
             </div>
@@ -311,8 +309,8 @@
 
           <h3>Circolari</h3>
           <div class="list" id="circularsList"></div>
-
         </div>
+
       </div>
     </div>
   </div>
@@ -329,14 +327,14 @@
     let circulars = [];    // [{id, ...data}]
     let filtered = [];
 
-    let selectedFolderId = "ALL"; // per click sidebar
+    let selectedFolderId = "ALL";
 
     function toast(msg) {
       const t = document.getElementById("toast");
       t.textContent = msg;
       t.style.display = "block";
       clearTimeout(window.__toastTimer);
-      window.__toastTimer = setTimeout(() => t.style.display = "none", 3500);
+      window.__toastTimer = setTimeout(() => (t.style.display = "none"), 3500);
     }
 
     function isDistributor() {
@@ -351,7 +349,9 @@
         const mm = String(d.getMonth() + 1).padStart(2, "0");
         const yyyy = d.getFullYear();
         return `${dd}/${mm}/${yyyy}`;
-      } catch (e) { return "-"; }
+      } catch (e) {
+        return "-";
+      }
     }
 
     function parseDateInputToTimestamp(value) {
@@ -371,11 +371,13 @@
     async function loadUser(user) {
       const snap = await db.collection("Users").doc(user.uid).get();
       if (!snap.exists) throw new Error("Profilo utente non trovato in /Users");
+
       currentUserData = snap.data();
       currentUser = user;
 
       const dealerId = currentUserData.dealerId || "-";
       const role = currentUserData.role || "-";
+
       document.getElementById("userLine").textContent =
         `Utente: ${currentUser.email} • DealerID: ${dealerId} • Ruolo: ${role}${isDistributor() ? " • Distributore" : ""}`;
 
@@ -399,6 +401,7 @@
     function fillFolderSelects() {
       const ff = document.getElementById("folderFilter");
       ff.innerHTML = "";
+
       const optAll = document.createElement("option");
       optAll.value = "ALL";
       optAll.textContent = "Tutte";
@@ -414,6 +417,7 @@
       const cf = document.getElementById("cFolder");
       if (cf) {
         cf.innerHTML = "";
+
         const o0 = document.createElement("option");
         o0.value = "";
         o0.textContent = "Seleziona cartella...";
@@ -471,6 +475,7 @@
       const folderSel = document.getElementById("folderFilter").value || "ALL";
       const df = document.getElementById("dateFrom").value;
       const dt = document.getElementById("dateTo").value;
+
       const fromTs = df ? new Date(df + "T00:00:00").getTime() : null;
       const toTs   = dt ? new Date(dt + "T23:59:59").getTime() : null;
 
@@ -511,24 +516,21 @@
         box.id = "circ_" + c.id;
 
         const head = document.createElement("div");
-        head.className = "head";
+        head.className = "circ-row";
 
-        const left = document.createElement("div");
-        left.innerHTML = `
-          <h4>${c.number || c.id}</h4>
-          <div class="meta">Pubblicazione: ${formatDateIT(c.publishDate)} • Cartella: ${c.folderName || "-"}</div>
-        `;
+        const num = document.createElement("div");
+        num.className = "circ-number";
+        num.textContent = c.number || c.id;
 
         const right = document.createElement("div");
         right.className = "actions";
 
-        const btnOpen = document.createElement("button");
-        btnOpen.className = "btn";
-        btnOpen.textContent = "Apri dettaglio";
-        btnOpen.onclick = () => {
-          document.getElementById("circ_" + c.id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-        };
-        right.appendChild(btnOpen);
+        const btnToggle = document.createElement("button");
+        btnToggle.className = "btn";
+        btnToggle.setAttribute("data-role", "toggle");
+        btnToggle.textContent = "Apri dettaglio";
+        btnToggle.onclick = () => toggleCircular(c.id, true);
+        right.appendChild(btnToggle);
 
         if (isDistributor()) {
           const btnDel = document.createElement("button");
@@ -538,34 +540,78 @@
           right.appendChild(btnDel);
         }
 
-        head.appendChild(left);
+        head.appendChild(num);
         head.appendChild(right);
 
-        const text = document.createElement("div");
-        text.className = "text";
-        text.textContent = c.text || "";
-
-        const att = document.createElement("div");
-        att.className = "attachments";
-        att.innerHTML = `<div><strong>Allegati</strong> <span class="smallnote">(clicca per scaricare)</span></div><ul id="att_${c.id}"><li class="smallnote">Caricamento...</li></ul>`;
+        const body = document.createElement("div");
+        body.className = "circ-body";
+        body.innerHTML = `
+          <div class="meta">Pubblicazione: ${formatDateIT(c.publishDate)} • Cartella: ${c.folderName || "-"}</div>
+          <div class="text"></div>
+          <div class="attachments">
+            <div><strong>Allegati</strong> <span class="smallnote">(clicca per scaricare)</span></div>
+            <ul id="att_${c.id}"><li class="smallnote">Caricamento...</li></ul>
+          </div>
+        `;
+        body.querySelector(".text").textContent = c.text || "";
 
         box.appendChild(head);
-        box.appendChild(text);
-        box.appendChild(att);
-
+        box.appendChild(body);
         root.appendChild(box);
 
         loadAttachmentsInto(c.id);
 
         if (targetId && targetId === c.id) {
-          setTimeout(() => {
-            document.getElementById("circ_" + c.id)?.scrollIntoView({ behavior:"smooth", block:"start" });
-          }, 250);
+          setTimeout(() => toggleCircular(c.id, false), 150);
         }
       }
 
       if (!filtered.length) {
         root.innerHTML = `<div class="muted">Nessuna circolare trovata con i filtri attuali.</div>`;
+      }
+    }
+
+    function toggleCircular(id, userClick) {
+      const el = document.getElementById("circ_" + id);
+      if (!el) return;
+
+      const btn = el.querySelector('.actions [data-role="toggle"]');
+      const isOpen = el.classList.contains("is-open");
+
+      if (isOpen) {
+        el.classList.remove("is-open");
+        if (btn) btn.textContent = "Apri dettaglio";
+        if (userClick) clearCircularParamIfMatches(id);
+        return;
+      }
+
+      // Chiudi tutte le altre (accordion one-open)
+      document.querySelectorAll("#circularsList .circular.is-open").forEach((other) => {
+        if (other.id === ("circ_" + id)) return;
+
+        other.classList.remove("is-open");
+        const b = other.querySelector('.actions [data-role="toggle"]');
+        if (b) b.textContent = "Apri dettaglio";
+      });
+
+      el.classList.add("is-open");
+      if (btn) btn.textContent = "Chiudi";
+
+      setCircularParam(id);
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function setCircularParam(id) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("circular", id);
+      history.replaceState({}, "", url.toString());
+    }
+
+    function clearCircularParamIfMatches(id) {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("circular") === id) {
+        url.searchParams.delete("circular");
+        history.replaceState({}, "", url.toString());
       }
     }
 
@@ -576,10 +622,12 @@
       ul.innerHTML = `<li class="smallnote">Caricamento...</li>`;
       try {
         const snap = await db.collection("Circulars").doc(circularId).collection("attachments").orderBy("uploadedAt", "asc").get();
+
         if (snap.empty) {
           ul.innerHTML = `<li class="smallnote">Nessun allegato.</li>`;
           return;
         }
+
         ul.innerHTML = "";
         for (const d of snap.docs) {
           const a = d.data();
@@ -597,7 +645,6 @@
               alert("Impossibile scaricare: " + e.message);
             }
           };
-
           li.appendChild(link);
 
           if (isDistributor()) {
@@ -621,6 +668,7 @@
     async function createFolder() {
       const name = (document.getElementById("newFolderName").value || "").trim();
       if (name.length < 2) return alert("Nome cartella troppo corto.");
+
       try {
         await db.collection("CircularFolders").add({
           name,
@@ -628,6 +676,7 @@
           createdByUid: currentUser.uid,
           createdByName: currentUserData.displayName || ""
         });
+
         document.getElementById("newFolderName").value = "";
         toast("Cartella creata.");
         await loadFolders();
@@ -696,11 +745,14 @@
         if (files && files.length) {
           status.textContent = `Caricamento allegati (0/${files.length})...`;
           let i = 0;
+
           for (const file of files) {
             i += 1;
             const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
             const path = `circulars/${number}/${Date.now()}_${safeName}`;
+
             await storage.ref(path).put(file);
+
             await circularRef.collection("attachments").add({
               name: file.name,
               storagePath: path,
@@ -710,6 +762,7 @@
               uploadedByUid: currentUser.uid,
               uploadedByName: currentUserData.displayName || ""
             });
+
             status.textContent = `Caricamento allegati (${i}/${files.length})...`;
           }
         }
@@ -722,6 +775,7 @@
 
         toast("Circolare pubblicata.");
         status.textContent = "";
+
         await loadCirculars();
         renderFolders();
 
@@ -736,10 +790,9 @@
 
     async function deleteAttachment(circularId, attDocId, storagePath) {
       if (!confirm("Eliminare questo allegato?")) return;
+
       try {
-        if (storagePath) {
-          await storage.ref(storagePath).delete();
-        }
+        if (storagePath) await storage.ref(storagePath).delete();
         await db.collection("Circulars").doc(circularId).collection("attachments").doc(attDocId).delete();
         toast("Allegato eliminato.");
         loadAttachmentsInto(circularId);
@@ -759,15 +812,13 @@
         for (const d of attSnap.docs) {
           const a = d.data();
           if (a.storagePath) {
-            try { await storage.ref(a.storagePath).delete(); } catch(e) { console.warn("delete storage fail", e); }
+            try { await storage.ref(a.storagePath).delete(); } catch (e) { console.warn("delete storage fail", e); }
           }
           await d.ref.delete();
         }
 
         const ackSnap = await cRef.collection("ack").get();
-        for (const d of ackSnap.docs) {
-          await d.ref.delete();
-        }
+        for (const d of ackSnap.docs) await d.ref.delete();
 
         await cRef.delete();
 
