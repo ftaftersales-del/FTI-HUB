@@ -15,9 +15,11 @@
   <style>
     /* =========================
        FTDMS - page glue (solo stile)
+       - nessuna modifica a funzionalità
+       - preset: PIÙ ARIOSO
        ========================= */
 
-    /* forza topbar coerente + azioni a destra */
+    /* Topbar coerente + azioni a destra */
     .ft-topbar{
       display:flex;
       align-items:center;
@@ -33,6 +35,7 @@
       flex-wrap: wrap;
     }
 
+    /* Titoli */
     .dms-title{
       margin: 0;
       font-size: 18px;
@@ -45,13 +48,14 @@
       color: var(--muted);
     }
 
-    .dms-section{ margin-top: 14px; }
+    /* Sezioni (più respiro) */
+    .dms-section{ margin-top: 18px; }
     .dms-section > .section-head{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap: 12px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .section-head strong{
       font-size: 13px;
@@ -61,26 +65,115 @@
     }
     .section-actions{
       display:flex;
-      gap: 8px;
+      gap: 10px;
       flex-wrap: wrap;
       justify-content: flex-end;
     }
 
-    table{ margin-top: 8px; }
-    tr:hover{ background:#f3f6ff; cursor:pointer; }
-    .ft-row-selected{ background:#e8f1ff !important; }
-
+    /* Box selezionato (più arioso) */
     .selectedBox{
-      background:#f7f8fe;
+      background: rgba(247, 248, 254, .85);
       border: 1px solid #e8ebff;
       border-radius: var(--radius-sm);
-      padding: 10px 12px;
+      padding: 12px 14px;
       color: var(--muted);
       font-size: 13px;
     }
     .selectedBox strong{ color: var(--text); }
 
-    /* Pannelli laterali */
+    /* =========================
+       TABELLE - preset ARIOSO
+       ========================= */
+
+    /* wrapper per scroll su schermi piccoli (senza schiacciare tutto) */
+    .dms-table-wrap{
+      overflow-x: auto;
+      padding-bottom: 4px;
+      border-radius: 14px;
+    }
+
+    #dealersTable,
+    #users-container table{
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: rgba(255,255,255,.72);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    /* header */
+    #dealersTable thead th,
+    #users-container table thead th{
+      background: rgba(255,255,255,.95);
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .18px;
+      font-weight: 900;
+      text-transform: none;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      white-space: nowrap;
+    }
+
+    /* celle */
+    #dealersTable tbody td,
+    #users-container table tbody td{
+      padding: 13px 14px;          /* più arioso */
+      font-size: 13px;
+      line-height: 1.35;
+      vertical-align: middle;
+      border-bottom: 1px solid rgba(230,232,240,.85);
+      white-space: nowrap;
+    }
+
+    /* zebra soft */
+    #dealersTable tbody tr:nth-child(odd),
+    #users-container table tbody tr:nth-child(odd){
+      background: rgba(255,255,255,.55);
+    }
+    #dealersTable tbody tr:nth-child(even),
+    #users-container table tbody tr:nth-child(even){
+      background: rgba(255,255,255,.78);
+    }
+
+    /* hover più pulito */
+    #dealersTable tbody tr:hover,
+    #users-container table tbody tr:hover{
+      background: #f3f6ff;
+      cursor: pointer;
+    }
+
+    /* riga selezionata */
+    .ft-row-selected{
+      background: #e8f1ff !important;
+    }
+
+    /* colonne lunghe: email con ellissi */
+    #users-container table td:nth-child(2){
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Colonna azioni: bottoni più piccoli e ordinati */
+    #users-container table td:last-child{
+      white-space: normal;
+      width: 260px;
+    }
+    #users-container table td:last-child .btn{
+      padding: 7px 11px;
+      font-size: 12px;
+      border-radius: 12px;
+      margin: 3px 8px 3px 0;
+    }
+
+    /* =========================
+       PANNELLI LATERALI
+       ========================= */
     #dealer-form-panel,
     #user-form-panel{
       display:none;
@@ -138,7 +231,7 @@
       display:flex;
       flex-wrap:wrap;
       gap: 10px 14px;
-      margin: 8px 0 2px;
+      margin: 10px 0 2px;
       font-size: 13px;
       color: var(--text);
     }
@@ -166,6 +259,7 @@
     @media (max-width: 980px){
       #dealer-form-panel, #user-form-panel{ width: 100%; }
       .two-columns{ flex-direction: column; }
+      #users-container table td:last-child{ width: 220px; }
     }
   </style>
 </head>
@@ -178,7 +272,6 @@
       <p class="subtitle">DMS - Gestione Dealers e Utenze</p>
     </div>
     <div class="ft-actions">
-      <!-- qui NON uso ft-home-btn: uso i btn standard così resta a destra -->
       <a href="FTHUBAS.html" class="btn btn-outline btn-small">🏠 Home</a>
     </div>
   </div>
@@ -201,22 +294,24 @@
           </div>
         </div>
 
-        <table id="dealersTable">
-          <thead>
-            <tr>
-              <th>Codice</th>
-              <th>Nome</th>
-              <th>Città</th>
-              <th>Provincia</th>
-              <th>Regione</th>
-              <th>Dealer</th>
-              <th>Workshop</th>
-              <th>RSA</th>
-              <th>Stato</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+        <div class="dms-table-wrap">
+          <table id="dealersTable">
+            <thead>
+              <tr>
+                <th>Codice</th>
+                <th>Nome</th>
+                <th>Città</th>
+                <th>Provincia</th>
+                <th>Regione</th>
+                <th>Dealer</th>
+                <th>Workshop</th>
+                <th>RSA</th>
+                <th>Stato</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="hr"></div>
@@ -1126,20 +1221,21 @@
         }
 
         let html = `
-          <table>
-            <thead>
-              <tr>
-                <th>Nome</th>
-                <th>Email</th>
-                <th>Dealer</th>
-                <th>Ruolo</th>
-                <th>Status</th>
-                <th>Admin</th>
-                <th>Distributore</th>
-                <th>Azioni</th>
-              </tr>
-            </thead>
-            <tbody>
+          <div class="dms-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Dealer</th>
+                  <th>Ruolo</th>
+                  <th>Status</th>
+                  <th>Admin</th>
+                  <th>Distributore</th>
+                  <th>Azioni</th>
+                </tr>
+              </thead>
+              <tbody>
         `;
 
         snap.forEach(doc => {
@@ -1170,7 +1266,11 @@
           `;
         });
 
-        html += "</tbody></table>";
+        html += `
+              </tbody>
+            </table>
+          </div>
+        `;
         container.innerHTML = html;
 
       } catch (e) {
