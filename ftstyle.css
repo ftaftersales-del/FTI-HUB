@@ -8,6 +8,7 @@
    - topbar compatibile (nuova + vecchia struttura)
    - dashboard premium (hover, gerarchie, gruppi)
    - popup circolari coerente
+   - accessibilità: focus-visible + riduzione animazioni
    =============================== */
 
 :root{
@@ -478,9 +479,8 @@ input[type="file"]{
 /* ===============================
    HUB GROUPS
    =============================== */
-.hub-group{
-  margin-top: 14px;
-}
+.hub-group{ margin-top: 14px; }
+
 .hub-group__head{
   display:flex;
   align-items:flex-end;
@@ -636,6 +636,33 @@ input[type="file"]{
 #circular-status{
   color: var(--muted);
   font-size: 13px;
+}
+
+/* ===============================
+   ACCESSIBILITY / FOCUS (miglioramento 6)
+   =============================== */
+:focus{ outline: none; }
+
+:focus-visible{
+  outline: 3px solid rgba(0,94,220,.35);
+  outline-offset: 2px;
+}
+
+.btn:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible{
+  box-shadow:
+    0 0 0 4px rgba(0,94,220,.12),
+    0 10px 22px rgba(15, 23, 42, 0.10);
+}
+
+/* rispetto preferenze utente */
+@media (prefers-reduced-motion: reduce){
+  .btn, .dashCard{
+    transition: none !important;
+  }
 }
 
 /* ===============================
