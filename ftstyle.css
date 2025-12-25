@@ -574,3 +574,14 @@ a:hover{ text-decoration:underline; }
   text-align: center;
   overflow: hidden;
 }
+/* riga meta in topbar (utente/dealer/ruolo) */
+.ft-topbar__meta{
+  margin-left: 10px;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: min(62vw, 780px);
+}
+
