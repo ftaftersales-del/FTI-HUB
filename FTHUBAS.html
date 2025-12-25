@@ -12,15 +12,18 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
 
-  <!-- LEFT SEASON BAND (solo per FTHUBAS) -->
+  <!-- LEFT SEASON BAND (solo per FTHUBAS) + POPUP STYLE -->
   <style>
+    /* =========================
+       LEFT SEASON BAND
+       ========================= */
     .ft-left-season-band{
       position: fixed;
       top: 0;
       left: 0;
       height: 100vh;
       width: auto;
-      z-index: 3;
+      z-index: 1; /* CHANGED: sotto al contenuto */
       box-shadow: 2px 0 10px rgba(0,0,0,0.18);
       overflow: hidden;
     }
@@ -36,7 +39,7 @@
       bottom: 14px;
       text-align: center;
       font-size: 14px;
-      font-weight: 600;
+      font-weight: 700;
       color: #fff;
       padding: 8px 10px;
       background: rgba(0,0,0,0.35);
@@ -44,6 +47,14 @@
       backdrop-filter: blur(3px);
       border: 1px solid rgba(255,255,255,0.18);
     }
+
+    /* il contenuto deve stare sopra la band */
+    .ft-container{
+      position: relative;
+      z-index: 2;
+    }
+
+    /* sposta la pagina a destra della band */
     .ft-page{
       padding-left: var(--ft-band-w, 0px);
       box-sizing: border-box;
@@ -51,6 +62,73 @@
     @media (max-width: 900px){
       .ft-left-season-band{ display:none; }
       .ft-page{ padding-left: 0; }
+    }
+
+    /* =========================
+       POPUP CIRCOLARI (coerente con ftstyle)
+       ========================= */
+    #circular-overlay{
+      position: fixed;
+      inset: 0;
+      display: none;            /* verrà messo a flex via JS */
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 50;
+
+      background: rgba(15, 23, 42, 0.35);
+      backdrop-filter: blur(3px);
+    }
+
+    #circular-modal{
+      width: min(760px, 100%);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow2);
+      overflow: hidden;
+    }
+
+    #circular-modal header{
+      padding: 16px 18px;
+      font-weight: 800;
+      color: var(--text);
+      background: var(--surface-3);
+      border-bottom: 1px solid var(--border);
+    }
+
+    #circular-modal .body{
+      padding: 16px 18px;
+      max-height: 55vh;
+      overflow: auto;
+    }
+
+    #circular-meta{
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    #circular-text{
+      white-space: pre-wrap;
+      line-height: 1.45;
+      color: var(--text);
+    }
+
+    #circular-modal .footer{
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: var(--surface-3);
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    #circular-status{
+      color: var(--muted);
+      font-size: 13px;
     }
   </style>
 </head>
@@ -161,8 +239,8 @@
   </div><!-- /ft-container -->
 
   <!-- POPUP CIRCOLARI -->
-  <div id="circular-overlay">
-    <div id="circular-modal">
+  <div id="circular-overlay" aria-hidden="true">
+    <div id="circular-modal" role="dialog" aria-modal="true" aria-labelledby="circular-title">
       <header id="circular-title">Circolare obbligatoria</header>
       <div class="body">
         <div id="circular-meta"></div>
@@ -221,6 +299,7 @@
     document.getElementById("circular-title").textContent = doc.id;
     document.getElementById("circular-text").textContent = data.text || "";
     document.getElementById("circular-overlay").style.display = "flex";
+    document.getElementById("circular-overlay").setAttribute("aria-hidden", "false");
   }
 
   async function acceptCircular() {
@@ -230,6 +309,7 @@
       acceptedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     document.getElementById("circular-overlay").style.display = "none";
+    document.getElementById("circular-overlay").setAttribute("aria-hidden", "true");
     enforceCirculars();
   }
 
