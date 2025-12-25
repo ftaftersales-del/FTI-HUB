@@ -17,6 +17,7 @@
   <style>
     /* ===============================
        FTCIRCAS - Stili specifici pagina
+       (solo layout/skin locale)
        =============================== */
 
     .ftcircas-wrap{
@@ -41,6 +42,9 @@
       color: var(--muted);
       font-size: 13px;
     }
+
+    /* nascondi linea utente nel pad (la mettiamo in topbar) */
+    #userLine{ display:none; }
 
     .grid{
       display:grid;
@@ -215,6 +219,7 @@
       <div class="page-head">
         <div>
           <h2>FTCIRCAS - Circolari</h2>
+          <!-- NON ELIMINARE: ora è nascosto via CSS e replicato nella topbar -->
           <div class="muted" id="userLine">Caricamento utente...</div>
         </div>
       </div>
@@ -368,6 +373,15 @@
         .replace(/\p{Diacritic}/gu, "");
     }
 
+    function setTopbarMeta(text) {
+      if (window.FTTopbar && typeof window.FTTopbar.setMeta === "function") {
+        window.FTTopbar.setMeta(text);
+        return;
+      }
+      // fallback (nel caso topbar non fosse ancora pronta)
+      window.dispatchEvent(new CustomEvent("ft:setMeta", { detail: { text } }));
+    }
+
     async function loadUser(user) {
       const snap = await db.collection("Users").doc(user.uid).get();
       if (!snap.exists) throw new Error("Profilo utente non trovato in /Users");
@@ -378,8 +392,15 @@
       const dealerId = currentUserData.dealerId || "-";
       const role = currentUserData.role || "-";
 
-      document.getElementById("userLine").textContent =
+      const meta =
         `Utente: ${currentUser.email} • DealerID: ${dealerId} • Ruolo: ${role}${isDistributor() ? " • Distributore" : ""}`;
+
+      // (1) topbar
+      setTopbarMeta(meta);
+
+      // (2) fallback pad (rimane aggiornato ma è nascosto via CSS)
+      const line = document.getElementById("userLine");
+      if (line) line.textContent = meta;
 
       document.getElementById("folderCreateBox").classList.toggle("hidden", !isDistributor());
       document.getElementById("circularCreateBox").classList.toggle("hidden", !isDistributor());
@@ -585,10 +606,9 @@
         return;
       }
 
-      // Chiudi tutte le altre (accordion one-open)
+      // chiudi le altre
       document.querySelectorAll("#circularsList .circular.is-open").forEach((other) => {
         if (other.id === ("circ_" + id)) return;
-
         other.classList.remove("is-open");
         const b = other.querySelector('.actions [data-role="toggle"]');
         if (b) b.textContent = "Apri dettaglio";
