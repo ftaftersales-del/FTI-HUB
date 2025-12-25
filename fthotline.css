@@ -1,9 +1,11 @@
 /* ===============================
-   FTHOTLINE - Page glue (v6)
+   FTHOTLINE - Page glue (v6) FIXED
    - Usa panel/section/btn/badge di ftstyle
+   - Layout stabile (NO calc fragili per altezze)
    - Mantiene classi create dal JS: .ticket-item*, .chat-*
    =============================== */
 
+/* Layout pagina: 2 colonne, poi 1 colonna */
 .ht-layout{
   max-width: 1280px;
   margin: 0 auto;
@@ -15,18 +17,23 @@
 }
 
 @media (max-width: 980px){
-  .ht-layout{
-    grid-template-columns: 1fr;
-  }
+  .ht-layout{ grid-template-columns: 1fr; }
 }
 
+/* Panels (usano .panel in HTML) */
 .ht-left,
 .ht-right{
   padding: 16px;
+  min-height: 0; /* IMPORTANT per overflow in children */
 }
 
-.ht-empty{
-  padding: 10px 2px;
+/* ===============================
+   COLONNA SINISTRA
+   =============================== */
+.ht-left{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Filtri */
@@ -35,15 +42,19 @@
   gap: 10px;
 }
 
+/* Wrapper lista ticket (sezione) */
 .ht-tickets{
-  margin-top: 12px;
   padding: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* abilita scroll nel figlio */
 }
 
+/* LISTA ticket vera (ID usato dal JS) */
 #ticketsList{
-  min-height: 340px;
-  max-height: calc(100vh - 58px - 18px - 18px - 16px - 16px - 150px);
+  flex: 1;
+  min-height: 180px;
   overflow-y: auto;
   padding: 6px;
 }
@@ -93,9 +104,23 @@
   color: var(--muted);
 }
 
+/* ===============================
+   COLONNA DESTRA
+   =============================== */
+.ht-right{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.ht-empty{
+  padding: 10px 2px;
+}
+
 /* Header ticket */
 .ht-ticket-header{
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 /* griglie */
@@ -109,15 +134,11 @@
 }
 
 @media (max-width: 1100px){
-  .ht-grid-6{
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
+  .ht-grid-6{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (max-width: 680px){
-  .ht-grid-6{
-    grid-template-columns: 1fr;
-  }
+  .ht-grid-6{ grid-template-columns: 1fr; }
 }
 
 .ht-field-actions{
@@ -132,6 +153,7 @@
   font-size: 12px;
 }
 
+/* Nota: usiamo gradienti coerenti. Se vuoi 100% variabili, posso fare anche warn/neutral con var */
 .ht-status-open{
   background: linear-gradient(180deg, var(--primary2), var(--primary));
 }
@@ -144,7 +166,14 @@
   background: linear-gradient(180deg, #94a3b8, #64748b);
 }
 
-/* Body text box */
+/* Body container */
+.ht-ticket-body{
+  display: grid;
+  gap: 12px;
+  min-height: 0;
+}
+
+/* Box testo richiesta/garanzia */
 .ht-box{
   border: 1px solid rgba(230,232,240,.95);
   background: rgba(255,255,255,.88);
@@ -154,22 +183,22 @@
   line-height: 1.45;
 }
 
-/* Chat */
-.ht-ticket-body{
-  display: grid;
-  gap: 12px;
-}
-
+/* ===============================
+   CHAT
+   =============================== */
 .ht-chat{
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
+/* Contenitore messaggi (ID usato dal JS) */
 .ht-chat-messages{
-  min-height: 140px;
-  max-height: 240px;
+  flex: 1;
+  min-height: 160px;
+  max-height: 320px; /* limite estetico; se vuoi full-height si può togliere */
   overflow-y: auto;
-  padding: 6px 2px 8px;
+  padding: 10px 6px 8px;
   border-top: 1px solid var(--border);
   margin-top: 8px;
 }
@@ -186,7 +215,7 @@
 .chat-meta{
   font-size: 11.5px;
   color: var(--muted);
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
 
 .chat-bubble{
@@ -209,6 +238,22 @@
   border-color: rgba(15,106,42,.12);
 }
 
+/* Empty / attachments (usate dal JS aggiornato) */
+.chat-empty{
+  font-size: 12.5px;
+  color: var(--muted);
+  padding: 6px 2px;
+}
+
+.chat-attachments{
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.chat-attachments a{
+  font-weight: 800;
+}
+
 /* input row */
 .ht-chat-input{
   display: grid;
@@ -219,12 +264,17 @@
 }
 
 @media (max-width: 980px){
-  .ht-chat-input{
-    grid-template-columns: 1fr;
-  }
+  .ht-chat-input{ grid-template-columns: 1fr; }
 }
 
-/* Modal */
+/* Migliora textarea in chat (senza rompere ftstyle) */
+.ht-chat-input textarea{
+  min-height: 90px; /* più comodo su desktop */
+}
+
+/* ===============================
+   MODAL
+   =============================== */
 .ht-modal-backdrop{
   position: fixed;
   inset: 0;
@@ -240,6 +290,8 @@
 .ht-modal{
   width: min(760px, 100%);
   padding: 16px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow2);
 }
 
 .ht-modal-header{
@@ -263,7 +315,7 @@
   display: flex;
   gap: 10px;
   justify-content: flex-end;
-  margin-top: 6px;
+  margin-top: 8px;
   flex-wrap: wrap;
 }
 
