@@ -30,6 +30,24 @@
       width: auto;
       display: block;
     }
+
+    /* ✅ overlay “fusione” con contenuto: NON tocca l’immagine (logo incluso) */
+    .ft-left-season-band::after{
+      content:"";
+      position:absolute;
+      top:0;
+      right:0;
+      width: 56px;
+      height: 100%;
+      pointer-events: none;
+      background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.00) 0%,
+        rgba(255,255,255,0.38) 55%,
+        rgba(255,255,255,0.78) 100%
+      );
+    }
+
     .ft-left-season-band .ft-season-date{
       position: absolute;
       left: 14px;
@@ -74,7 +92,7 @@
 
   <div class="ft-container">
 
-    <!-- TOPBAR (compatibile ftstyle) -->
+    <!-- TOPBAR -->
     <div class="ft-topbar">
       <div class="ft-topbar__inner">
         <div class="ft-topbar__left">
@@ -96,11 +114,9 @@
     <!-- MAIN -->
     <div class="card pad">
 
-      <!-- USER BOX (gerarchia + info chiare) -->
       <div class="hub-head">
         <div id="user-info" class="userbox">Caricamento dati utente...</div>
 
-        <!-- stato pagina (circolari / messaggi) -->
         <div class="hub-status" id="hub-status">
           <span class="dot"></span>
           <span class="txt">Verifica circolari obbligatorie…</span>
@@ -109,7 +125,7 @@
 
       <div class="hr"></div>
 
-      <!-- GROUP 1: INFORMAZIONI -->
+      <!-- Informazioni -->
       <div class="hub-group">
         <div class="hub-group__head">
           <div>
@@ -119,8 +135,6 @@
         </div>
 
         <div class="dashboard">
-
-          <!-- FTCIRCAS -->
           <div class="dashCard">
             <div class="dashTop">
               <div class="dashTitle"><span class="ico">📄</span> Circolari ufficiali</div>
@@ -131,7 +145,6 @@
             </div>
           </div>
 
-          <!-- FTVIN -->
           <div class="dashCard">
             <div class="dashTop">
               <div class="dashTitle"><span class="ico">🔍</span> Verifica copertura VIN</div>
@@ -142,7 +155,6 @@
             </div>
           </div>
 
-          <!-- FTFSA -->
           <div class="dashCard">
             <div class="dashTop">
               <div class="dashTitle"><span class="ico">🧾</span> Campagne FSA</div>
@@ -153,7 +165,6 @@
             </div>
           </div>
 
-          <!-- FTCLAIMS HISTORY VIN -->
           <div class="dashCard">
             <div class="dashTop">
               <div class="dashTitle"><span class="ico">🧰</span> Storico manutenzioni per telaio</div>
@@ -163,11 +174,10 @@
               <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS_HISTORY_VIN()">FTCLAIMS HISTORY VIN</button>
             </div>
           </div>
-
         </div>
       </div>
 
-      <!-- GROUP 2: OPERATIVITÀ -->
+      <!-- Operatività -->
       <div class="hub-group">
         <div class="hub-group__head">
           <div>
@@ -177,8 +187,6 @@
         </div>
 
         <div class="dashboard">
-
-          <!-- FTCLAIMS -->
           <div class="dashCard dashCard--primary">
             <div class="dashTop">
               <div class="dashTitle"><span class="ico">🛠️</span> Nuove pratiche di garanzia</div>
@@ -189,7 +197,6 @@
             </div>
           </div>
 
-          <!-- FTMANAG -->
           <div class="dashCard">
             <div class="dashTop">
               <div class="dashTitle"><span class="ico">🗂️</span> Gestione pratiche esistenti</div>
@@ -200,7 +207,6 @@
             </div>
           </div>
 
-          <!-- FTHOTLINE -->
           <div class="dashCard">
             <div class="dashTop">
               <div class="dashTitle"><span class="ico">📞</span> Hotline tecnica</div>
@@ -210,11 +216,10 @@
               <button class="btn btn-primary btn-wide" onclick="goToFTHOTLINE()">FTHOTLINE</button>
             </div>
           </div>
-
         </div>
       </div>
 
-      <!-- GROUP 3: AMMINISTRAZIONE (solo Admin) -->
+      <!-- Amministrazione (solo Admin) -->
       <div id="admin-section" class="hub-group" style="display:none;">
         <div class="hub-group__head">
           <div>
@@ -249,7 +254,7 @@
       </div>
       <div class="footer">
         <span id="circular-status"></span>
-        <button class="btn btn-primary" onclick="acceptCircular()">Ho letto e preso visione</button>
+        <button id="circular-accept-btn" class="btn btn-primary" onclick="acceptCircular()">Ho letto e preso visione</button>
       </div>
     </div>
   </div>
@@ -257,6 +262,9 @@
 <script>
   let currentAccount = null;
   let pendingCircular = null;
+
+  // accessibilità modal: ripristino focus
+  let lastFocusEl = null;
 
   async function loadCurrentUserInfo(user) {
     const snap = await db.collection("Users").doc(user.uid).get();
@@ -316,33 +324,56 @@
       }
     }
 
-    // nessuna circolare pendente
     pendingCircular = null;
     setHubStatus("is-ok", "Nessuna circolare obbligatoria in sospeso.");
   }
 
   function showCircular(doc) {
     const data = doc.data();
+
+    // salva focus precedente
+    lastFocusEl = document.activeElement;
+
     document.getElementById("circular-title").textContent = doc.id;
 
-    // meta (se hai campi extra in futuro, qui li visualizziamo senza rompere nulla)
     const meta = [];
-    if (data.publishDate) meta.push("Pubblicazione: " + (data.publishDate.toDate ? data.publishDate.toDate().toLocaleDateString("it-IT") : ""));
+    if (data.publishDate) {
+      try{
+        meta.push("Pubblicazione: " + (data.publishDate.toDate ? data.publishDate.toDate().toLocaleDateString("it-IT") : ""));
+      }catch(e){}
+    }
     document.getElementById("circular-meta").textContent = meta.join(" • ");
 
     document.getElementById("circular-text").textContent = data.text || "";
-    document.getElementById("circular-overlay").style.display = "flex";
-    document.getElementById("circular-overlay").setAttribute("aria-hidden", "false");
+
+    const overlay = document.getElementById("circular-overlay");
+    overlay.style.display = "flex";
+    overlay.setAttribute("aria-hidden", "false");
+
+    const btn = document.getElementById("circular-accept-btn");
+    if (btn) setTimeout(()=>btn.focus(), 0);
+  }
+
+  function closeCircularOverlay(){
+    const overlay = document.getElementById("circular-overlay");
+    overlay.style.display = "none";
+    overlay.setAttribute("aria-hidden", "true");
+
+    if (lastFocusEl && typeof lastFocusEl.focus === "function") {
+      try{ lastFocusEl.focus(); }catch(e){}
+    }
+    lastFocusEl = null;
   }
 
   async function acceptCircular() {
     const dealerId = currentAccount.userData.dealerId;
+
     await pendingCircular.ref.collection("ack").doc(dealerId).set({
       dealerId,
       acceptedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
-    document.getElementById("circular-overlay").style.display = "none";
-    document.getElementById("circular-overlay").setAttribute("aria-hidden", "true");
+
+    closeCircularOverlay();
     await enforceCirculars();
   }
 
@@ -404,6 +435,28 @@
 
     imgEl.addEventListener("load", applyBandWidth);
     window.addEventListener("resize", applyBandWidth);
+  })();
+
+  /* ===== ACCESSIBILITY: ESC + click fuori per chiudere il modal ===== */
+  (function(){
+    const overlay = document.getElementById("circular-overlay");
+    const modal = document.getElementById("circular-modal");
+    if (!overlay || !modal) return;
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay && overlay.style.display === "flex") {
+        closeCircularOverlay();
+      }
+    });
+
+    modal.addEventListener("click", (e) => e.stopPropagation());
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      if (overlay.style.display === "flex") {
+        closeCircularOverlay();
+      }
+    });
   })();
 </script>
 
