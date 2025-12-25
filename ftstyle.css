@@ -1,12 +1,16 @@
 /* ===============================
-   FTSTYLE - CSS globale HUB (v3)
+   FTSTYLE - CSS globale HUB (v4)
    Clean light SaaS (no dark mode)
    Focus: leggibilità, ordine, coerenza
    =============================== */
 
+/* ===============================
+   1) DESIGN TOKENS
+   =============================== */
+
 :root{
   /* base */
-  --bg: #ffffff;              /* CHANGED: sfondo bianco */
+  --bg: #ffffff;
   --surface: #ffffff;
   --text: #0f172a;
   --muted: #667085;
@@ -41,10 +45,17 @@
 
   /* font */
   --font: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+
+  /* topbar */
+  --ft-topbar-h: 56px;
+  --ft-topbar-gap: 16px;
 }
 
-*{ box-sizing: border-box; }
+/* ===============================
+   2) BASE / RESET
+   =============================== */
 
+*{ box-sizing: border-box; }
 html, body{ height: 100%; }
 
 body{
@@ -52,7 +63,6 @@ body{
   font-family: var(--font);
   color: var(--text);
 
-  /* CHANGED: sfondo bianco + texture */
   background-color: var(--bg);
   background-image: url("assets/Sfondo_FT.png");
   background-repeat: repeat;
@@ -60,13 +70,12 @@ body{
   background-size: auto;
 }
 
-/* ===============================
-   APP WRAPPER
-   =============================== */
+/* Marker sul body (non tocchiamo layout qui) */
+.ft-page{}
 
-.ft-page{ /* classe sul body */
-  /* nulla qui, solo marker */
-}
+/* ===============================
+   3) LAYOUT WRAPPER
+   =============================== */
 
 .ft-container{
   max-width: var(--container);
@@ -75,56 +84,91 @@ body{
 }
 
 /* ===============================
-   TOPBAR
+   4) TOPBAR (GLOBAL)
+   - fixed + spacer (non copre mai contenuti)
    =============================== */
 
 .ft-topbar{
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--ft-topbar-h);
+  z-index: 9999;
+
+  background: rgba(255,255,255,0.92);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+
+.ft-topbar__inner{
+  max-width: var(--container);
+  margin: 0 auto;
+  height: 100%;
+  padding: 0 18px;
+
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 14px;
 }
 
-.ft-brand{
-  display:flex;
-  flex-direction:column;
-  gap: 2px;
-}
-
-.ft-brand h1{
-  margin: 0;
-  font-size: 18px;
-  letter-spacing: 0.2px;
-}
-
-.ft-brand .subtitle{
-  margin: 0;
-  font-size: 12.5px;
-  color: var(--muted);
-}
-
-.ft-actions{
-  display:flex;
-  align-items:center;
+.ft-topbar__left{
+  display: flex;
+  align-items: baseline;
   gap: 10px;
+  min-width: 0;
 }
 
-.badge{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 4px 10px;
+.ft-topbar__brand{
+  font-weight: 900;
+  color: var(--text);
+  font-size: 14px;
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+
+.ft-topbar__subtitle{
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* spacer da inserire via JS (o manualmente dopo la topbar) */
+.ft-topbar-spacer{
+  height: calc(var(--ft-topbar-h) + var(--ft-topbar-gap));
+}
+
+.ft-home-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 9px 12px;
   border-radius: 999px;
-  background: rgba(0,52,120,0.10);
+
+  background: var(--surface);
   color: var(--primary);
-  border: 1px solid rgba(0,52,120,0.18);
+  border: 1px solid var(--border);
+
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+
+  box-shadow: var(--shadow);
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease, border-color .18s ease;
+}
+
+.ft-home-btn:hover{
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow2);
 }
 
 /* ===============================
-   SURFACE CARD
+   5) COMPONENTI BASE
    =============================== */
 
 .card{
@@ -138,10 +182,27 @@ body{
   padding: 16px 16px 18px;
 }
 
-/* ===============================
-   USER BOX
-   =============================== */
+.hr{
+  height: 1px;
+  background: var(--border);
+  margin: 14px 0;
+}
 
+/* badge */
+.badge{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size: 11px;
+  font-weight: 900;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0,52,120,0.10);
+  color: var(--primary);
+  border: 1px solid rgba(0,52,120,0.18);
+}
+
+/* userbox */
 .userbox{
   display:flex;
   flex-wrap:wrap;
@@ -156,16 +217,10 @@ body{
   margin-bottom: 14px;
 }
 
-.userbox strong{ color: var(--text); font-weight: 700; }
-
-.hr{
-  height: 1px;
-  background: var(--border);
-  margin: 14px 0;
-}
+.userbox strong{ color: var(--text); font-weight: 800; }
 
 /* ===============================
-   DASHBOARD GRID (max 3 per riga)
+   6) DASHBOARD GRID (max 3 per riga)
    =============================== */
 
 .dashboard{
@@ -210,7 +265,7 @@ body{
 .dashTitle{
   margin: 0;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.15px;
 }
 
@@ -225,7 +280,7 @@ body{
 }
 
 /* ===============================
-   BUTTONS (global)
+   7) BUTTONS (global)
    =============================== */
 
 .btn{
@@ -236,7 +291,7 @@ body{
   border-radius: 12px;
   padding: 11px 14px;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.15px;
   display:inline-flex;
   align-items:center;
@@ -275,13 +330,13 @@ body{
 }
 
 /* ===============================
-   FORMS (manteniamo compatibilità)
+   8) FORMS (compatibilità)
    =============================== */
 
 label{
   display:block;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
   margin-bottom: 6px;
   color:#2b2f36;
 }
@@ -304,7 +359,10 @@ input:focus, select:focus, textarea:focus{
 
 textarea{ resize: vertical; }
 
-/* grid legacy */
+/* ===============================
+   9) LEGACY LAYOUT HELPERS
+   =============================== */
+
 .layout{
   display:grid;
   grid-template-columns: 360px 1fr;
@@ -326,8 +384,8 @@ textarea{ resize: vertical; }
   .layout{ grid-template-columns: 1fr; }
 }
 
-/* helper legacy */
 .small{ font-size: 12px; color: #555; }
+
 .mutedBox{
   background:#f8fafc;
   border:1px dashed #d7dce3;
@@ -338,7 +396,7 @@ textarea{ resize: vertical; }
 }
 
 /* ===============================
-   BANNERS (legacy)
+   10) BANNERS (legacy)
    =============================== */
 
 .banner{
@@ -353,7 +411,29 @@ textarea{ resize: vertical; }
 .banner.warn{ background: var(--warn-bg); border:1px solid var(--warn-bd); color: var(--warn-tx); display:block; }
 
 /* ===============================
-   CLAIMS LIST (legacy pages)
+   11) TABLES (legacy)
+   =============================== */
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size: 12px;
+  margin-top: 8px;
+}
+th, td{
+  border-bottom:1px solid #eef2f6;
+  padding: 8px 8px;
+  text-align:left;
+  vertical-align:top;
+}
+th{
+  background:#f8fafc;
+  font-weight: 900;
+  color:#1f2937;
+}
+
+/* ===============================
+   12) CLAIMS LIST (legacy pages)
    =============================== */
 
 .claimItem{
@@ -373,35 +453,13 @@ textarea{ resize: vertical; }
   background:#f8fafc;
   border-bottom:1px solid #eef0f3;
 }
-.claimTitle{ font-size: 13px; font-weight: 800; color:#222; }
+.claimTitle{ font-size: 13px; font-weight: 900; color:#222; }
 .claimMeta{ font-size: 12px; color: var(--muted); }
 .claimBody{ padding: 12px; display:block; }
 .rightTopBox{ padding: 6px; }
 
 /* ===============================
-   TABLES (legacy)
-   =============================== */
-
-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size: 12px;
-  margin-top: 8px;
-}
-th, td{
-  border-bottom:1px solid #eef2f6;
-  padding: 8px 8px;
-  text-align:left;
-  vertical-align:top;
-}
-th{
-  background:#f8fafc;
-  font-weight: 800;
-  color:#1f2937;
-}
-
-/* ===============================
-   NOTES (legacy)
+   13) NOTES (legacy)
    =============================== */
 
 .notesBox{
@@ -418,20 +476,20 @@ th{
   padding: 8px 0;
 }
 .noteHeader{
-  font-weight: 800;
+  font-weight: 900;
   margin-bottom: 4px;
   font-size: 12px;
 }
 
 /* ===============================
-   LINKS
+   14) LINKS
    =============================== */
 
 a{ color: var(--primary2); text-decoration:none; }
 a:hover{ text-decoration:underline; }
 
 /* ===============================
-   POPUP CIRCOLARI (spostato qui)
+   15) POPUP CIRCOLARI
    =============================== */
 
 #circular-overlay{
@@ -462,7 +520,7 @@ a:hover{ text-decoration:underline; }
   background: linear-gradient(180deg, #0f2448, #0b1b35);
   color: #fff;
   padding: 12px 16px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.2px;
 }
 
@@ -490,163 +548,29 @@ a:hover{ text-decoration:underline; }
 }
 
 /* ===============================
-   FORCE GLOBAL BACKGROUND (solo sfondo)
+   16) FTHUBAS OVERRIDES
+   - pagina home dashboard
    =============================== */
-html, body{
-  background-color: #ffffff !important;
-}
 
-body{
-  background-color: #ffffff !important;
-  background-image: url("assets/Sfondo_FT.png") !important;
-  background-repeat: repeat !important;
-  background-position: center !important;
-  background-size: auto !important;
-}
-
-/* =========================================================
-   FTHUBAS - override bottoni dashboard (FORZATO)
-   Disinnesca la full-width di .btn-wide solo su FTHUBAS
-   ========================================================= */
-
-/* footer allineamento */
-.ft-hubas .dashFooter,
-#page-fthubas .dashFooter{
-  display: flex !important;
-  justify-content: flex-end !important;
-}
-
-/* bottone: NON full width, ma fisso e più largo */
-.ft-hubas .btn.btn-wide,
-#page-fthubas .btn.btn-wide{
-  width: auto !important;        /* <<< CORREZIONE CHIAVE */
-  min-width: 180px !important;   /* <-- aumenta qui */
-  max-width: 220px !important;
-  height: 46px !important;
-  padding: 0 14px !important;
-  border-radius: 12px !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-/* =========================================================
-   FTHUBAS - DASHBOARD “BUTTON FIRST”
-   - Niente titolo nella card (solo descrizione)
-   - Bottone grande quasi-quadrato
-   ========================================================= */
-
-.ft-hubas .dashCard .dashDesc,
-#page-fthubas .dashCard .dashDesc{
-  margin: 0 0 12px;          /* descrizione sopra al bottone */
-}
-
+/* footer centrato */
 .ft-hubas .dashFooter,
 #page-fthubas .dashFooter{
   display: flex !important;
   justify-content: center !important;
 }
 
-/* bottone grande "quadrato" */
+/* bottone grande "quasi quadrato" */
 .ft-hubas .btn.btn-wide,
 #page-fthubas .btn.btn-wide{
-  width: 210px !important;        /* LARGHEZZA */
-  height: 80px !important;        /* ALTEZZA (grossa) */
+  width: 210px !important;
+  height: 80px !important;
   padding: 0 16px !important;
-  border-radius: 16px !important; /* più “box” */
+  border-radius: 16px !important;
   font-size: 16px !important;
   letter-spacing: 0.6px !important;
   text-transform: uppercase;
   line-height: 1.1 !important;
-  white-space: normal !important; /* permette 2 righe */
+  white-space: normal !important;
   text-align: center;
-}
-
-/* opzionale: se un titolo è lungo (FTCLAIMS HISTORY VIN) lo rendiamo più piccolo */
-.ft-hubas .btn.btn-wide,
-#page-fthubas .btn.btn-wide{
   overflow: hidden;
 }
-
-/* ===============================
-   FT TOPBAR (GLOBAL)
-   =============================== */
-
-.ft-page{ /* non tocco nulla, solo base se serve */ }
-
-.has-topbar{ padding-top: 72px; } /* spazio per non coprire contenuti */
-
-.ft-topbar{
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 56px;
-  z-index: 9999;
-
-  background: rgba(255,255,255,0.92);
-  border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(8px);
-}
-
-.ft-topbar__inner{
-  max-width: 1200px;
-  margin: 0 auto;
-  height: 100%;
-  padding: 0 18px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.ft-topbar__left{
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  min-width: 0;
-}
-
-.ft-topbar__brand{
-  font-weight: 800;
-  color: var(--text);
-  font-size: 14px;
-  letter-spacing: .2px;
-  white-space: nowrap;
-}
-
-.ft-topbar__subtitle{
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ft-home-btn{
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-
-  padding: 9px 12px;
-  border-radius: 999px;
-
-  background: var(--surface);
-  color: var(--primary);
-  border: 1px solid var(--border);
-
-  font-size: 13px;
-  font-weight: 800;
-  text-decoration: none;
-
-  box-shadow: var(--shadow);
-  transition: all .18s ease;
-}
-
-.ft-home-btn:hover{
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow2);
-}
-
