@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DMS - Gestione Dealers e Utenze</title>
-  <link rel="stylesheet" href="ftstyle.css">
+  <link rel="stylesheet" href="ftstyle.css" />
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -13,14 +14,12 @@
 
   <style>
     /* =========================
-       DMS - page tweaks (solo qui)
+       FTDMS - page glue (solo stile)
+       - non tocca funzionalità
+       - coerente con ftstyle
        ========================= */
 
-    /* card wrapper più leggibile sopra lo sfondo */
-    .card.pad{
-      backdrop-filter: blur(1px);
-    }
-
+    /* Titoli pagina */
     .dms-title{
       margin: 0;
       font-size: 18px;
@@ -33,9 +32,8 @@
       color: var(--muted);
     }
 
-    .dms-section{
-      margin-top: 14px;
-    }
+    /* Sezioni */
+    .dms-section{ margin-top: 14px; }
     .dms-section > .section-head{
       display:flex;
       align-items:center;
@@ -56,19 +54,12 @@
       justify-content: flex-end;
     }
 
-    /* Tabelle un filo più "SaaS" senza toccare il CSS globale */
-    table{
-      margin-top: 8px;
-    }
-    tr:hover{
-      background: #f3f6ff;
-      cursor: pointer;
-    }
-    .ft-row-selected{
-      background: #e8f1ff !important;
-    }
+    /* Tabelle: hover/selected coerenti */
+    table{ margin-top: 8px; }
+    tr:hover{ background:#f3f6ff; cursor:pointer; }
+    .ft-row-selected{ background:#e8f1ff !important; }
 
-    /* testo selezionato */
+    /* Box selezionato */
     .selectedBox{
       background:#f7f8fe;
       border: 1px solid #e8ebff;
@@ -77,24 +68,20 @@
       color: var(--muted);
       font-size: 13px;
     }
-    .selectedBox strong{
-      color: var(--text);
-    }
+    .selectedBox strong{ color: var(--text); }
 
-    /* ======================
-       PANNELLI LATERALI
-       ====================== */
+    /* Pannelli laterali */
     #dealer-form-panel,
     #user-form-panel{
       display:none;
       position: fixed;
-      top: 0;
+      top: 58px;               /* sotto topbar ftstyle */
       right: 0;
       bottom: 0;
-      max-height: 100vh;
+      max-height: calc(100vh - 58px);
       overflow-y: auto;
       z-index: 900;
-      padding: 16px;
+      padding: 12px;
       width: 460px;
       background: transparent;
     }
@@ -129,6 +116,14 @@
       overflow-y: auto;
     }
 
+    .dms-h4{
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .15px;
+      color: var(--text);
+    }
+
     .checkbox-row{
       display:flex;
       flex-wrap:wrap;
@@ -159,34 +154,25 @@
     }
 
     @media (max-width: 980px){
-      #dealer-form-panel, #user-form-panel{
-        width: 100%;
-      }
-      .two-columns{
-        flex-direction: column;
-      }
+      #dealer-form-panel, #user-form-panel{ width: 100%; }
+      .two-columns{ flex-direction: column; }
     }
   </style>
 </head>
 
 <body class="ft-page has-topbar">
+  <!-- TOPBAR coerente (una sola, niente duplicati) -->
   <div class="ft-topbar">
-    <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
-  </div>
-  <!-- HOME BUTTON -->
-  <a href="index.html" class="ft-home-btn">⬅ HOME</a>
-  <!-- TOP BAR -->
-  <div class="ft-container">
-    <div class="ft-topbar">
-      <div class="ft-brand">
-        <h1>FTI-HUB</h1>
-        <p class="subtitle">DMS - Gestione Dealers e Utenze</p>
-      </div>
-      <div class="ft-actions">
-        <button class="btn btn-outline btn-small" onclick="window.location.href='FTHUBAS.html'">🏠 Home</button>
-      </div>
+    <div class="ft-brand">
+      <h1>FTI-HUB</h1>
+      <p class="subtitle">DMS - Gestione Dealers e Utenze</p>
     </div>
+    <div class="ft-actions">
+      <a href="FTHUBAS.html" class="ft-home-btn">🏠 Home</a>
+    </div>
+  </div>
 
+  <div class="ft-container">
     <div class="card pad">
       <h2 class="dms-title">DMS - Gestione Dealers e Utenze</h2>
       <p id="welcomeMsg" class="dms-subtitle"></p>
@@ -260,7 +246,6 @@
       </div>
 
       <div class="panel-body">
-
         <div class="field">
           <label>Stato dealer</label>
           <select id="dealerStatusSelect">
@@ -272,34 +257,34 @@
 
         <div class="hr"></div>
 
-        <h4 style="margin:0 0 10px;">Main data</h4>
+        <h4 class="dms-h4">Main data</h4>
 
         <div class="field">
           <label>Codice Dealer (dealerID)</label>
           <div class="row">
-            <input id="dealerIDInput" type="text" placeholder="Es. FT001">
+            <input id="dealerIDInput" type="text" placeholder="Es. FT001" />
             <button type="button" class="btn btn-outline btn-small" onclick="generateDealerCode()">Genera</button>
           </div>
         </div>
 
         <div class="field">
           <label>Sub-Dealer Name</label>
-          <input id="subDealerNameInput" type="text">
+          <input id="subDealerNameInput" type="text" />
         </div>
 
         <div class="field">
           <label>Address1</label>
-          <input id="address1Input" type="text">
+          <input id="address1Input" type="text" />
         </div>
 
         <div class="two-columns">
           <div class="field">
             <label>City</label>
-            <input id="cityInput" type="text">
+            <input id="cityInput" type="text" />
           </div>
           <div class="field">
             <label>Province</label>
-            <input id="provinceInput" type="text">
+            <input id="provinceInput" type="text" />
           </div>
         </div>
 
@@ -319,134 +304,133 @@
 
         <div class="field">
           <label>IBAN</label>
-          <input id="ibanInput" type="text" maxlength="27">
+          <input id="ibanInput" type="text" maxlength="27" />
         </div>
 
         <div class="field">
           <label>Vat Number</label>
-          <input id="vatNumberInput" type="text" maxlength="11">
+          <input id="vatNumberInput" type="text" maxlength="11" />
         </div>
 
         <div class="field">
           <label>LaborRateStd</label>
-          <input id="laborStdInput" type="number">
+          <input id="laborStdInput" type="number" />
         </div>
 
         <div class="field" id="laborWarrantyField">
           <label>LaborRateWarranty (solo distributore)</label>
-          <input id="laborWarrantyInput" type="number">
+          <input id="laborWarrantyInput" type="number" />
         </div>
 
         <div class="checkbox-row">
-          <label><input type="checkbox" id="dealerFlag"> Dealer</label>
-          <label><input type="checkbox" id="workshopFlag"> Workshop</label>
-          <label><input type="checkbox" id="rsaFlag"> RSA</label>
-          <label><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()"> Distributore</label>
+          <label><input type="checkbox" id="dealerFlag" /> Dealer</label>
+          <label><input type="checkbox" id="workshopFlag" /> Workshop</label>
+          <label><input type="checkbox" id="rsaFlag" /> RSA</label>
+          <label><input type="checkbox" id="isDistributorCheckbox" onclick="updateLaborWarrantyState()" /> Distributore</label>
         </div>
 
         <div class="hr"></div>
 
-        <h4 style="margin:0 0 10px;">Sezione Dealer</h4>
+        <h4 class="dms-h4">Sezione Dealer</h4>
 
         <div class="two-columns">
           <div class="field">
             <label>Dealer Contact</label>
-            <input id="dealerContactInput" type="text">
+            <input id="dealerContactInput" type="text" />
           </div>
           <div class="field">
             <label>Dealer Email</label>
-            <input id="dealerEmailInput" type="text">
+            <input id="dealerEmailInput" type="text" />
           </div>
         </div>
 
         <div class="two-columns">
           <div class="field">
             <label>Dealer Phone</label>
-            <input id="dealerPhoneInput" type="text">
+            <input id="dealerPhoneInput" type="text" />
           </div>
           <div class="field">
             <label>Dealer CloseTime</label>
-            <input id="dealerCloseInput" type="text">
+            <input id="dealerCloseInput" type="text" />
           </div>
         </div>
 
         <div class="field">
           <label>Dealer OpenTime</label>
-          <input id="dealerOpenInput" type="text">
+          <input id="dealerOpenInput" type="text" />
         </div>
 
         <div class="hr"></div>
 
-        <h4 style="margin:0 0 10px;">Sezione Workshop</h4>
+        <h4 class="dms-h4">Sezione Workshop</h4>
 
         <div class="two-columns">
           <div class="field">
             <label>Workshop Contact</label>
-            <input id="wsContactInput" type="text">
+            <input id="wsContactInput" type="text" />
           </div>
           <div class="field">
             <label>Workshop Email</label>
-            <input id="wsEmailInput" type="text">
+            <input id="wsEmailInput" type="text" />
           </div>
         </div>
 
         <div class="two-columns">
           <div class="field">
             <label>Workshop Phone</label>
-            <input id="wsPhoneInput" type="text">
+            <input id="wsPhoneInput" type="text" />
           </div>
           <div class="field">
             <label>Workshop CloseTime</label>
-            <input id="wsCloseInput" type="text">
+            <input id="wsCloseInput" type="text" />
           </div>
         </div>
 
         <div class="field">
           <label>Workshop OpenTime</label>
-          <input id="wsOpenInput" type="text">
+          <input id="wsOpenInput" type="text" />
         </div>
 
         <div class="hr"></div>
 
-        <h4 style="margin:0 0 10px;">Sezione RSA</h4>
+        <h4 class="dms-h4">Sezione RSA</h4>
 
         <div class="field">
           <label>Coverage Radius (km)</label>
-          <input id="coverageRadiusInput" type="text">
+          <input id="coverageRadiusInput" type="text" />
         </div>
 
         <div class="two-columns">
           <div class="field">
             <label>RSA Contact Name</label>
-            <input id="rsaContactInput" type="text">
+            <input id="rsaContactInput" type="text" />
           </div>
           <div class="field">
             <label>RSA Email</label>
-            <input id="rsaEmailInput" type="text">
+            <input id="rsaEmailInput" type="text" />
           </div>
         </div>
 
         <div class="two-columns">
           <div class="field">
             <label>RSA Phone</label>
-            <input id="rsaPhoneInput" type="text">
+            <input id="rsaPhoneInput" type="text" />
           </div>
           <div class="field">
             <label>RSA CloseTime</label>
-            <input id="rsaCloseInput" type="text">
+            <input id="rsaCloseInput" type="text" />
           </div>
         </div>
 
         <div class="field">
           <label>RSA OpenTime</label>
-          <input id="rsaOpenInput" type="text">
+          <input id="rsaOpenInput" type="text" />
         </div>
 
         <div class="panel-actions">
           <button id="dealerSaveBtn" class="btn btn-primary" onclick="saveDealer()">Salva dealer</button>
           <button class="btn btn-outline" onclick="closeDealerForm()">Annulla</button>
         </div>
-
       </div>
     </div>
   </div>
@@ -460,15 +444,14 @@
       </div>
 
       <div class="panel-body">
-
         <div class="field">
           <label>Email</label>
-          <input id="userEmailInput" type="email" placeholder="nome.cognome@dealer.it">
+          <input id="userEmailInput" type="email" placeholder="nome.cognome@dealer.it" />
         </div>
 
         <div class="field">
           <label>Nome visualizzato</label>
-          <input id="userDisplayNameInput" type="text" placeholder="Nome Cognome">
+          <input id="userDisplayNameInput" type="text" placeholder="Nome Cognome" />
         </div>
 
         <div class="two-columns">
@@ -491,14 +474,13 @@
 
         <div class="field" id="userPasswordField">
           <label>Password iniziale (solo in creazione)</label>
-          <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri">
+          <input id="userPasswordInput" type="password" placeholder="Min. 6 caratteri" />
         </div>
 
         <div class="panel-actions">
           <button class="btn btn-primary" onclick="saveUser()">Salva utente</button>
           <button class="btn btn-outline" onclick="closeUserForm()">Annulla</button>
         </div>
-
       </div>
     </div>
   </div>
