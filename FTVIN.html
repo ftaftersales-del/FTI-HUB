@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>FTVIN - Verifica copertura contratti</title>
-  <link rel="stylesheet" href="ftstyle.css">
+  <link rel="stylesheet" href="ftstyle.css?v=6">
 
   <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -11,590 +11,586 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
 
+  <!-- Page-only CSS (solo per layout specifico FTVIN / drawer) -->
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-      overscroll-behavior: none; /* evita scroll strani con il drawer */
-    }
+    /* evita scroll strani con il drawer */
+    body{ overscroll-behavior: none; }
 
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      background: #ffffff;
-      padding: 20px 24px 28px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.08);
-      position: relative;
-      z-index: 1;
+    /* header pagina */
+    .page-head{
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+      margin-bottom: 12px;
     }
-
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-      color: #555;
-      margin-bottom: 8px;
-    }
-
-    .top-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .top-actions button {
-      padding: 5px 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      background: #fafafa;
-      cursor: pointer;
+    .page-eyebrow{
       font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .page-title{
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: -0.2px;
+    }
+    .page-subtitle{
+      margin: 0;
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.35;
     }
 
-    h1 {
-      margin: 8px 0 6px;
-      font-size: 26px;
-      color: #333;
-    }
-
-    .subtitle {
-      color: #666;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-
-    .search-box {
-      display: flex;
+    /* search row */
+    .search-row{
+      display:flex;
+      gap: 10px;
+      align-items:center;
       flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 10px;
     }
-
-    .search-box input {
+    #vinInput{
       flex: 1;
       min-width: 260px;
-      padding: 8px 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      font-size: 14px;
       text-transform: uppercase;
     }
 
-    .search-box button {
-      padding: 8px 14px;
-      border-radius: 6px;
-      border: none;
-      background: #007bff;
-      color: white;
-      cursor: pointer;
-      font-size: 14px;
+    /* risultati */
+    .results{ display:none; margin-top: 14px; }
+    .section-title-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin: 0 0 10px 0;
+    }
+    .status-flag{
+      font-size: 12px;
+      font-weight: 900;
+      color: var(--muted);
+      white-space: nowrap;
     }
 
-    .message {
-      font-size: 13px;
-      margin-top: 4px;
-    }
-
-    .message.error { color: #c0392b; }
-    .message.success { color: #2e7d32; }
-
-    .loader {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      border: 2px solid #ddd;
-      border-top-color: #007bff;
-      animation: spin 0.7s linear infinite;
-      margin-left: 8px;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .results { margin-top: 20px; display: none; }
-
-    .section-title {
-      font-size: 18px;
-      margin: 16px 0 10px;
-      color: #333;
-      border-bottom: 1px solid #eee;
-      padding-bottom: 4px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .status-flag {
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .info-grid {
+    .info-grid{
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 8px 18px;
+      gap: 10px;
       font-size: 13px;
     }
-
-    .info-item {
-      background: #fafafa;
-      border-radius: 6px;
-      padding: 8px 10px;
+    .info-item{
+      background: var(--surface-3);
+      border: 1px solid rgba(230,232,240,.95);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+    .label{
+      display:block;
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--muted);
+      margin-bottom: 4px;
     }
 
-    .label {
-      font-weight: bold;
-      margin-bottom: 3px;
-      display: block;
-      color: #555;
-    }
-
-    .note-box {
-      background: #fafafa;
-      border-radius: 6px;
-      padding: 10px;
+    .note-box{
+      background: var(--surface-3);
+      border: 1px solid rgba(230,232,240,.95);
+      border-radius: 14px;
+      padding: 12px;
       min-height: 80px;
     }
+    .note-value{ white-space: pre-wrap; }
 
-    .note-value {
-      white-space: pre-wrap;
-    }
-
-    table.bool-table {
+    table.bool-table{
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
       font-size: 13px;
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(230,232,240,.95);
+      border-radius: 14px;
+      overflow: hidden;
     }
-
-    table.bool-table td, table.bool-table th {
-      border: 1px solid #ddd;
-      padding: 6px 8px;
+    table.bool-table td, table.bool-table th{
+      border-top: 1px solid rgba(230,232,240,.95);
+      padding: 8px 10px;
+      vertical-align: top;
     }
+    table.bool-table tr:first-child td{ border-top: none; }
 
-    table.bool-table th {
-      background: #f3f3f3;
+    .message{
+      font-size: 13px;
+      margin-top: 8px;
     }
+    .message.error{ color: var(--err-tx); }
+    .message.success{ color: var(--ok-tx); }
 
-    /* ADMIN AREA ------------------------------------------------------ */
+    /* loader su bottone */
+    .loader{
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.55);
+      border-top-color: rgba(255,255,255,.98);
+      animation: spin .7s linear infinite;
+      margin-left: 8px;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg); } }
 
-    .admin-section {
-      margin-top: 24px;
-      padding-top: 10px;
-      border-top: 1px dashed #ccc;
+    /* ADMIN AREA */
+    .admin-section{
+      margin-top: 16px;
       display: none;
     }
-
-    .admin-toolbar {
-      display: flex;
+    .admin-toolbar{
+      display:flex;
+      flex-wrap: wrap;
       gap: 10px;
       align-items: center;
-      margin-bottom: 6px;
     }
-
-    .admin-toolbar button {
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      cursor: pointer;
-      font-size: 13px;
-      background: #f5f5f5;
-    }
-
-    .admin-toolbar button.primary {
-      background: #007bff;
-      border-color: #007bff;
-      color: white;
-    }
-
-    .admin-toolbar button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-
-    .admin-mode-label {
+    .admin-mode-label{
       font-size: 12px;
-      color: #555;
+      color: var(--muted);
       margin-left: auto;
       font-style: italic;
     }
 
-    /* DRAWER laterale ------------------------------------------------- */
-
-    .drawer-backdrop {
+    /* DRAWER laterale */
+    .drawer-backdrop{
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.25);
+      background: rgba(15,23,42,0.35);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
       z-index: 998;
     }
-
-    .drawer-backdrop.open {
+    .drawer-backdrop.open{
       opacity: 1;
       pointer-events: auto;
     }
 
-    .drawer {
+    .drawer{
       position: fixed;
       top: 0;
       right: -420px;
       width: 390px;
-      max-width: 90%;
+      max-width: 92%;
       height: 100vh;
-      background: #ffffff;
-      box-shadow: -2px 0 10px rgba(0,0,0,0.15);
-      padding: 16px 16px 20px;
+      background: rgba(255,255,255,.98);
+      backdrop-filter: blur(8px);
+      box-shadow: -14px 0 34px rgba(15,23,42,.16);
+      border-left: 1px solid rgba(230,232,240,.95);
+      padding: 14px 14px 16px;
       transition: right 0.25s ease;
       z-index: 999;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
+    .drawer.open{ right: 0; }
 
-    .drawer.open {
-      right: 0;
-    }
-
-    .drawer-header {
-      display: flex;
+    .drawer-header{
+      display:flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(230,232,240,.95);
     }
-
-    .drawer-title {
-      font-size: 18px;
-      font-weight: bold;
+    .drawer-title{
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: -0.1px;
     }
-
-    .drawer-close-btn {
-      border: none;
-      background: transparent;
-      font-size: 18px;
+    .drawer-close-btn{
+      border: 1px solid rgba(230,232,240,.95);
+      background: rgba(255,255,255,.96);
+      border-radius: 12px;
+      width: 38px;
+      height: 34px;
       cursor: pointer;
-      padding: 2px 6px;
+      font-size: 18px;
+      line-height: 1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
     }
 
-    .drawer-body {
+    .drawer-body{
       flex: 1;
       overflow-y: auto;
       padding-right: 4px;
-      margin-top: 6px;
+      margin-top: 10px;
       font-size: 13px;
     }
 
-    .drawer-footer {
-      margin-top: 8px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
+    .drawer-body h3{
+      margin: 14px 0 8px;
+      font-size: 13px;
+      font-weight: 900;
+      color: var(--text);
     }
 
-    .field-input, .field-textarea {
+    .field-input, .field-textarea{
       width: 100%;
-      padding: 6px 8px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      box-shadow: 0 1px 0 rgba(15,23,42,.02);
       font-size: 13px;
-      box-sizing: border-box;
+    }
+    .field-textarea{ min-height: 90px; resize: vertical; }
+
+    .checkbox-row{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      margin: 6px 0;
+    }
+    .checkbox-row label{
+      margin: 0;
+      font-weight: 800;
+      color: var(--text);
+      font-size: 13px;
     }
 
-    .field-textarea { min-height: 80px; resize: vertical; }
-
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin: 4px 0;
+    .drawer-footer{
+      margin-top: 10px;
+      display:flex;
+      justify-content:flex-end;
+      gap: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(230,232,240,.95);
     }
 
-    .btn-secondary {
-      background: #6c757d;
-      color: #fff;
-      border-radius: 6px;
-      border: none;
-      padding: 8px 14px;
+    /* compat classi vecchie: le mappo ai bottoni del tema */
+    .btn-secondary{
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-weight: 800;
       cursor: pointer;
-      font-size: 14px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
     }
-
-    .btn-primary {
-      background: #28a745;
+    .btn-primary{
+      background: linear-gradient(180deg, var(--primary2), var(--primary));
       color: #fff;
-      border-radius: 6px;
       border: none;
-      padding: 8px 14px;
+      padding: 9px 12px;
+      border-radius: 12px;
+      font-weight: 900;
       cursor: pointer;
-      font-size: 14px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      box-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
     }
 
-    @media (max-width: 600px) {
-      .container { padding: 14px; }
-      .section-title { flex-direction: column; align-items: flex-start; }
-      .top-bar { flex-direction: column; align-items: flex-start; gap: 4px; }
-      .top-actions { align-self: flex-end; }
+    @media (max-width: 600px){
+      .btn-wide{ min-width: unset; width: 100%; }
     }
   </style>
 </head>
 
-<body class="ft-page has-topbar">
+<body class="ft-page has-topbar" id="page-ftvin">
+
+  <!-- TOPBAR (stile HUB) -->
   <div class="ft-topbar">
-    <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
-  </div>
-  <body>
-
-  <!-- HOME BUTTON -->
-  <a href="index.html" class="ft-home-btn">⬅ HOME</a>
-    
-<div class="container">
-
-  <div class="top-bar">
-    <div>FTVIN - Verifica copertura contratti</div>
-    <div class="top-actions">
-      <button onclick="goHome()">Home</button>
-      <span id="userInfo">Utente: -</span>
-    </div>
-  </div>
-
-  <h1>Verifica copertura per telaio (VIN)</h1>
-  <div class="subtitle">
-    Inserisci un VIN e premi "Cerca" per visualizzare i dettagli di copertura memorizzati in Firestore (collezione <b>DBVIN</b>) o sul portale Ford.
-  </div>
-
-  <div class="search-box">
-    <input id="vinInput" type="text" placeholder="Es. NM0KCTP60XSB93275" maxlength="30" />
-    <button id="searchBtn">Cerca</button>
-  </div>
-
-  <div id="searchMessage" class="message"></div>
-
-  <!-- RISULTATI -->
-  <div id="results" class="results">
-
-    <!-- Dati Veicolo -->
-    <div class="section-title">
-      <span>Dati Veicolo</span>
-    </div>
-    <div id="vehicleInfo" class="info-grid"></div>
-
-    <!-- Note (visibile solo distributore) -->
-    <div id="noteSection">
-      <div class="section-title">
-        <span>Note</span>
+    <div class="ft-topbar__inner">
+      <div class="ft-topbar__left">
+        <a href="FTHUBAS.html" class="ft-home-btn">← HOME</a>
+        <div class="ft-topbar__subtitle">FTVIN • Verifica copertura VIN</div>
       </div>
-      <div class="note-box">
-        <div id="noteValue" class="note-value"></div>
+
+      <div class="ft-topbar__center">
+        <div class="ft-topbar__userinfo" id="topbarUserLine">Accesso in corso…</div>
+      </div>
+
+      <div class="ft-topbar__right">
+        <!-- volutamente vuoto: niente logout qui per evitare rotture UX; l’accesso resta gestito da Firebase -->
       </div>
     </div>
-
-    <!-- Full Line -->
-    <div class="section-title">
-      <span>Full Line</span>
-      <span id="flagFullLine" class="status-flag"></span>
-    </div>
-    <div id="fullLineInfo" class="info-grid"></div>
-
-    <!-- Drive Line -->
-    <div class="section-title">
-      <span>Drive Line</span>
-      <span id="flagDriveLine" class="status-flag"></span>
-    </div>
-    <div id="driveLineInfo" class="info-grid"></div>
-
-    <!-- Contratto di Manutenzione -->
-    <div class="section-title">
-      <span>Contratto di Manutenzione</span>
-      <span id="flagMaint" class="status-flag"></span>
-    </div>
-    <div id="contractMaintInfo" class="info-grid"></div>
-
-    <!-- Opzioni aggiuntive -->
-    <div class="section-title">
-      <span>Opzioni aggiuntive / Servizi</span>
-      <span id="flagOptions" class="status-flag"></span>
-    </div>
-
-    <table class="bool-table">
-      <tbody id="boolTable"></tbody>
-    </table>
   </div>
 
-  <!-- AREA ADMIN (toolbar) -->
-  <div id="adminEditSection" class="admin-section">
-    <h2>Area amministratore (coperture VIN)</h2>
-    <div class="admin-toolbar">
-      <button id="btnNewCoverage" class="primary" type="button">Crea nuova copertura</button>
-      <button id="btnEditCoverage" type="button" disabled>Modifica copertura caricata</button>
-      <span id="adminModeLabel" class="admin-mode-label"></span>
-    </div>
-  </div>
+  <div class="ft-container">
+    <div class="card pad">
 
-</div>
+      <!-- HEADER PAGINA -->
+      <div class="page-head">
+        <div class="page-eyebrow">FTVIN - Verifica copertura contratti</div>
+        <h1 class="page-title">Verifica copertura per telaio (VIN)</h1>
+        <p class="page-subtitle">
+          Inserisci un VIN e premi "Cerca" per visualizzare i dettagli di copertura memorizzati in Firestore
+          (collezione <b>DBVIN</b>) o sul portale Ford.
+        </p>
+      </div>
 
-<!-- BACKDROP E DRAWER LATERALE -->
-<div id="drawerBackdrop" class="drawer-backdrop"></div>
+      <hr class="sep">
 
-<div id="adminDrawer" class="drawer">
-  <div class="drawer-header">
-    <div id="drawerTitle" class="drawer-title">Copertura VIN</div>
-    <button id="drawerCloseBtn" class="drawer-close-btn" type="button">&times;</button>
-  </div>
+      <!-- SEARCH -->
+      <div class="section">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">Ricerca VIN</h2>
+            <div class="section-sub">Il VIN deve contenere esattamente 17 caratteri.</div>
+          </div>
+        </div>
 
-  <div class="drawer-body">
-    <form id="coverageForm" onsubmit="return false;">
-      <h3>Dati veicolo</h3>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">VIN</span>
-          <input id="f_vin" class="field-input" />
+        <div class="search-row">
+          <input id="vinInput" type="text" placeholder="Es. NM0KCTP60XSB93275" maxlength="30" />
+          <button id="searchBtn" class="btn btn-primary btn-wide" type="button">Cerca</button>
         </div>
-        <div class="info-item">
-          <span class="label">Cliente</span>
-          <input id="f_customer" class="field-input" />
+
+        <div id="searchMessage" class="message"></div>
+      </div>
+
+      <!-- RISULTATI -->
+      <div id="results" class="results">
+
+        <div class="section">
+          <div class="section-title-row">
+            <h2 class="section-title" style="margin:0;">Dati Veicolo</h2>
+          </div>
+          <div id="vehicleInfo" class="info-grid"></div>
         </div>
-        <div class="info-item">
-          <span class="label">Tipo contratto</span>
-          <input id="f_contract_type" class="field-input" />
+
+        <!-- Note (solo distributore) -->
+        <div id="noteSection" class="section" style="margin-top:12px;">
+          <div class="section-title-row">
+            <h2 class="section-title" style="margin:0;">Note</h2>
+          </div>
+          <div class="note-box">
+            <div id="noteValue" class="note-value"></div>
+          </div>
         </div>
-        <div class="info-item">
-          <span class="label">Validazione contratto</span>
-          <input id="f_validate_contract" class="field-input" />
+
+        <div class="section" style="margin-top:12px;">
+          <div class="section-title-row">
+            <h2 class="section-title" style="margin:0;">Full Line</h2>
+            <span id="flagFullLine" class="status-flag"></span>
+          </div>
+          <div id="fullLineInfo" class="info-grid"></div>
         </div>
-        <div class="info-item">
-          <span class="label">Durata contratto</span>
-          <input id="f_duration_contract" class="field-input" type="number" />
+
+        <div class="section" style="margin-top:12px;">
+          <div class="section-title-row">
+            <h2 class="section-title" style="margin:0;">Drive Line</h2>
+            <span id="flagDriveLine" class="status-flag"></span>
+          </div>
+          <div id="driveLineInfo" class="info-grid"></div>
         </div>
-        <div class="info-item">
-          <span class="label">Inter-market</span>
-          <input id="f_inter_market" class="field-input" />
+
+        <div class="section" style="margin-top:12px;">
+          <div class="section-title-row">
+            <h2 class="section-title" style="margin:0;">Contratto di Manutenzione</h2>
+            <span id="flagMaint" class="status-flag"></span>
+          </div>
+          <div id="contractMaintInfo" class="info-grid"></div>
         </div>
-        <div class="info-item">
-          <span class="label">Lingua</span>
-          <input id="f_language" class="field-input" />
+
+        <div class="section" style="margin-top:12px;">
+          <div class="section-title-row">
+            <h2 class="section-title" style="margin:0;">Opzioni aggiuntive / Servizi</h2>
+            <span id="flagOptions" class="status-flag"></span>
+          </div>
+          <table class="bool-table">
+            <tbody id="boolTable"></tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-- AREA ADMIN (toolbar) -->
+      <div id="adminEditSection" class="admin-section">
+        <hr class="sep">
+        <div class="section">
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">Area amministratore (coperture VIN)</h2>
+              <div class="section-sub">Creazione e modifica coperture in DBVIN (solo Admin).</div>
+            </div>
+          </div>
+
+          <div class="admin-toolbar">
+            <button id="btnNewCoverage" class="btn btn-primary" type="button">Crea nuova copertura</button>
+            <button id="btnEditCoverage" class="btn" type="button" disabled>Modifica copertura caricata</button>
+            <span id="adminModeLabel" class="admin-mode-label"></span>
+          </div>
         </div>
       </div>
 
-      <h3>Note</h3>
-      <textarea id="f_note" class="field-textarea"></textarea>
-
-      <h3>Full Line</h3>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">Completa - Data inizio</span>
-          <input id="f_completa_data_start" class="field-input" placeholder="YYYY-MM-DD" />
-        </div>
-        <div class="info-item">
-          <span class="label">Completa - Data fine</span>
-          <input id="f_completa_data_end" class="field-input" placeholder="YYYY-MM-DD" />
-        </div>
-        <div class="info-item">
-          <span class="label">Completa - KM inizio</span>
-          <input id="f_completa_km_start" class="field-input" type="number" />
-        </div>
-        <div class="info-item">
-          <span class="label">Completa - KM fine</span>
-          <input id="f_completa_km_end" class="field-input" type="number" />
-        </div>
+      <!-- user info compat -->
+      <div style="display:none;">
+        <span id="userInfo">Utente: -</span>
       </div>
 
-      <h3>Drive Line</h3>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">Cat. cinematica - Data inizio</span>
-          <input id="f_catcinematica_data_start" class="field-input" placeholder="YYYY-MM-DD" />
-        </div>
-        <div class="info-item">
-          <span class="label">Cat. cinematica - Data fine</span>
-          <input id="f_catcinematica_data_end" class="field-input" placeholder="YYYY-MM-DD" />
-        </div>
-        <div class="info-item">
-          <span class="label">Cat. cinematica - KM inizio</span>
-          <input id="f_catcinematica_km_start" class="field-input" type="number" />
-        </div>
-        <div class="info-item">
-          <span class="label">Cat. cinematica - KM fine</span>
-          <input id="f_catcinematica_km_end" class="field-input" type="number" />
-        </div>
-      </div>
-
-      <h3>Contratto di Manutenzione</h3>
-      <div class="info-grid">
-        <div class="info-item">
-          <span class="label">Contratto data start</span>
-          <input id="f_contratto_data_start" class="field-input" placeholder="YYYY-MM-DD" />
-        </div>
-        <div class="info-item">
-          <span class="label">Contratto data end</span>
-          <input id="f_contratto_data_end" class="field-input" placeholder="YYYY-MM-DD" />
-        </div>
-      </div>
-
-      <h3>Opzioni aggiuntive / servizi</h3>
-      <div class="info-item">
-        <div class="checkbox-row">
-          <input id="f_altre_opzioni" type="checkbox" />
-          <label for="f_altre_opzioni">Altre opzioni</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_batterie" type="checkbox" />
-          <label for="f_batterie">Batterie</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_fusibili_lampadine" type="checkbox" />
-          <label for="f_fusibili_lampadine">Fusibili / lampadine</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_parti_usara" type="checkbox" />
-          <label for="f_parti_usara">Parti d’usura</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_pulizia_fap" type="checkbox" />
-          <label for="f_pulizia_fap">Pulizia FAP</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_rabbocco_olio" type="checkbox" />
-          <label for="f_rabbocco_olio">Rabbocco olio</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_tergicristallo" type="checkbox" />
-          <label for="f_tergicristallo">Tergicristallo</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_traino" type="checkbox" />
-          <label for="f_traino">Traino</label>
-        </div>
-        <div class="checkbox-row">
-          <input id="f_uptime_service" type="checkbox" />
-          <label for="f_uptime_service">Uptime service</label>
-        </div>
-        <div style="margin-top:10px;">
-          <span class="label">Uptime service type</span>
-          <input id="f_uptime_service_type" class="field-input" placeholder="Es. GOLD, BASIC..." />
-        </div>
-      </div>
-    </form>
+    </div>
   </div>
 
-  <div class="drawer-footer">
-    <button id="drawerCancelBtn" type="button" class="btn-secondary">Annulla</button>
-    <button id="saveCoverageBtn" type="button" class="btn-primary">Salva</button>
-  </div>
+  <!-- BACKDROP E DRAWER LATERALE -->
+  <div id="drawerBackdrop" class="drawer-backdrop"></div>
 
-  <div id="drawerMessage" class="message" style="margin-top:6px;"></div>
-</div>
+  <div id="adminDrawer" class="drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <div id="drawerTitle" class="drawer-title">Copertura VIN</div>
+      <button id="drawerCloseBtn" class="drawer-close-btn" type="button" aria-label="Chiudi">&times;</button>
+    </div>
+
+    <div class="drawer-body">
+      <form id="coverageForm" onsubmit="return false;">
+        <h3>Dati veicolo</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">VIN</span>
+            <input id="f_vin" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Cliente</span>
+            <input id="f_customer" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Tipo contratto</span>
+            <input id="f_contract_type" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Validazione contratto</span>
+            <input id="f_validate_contract" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Durata contratto</span>
+            <input id="f_duration_contract" class="field-input" type="number" />
+          </div>
+          <div class="info-item">
+            <span class="label">Inter-market</span>
+            <input id="f_inter_market" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Lingua</span>
+            <input id="f_language" class="field-input" />
+          </div>
+        </div>
+
+        <h3>Note</h3>
+        <textarea id="f_note" class="field-textarea"></textarea>
+
+        <h3>Full Line</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Completa - Data inizio</span>
+            <input id="f_completa_data_start" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Completa - Data fine</span>
+            <input id="f_completa_data_end" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Completa - KM inizio</span>
+            <input id="f_completa_km_start" class="field-input" type="number" />
+          </div>
+          <div class="info-item">
+            <span class="label">Completa - KM fine</span>
+            <input id="f_completa_km_end" class="field-input" type="number" />
+          </div>
+        </div>
+
+        <h3>Drive Line</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Cat. cinematica - Data inizio</span>
+            <input id="f_catcinematica_data_start" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - Data fine</span>
+            <input id="f_catcinematica_data_end" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - KM inizio</span>
+            <input id="f_catcinematica_km_start" class="field-input" type="number" />
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - KM fine</span>
+            <input id="f_catcinematica_km_end" class="field-input" type="number" />
+          </div>
+        </div>
+
+        <h3>Contratto di Manutenzione</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Contratto data start</span>
+            <input id="f_contratto_data_start" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Contratto data end</span>
+            <input id="f_contratto_data_end" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+        </div>
+
+        <h3>Opzioni aggiuntive / servizi</h3>
+        <div class="info-item">
+          <div class="checkbox-row">
+            <input id="f_altre_opzioni" type="checkbox" />
+            <label for="f_altre_opzioni">Altre opzioni</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_batterie" type="checkbox" />
+            <label for="f_batterie">Batterie</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_fusibili_lampadine" type="checkbox" />
+            <label for="f_fusibili_lampadine">Fusibili / lampadine</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_parti_usara" type="checkbox" />
+            <label for="f_parti_usara">Parti d’usura</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_pulizia_fap" type="checkbox" />
+            <label for="f_pulizia_fap">Pulizia FAP</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_rabbocco_olio" type="checkbox" />
+            <label for="f_rabbocco_olio">Rabbocco olio</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_tergicristallo" type="checkbox" />
+            <label for="f_tergicristallo">Tergicristallo</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_traino" type="checkbox" />
+            <label for="f_traino">Traino</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_uptime_service" type="checkbox" />
+            <label for="f_uptime_service">Uptime service</label>
+          </div>
+
+          <div style="margin-top:10px;">
+            <span class="label">Uptime service type</span>
+            <input id="f_uptime_service_type" class="field-input" placeholder="Es. GOLD, BASIC..." />
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="drawer-footer">
+      <button id="drawerCancelBtn" type="button" class="btn-secondary">Annulla</button>
+      <button id="saveCoverageBtn" type="button" class="btn-primary">Salva</button>
+    </div>
+
+    <div id="drawerMessage" class="message" style="margin-top:8px;"></div>
+  </div>
 
 <script>
   function goHome() {
-    window.location.href = "FTHUBAS.html"; // cambia se la home ha un nome diverso
+    window.location.href = "FTHUBAS.html";
   }
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -602,6 +598,7 @@
     const vinInput        = document.getElementById('vinInput');
     const searchBtn       = document.getElementById('searchBtn');
     const searchMessageEl = document.getElementById('searchMessage');
+    const topbarUserLine  = document.getElementById('topbarUserLine');
 
     const resultsEl       = document.getElementById('results');
     const vehicleInfoEl   = document.getElementById('vehicleInfo');
@@ -840,8 +837,10 @@
       adminMode = mode; // "create" | "edit"
       drawerTitle.textContent = titleText || "Copertura VIN";
       drawerMessage.textContent = "";
+
       drawer.classList.add("open");
       drawerBackdrop.classList.add("open");
+      drawer.setAttribute("aria-hidden", "false");
 
       if (mode === "create") {
         adminModeLabel.textContent = "Modalità: creazione nuova copertura";
@@ -854,6 +853,7 @@
       adminMode = null;
       drawer.classList.remove("open");
       drawerBackdrop.classList.remove("open");
+      drawer.setAttribute("aria-hidden", "true");
       adminModeLabel.textContent = "";
     }
 
@@ -965,7 +965,6 @@
 
       const cv = coverageView;
 
-      // Dati veicolo
       vehicleInfoEl.innerHTML = `
         <div class="info-item"><span class="label">VIN</span>${fmtText(cv.vin)}</div>
         <div class="info-item"><span class="label">Cliente</span>${fmtText(cv.customer)}</div>
@@ -976,7 +975,6 @@
         <div class="info-item"><span class="label">Lingua</span>${fmtText(cv.language)}</div>
       `;
 
-      // Note (solo distributore)
       if (noteSection) {
         if (isDistributor) {
           noteSection.style.display = "block";
@@ -986,7 +984,6 @@
         }
       }
 
-      // Full Line
       fullLineInfoEl.innerHTML = `
         <div class="info-item"><span class="label">Data inizio</span>${fmtDate(cv.fullLine.start_date)}</div>
         <div class="info-item"><span class="label">Data fine</span>${fmtDate(cv.fullLine.end_date)}</div>
@@ -995,7 +992,6 @@
       `;
       flagFullLine.textContent = badge(isActiveDate(cv.fullLine.start_date, cv.fullLine.end_date));
 
-      // Drive Line
       driveLineInfoEl.innerHTML = `
         <div class="info-item"><span class="label">Data inizio</span>${fmtDate(cv.driveLine.start_date)}</div>
         <div class="info-item"><span class="label">Data fine</span>${fmtDate(cv.driveLine.end_date)}</div>
@@ -1004,14 +1000,12 @@
       `;
       flagDriveLine.textContent = badge(isActiveDate(cv.driveLine.start_date, cv.driveLine.end_date));
 
-      // Contratto manutenzione
       contractInfoEl.innerHTML = `
         <div class="info-item"><span class="label">Data inizio</span>${fmtDate(cv.maintenance.start_date)}</div>
         <div class="info-item"><span class="label">Data fine</span>${fmtDate(cv.maintenance.end_date)}</div>
       `;
       flagMaint.textContent = badge(isActiveDate(cv.maintenance.start_date, cv.maintenance.end_date));
 
-      // Opzioni
       const o = cv.options;
       const options = [
         ["Altre opzioni", o.altre_opzioni],
@@ -1048,9 +1042,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ telaio: vin }),
       });
-      if (!resp.ok) {
-        throw new Error("Errore HTTP backend: " + resp.status);
-      }
+      if (!resp.ok) throw new Error("Errore HTTP backend: " + resp.status);
       return await resp.json();
     }
 
@@ -1059,13 +1051,17 @@
       auth.onAuthStateChanged(async (user) => {
         if (!user) {
           userInfoEl.textContent = "Utente: non loggato";
+          if (topbarUserLine) topbarUserLine.textContent = "Non autenticato";
           isAdmin = false;
           isDistributor = false;
           adminSection.style.display = "none";
           closeDrawer();
           return;
         }
-        userInfoEl.textContent = "Utente: " + (user.email || user.uid);
+
+        const userLabel = (user.email || user.uid);
+        userInfoEl.textContent = "Utente: " + userLabel;
+        if (topbarUserLine) topbarUserLine.textContent = userLabel;
 
         try {
           const userSnap = await db.collection('Users').doc(user.uid).get();
@@ -1073,8 +1069,14 @@
           isAdmin = data.role === "Admin";
 
           const dealerId = data.DealerID || data.dealerId || null;
-          // Logica distributore: ad esempio FT001
           isDistributor = dealerId === "FT001";
+
+          if (topbarUserLine) {
+            const roleTxt = isAdmin ? "Admin" : (data.role || "User");
+            const dealerTxt = dealerId || "-";
+            topbarUserLine.textContent = `${dealerTxt} • ${roleTxt} • ${userLabel}`;
+          }
+
         } catch (e) {
           console.error("Errore lettura ruolo utente:", e);
           isAdmin = false;
@@ -1141,15 +1143,12 @@
             showMessage("Copertura trovata sul portale Ford (backend).", "success");
             updateAdminButtons(false); // solo lettura
           } else {
-            // nessuna copertura in backend
             coverageSource = "none";
             coverageView   = null;
             resultsEl.style.display = "none";
             showMessage("Telaio inesistente nelle banche dati.", "error");
             updateAdminButtons(false);
             if (isAdmin) {
-              coverageSource = "none";
-              updateAdminButtons(false);
               adminModeLabel.textContent = "Nessuna copertura trovata: puoi creare una nuova copertura.";
             }
           }
@@ -1261,9 +1260,7 @@
       try {
         const user = auth.currentUser;
         const today = new Date().toISOString().slice(0,10);
-        if (!lastDocData || !lastDocData.created) {
-          payload.created = today;
-        }
+        if (!lastDocData || !lastDocData.created) payload.created = today;
         if (!lastDocData || !lastDocData.created_by) {
           payload.created_by = user ? (user.email || user.uid) : "system";
         }
@@ -1325,20 +1322,17 @@
       });
     }
 
-    drawerCloseBtn.addEventListener('click', () => {
-      closeDrawer();
-    });
-
-    drawerCancelBtn.addEventListener('click', () => {
-      closeDrawer();
-    });
-
-    drawerBackdrop.addEventListener('click', () => {
-      closeDrawer();
-    });
-
+    drawerCloseBtn.addEventListener('click', closeDrawer);
+    drawerCancelBtn.addEventListener('click', closeDrawer);
+    drawerBackdrop.addEventListener('click', closeDrawer);
     saveCoverageBtn.addEventListener('click', saveCoverage);
+
+    // ESC per chiudere drawer (solo UX, funzionalità invariata)
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && drawer.classList.contains("open")) closeDrawer();
+    });
   });
 </script>
+
 </body>
 </html>
