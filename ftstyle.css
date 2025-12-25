@@ -1,370 +1,208 @@
 /* ===============================
    FTSTYLE - CSS globale HUB (v4)
-   Light SaaS + sfondo con immagine (Sfondo_FT.png)
-   Focus: leggibilità, ordine, coerenza, poco affaticamento
+   Light SaaS "eye-friendly"
+   + background image Sfondo_FT.png
+   + stronger hierarchy (pads/panels)
+   + topbar + buttons + forms
    =============================== */
 
 :root{
   /* base */
+  --bg: #f3f6fb;                 /* pagina (overlay sopra Sfondo_FT.png) */
+  --surface: #ffffff;            /* card/panel surface */
+  --surface-2: #f7f9fd;          /* pad principale (contrasto) */
   --text: #0f172a;
   --muted: #667085;
-
-  /* surfaces (3 livelli: pagina -> card principale -> panel) */
-  --bg: #f6f8fc;
-  --surface-main: rgba(244, 247, 252, 0.92);
-  --surface-panel: rgba(255, 255, 255, 0.94);
+  --border: #e3e8f2;
+  --border-2: #d7deea;
 
   /* brand (Ford-ish) */
   --primary: #003478;
   --primary2: #005edc;
 
-  /* borders */
-  --border: #e6e8f0;
-  --border-soft: rgba(15, 23, 42, 0.10);
-  --border-strong: rgba(15, 23, 42, 0.14);
-
-  /* radius / shadows */
-  --radius: 16px;
-  --radius-sm: 12px;
-
-  --shadow-main: 0 18px 44px rgba(15, 23, 42, 0.12);
-  --shadow-panel: 0 10px 26px rgba(15, 23, 42, 0.08);
-  --shadow-soft: 0 10px 26px rgba(15, 23, 42, 0.06);
-
-  /* rings / focus */
-  --ring: rgba(0, 94, 220, 0.16);
-  --ring-panel: rgba(0, 52, 120, 0.06);
-
   /* states */
+  --danger: #e11d48;
+  --danger-bg: #fff1f2;
+
   --ok-bg: #e9fff0;
   --ok-bd: #bfeccc;
   --ok-tx: #0f6a2a;
 
-  --warn-bg:#fff8e6;
-  --warn-bd:#ffe3a3;
-  --warn-tx:#8a5b00;
+  /* shadows / radius */
+  --radius: 16px;
+  --radius-sm: 12px;
+  --shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+  --shadow2: 0 14px 34px rgba(15, 23, 42, 0.12);
+  --shadow-in: 0 1px 0 rgba(15,23,42,.03);
 
-  --err-bg:#ffecec;
-  --err-bd:#ffc7c7;
-  --err-tx:#b42318;
+  /* focus ring */
+  --ring: 0 0 0 4px rgba(0, 94, 220, 0.18);
+
+  /* topbar */
+  --topbar-h: 56px;
 }
 
-/* ===============================
-   RESET / BASE
-   =============================== */
+/* reset-ish */
 *{ box-sizing: border-box; }
 html, body{ height: 100%; }
 body{
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
   color: var(--text);
-  background: var(--bg);
-  line-height: 1.35;
-}
-
-/* Sfondo pagina: immagine ufficiale */
-body.ft-page{
+  font-family: Arial, sans-serif;
   background-color: var(--bg);
+
+  /* sfondo originale */
   background-image: url("assets/Sfondo_FT.png");
   background-repeat: no-repeat;
-  background-position: center top;
+  background-position: center 120px;
   background-size: cover;
   background-attachment: fixed;
 }
 
-/* quando c’è topbar */
-body.has-topbar{
-  padding-top: 56px;
+/* overlay per rendere lo sfondo meno "sparato" e più leggibile */
+body::before{
+  content:"";
+  position: fixed;
+  inset: 0;
+  background: rgba(243, 246, 251, 0.86);
+  pointer-events: none;
+  z-index: 0;
 }
 
-/* ===============================
-   LAYOUT CONTAINER
-   =============================== */
+.ft-page{ position: relative; z-index: 1; }
+
+/* layout container */
 .ft-container{
-  max-width: 1200px;
+  width: min(1280px, calc(100% - 36px));
   margin: 0 auto;
-  padding: 18px 16px 32px;
+  padding: 18px 0 36px 0;
 }
 
-/* ===============================
-   CARD / PAD
-   =============================== */
+/* Topbar spacer */
+body.has-topbar .ft-container{ padding-top: 18px; }
+body.has-topbar{ padding-top: var(--topbar-h); }
+
+/* card base */
 .card{
-  background: var(--surface-main);
-  border: 1px solid var(--border-strong);
-  border-radius: calc(var(--radius) + 4px);
-  box-shadow: var(--shadow-main);
-  backdrop-filter: blur(8px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
+/* pad principale (contenitore pagina) */
 .card.pad{
   padding: 16px;
+  background: var(--surface-2);             /* CONTRASTO vs pannelli bianchi */
+  border-color: var(--border-2);
+  box-shadow: var(--shadow2);
 }
 
-@media (max-width: 640px){
-  .card.pad{ padding: 12px; }
-}
-
-.panel{
-  background: var(--surface-panel);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius);
-  padding: 12px;
-  backdrop-filter: blur(6px);
-
-  /* ring inset + shadow */
-  box-shadow:
-    0 0 0 1px var(--ring-panel) inset,
-    var(--shadow-panel);
-}
-
-.sep{
-  border: none;
-  border-top: 1px solid rgba(15, 23, 42, 0.12);
-  margin: 12px 0;
-}
-
-/* ===============================
-   TYPOGRAPHY
-   =============================== */
-h1,h2,h3,h4{
-  margin: 0 0 10px 0;
-  letter-spacing: -0.2px;
-}
-h1{ font-size: 22px; }
-h2{ font-size: 18px; }
-h3{ font-size: 15px; }
-p{ margin: 0 0 10px 0; }
-
-.muted{
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.smallnote{
-  color: var(--muted);
-  font-size: 12px;
-}
-
-/* ===============================
-   FORMS
-   =============================== */
+/* tipografia */
+h1,h2,h3{ margin: 0; }
 label{
   display:block;
   font-size: 12px;
-  color: var(--muted);
-  margin: 0 0 6px 2px;
-  font-weight: 600;
+  font-weight: 800;
+  color: #1f2a44;
+  margin: 8px 0 6px 0;
 }
 
+/* form controls */
 input[type="text"],
-input[type="email"],
-input[type="number"],
 input[type="date"],
-input[type="password"],
+input[type="number"],
 select,
 textarea{
   width: 100%;
+  padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 10px 12px;
-  font-size: 13px;
+  background: #fff;
   color: var(--text);
-  background: rgba(255,255,255,0.98);
   outline: none;
-  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  box-shadow: var(--shadow-in);
 }
 
-textarea{
-  min-height: 120px;
-  resize: vertical;
+textarea{ min-height: 110px; resize: vertical; }
+
+input:focus, select:focus, textarea:focus{
+  border-color: rgba(0,94,220,.55);
+  box-shadow: var(--ring);
 }
 
-input:focus,
-select:focus,
-textarea:focus{
-  border-color: rgba(0, 94, 220, 0.35);
-  box-shadow: 0 0 0 4px var(--ring);
-}
+::placeholder{ color: #98a2b3; }
 
-input[disabled],
-select[disabled],
-textarea[disabled]{
-  opacity: .65;
-  cursor: not-allowed;
-}
-
-::placeholder{
-  color: rgba(102,112,133,.75);
-}
-
-/* file input */
-input[type="file"]{
-  width: 100%;
-  font-size: 13px;
-}
-
-/* ===============================
-   BUTTONS
-   =============================== */
+/* buttons */
 .btn{
-  appearance: none;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding: 10px 14px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: #fff;
   color: var(--text);
-  padding: 9px 12px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-weight: 800;
   cursor: pointer;
-  transition: transform .06s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  font-weight: 800;
+  font-size: 13px;
+  transition: transform .05s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+  user-select: none;
 }
 
 .btn:hover{
-  box-shadow: var(--shadow-soft);
-  border-color: rgba(15,23,42,.16);
+  box-shadow: var(--shadow);
+  border-color: rgba(0,94,220,.25);
 }
 
-.btn:active{
-  transform: translateY(1px);
-}
-
-.btn:disabled{
-  opacity: .65;
-  cursor: not-allowed;
-  transform: none;
-}
+.btn:active{ transform: translateY(1px); }
 
 .btn-primary{
-  border-color: rgba(0,52,120,.28);
-  background: linear-gradient(180deg, rgba(0,94,220,1) 0%, rgba(0,52,120,1) 100%);
+  background: linear-gradient(180deg, var(--primary2), var(--primary));
   color: #fff;
+  border-color: rgba(0,0,0,.06);
 }
 
 .btn-primary:hover{
-  box-shadow: 0 14px 34px rgba(0,52,120,.20);
-  border-color: rgba(0,52,120,.35);
+  box-shadow: 0 12px 26px rgba(0, 52, 120, 0.22);
 }
 
-.btn.danger,
-.btn-danger{
-  border-color: rgba(180,35,24,.22);
-  background: #fff;
-  color: var(--err-tx);
+.btn.danger, .btn-danger{
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: rgba(225,29,72,.25);
 }
 
-.btn.danger:hover,
-.btn-danger:hover{
-  border-color: rgba(180,35,24,.35);
-  box-shadow: 0 14px 34px rgba(180,35,24,.10);
+.btn[disabled]{
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none !important;
 }
 
-.badge{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,.85);
-  font-size: 12px;
-  font-weight: 800;
-}
+/* links */
+a{ color: var(--primary2); text-decoration: none; }
+a:hover{ text-decoration: underline; }
 
-/* ===============================
-   LINKS
-   =============================== */
-a{
-  color: var(--primary2);
-  text-decoration: none;
-}
-a:hover{
-  text-decoration: underline;
-}
-
-/* ===============================
-   TABLES (se usate in altre pagine)
-   =============================== */
-table{
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  background: rgba(255,255,255,0.94);
-}
-th, td{
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px;
-}
-th{
-  text-align: left;
-  font-weight: 900;
-  color: var(--text);
-  background: rgba(244,247,252,0.95);
-}
-tr:last-child td{ border-bottom: none; }
-
-/* ===============================
-   TOAST (usata in FTCIRCAS)
-   =============================== */
-.toast{
-  padding: 10px 12px;
-  background: #0f172a;
-  color: #fff;
-  border-radius: 14px;
-  position: fixed;
-  bottom: 16px;
-  right: 16px;
-  max-width: min(520px, calc(100% - 32px));
-  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.20);
-  display:none;
-  z-index: 9999;
-  font-size: 13px;
-  line-height: 1.35;
-  white-space: pre-wrap;
-  border: 1px solid rgba(255,255,255,.08);
-}
-
-/* ===============================
-   UTILITIES
-   =============================== */
-.hidden{ display:none !important; }
-.row{
-  display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.col{ flex: 1; min-width: 220px; }
-.right{ text-align: right; }
-.center{ text-align: center; }
-
-/* ===============================
-   TOPBAR (GLOBAL)
-   ft-topbar.js crea .ft-topbar
-   =============================== */
+/* topbar */
 .ft-topbar{
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: 56px;
-  z-index: 9998;
-
-  background: rgba(255,255,255,0.82);
-  border-bottom: 1px solid rgba(15,23,42,.10);
+  height: var(--topbar-h);
+  z-index: 9990;
+  background: rgba(255,255,255,0.85);
   backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
 }
 
 .ft-topbar__inner{
-  max-width: 1200px;
-  height: 56px;
+  height: 100%;
+  width: min(1280px, calc(100% - 36px));
   margin: 0 auto;
-  padding: 0 14px;
-
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap: 10px;
+  gap: 12px;
 }
 
 .ft-topbar__left{
@@ -375,27 +213,21 @@ tr:last-child td{ border-bottom: none; }
 }
 
 .ft-topbar__brand{
-  font-weight: 1000;
-  letter-spacing: -0.3px;
-  color: var(--text);
-  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.4px;
 }
 
 .ft-topbar__subtitle{
-  font-size: 12px;
   color: var(--muted);
+  font-size: 13px;
   font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 320px;
 }
 
 .ft-topbar__center{
   flex: 1;
   display:flex;
   justify-content:center;
-  min-width: 200px;
+  min-width: 240px;
 }
 
 .ft-topbar__userinfo{
@@ -405,58 +237,33 @@ tr:last-child td{ border-bottom: none; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 640px;
+  max-width: min(860px, 60vw);
 }
 
 .ft-topbar__right{
+  min-width: 120px;
   display:flex;
-  align-items:center;
-  gap: 10px;
-  min-width: 140px;
   justify-content:flex-end;
 }
 
 .ft-home-btn{
   display:inline-flex;
   align-items:center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap:8px;
+  padding: 9px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(15,23,42,.10);
-  background: rgba(255,255,255,.92);
+  border: 1px solid var(--border);
+  background: #fff;
   font-weight: 900;
-  font-size: 13px;
   color: var(--text);
-  text-decoration: none;
-  transition: box-shadow .15s ease, border-color .15s ease, transform .06s ease;
 }
-.ft-home-btn:hover{
-  box-shadow: var(--shadow-soft);
-  border-color: rgba(15,23,42,.16);
-  text-decoration: none;
-}
-.ft-home-btn:active{
-  transform: translateY(1px);
-}
+.ft-home-btn:hover{ box-shadow: var(--shadow); text-decoration:none; }
 
-@media (max-width: 860px){
-  .ft-topbar__subtitle{ display:none; }
-  .ft-topbar__userinfo{ max-width: 360px; }
-}
-
-@media (max-width: 640px){
-  .ft-topbar__center{ display:none; }
-}
-
-/* ===============================
-   OPTIONAL: nicer scrollbars (Chrome)
-   =============================== */
-*::-webkit-scrollbar{ width: 10px; height: 10px; }
-*::-webkit-scrollbar-thumb{
-  background: rgba(15,23,42,.14);
-  border-radius: 999px;
-  border: 3px solid rgba(255,255,255,.65);
-}
-*::-webkit-scrollbar-track{
-  background: rgba(255,255,255,.35);
+/* utility */
+.muted{ color: var(--muted); }
+.hidden{ display:none !important; }
+.sep{
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
 }
