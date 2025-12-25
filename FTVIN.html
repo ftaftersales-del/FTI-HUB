@@ -2,11 +2,11 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>FTVIN - Verifica copertura contratti</title>
 
-  <!-- STILE HUB -->
-  <link rel="stylesheet" href="ftstyle.css?v=6">
+  <!-- Stile HUB -->
+  <link rel="stylesheet" href="ftstyle.css">
 
   <!-- Firebase compat -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -14,107 +14,67 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
 
-  <!-- CSS pagina (solo ciò che ftstyle non copre) -->
+  <!-- Page-specific (solo layout/skin, nessuna logica) -->
   <style>
     /* evita scroll strani con drawer */
     body{ overscroll-behavior: none; }
 
-    /* headline pagina dentro la card */
+    /* header pagina dentro al pad */
     .page-kicker{
       font-size: 12px;
-      color: var(--muted);
       font-weight: 800;
-      margin-bottom: 4px;
+      color: var(--muted);
+      margin-bottom: 6px;
     }
     .page-title{
       margin: 0;
-      font-size: 22px;
+      font-size: 26px;
       letter-spacing: -0.2px;
     }
     .page-subtitle{
       margin: 8px 0 0;
       color: var(--muted);
       font-size: 13px;
-      line-height: 1.35;
+      line-height: 1.4;
     }
 
-    /* search section */
-    .search-row{
-      display: grid;
-      grid-template-columns: 1fr 160px;
+    /* search row */
+    .vin-search{
+      display: flex;
       gap: 10px;
-      align-items: end;
-      margin-top: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
     }
-    @media (max-width: 720px){
-      .search-row{ grid-template-columns: 1fr; }
+    .vin-search .field{
+      flex: 1;
+      min-width: 260px;
     }
-
-    .help-hint{
-      margin-top: 6px;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    .field-invalid{
-      border-color: rgba(180,35,24,.45) !important;
-      box-shadow: 0 0 0 4px rgba(180,35,24,.10) !important;
-    }
-
-    /* message box */
-    .msg{
-      margin-top: 10px;
-      font-size: 13px;
-    }
-    .msg.success{
-      color: var(--ok-tx);
-      background: var(--ok-bg);
-      border: 1px solid var(--ok-bd);
-      padding: 10px 12px;
-      border-radius: 12px;
-    }
-    .msg.error{
-      color: var(--err-tx);
-      background: var(--err-bg);
-      border: 1px solid var(--err-bd);
-      padding: 10px 12px;
-      border-radius: 12px;
-    }
-
-    /* grid key/value */
-    .kv-grid{
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    .vin-search .actions{
+      display:flex;
+      align-items:flex-end;
       gap: 10px;
     }
-    .kv{
-      background: rgba(255,255,255,.92);
-      border: 1px solid rgba(230,232,240,.95);
-      border-radius: 14px;
-      padding: 10px 12px;
-      box-shadow: 0 1px 0 rgba(15,23,42,.02);
-      min-height: 56px;
-    }
-    .kv .k{
-      font-size: 11px;
-      font-weight: 900;
-      color: var(--muted);
-      margin-bottom: 4px;
-    }
-    .kv .v{
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-      word-break: break-word;
-    }
-    .kv .v.mono{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-weight: 800;
-      letter-spacing: 0.2px;
-    }
 
-    /* section header row */
-    .sec-row{
+    /* messages */
+    .message{ font-size: 13px; margin-top: 8px; }
+    .message.error{ color: var(--err-tx); }
+    .message.success{ color: var(--ok-tx); }
+
+    .loader{
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+      border-top-color: var(--primary2);
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin{ to { transform: rotate(360deg); } }
+
+    /* results */
+    .results{ display:none; margin-top: 14px; }
+
+    .block-head{
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -122,131 +82,100 @@
       margin-bottom: 10px;
     }
 
-    /* pills */
-    .pill{
+    .status-pill{
       display:inline-flex;
       align-items:center;
       gap: 8px;
+      font-weight: 900;
+      font-size: 12px;
       padding: 6px 10px;
       border-radius: 999px;
-      font-size: 12px;
-      font-weight: 900;
-      border: 1px solid rgba(230,232,240,.95);
-      background: rgba(255,255,255,.92);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.85);
       color: var(--text);
       white-space: nowrap;
     }
-    .pill.ok{
-      border-color: rgba(191,236,204,.95);
-      background: rgba(233,255,240,.95);
-      color: var(--ok-tx);
+
+    .info-grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
     }
-    .pill.err{
-      border-color: rgba(254,205,211,.95);
-      background: rgba(255,241,242,.95);
-      color: var(--err-tx);
+    .info-item{
+      background: #fff;
+      border: 1px solid rgba(230,232,240,.92);
+      border-radius: 12px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 0 rgba(15,23,42,.02);
+      min-height: 54px;
     }
-    .dot{
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-      opacity: .85;
+    .info-item .label{
+      display:block;
+      margin: 0 0 4px;
+      font-size: 11px;
+      font-weight: 900;
+      color: var(--muted);
+      letter-spacing: .2px;
+      text-transform: none;
+    }
+    .info-item .value{
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+      word-break: break-word;
     }
 
-    /* options table */
-    .ft-table{
+    .note-box{
+      background: #fff;
+      border: 1px solid rgba(230,232,240,.92);
+      border-radius: 12px;
+      padding: 10px 12px;
+      min-height: 80px;
+    }
+    .note-value{ white-space: pre-wrap; font-size: 13px; }
+
+    table.bool-table{
       width: 100%;
       border-collapse: collapse;
-      overflow: hidden;
-      border-radius: 14px;
-      border: 1px solid rgba(230,232,240,.95);
-      background: rgba(255,255,255,.92);
-    }
-    .ft-table td{
-      padding: 10px 12px;
       font-size: 13px;
-      border-bottom: 1px solid rgba(230,232,240,.75);
-      vertical-align: middle;
+      background: #fff;
+      border-radius: 12px;
+      overflow:hidden;
+      border: 1px solid rgba(230,232,240,.92);
     }
-    .ft-table tr:last-child td{ border-bottom: none; }
-    .ft-table tr:nth-child(even) td{
-      background: rgba(255,255,255,.82);
+    table.bool-table td, table.bool-table th{
+      border-bottom: 1px solid rgba(230,232,240,.92);
+      padding: 10px 12px;
+      vertical-align: top;
     }
-    .ft-table .td-right{
-      text-align: right;
-      white-space: nowrap;
-      font-weight: 900;
-    }
-    .yn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      gap: 8px;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(230,232,240,.95);
-      font-size: 12px;
-      font-weight: 900;
-      min-width: 88px;
-    }
-    .yn.yes{
-      border-color: rgba(191,236,204,.95);
-      background: rgba(233,255,240,.95);
-      color: var(--ok-tx);
-    }
-    .yn.no{
-      border-color: rgba(254,205,211,.95);
-      background: rgba(255,241,242,.95);
-      color: var(--err-tx);
-    }
+    table.bool-table tr:last-child td{ border-bottom: none; }
+    table.bool-table td:first-child{ width: 55%; color: var(--text); font-weight: 800; }
+    table.bool-table td:last-child{ color: var(--text); font-weight: 800; }
 
-    /* loader inline */
-    .loader{
-      display:inline-block;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      border: 2px solid rgba(102,112,133,.25);
-      border-top-color: var(--primary2);
-      animation: spin .7s linear infinite;
-      margin-left: 8px;
-    }
-    @keyframes spin{ to { transform: rotate(360deg); } }
-
-    /* RESULTS wrapper */
-    .results{ display:none; margin-top: 12px; }
-
-    /* ADMIN toolbar */
+    /* ADMIN AREA */
+    .admin-section{ display:none; }
     .admin-toolbar{
       display:flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      flex-wrap:wrap;
       align-items:center;
-      justify-content: space-between;
-    }
-    .admin-toolbar .left{
-      display:flex;
-      flex-wrap: wrap;
       gap: 10px;
-      align-items:center;
     }
     .admin-mode-label{
+      margin-left:auto;
       font-size: 12px;
       color: var(--muted);
       font-style: italic;
-      font-weight: 700;
     }
 
     /* DRAWER */
     .drawer-backdrop{
       position: fixed;
       inset: 0;
-      background: rgba(15,23,42,0.25);
+      background: rgba(0,0,0,0.25);
       opacity: 0;
       pointer-events: none;
-      transition: opacity .2s ease;
-      z-index: 9980;
+      transition: opacity 0.25s ease;
+      z-index: 998;
     }
     .drawer-backdrop.open{
       opacity: 1;
@@ -256,109 +185,119 @@
     .drawer{
       position: fixed;
       top: 0;
-      right: -440px;
-      width: 420px;
-      max-width: 92vw;
+      right: -420px;
+      width: 390px;
+      max-width: 90%;
       height: 100vh;
-      background: rgba(255,255,255,.96);
-      backdrop-filter: blur(8px);
-      border-left: 1px solid rgba(230,232,240,.95);
-      box-shadow: -14px 0 34px rgba(15,23,42,.14);
-      transition: right .22s ease;
-      z-index: 9990;
+      background: rgba(255,255,255,.98);
+      backdrop-filter: blur(10px);
+      box-shadow: -2px 0 22px rgba(15,23,42,0.18);
+      padding: 14px 14px 18px;
+      transition: right 0.25s ease;
+      z-index: 999;
       display:flex;
-      flex-direction: column;
-      overflow: hidden;
+      flex-direction:column;
+      overflow:hidden;
+      border-left: 1px solid rgba(230,232,240,.92);
     }
     .drawer.open{ right: 0; }
 
     .drawer-header{
-      position: sticky;
-      top: 0;
-      background: rgba(255,255,255,.96);
-      border-bottom: 1px solid rgba(230,232,240,.95);
-      padding: 14px 14px 12px;
       display:flex;
       align-items:center;
-      justify-content: space-between;
+      justify-content:space-between;
       gap: 10px;
-      z-index: 2;
+      margin-bottom: 10px;
     }
     .drawer-title{
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 900;
       letter-spacing: -0.1px;
     }
     .drawer-close-btn{
-      border: 1px solid rgba(230,232,240,.95);
+      border: 1px solid var(--border);
       background: rgba(255,255,255,.92);
-      border-radius: 12px;
-      padding: 6px 10px;
-      cursor: pointer;
-      font-weight: 900;
+      border-radius: 10px;
+      width: 34px;
+      height: 34px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      font-size: 18px;
+      line-height: 1;
     }
 
     .drawer-body{
       flex: 1;
       overflow-y: auto;
-      padding: 14px;
+      padding-right: 4px;
+      font-size: 13px;
     }
 
-    .drawer-footer{
-      position: sticky;
-      bottom: 0;
-      background: rgba(255,255,255,.96);
-      border-top: 1px solid rgba(230,232,240,.95);
-      padding: 12px 14px;
-      display:flex;
-      gap: 10px;
-      justify-content: flex-end;
-      z-index: 2;
-    }
-
-    /* checkbox block */
-    .check-grid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    @media (max-width: 420px){
-      .check-grid{ grid-template-columns: 1fr; }
-    }
-    .check{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(230,232,240,.95);
-      background: rgba(255,255,255,.92);
-    }
-    .check label{
-      margin:0;
+    .drawer-body h3{
+      margin: 14px 0 8px;
       font-size: 13px;
       font-weight: 900;
       color: var(--text);
+    }
+
+    .field-input, .field-textarea{
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+    .field-textarea{ min-height: 90px; resize: vertical; }
+
+    .checkbox-row{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      margin: 8px 0;
+    }
+    .checkbox-row label{
+      margin: 0;
+      font-weight: 800;
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .drawer-footer{
+      margin-top: 10px;
+      display:flex;
+      justify-content:flex-end;
+      gap: 10px;
+    }
+
+    /* piccole ottimizzazioni mobile */
+    @media (max-width: 720px){
+      .page-title{ font-size: 22px; }
+      .vin-search .actions{ width:100%; justify-content:flex-end; }
+      table.bool-table td:first-child{ width: auto; }
     }
   </style>
 </head>
 
 <body class="ft-page has-topbar">
 
-  <!-- TOPBAR HUB -->
+  <!-- TOPBAR (HOME a destra, come FTCIRCAS) -->
   <div class="ft-topbar">
     <div class="ft-topbar__inner">
       <div class="ft-topbar__left">
-        <a href="FTHUBAS.html" class="ft-home-btn">← HOME</a>
+        <div class="ft-topbar__brand">FTI-HUB</div>
         <div class="ft-topbar__subtitle">FTVIN • Verifica copertura VIN</div>
       </div>
 
       <div class="ft-topbar__center">
-        <div id="topUserInfo" class="ft-topbar__userinfo">Utente: -</div>
+        <div id="userInfoTop" class="ft-topbar__userinfo">Utente: -</div>
       </div>
 
       <div class="ft-topbar__right">
-        <!-- se vuoi aggiungere logout anche qui in futuro, lo metti qui -->
+        <a href="FTHUBAS.html" class="ft-home-btn">🏠 Home</a>
       </div>
     </div>
   </div>
@@ -370,12 +309,13 @@
       <div class="page-kicker">FTVIN - Verifica copertura contratti</div>
       <h1 class="page-title">Verifica copertura per telaio (VIN)</h1>
       <p class="page-subtitle">
-        Inserisci un VIN e premi <b>Cerca</b> per visualizzare i dettagli di copertura memorizzati in Firestore (collezione <b>DBVIN</b>) o sul portale Ford.
+        Inserisci un VIN e premi <b>Cerca</b> per visualizzare i dettagli di copertura memorizzati in Firestore
+        (collezione <b>DBVIN</b>) o sul portale Ford.
       </p>
 
       <hr class="sep">
 
-      <!-- RICERCA -->
+      <!-- Ricerca -->
       <div class="section">
         <div class="section-head">
           <div>
@@ -384,246 +324,271 @@
           </div>
         </div>
 
-        <div class="search-row">
-          <div>
+        <div class="vin-search">
+          <div class="field">
             <label for="vinInput">VIN</label>
-            <input id="vinInput" type="text" placeholder="Es. NM0KCTP60XSB93275" maxlength="30" autocomplete="off" />
-            <div class="help-hint">Suggerimento: incolla il VIN completo e premi INVIO.</div>
+            <input id="vinInput" type="text" placeholder="Es. NM0KCTP60XSB93275" maxlength="30" />
+            <div class="muted" style="margin-top:6px;">Suggerimento: incolla il VIN completo e premi INVIO.</div>
           </div>
 
-          <div>
-            <label>&nbsp;</label>
-            <button id="searchBtn" class="btn btn-primary" type="button" style="width:100%; justify-content:center;">
-              Cerca
-            </button>
+          <div class="actions">
+            <button id="searchBtn" class="btn btn-primary" type="button">Cerca</button>
           </div>
         </div>
 
-        <div id="searchMessage" class="msg" aria-live="polite"></div>
+        <div id="searchMessage" class="message"></div>
       </div>
 
       <!-- RISULTATI -->
       <div id="results" class="results">
 
-        <hr class="sep">
-
-        <!-- DATI VEICOLO -->
-        <div class="section">
-          <div class="sec-row">
-            <h3 class="section-title" style="margin:0;">Dati Veicolo</h3>
+        <div class="section" style="margin-top:12px;">
+          <div class="block-head">
+            <div>
+              <h3 class="section-title" style="margin:0;">Dati Veicolo</h3>
+              <div class="section-sub">Riepilogo anagrafica e contratto.</div>
+            </div>
           </div>
-          <div id="vehicleInfo" class="kv-grid"></div>
+          <div id="vehicleInfo" class="info-grid"></div>
         </div>
 
-        <!-- NOTE (solo distributore) -->
+        <!-- Note (solo distributore) -->
         <div id="noteSection" class="section" style="margin-top:12px;">
-          <div class="sec-row">
-            <h3 class="section-title" style="margin:0;">Note</h3>
+          <div class="block-head">
+            <div>
+              <h3 class="section-title" style="margin:0;">Note</h3>
+              <div class="section-sub">Visibile solo a utenti distributore.</div>
+            </div>
           </div>
-          <div class="kv">
-            <div class="v" id="noteValue" style="white-space:pre-wrap; font-weight:700;"></div>
+          <div class="note-box">
+            <div id="noteValue" class="note-value"></div>
           </div>
         </div>
 
-        <!-- FULL LINE -->
         <div class="section" style="margin-top:12px;">
-          <div class="sec-row">
-            <h3 class="section-title" style="margin:0;">Full Line</h3>
-            <span id="flagFullLine" class="pill"><span class="dot"></span><span>—</span></span>
+          <div class="block-head">
+            <div>
+              <h3 class="section-title" style="margin:0;">Full Line</h3>
+              <div class="section-sub">Copertura complessiva.</div>
+            </div>
+            <span id="flagFullLine" class="status-pill"></span>
           </div>
-          <div id="fullLineInfo" class="kv-grid"></div>
+          <div id="fullLineInfo" class="info-grid"></div>
         </div>
 
-        <!-- DRIVE LINE -->
         <div class="section" style="margin-top:12px;">
-          <div class="sec-row">
-            <h3 class="section-title" style="margin:0;">Drive Line</h3>
-            <span id="flagDriveLine" class="pill"><span class="dot"></span><span>—</span></span>
+          <div class="block-head">
+            <div>
+              <h3 class="section-title" style="margin:0;">Drive Line</h3>
+              <div class="section-sub">Copertura catena cinematica.</div>
+            </div>
+            <span id="flagDriveLine" class="status-pill"></span>
           </div>
-          <div id="driveLineInfo" class="kv-grid"></div>
+          <div id="driveLineInfo" class="info-grid"></div>
         </div>
 
-        <!-- MANUTENZIONE -->
         <div class="section" style="margin-top:12px;">
-          <div class="sec-row">
-            <h3 class="section-title" style="margin:0;">Contratto di Manutenzione</h3>
-            <span id="flagMaint" class="pill"><span class="dot"></span><span>—</span></span>
+          <div class="block-head">
+            <div>
+              <h3 class="section-title" style="margin:0;">Contratto di Manutenzione</h3>
+              <div class="section-sub">Copertura service contract.</div>
+            </div>
+            <span id="flagMaint" class="status-pill"></span>
           </div>
-          <div id="contractMaintInfo" class="kv-grid"></div>
+          <div id="contractMaintInfo" class="info-grid"></div>
         </div>
 
-        <!-- OPZIONI -->
         <div class="section" style="margin-top:12px;">
-          <div class="sec-row">
-            <h3 class="section-title" style="margin:0;">Opzioni aggiuntive / Servizi</h3>
-            <span id="flagOptions" class="pill"><span class="dot"></span><span>—</span></span>
+          <div class="block-head">
+            <div>
+              <h3 class="section-title" style="margin:0;">Opzioni aggiuntive / Servizi</h3>
+              <div class="section-sub">Dettaglio servizi inclusi.</div>
+            </div>
+            <span id="flagOptions" class="status-pill"></span>
           </div>
 
-          <table class="ft-table" aria-label="Opzioni aggiuntive">
+          <table class="bool-table">
             <tbody id="boolTable"></tbody>
           </table>
         </div>
-
-      </div><!-- /results -->
+      </div>
 
       <!-- AREA ADMIN -->
-      <div id="adminEditSection" class="section" style="margin-top:12px; display:none;">
+      <div id="adminEditSection" class="section admin-section" style="margin-top:12px;">
         <div class="section-head">
           <div>
             <h3 class="section-title">Area amministratore (coperture VIN)</h3>
             <div class="section-sub">Creazione e modifica coperture in DBVIN (solo Admin).</div>
           </div>
+          <div class="muted" id="adminModeLabel"></div>
         </div>
 
         <div class="admin-toolbar">
-          <div class="left">
-            <button id="btnNewCoverage" class="btn btn-primary" type="button">Crea nuova copertura</button>
-            <button id="btnEditCoverage" class="btn" type="button" disabled>Modifica copertura caricata</button>
-          </div>
-          <span id="adminModeLabel" class="admin-mode-label"></span>
+          <button id="btnNewCoverage" class="btn btn-primary" type="button">Crea nuova copertura</button>
+          <button id="btnEditCoverage" class="btn" type="button" disabled>Modifica copertura caricata</button>
+          <span class="admin-mode-label" id="adminModeLabelSpacer" style="display:none;"></span>
         </div>
       </div>
 
-    </div><!-- /card -->
-  </div><!-- /ft-container -->
+    </div>
+  </div>
 
-  <!-- BACKDROP + DRAWER ADMIN -->
+  <!-- BACKDROP E DRAWER LATERALE -->
   <div id="drawerBackdrop" class="drawer-backdrop"></div>
 
-  <div id="adminDrawer" class="drawer" aria-label="Drawer copertura VIN">
+  <div id="adminDrawer" class="drawer" aria-hidden="true">
     <div class="drawer-header">
       <div id="drawerTitle" class="drawer-title">Copertura VIN</div>
-      <button id="drawerCloseBtn" class="drawer-close-btn" type="button">✕</button>
+      <button id="drawerCloseBtn" class="drawer-close-btn" type="button" aria-label="Chiudi">&times;</button>
     </div>
 
     <div class="drawer-body">
       <form id="coverageForm" onsubmit="return false;">
-
-        <div class="section">
-          <div class="section-head">
-            <div>
-              <h3 class="section-title">Dati veicolo</h3>
-              <div class="section-sub">Compila i campi principali della copertura.</div>
-            </div>
+        <h3>Dati veicolo</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">VIN</span>
+            <input id="f_vin" class="field-input" />
           </div>
-
-          <div class="kv-grid">
-            <div class="kv">
-              <div class="k">VIN</div>
-              <div class="v"><input id="f_vin" class="field-input" /></div>
-            </div>
-            <div class="kv">
-              <div class="k">Cliente</div>
-              <div class="v"><input id="f_customer" class="field-input" /></div>
-            </div>
-            <div class="kv">
-              <div class="k">Tipo contratto</div>
-              <div class="v"><input id="f_contract_type" class="field-input" /></div>
-            </div>
-            <div class="kv">
-              <div class="k">Validazione contratto</div>
-              <div class="v"><input id="f_validate_contract" class="field-input" /></div>
-            </div>
-            <div class="kv">
-              <div class="k">Durata contratto</div>
-              <div class="v"><input id="f_duration_contract" class="field-input" type="number" /></div>
-            </div>
-            <div class="kv">
-              <div class="k">Inter-market</div>
-              <div class="v"><input id="f_inter_market" class="field-input" /></div>
-            </div>
-            <div class="kv">
-              <div class="k">Lingua</div>
-              <div class="v"><input id="f_language" class="field-input" /></div>
-            </div>
+          <div class="info-item">
+            <span class="label">Cliente</span>
+            <input id="f_customer" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Tipo contratto</span>
+            <input id="f_contract_type" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Validazione contratto</span>
+            <input id="f_validate_contract" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Durata contratto</span>
+            <input id="f_duration_contract" class="field-input" type="number" />
+          </div>
+          <div class="info-item">
+            <span class="label">Inter-market</span>
+            <input id="f_inter_market" class="field-input" />
+          </div>
+          <div class="info-item">
+            <span class="label">Lingua</span>
+            <input id="f_language" class="field-input" />
           </div>
         </div>
 
-        <div class="section" style="margin-top:12px;">
-          <div class="section-head">
-            <div>
-              <h3 class="section-title">Note</h3>
-              <div class="section-sub">Visibili solo al distributore (se previsto dalla logica).</div>
-            </div>
-          </div>
-          <textarea id="f_note" class="field-textarea" style="width:100%;"></textarea>
-        </div>
+        <h3>Note</h3>
+        <textarea id="f_note" class="field-textarea"></textarea>
 
-        <div class="section" style="margin-top:12px;">
-          <div class="section-head">
-            <div><h3 class="section-title">Full Line</h3></div>
+        <h3>Full Line</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Completa - Data inizio</span>
+            <input id="f_completa_data_start" class="field-input" placeholder="YYYY-MM-DD" />
           </div>
-          <div class="kv-grid">
-            <div class="kv"><div class="k">Completa - Data inizio</div><div class="v"><input id="f_completa_data_start" class="field-input" placeholder="YYYY-MM-DD" /></div></div>
-            <div class="kv"><div class="k">Completa - Data fine</div><div class="v"><input id="f_completa_data_end" class="field-input" placeholder="YYYY-MM-DD" /></div></div>
-            <div class="kv"><div class="k">Completa - KM inizio</div><div class="v"><input id="f_completa_km_start" class="field-input" type="number" /></div></div>
-            <div class="kv"><div class="k">Completa - KM fine</div><div class="v"><input id="f_completa_km_end" class="field-input" type="number" /></div></div>
+          <div class="info-item">
+            <span class="label">Completa - Data fine</span>
+            <input id="f_completa_data_end" class="field-input" placeholder="YYYY-MM-DD" />
           </div>
-        </div>
-
-        <div class="section" style="margin-top:12px;">
-          <div class="section-head">
-            <div><h3 class="section-title">Drive Line</h3></div>
+          <div class="info-item">
+            <span class="label">Completa - KM inizio</span>
+            <input id="f_completa_km_start" class="field-input" type="number" />
           </div>
-          <div class="kv-grid">
-            <div class="kv"><div class="k">Cat. cinematica - Data inizio</div><div class="v"><input id="f_catcinematica_data_start" class="field-input" placeholder="YYYY-MM-DD" /></div></div>
-            <div class="kv"><div class="k">Cat. cinematica - Data fine</div><div class="v"><input id="f_catcinematica_data_end" class="field-input" placeholder="YYYY-MM-DD" /></div></div>
-            <div class="kv"><div class="k">Cat. cinematica - KM inizio</div><div class="v"><input id="f_catcinematica_km_start" class="field-input" type="number" /></div></div>
-            <div class="kv"><div class="k">Cat. cinematica - KM fine</div><div class="v"><input id="f_catcinematica_km_end" class="field-input" type="number" /></div></div>
+          <div class="info-item">
+            <span class="label">Completa - KM fine</span>
+            <input id="f_completa_km_end" class="field-input" type="number" />
           </div>
         </div>
 
-        <div class="section" style="margin-top:12px;">
-          <div class="section-head">
-            <div><h3 class="section-title">Contratto di Manutenzione</h3></div>
+        <h3>Drive Line</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Cat. cinematica - Data inizio</span>
+            <input id="f_catcinematica_data_start" class="field-input" placeholder="YYYY-MM-DD" />
           </div>
-          <div class="kv-grid">
-            <div class="kv"><div class="k">Contratto - Data inizio</div><div class="v"><input id="f_contratto_data_start" class="field-input" placeholder="YYYY-MM-DD" /></div></div>
-            <div class="kv"><div class="k">Contratto - Data fine</div><div class="v"><input id="f_contratto_data_end" class="field-input" placeholder="YYYY-MM-DD" /></div></div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - Data fine</span>
+            <input id="f_catcinematica_data_end" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - KM inizio</span>
+            <input id="f_catcinematica_km_start" class="field-input" type="number" />
+          </div>
+          <div class="info-item">
+            <span class="label">Cat. cinematica - KM fine</span>
+            <input id="f_catcinematica_km_end" class="field-input" type="number" />
           </div>
         </div>
 
-        <div class="section" style="margin-top:12px;">
-          <div class="section-head">
-            <div>
-              <h3 class="section-title">Opzioni aggiuntive / servizi</h3>
-              <div class="section-sub">Seleziona le opzioni applicabili e, se necessario, specifica il tipo di Uptime.</div>
-            </div>
+        <h3>Contratto di Manutenzione</h3>
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="label">Contratto data start</span>
+            <input id="f_contratto_data_start" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+          <div class="info-item">
+            <span class="label">Contratto data end</span>
+            <input id="f_contratto_data_end" class="field-input" placeholder="YYYY-MM-DD" />
+          </div>
+        </div>
+
+        <h3>Opzioni aggiuntive / servizi</h3>
+        <div class="info-item">
+          <div class="checkbox-row">
+            <input id="f_altre_opzioni" type="checkbox" />
+            <label for="f_altre_opzioni">Altre opzioni</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_batterie" type="checkbox" />
+            <label for="f_batterie">Batterie</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_fusibili_lampadine" type="checkbox" />
+            <label for="f_fusibili_lampadine">Fusibili / lampadine</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_parti_usara" type="checkbox" />
+            <label for="f_parti_usara">Parti d’usura</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_pulizia_fap" type="checkbox" />
+            <label for="f_pulizia_fap">Pulizia FAP</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_rabbocco_olio" type="checkbox" />
+            <label for="f_rabbocco_olio">Rabbocco olio</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_tergicristallo" type="checkbox" />
+            <label for="f_tergicristallo">Tergicristallo</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_traino" type="checkbox" />
+            <label for="f_traino">Traino</label>
+          </div>
+          <div class="checkbox-row">
+            <input id="f_uptime_service" type="checkbox" />
+            <label for="f_uptime_service">Uptime service</label>
           </div>
 
-          <div class="check-grid">
-            <div class="check"><input id="f_altre_opzioni" type="checkbox" /><label for="f_altre_opzioni">Altre opzioni</label></div>
-            <div class="check"><input id="f_batterie" type="checkbox" /><label for="f_batterie">Batterie</label></div>
-            <div class="check"><input id="f_fusibili_lampadine" type="checkbox" /><label for="f_fusibili_lampadine">Fusibili / lampadine</label></div>
-            <div class="check"><input id="f_parti_usara" type="checkbox" /><label for="f_parti_usara">Parti d’usura</label></div>
-            <div class="check"><input id="f_pulizia_fap" type="checkbox" /><label for="f_pulizia_fap">Pulizia FAP</label></div>
-            <div class="check"><input id="f_rabbocco_olio" type="checkbox" /><label for="f_rabbocco_olio">Rabbocco olio</label></div>
-            <div class="check"><input id="f_tergicristallo" type="checkbox" /><label for="f_tergicristallo">Tergicristallo</label></div>
-            <div class="check"><input id="f_traino" type="checkbox" /><label for="f_traino">Traino</label></div>
-            <div class="check"><input id="f_uptime_service" type="checkbox" /><label for="f_uptime_service">Uptime service</label></div>
-          </div>
-
-          <div style="margin-top:12px;">
-            <label for="f_uptime_service_type">Uptime service type</label>
+          <div style="margin-top:10px;">
+            <span class="label">Uptime service type</span>
             <input id="f_uptime_service_type" class="field-input" placeholder="Es. GOLD, BASIC..." />
           </div>
         </div>
-
       </form>
-
-      <div id="drawerMessage" class="msg" style="margin-top:12px;"></div>
     </div>
 
     <div class="drawer-footer">
       <button id="drawerCancelBtn" type="button" class="btn">Annulla</button>
       <button id="saveCoverageBtn" type="button" class="btn btn-primary">Salva</button>
     </div>
+
+    <div id="drawerMessage" class="message" style="margin-top:8px;"></div>
   </div>
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    const topUserInfoEl   = document.getElementById('topUserInfo');
-
+    const userInfoTop     = document.getElementById('userInfoTop');
     const vinInput        = document.getElementById('vinInput');
     const searchBtn       = document.getElementById('searchBtn');
     const searchMessageEl = document.getElementById('searchMessage');
@@ -713,8 +678,8 @@
     }
 
     function fmtNum(v) {
-      if (v === null || v === undefined || v === "") return "-";
-      return escapeHtml(v);
+      if (v === null || v === undefined) return "-";
+      return v;
     }
 
     function fmtDate(v) {
@@ -722,20 +687,30 @@
       return escapeHtml(v);
     }
 
-    function setInputInvalid(isInvalid){
-      if (isInvalid) vinInput.classList.add("field-invalid");
-      else vinInput.classList.remove("field-invalid");
+    function fmtBool(v) {
+      v = !!v;
+      return v ? "🟢 SI" : "🔴 NO";
+    }
+
+    function isActiveDate(start, end) {
+      if (!start || !end) return false;
+      const today = new Date().toISOString().slice(0,10);
+      return start <= today && today <= end;
+    }
+
+    function badge(active) {
+      return active ? "🟢 ATTIVA" : "🔴 NON ATTIVA";
     }
 
     function showMessage(text, type) {
       searchMessageEl.textContent = text || "";
-      searchMessageEl.className = "msg" + (type ? " " + type : "");
+      searchMessageEl.className = "message" + (type ? " " + type : "");
     }
 
     function setLoading(isLoading) {
       if (isLoading) {
         searchBtn.disabled = true;
-        searchBtn.innerHTML = 'Caricamento<span class="loader"></span>';
+        searchBtn.innerHTML = 'Caricamento&nbsp;<span class="loader"></span>';
       } else {
         searchBtn.disabled = false;
         searchBtn.textContent = "Cerca";
@@ -752,29 +727,6 @@
     function cutDate(v) {
       if (!v) return null;
       return String(v).slice(0, 10); // "YYYY-MM-DD"
-    }
-
-    function isActiveDate(start, end) {
-      if (!start || !end) return false;
-      const today = new Date().toISOString().slice(0,10);
-      return start <= today && today <= end;
-    }
-
-    function setPill(el, active){
-      if (!el) return;
-      el.classList.remove("ok","err");
-      if (active){
-        el.classList.add("pill","ok");
-        el.innerHTML = '<span class="dot"></span><span>ATTIVA</span>';
-      } else {
-        el.classList.add("pill","err");
-        el.innerHTML = '<span class="dot"></span><span>NON ATTIVA</span>';
-      }
-    }
-
-    function ynPill(val){
-      if (!!val) return '<span class="yn yes"><span class="dot"></span>SI</span>';
-      return '<span class="yn no"><span class="dot"></span>NO</span>';
     }
 
     function buildCoverageFromDbVin(vin, data) {
@@ -880,6 +832,7 @@
       drawerMessage.textContent = "";
       drawer.classList.add("open");
       drawerBackdrop.classList.add("open");
+      drawer.setAttribute("aria-hidden","false");
 
       if (mode === "create") {
         adminModeLabel.textContent = "Modalità: creazione nuova copertura";
@@ -892,6 +845,7 @@
       adminMode = null;
       drawer.classList.remove("open");
       drawerBackdrop.classList.remove("open");
+      drawer.setAttribute("aria-hidden","true");
       adminModeLabel.textContent = "";
     }
 
@@ -930,7 +884,7 @@
       f_uptime_service_type.value = "";
 
       drawerMessage.textContent = "";
-      drawerMessage.className = "msg";
+      drawerMessage.className = "message";
     }
 
     function fillAdminForm(vin, data) {
@@ -969,7 +923,7 @@
       f_uptime_service_type.value  = data.uptime_service_type || "";
 
       drawerMessage.textContent = "";
-      drawerMessage.className = "msg";
+      drawerMessage.className = "message";
     }
 
     function updateAdminButtons(hasExistingDoc) {
@@ -1003,18 +957,16 @@
 
       const cv = coverageView;
 
-      // Dati veicolo
       vehicleInfoEl.innerHTML = `
-        <div class="kv"><div class="k">VIN</div><div class="v mono">${fmtText(cv.vin)}</div></div>
-        <div class="kv"><div class="k">Cliente</div><div class="v">${fmtText(cv.customer)}</div></div>
-        <div class="kv"><div class="k">Tipo Contratto</div><div class="v">${fmtText(cv.contract_type)}</div></div>
-        <div class="kv"><div class="k">Validazione Contratto</div><div class="v">${fmtText(cv.validate_contract)}</div></div>
-        <div class="kv"><div class="k">Durata Contratto</div><div class="v">${fmtNum(cv.duration_contract)}</div></div>
-        <div class="kv"><div class="k">Inter-market</div><div class="v">${fmtText(cv.inter_market)}</div></div>
-        <div class="kv"><div class="k">Lingua</div><div class="v">${fmtText(cv.language)}</div></div>
+        <div class="info-item"><span class="label">VIN</span><div class="value">${fmtText(cv.vin)}</div></div>
+        <div class="info-item"><span class="label">Cliente</span><div class="value">${fmtText(cv.customer)}</div></div>
+        <div class="info-item"><span class="label">Tipo Contratto</span><div class="value">${fmtText(cv.contract_type)}</div></div>
+        <div class="info-item"><span class="label">Validazione Contratto</span><div class="value">${fmtText(cv.validate_contract)}</div></div>
+        <div class="info-item"><span class="label">Durata Contratto</span><div class="value">${fmtNum(cv.duration_contract)}</div></div>
+        <div class="info-item"><span class="label">Inter-market</span><div class="value">${fmtText(cv.inter_market)}</div></div>
+        <div class="info-item"><span class="label">Lingua</span><div class="value">${fmtText(cv.language)}</div></div>
       `;
 
-      // Note (solo distributore)
       if (noteSection) {
         if (isDistributor) {
           noteSection.style.display = "block";
@@ -1024,32 +976,28 @@
         }
       }
 
-      // Full Line
       fullLineInfoEl.innerHTML = `
-        <div class="kv"><div class="k">Data inizio</div><div class="v">${fmtDate(cv.fullLine.start_date)}</div></div>
-        <div class="kv"><div class="k">Data fine</div><div class="v">${fmtDate(cv.fullLine.end_date)}</div></div>
-        <div class="kv"><div class="k">KM inizio</div><div class="v">${fmtNum(cv.fullLine.km_start)}</div></div>
-        <div class="kv"><div class="k">KM fine</div><div class="v">${fmtNum(cv.fullLine.km_end)}</div></div>
+        <div class="info-item"><span class="label">Data inizio</span><div class="value">${fmtDate(cv.fullLine.start_date)}</div></div>
+        <div class="info-item"><span class="label">Data fine</span><div class="value">${fmtDate(cv.fullLine.end_date)}</div></div>
+        <div class="info-item"><span class="label">KM inizio</span><div class="value">${fmtNum(cv.fullLine.km_start)}</div></div>
+        <div class="info-item"><span class="label">KM fine</span><div class="value">${fmtNum(cv.fullLine.km_end)}</div></div>
       `;
-      setPill(flagFullLine, isActiveDate(cv.fullLine.start_date, cv.fullLine.end_date));
+      flagFullLine.textContent = badge(isActiveDate(cv.fullLine.start_date, cv.fullLine.end_date));
 
-      // Drive Line
       driveLineInfoEl.innerHTML = `
-        <div class="kv"><div class="k">Data inizio</div><div class="v">${fmtDate(cv.driveLine.start_date)}</div></div>
-        <div class="kv"><div class="k">Data fine</div><div class="v">${fmtDate(cv.driveLine.end_date)}</div></div>
-        <div class="kv"><div class="k">KM inizio</div><div class="v">${fmtNum(cv.driveLine.km_start)}</div></div>
-        <div class="kv"><div class="k">KM fine</div><div class="v">${fmtNum(cv.driveLine.km_end)}</div></div>
+        <div class="info-item"><span class="label">Data inizio</span><div class="value">${fmtDate(cv.driveLine.start_date)}</div></div>
+        <div class="info-item"><span class="label">Data fine</span><div class="value">${fmtDate(cv.driveLine.end_date)}</div></div>
+        <div class="info-item"><span class="label">KM inizio</span><div class="value">${fmtNum(cv.driveLine.km_start)}</div></div>
+        <div class="info-item"><span class="label">KM fine</span><div class="value">${fmtNum(cv.driveLine.km_end)}</div></div>
       `;
-      setPill(flagDriveLine, isActiveDate(cv.driveLine.start_date, cv.driveLine.end_date));
+      flagDriveLine.textContent = badge(isActiveDate(cv.driveLine.start_date, cv.driveLine.end_date));
 
-      // Contratto manutenzione
       contractInfoEl.innerHTML = `
-        <div class="kv"><div class="k">Data inizio</div><div class="v">${fmtDate(cv.maintenance.start_date)}</div></div>
-        <div class="kv"><div class="k">Data fine</div><div class="v">${fmtDate(cv.maintenance.end_date)}</div></div>
+        <div class="info-item"><span class="label">Data inizio</span><div class="value">${fmtDate(cv.maintenance.start_date)}</div></div>
+        <div class="info-item"><span class="label">Data fine</span><div class="value">${fmtDate(cv.maintenance.end_date)}</div></div>
       `;
-      setPill(flagMaint, isActiveDate(cv.maintenance.start_date, cv.maintenance.end_date));
+      flagMaint.textContent = badge(isActiveDate(cv.maintenance.start_date, cv.maintenance.end_date));
 
-      // Opzioni
       const o = cv.options;
       const options = [
         ["Altre opzioni", o.altre_opzioni],
@@ -1061,13 +1009,12 @@
         ["Tergicristallo", o.tergicristallo],
         ["Traino", o.traino],
         ["Uptime service", o.uptime_service],
-        ["Uptime service type", (o.uptime_service_type ? fmtText(o.uptime_service_type) : "-")],
+        ["Uptime service type", fmtText(o.uptime_service_type)],
       ];
 
       boolTableEl.innerHTML = options.map(([label, val]) => {
-        const isBool = typeof val === "boolean";
-        const valueHtml = isBool ? ynPill(val) : `<span style="font-weight:900;">${val}</span>`;
-        return `<tr><td>${escapeHtml(label)}</td><td class="td-right">${valueHtml}</td></tr>`;
+        const valueHtml = typeof val === "boolean" ? fmtBool(val) : val;
+        return `<tr><td>${escapeHtml(label)}</td><td>${valueHtml}</td></tr>`;
       }).join("");
 
       const hasOptionActive = [
@@ -1076,7 +1023,7 @@
         o.tergicristallo, o.traino, o.uptime_service
       ].some(v => !!v);
 
-      setPill(flagOptions, hasOptionActive);
+      flagOptions.textContent = badge(hasOptionActive);
 
       resultsEl.style.display = "block";
     }
@@ -1087,9 +1034,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ telaio: vin }),
       });
-      if (!resp.ok) {
-        throw new Error("Errore HTTP backend: " + resp.status);
-      }
+      if (!resp.ok) throw new Error("Errore HTTP backend: " + resp.status);
       return await resp.json();
     }
 
@@ -1097,7 +1042,7 @@
     try {
       auth.onAuthStateChanged(async (user) => {
         if (!user) {
-          topUserInfoEl.textContent = "Utente: non loggato";
+          userInfoTop.textContent = "Utente: non loggato";
           isAdmin = false;
           isDistributor = false;
           adminSection.style.display = "none";
@@ -1105,7 +1050,7 @@
           return;
         }
 
-        topUserInfoEl.textContent = "Utente: " + (user.email || user.uid);
+        userInfoTop.textContent = "Utente: " + (user.email || user.uid);
 
         try {
           const userSnap = await db.collection('Users').doc(user.uid).get();
@@ -1113,7 +1058,6 @@
           isAdmin = data.role === "Admin";
 
           const dealerId = data.DealerID || data.dealerId || null;
-          // Logica distributore: ad esempio FT001
           isDistributor = dealerId === "FT001";
         } catch (e) {
           console.error("Errore lettura ruolo utente:", e);
@@ -1131,26 +1075,14 @@
     // --------- Ricerca VIN ---------
     async function searchVIN() {
       const vin = (vinInput.value || "").trim().toUpperCase();
-      vinInput.value = vin; // normalizza UI
-      setInputInvalid(false);
-
-      if (!vin) {
-        showMessage("Inserisci un VIN prima di cercare.", "error");
-        setInputInvalid(true);
-        return;
-      }
-
-      if (vin.length !== 17) {
-        showMessage("Il VIN deve contenere esattamente 17 caratteri.", "error");
-        setInputInvalid(true);
-        return;
-      }
+      if (!vin) return showMessage("Inserisci un VIN prima di cercare.", "error");
+      if (vin.length !== 17) return showMessage("Il VIN deve contenere esattamente 17 caratteri.", "error");
 
       showMessage("", "");
       resultsEl.style.display = "none";
-      lastDocData    = null;
-      currentVin     = null;
-      coverageView   = null;
+      lastDocData = null;
+      currentVin = null;
+      coverageView = null;
       coverageSource = null;
       closeDrawer();
       updateAdminButtons(false);
@@ -1163,10 +1095,10 @@
 
         if (snap.exists) {
           const data = snap.data() || {};
-          lastDocData    = data;
-          currentVin     = vin;
+          lastDocData = data;
+          currentVin = vin;
           coverageSource = "dbvin";
-          coverageView   = buildCoverageFromDbVin(vin, data);
+          coverageView = buildCoverageFromDbVin(vin, data);
           renderCoverage();
           showMessage("Copertura caricata dal database locale (DBVIN).", "success");
           updateAdminButtons(true);
@@ -1178,43 +1110,37 @@
           const backendData = await fetchBackendCoverage(vin);
 
           if (backendData.success && backendData.copertura && backendData.copertura.HAS_WARRANTY) {
-            currentVin     = vin;
-            lastDocData    = null;
+            currentVin = vin;
+            lastDocData = null;
             coverageSource = "backend";
-            coverageView   = buildCoverageFromBackend(vin, backendData);
+            coverageView = buildCoverageFromBackend(vin, backendData);
             renderCoverage();
             showMessage("Copertura trovata sul portale Ford (backend).", "success");
-            updateAdminButtons(false); // solo lettura
+            updateAdminButtons(false);
           } else {
-            // nessuna copertura in backend
             coverageSource = "none";
-            coverageView   = null;
+            coverageView = null;
             resultsEl.style.display = "none";
             showMessage("Telaio inesistente nelle banche dati.", "error");
             updateAdminButtons(false);
             if (isAdmin) {
-              coverageSource = "none";
-              updateAdminButtons(false);
               adminModeLabel.textContent = "Nessuna copertura trovata: puoi creare una nuova copertura.";
             }
           }
         } catch (err2) {
           console.error("Errore backend:", err2);
           coverageSource = "none";
-          coverageView   = null;
+          coverageView = null;
           resultsEl.style.display = "none";
           showMessage("Errore nel backend di verifica garanzia.", "error");
           updateAdminButtons(false);
-          if (isAdmin) {
-            adminModeLabel.textContent = "Errore backend: puoi comunque creare una nuova copertura.";
-          }
+          if (isAdmin) adminModeLabel.textContent = "Errore backend: puoi comunque creare una nuova copertura.";
         }
-
       } catch (err) {
         console.error("Errore Firestore:", err);
         showMessage("Errore durante la lettura dei dati.", "error");
         coverageSource = "none";
-        coverageView   = null;
+        coverageView = null;
         resultsEl.style.display = "none";
         updateAdminButtons(false);
       } finally {
@@ -1226,34 +1152,33 @@
     async function saveCoverage() {
       if (!isAdmin) {
         drawerMessage.textContent = "Non hai i permessi per salvare.";
-        drawerMessage.className = "msg error";
+        drawerMessage.className = "message error";
         return;
       }
 
       let vin;
       if (adminMode === "create") {
         vin = (f_vin.value || "").trim().toUpperCase();
-        f_vin.value = vin;
         if (!vin) {
           drawerMessage.textContent = "Inserisci un VIN per creare la copertura.";
-          drawerMessage.className = "msg error";
+          drawerMessage.className = "message error";
           return;
         }
         if (vin.length !== 17) {
           drawerMessage.textContent = "Il VIN deve contenere esattamente 17 caratteri.";
-          drawerMessage.className = "msg error";
+          drawerMessage.className = "message error";
           return;
         }
       } else if (adminMode === "edit") {
         vin = currentVin;
         if (!vin) {
           drawerMessage.textContent = "Nessun VIN caricato da modificare.";
-          drawerMessage.className = "msg error";
+          drawerMessage.className = "message error";
           return;
         }
       } else {
         drawerMessage.textContent = "Seleziona prima se creare o modificare.";
-        drawerMessage.className = "msg error";
+        drawerMessage.className = "message error";
         return;
       }
 
@@ -1272,21 +1197,13 @@
 
         completa_data_start: f_completa_data_start.value.trim() || null,
         completa_data_end:   f_completa_data_end.value.trim()   || null,
-        completa_km_start:   f_completa_km_start.value
-          ? parseInt(f_completa_km_start.value, 10) || 0
-          : 0,
-        completa_km_end:     f_completa_km_end.value
-          ? parseInt(f_completa_km_end.value, 10) || 0
-          : 0,
+        completa_km_start:   f_completa_km_start.value ? parseInt(f_completa_km_start.value, 10) || 0 : 0,
+        completa_km_end:     f_completa_km_end.value   ? parseInt(f_completa_km_end.value, 10)   || 0 : 0,
 
         catcinematica_data_start: f_catcinematica_data_start.value.trim() || null,
         catcinematica_data_end:   f_catcinematica_data_end.value.trim()   || null,
-        catcinematica_km_start:   f_catcinematica_km_start.value
-          ? parseInt(f_catcinematica_km_start.value, 10) || 0
-          : 0,
-        catcinematica_km_end:     f_catcinematica_km_end.value
-          ? parseInt(f_catcinematica_km_end.value, 10) || 0
-          : 0,
+        catcinematica_km_start:   f_catcinematica_km_start.value ? parseInt(f_catcinematica_km_start.value, 10) || 0 : 0,
+        catcinematica_km_end:     f_catcinematica_km_end.value   ? parseInt(f_catcinematica_km_end.value, 10)   || 0 : 0,
 
         contratto_data_start: f_contratto_data_start.value.trim() || null,
         contratto_data_end:   f_contratto_data_end.value.trim()   || null,
@@ -1307,34 +1224,30 @@
       try {
         const user = auth.currentUser;
         const today = new Date().toISOString().slice(0,10);
-        if (!lastDocData || !lastDocData.created) {
-          payload.created = today;
-        }
-        if (!lastDocData || !lastDocData.created_by) {
-          payload.created_by = user ? (user.email || user.uid) : "system";
-        }
+        if (!lastDocData || !lastDocData.created) payload.created = today;
+        if (!lastDocData || !lastDocData.created_by) payload.created_by = user ? (user.email || user.uid) : "system";
       } catch (e) {
         console.warn("Errore set created/created_by:", e);
       }
 
       drawerMessage.textContent = "Salvataggio in corso...";
-      drawerMessage.className = "msg";
+      drawerMessage.className = "message";
 
       try {
         await db.collection("DBVIN").doc(vin).set(payload, { merge: true });
         lastDocData = Object.assign({}, lastDocData || {}, payload);
-        currentVin  = vin;
+        currentVin = vin;
         coverageSource = "dbvin";
-        coverageView   = buildCoverageFromDbVin(vin, lastDocData);
+        coverageView = buildCoverageFromDbVin(vin, lastDocData);
 
         renderCoverage();
         updateAdminButtons(true);
         drawerMessage.textContent = "Copertura salvata correttamente.";
-        drawerMessage.className = "msg success";
+        drawerMessage.className = "message success";
       } catch (err) {
         console.error("Errore salvataggio:", err);
         drawerMessage.textContent = "Errore durante il salvataggio.";
-        drawerMessage.className = "msg error";
+        drawerMessage.className = "message error";
       }
     }
 
@@ -1360,7 +1273,7 @@
         if (!isAdmin) return;
         if (!currentVin || !lastDocData || Object.keys(lastDocData).length === 0) {
           drawerMessage.textContent = "Nessuna copertura caricata da modificare.";
-          drawerMessage.className = "msg error";
+          drawerMessage.className = "message error";
           openDrawer("edit", "Modifica copertura");
           return;
         }
@@ -1374,10 +1287,8 @@
     drawerCloseBtn.addEventListener('click', closeDrawer);
     drawerCancelBtn.addEventListener('click', closeDrawer);
     drawerBackdrop.addEventListener('click', closeDrawer);
-
     saveCoverageBtn.addEventListener('click', saveCoverage);
   });
 </script>
-
 </body>
 </html>
