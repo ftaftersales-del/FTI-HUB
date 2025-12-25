@@ -1,9 +1,6 @@
 // ===============================
-// FT TOPBAR (GLOBAL INJECTION) v2
-// - Titolo pagina da <html data-ft-title> o <title>
-// - Bottone Home (sparisce su FTHUBAS)
-// - Riga meta (Utente • Dealer • Ruolo) impostabile dalle pagine
-//   tramite window.FTTopbar.setMeta("...") oppure evento "ft:setMeta"
+// FT TOPBAR (GLOBAL INJECTION)
+// + Slot user info aggiornabile: window.FTSetUserInfo(...)
 // ===============================
 (function () {
   const body = document.body;
@@ -12,7 +9,7 @@
   // evita doppioni
   if (document.querySelector(".ft-topbar")) return;
 
-  // assicura spacer per non coprire contenuti
+  // classi globali
   body.classList.add("has-topbar");
 
   // titolo pagina
@@ -29,53 +26,34 @@
       <div class="ft-topbar__left">
         <div class="ft-topbar__brand">FTI-HUB</div>
         <div class="ft-topbar__subtitle">${escapeHtml(pageTitle)}</div>
-        <div class="ft-topbar__meta" id="ftTopbarMeta" style="display:none;"></div>
       </div>
 
-      <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn" id="ftHomeBtn">🏠 Home</a>
+      <div class="ft-topbar__center">
+        <div class="ft-topbar__userinfo" id="ftUserInfo"></div>
+      </div>
+
+      <div class="ft-topbar__right">
+        <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">🏠 Home</a>
+      </div>
     </div>
   `;
 
+  // inserisci in cima al body
   body.insertBefore(bar, body.firstChild);
 
-  // nascondi Home se sei già su FTHUBAS
+  // nascondi home se sei già su FTHUBAS
   const path = (location.pathname || "").toLowerCase();
   if (path.endsWith("/fthubas.html")) {
-    const homeBtn = document.getElementById("ftHomeBtn");
+    const homeBtn = bar.querySelector(".ft-home-btn");
     if (homeBtn) homeBtn.style.display = "none";
   }
 
-  // API globale
-  window.FTTopbar = window.FTTopbar || {};
-
-  window.FTTopbar.setMeta = function (text) {
-    const el = document.getElementById("ftTopbarMeta");
+  // API globale per impostare la user line in topbar
+  window.FTSetUserInfo = function (text) {
+    const el = document.getElementById("ftUserInfo");
     if (!el) return;
-
-    const t = (text || "").toString().trim();
-    if (!t) {
-      el.textContent = "";
-      el.style.display = "none";
-      return;
-    }
-
-    el.textContent = t;
-    el.style.display = "block";
+    el.textContent = (text || "").toString();
   };
-
-  window.FTTopbar.setTitle = function (title) {
-    const sub = bar.querySelector(".ft-topbar__subtitle");
-    if (!sub) return;
-    sub.textContent = (title || "").toString().trim() || "Pagina";
-  };
-
-  // supporto via evento (utile se vuoi standardizzare)
-  window.addEventListener("ft:setMeta", (ev) => {
-    try {
-      const text = ev && ev.detail && typeof ev.detail.text !== "undefined" ? ev.detail.text : "";
-      window.FTTopbar.setMeta(text);
-    } catch (_) {}
-  });
 
   // util
   function escapeHtml(str) {
