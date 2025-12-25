@@ -2,7 +2,9 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>FTFSA - Gestione FSA</title>
+
   <link rel="stylesheet" href="ftstyle.css">
 
   <!-- Firebase -->
@@ -11,222 +13,265 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <!-- qui dentro hai già: const db = firebase.firestore(); -->
 
-  <!-- Libreria per leggere file Excel (XLS / XLSX) -->
+  <!-- XLSX -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
+  <!-- Page-specific CSS: solo presentazione, nessuna logica -->
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 20px;
+    body{ overscroll-behavior: none; }
+
+    .page-kicker{
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .page-title{
+      margin: 0;
+      font-size: 26px;
+      letter-spacing: -0.2px;
+    }
+    .page-subtitle{
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
     }
 
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    .toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
     }
-
-    h1 {
-      margin-top: 0;
-      font-size: 24px;
-    }
-
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .btn {
-      padding: 8px 14px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .btn-primary {
-      background-color: #1976d2;
-      color: #fff;
-    }
-
-    .btn-secondary {
-      background-color: #9e9e9e;
-      color: #fff;
-    }
-
-    .btn[disabled] {
-      opacity: 0.6;
-      cursor: default;
-    }
-
-    .search-section {
-      margin-bottom: 20px;
-      padding: 10px;
-      border-radius: 6px;
-      background: #fafafa;
-      border: 1px solid #ddd;
-    }
-
-    .search-row {
-      display: flex;
+    .toolbar .actions{
+      display:flex;
       gap: 10px;
-      align-items: center;
+      align-items:center;
       flex-wrap: wrap;
     }
 
-    .search-row label {
-      font-weight: bold;
+    .search-row{
+      display:flex;
+      gap: 10px;
+      align-items:flex-end;
+      flex-wrap: wrap;
+    }
+    .search-row .field{
+      flex: 1;
+      min-width: 260px;
     }
 
-    .search-row input[type="text"] {
-      padding: 6px 8px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      min-width: 250px;
-    }
-
-    .status {
-      margin-top: 10px;
+    .status{
+      margin-top: 8px;
       font-size: 13px;
-      color: #555;
+      color: var(--muted);
     }
 
-    table {
+    .message{
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.85);
+    }
+    .message.info{
+      background: var(--ok-bg);
+      border-color: var(--ok-bd);
+      color: var(--ok-tx);
+    }
+    .message.error{
+      background: rgba(255,235,238,.9);
+      border-color: rgba(239,154,154,.85);
+      color: #b42318;
+    }
+
+    table{
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
       font-size: 13px;
+      background: #fff;
+      border: 1px solid rgba(230,232,240,.92);
+      border-radius: 12px;
+      overflow: hidden;
     }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 6px 8px;
-      text-align: left;
+    thead th{
+      background: rgba(243,245,250,.9);
+      font-weight: 900;
+      color: var(--text);
+      border-bottom: 1px solid rgba(230,232,240,.92);
+      padding: 10px 12px;
+      text-align:left;
+      white-space: nowrap;
     }
-
-    th {
-      background: #eeeeee;
+    tbody td{
+      border-bottom: 1px solid rgba(230,232,240,.92);
+      padding: 10px 12px;
+      vertical-align: top;
     }
+    tbody tr:last-child td{ border-bottom: none; }
+    td.center{ text-align:center; }
 
-    td.center {
-      text-align: center;
-    }
-
-    .status-icon {
+    .status-icon{
       font-size: 20px;
       cursor: pointer;
       display: inline-block;
+      user-select: none;
+      line-height: 1;
     }
-
-    .status-icon.performed::before {
+    .status-icon.performed::before{
       content: "✔";
-      color: #2e7d32; /* verde */
+      color: #2e7d32;
     }
-
-    .status-icon.not-performed::before {
+    .status-icon.not-performed::before{
       content: "✖";
-      color: #fbc02d; /* giallo */
+      color: #fbc02d;
     }
 
-    .pdf-icon {
+    .pdf-icon{
       font-size: 18px;
       cursor: pointer;
+      user-select: none;
+      line-height: 1;
     }
+    .pdf-icon::before{ content: "➜"; }
 
-    .pdf-icon::before {
-      content: "➜";
-    }
-
-    .message {
-      margin-top: 10px;
-      padding: 8px;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-
-    .message.info {
-      background: #e3f2fd;
-      border: 1px solid #90caf9;
-    }
-
-    .message.error {
-      background: #ffebee;
-      border: 1px solid #ef9a9a;
-    }
-
-    .footer-buttons {
-      margin-top: 20px;
-      display: flex;
-      justify-content: flex-end;
+    .footer-buttons{
+      margin-top: 16px;
+      display:flex;
+      justify-content:flex-end;
       gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Mobile: tabella scrollabile */
+    .table-wrap{
+      margin-top: 6px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 12px;
+    }
+    .table-wrap table{ margin-top: 0; min-width: 980px; }
+
+    @media (max-width: 720px){
+      .page-title{ font-size: 22px; }
+      .toolbar .actions{ width:100%; justify-content:flex-end; }
     }
   </style>
 </head>
+
 <body class="ft-page has-topbar">
+
+  <!-- TOPBAR (HOME a destra) -->
   <div class="ft-topbar">
-    <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
+    <div class="ft-topbar__inner">
+      <div class="ft-topbar__left">
+        <div class="ft-topbar__brand">FTI-HUB</div>
+        <div class="ft-topbar__subtitle">FTFSA • Campagne FSA</div>
+      </div>
+
+      <div class="ft-topbar__center">
+        <div id="userInfoTop" class="ft-topbar__userinfo">Utente: -</div>
+      </div>
+
+      <div class="ft-topbar__right">
+        <a href="FTHUBAS.html" class="ft-home-btn">🏠 Home</a>
+      </div>
+    </div>
   </div>
-    <!-- HOME BUTTON -->
-  <a href="index.html" class="ft-home-btn">⬅ HOME</a>
-  <div class="container">
-    <div class="top-bar">
-      <h1>Gestione FSA (FTFSA)</h1>
-      <div>
-        <!-- onclick diretto: apre il file chooser -->
-        <button id="btnAggiornaFSA" class="btn btn-primary"
-                onclick="document.getElementById('inputFSAFile').click()">
-          Aggiorna FSA
+
+  <div class="ft-container">
+    <div class="card pad">
+
+      <div class="toolbar">
+        <div>
+          <div class="page-kicker">FTFSA - Gestione FSA</div>
+          <h1 class="page-title">Gestione campagne FSA</h1>
+          <p class="page-subtitle">
+            Cerca per telaio (VIN) e gestisci lo stato “Campagna eseguita”. Import Excel disponibile.
+          </p>
+        </div>
+
+        <div class="actions">
+          <button id="btnAggiornaFSA" class="btn btn-primary" type="button"
+                  onclick="document.getElementById('inputFSAFile').click()">
+            Aggiorna FSA
+          </button>
+          <input type="file" id="inputFSAFile" accept=".xls,.xlsx" style="display:none;">
+        </div>
+      </div>
+
+      <hr class="sep">
+
+      <div class="section">
+        <div class="section-head">
+          <div>
+            <h3 class="section-title">Ricerca</h3>
+            <div class="section-sub">Inserisci il VIN e premi Cerca.</div>
+          </div>
+        </div>
+
+        <div class="search-row">
+          <div class="field">
+            <label for="searchTelaio">Telaio (VIN)</label>
+            <input type="text" id="searchTelaio" placeholder="Inserisci il telaio (VIN)" />
+          </div>
+          <div>
+            <button id="btnCerca" class="btn btn-primary" type="button">Cerca</button>
+          </div>
+        </div>
+
+        <div id="searchStatus" class="status"></div>
+      </div>
+
+      <div id="messages"></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Telaio</th>
+              <th>Codice FSA</th>
+              <th>Descrizione Campagna</th>
+              <th>Data Inizio</th>
+              <th>Data Fine</th>
+              <th>Tipologia</th>
+              <th>Campagna Eseguita</th>
+              <th>Documento</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="footer-buttons">
+        <button class="btn" type="button" onclick="window.location.href='FTHUBAS.html'">
+          Torna a FTHUBAS
         </button>
-        <input type="file" id="inputFSAFile" accept=".xls,.xlsx" style="display:none;">
       </div>
-    </div>
 
-    <div class="search-section">
-      <div class="search-row">
-        <label for="searchTelaio">Telaio:</label>
-        <input type="text" id="searchTelaio" placeholder="Inserisci il telaio (VIN)">
-        <button id="btnCerca" class="btn btn-primary">Cerca</button>
-      </div>
-      <div id="searchStatus" class="status"></div>
-    </div>
-
-    <div id="messages"></div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Telaio</th>
-          <th>Codice FSA</th>
-          <th>Descrizione Campagna</th>
-          <th>Data Inizio</th>
-          <th>Data Fine</th>
-          <th>Tipologia</th>
-          <th>Campagna Eseguita</th>
-          <th>Documento</th>
-        </tr>
-      </thead>
-      <tbody id="resultsBody">
-        <!-- Risultati ricerca -->
-      </tbody>
-    </table>
-
-    <div class="footer-buttons">
-      <button class="btn btn-secondary" onclick="window.location.href='FTHUBAS.html'">
-        Torna a FTHUBAS
-      </button>
     </div>
   </div>
 
   <script>
-    // QUI USIAMO db DEFINITO IN firebase-config.js
+    /* ========= Auth (solo UI: mostra utente in topbar) ========= */
+    (function initAuthBanner(){
+      try{
+        if (typeof auth === "undefined" || !auth) return;
+        const el = document.getElementById("userInfoTop");
+        auth.onAuthStateChanged((user)=>{
+          if (!el) return;
+          if (!user) el.textContent = "Utente: non loggato";
+          else el.textContent = "Utente: " + (user.email || user.uid);
+        });
+      }catch(e){
+        console.warn("Auth banner non inizializzato:", e);
+      }
+    })();
 
     /* ========= Utility messaggi ========= */
     function showMessage(text, type = "info") {
@@ -241,44 +286,33 @@
     }
 
     /* ========= Utility date FSA ========= */
-
-    // Converte un numero seriale Excel in stringa gg/mm/aaaa
     function excelSerialToDateString(serial) {
       if (serial == null || serial === "") return "";
       const n = Number(serial);
       if (isNaN(n)) return String(serial);
 
-      // base 1899-12-30 (standard per Excel)
       const base = new Date(Date.UTC(1899, 11, 30));
       const date = new Date(base.getTime() + n * 86400000);
 
       const day   = String(date.getUTCDate()).padStart(2, "0");
       const month = String(date.getUTCMonth() + 1).padStart(2, "0");
       const year  = date.getUTCFullYear();
-
       return `${day}/${month}/${year}`;
     }
 
-    // Formatta un valore proveniente da Firestore/Excel
-    // - se è numero (o stringa numerica "45742") -> converte
-    // - altrimenti lo lascia com'è
     function formatFsaDate(value) {
       if (value == null || value === "") return "";
 
-      if (typeof value === "number") {
-        return excelSerialToDateString(value);
-      }
+      if (typeof value === "number") return excelSerialToDateString(value);
 
       if (typeof value === "string" && /^[0-9]+$/.test(value.trim())) {
         return excelSerialToDateString(Number(value.trim()));
       }
 
-      // già in formato data leggibile -> lo lascio così
       return value;
     }
 
     /* ========= Lettura Excel ========= */
-
     function readExcelFile(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -300,7 +334,6 @@
     }
 
     /* ========= Upload Excel / sostituzione FTFSA ========= */
-
     const inputFSAFile = document.getElementById("inputFSAFile");
     inputFSAFile.addEventListener("change", async (event) => {
       const file = event.target.files[0];
@@ -324,6 +357,9 @@
       } catch (error) {
         console.error("Errore durante l'importazione FSA:", error);
         showMessage("Errore durante l'importazione del file FSA.", "error");
+      } finally {
+        // reset input per permettere re-upload dello stesso file
+        inputFSAFile.value = "";
       }
     });
 
@@ -335,19 +371,17 @@
       let batch = db.batch();
       let count = 0;
 
-      snapshot.forEach((doc) => {
+      for (const doc of snapshot.docs) {
         batch.delete(doc.ref);
         count++;
         if (count >= batchSize) {
-          batch.commit();
+          await batch.commit();
           batch = db.batch();
           count = 0;
         }
-      });
-
-      if (count > 0) {
-        await batch.commit();
       }
+
+      if (count > 0) await batch.commit();
     }
 
     async function replaceFSACollection(rows) {
@@ -380,16 +414,12 @@
         if (!telaio && !codiceFSA) continue;
 
         const docId = telaio && codiceFSA ? (telaio + "_" + codiceFSA) : undefined;
-        const docRef = docId
-          ? db.collection("FTFSA").doc(docId)
-          : db.collection("FTFSA").doc();
+        const docRef = docId ? db.collection("FTFSA").doc(docId) : db.collection("FTFSA").doc();
 
         const docData = {
           Telaio: telaio,
           CodiceFSA: codiceFSA,
           DescrizioneCampagna: descrCamp,
-          // Salvo le date così come arrivano (numero o stringa),
-          // tanto in visualizzazione le trasformiamo con formatFsaDate
           DataInizio: dataInizioRaw,
           DataFine: dataFineRaw,
           Tipologia: tipologia,
@@ -408,24 +438,16 @@
         }
       }
 
-      if (countInBatch > 0) {
-        await batch.commit();
-      }
+      if (countInBatch > 0) await batch.commit();
     }
 
     /* ========= Ricerca per telaio ========= */
-
     const btnCerca = document.getElementById("btnCerca");
     const searchTelaioInput = document.getElementById("searchTelaio");
 
-    btnCerca.addEventListener("click", () => {
-      eseguiRicerca();
-    });
-
+    btnCerca.addEventListener("click", eseguiRicerca);
     searchTelaioInput.addEventListener("keyup", (e) => {
-      if (e.key === "Enter") {
-        eseguiRicerca();
-      }
+      if (e.key === "Enter") eseguiRicerca();
     });
 
     async function eseguiRicerca() {
@@ -440,6 +462,7 @@
 
       tbody.innerHTML = "";
       showMessage("");
+
       if (!vinInput) {
         searchStatus.textContent = "Inserire un telaio per la ricerca.";
         return;
@@ -469,14 +492,12 @@
     }
 
     /* ========= Rendering tabella risultati ========= */
-
     function renderResults(docs) {
       const tbody = document.getElementById("resultsBody");
       tbody.innerHTML = "";
 
       docs.forEach((doc) => {
         const data = doc.data();
-
         const tr = document.createElement("tr");
 
         const tdTelaio = document.createElement("td");
@@ -515,6 +536,7 @@
         statusSpan.classList.add(isPerformed ? "performed" : "not-performed");
         statusSpan.dataset.docId = doc.id;
         statusSpan.dataset.value = isPerformed ? "true" : "false";
+        statusSpan.title = "Clicca per cambiare stato";
 
         statusSpan.addEventListener("click", onTogglePerformed);
 
@@ -523,9 +545,11 @@
 
         const tdDoc = document.createElement("td");
         tdDoc.className = "center";
+
         const pdfSpan = document.createElement("span");
         pdfSpan.classList.add("pdf-icon");
         pdfSpan.dataset.pdfUrl = data.pdfUrl || "";
+        pdfSpan.title = "Apri documento";
 
         pdfSpan.addEventListener("click", () => {
           const url = pdfSpan.dataset.pdfUrl;
@@ -544,7 +568,6 @@
     }
 
     /* ========= Toggle campo IsPerformed ========= */
-
     async function onTogglePerformed(event) {
       if (typeof db === "undefined" || !db) {
         alert("Firestore non inizializzato.");
@@ -557,9 +580,7 @@
       const newVal = !currentVal;
 
       try {
-        await db.collection("FTFSA").doc(docId).update({
-          IsPerformed: newVal
-        });
+        await db.collection("FTFSA").doc(docId).update({ IsPerformed: newVal });
 
         span.dataset.value = newVal ? "true" : "false";
         span.classList.toggle("performed", newVal);
