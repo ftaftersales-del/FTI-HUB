@@ -15,11 +15,24 @@
   <style>
     /* =========================
        FTDMS - page glue (solo stile)
-       - non tocca funzionalità
-       - coerente con ftstyle
        ========================= */
 
-    /* Titoli pagina */
+    /* forza topbar coerente + azioni a destra */
+    .ft-topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
+    .ft-actions{
+      margin-left:auto;
+      display:flex;
+      justify-content:flex-end;
+      align-items:center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .dms-title{
       margin: 0;
       font-size: 18px;
@@ -32,7 +45,6 @@
       color: var(--muted);
     }
 
-    /* Sezioni */
     .dms-section{ margin-top: 14px; }
     .dms-section > .section-head{
       display:flex;
@@ -54,12 +66,10 @@
       justify-content: flex-end;
     }
 
-    /* Tabelle: hover/selected coerenti */
     table{ margin-top: 8px; }
     tr:hover{ background:#f3f6ff; cursor:pointer; }
     .ft-row-selected{ background:#e8f1ff !important; }
 
-    /* Box selezionato */
     .selectedBox{
       background:#f7f8fe;
       border: 1px solid #e8ebff;
@@ -75,7 +85,7 @@
     #user-form-panel{
       display:none;
       position: fixed;
-      top: 58px;               /* sotto topbar ftstyle */
+      top: 58px; /* sotto topbar */
       right: 0;
       bottom: 0;
       max-height: calc(100vh - 58px);
@@ -161,14 +171,15 @@
 </head>
 
 <body class="ft-page has-topbar">
-  <!-- TOPBAR coerente (una sola, niente duplicati) -->
+  <!-- TOP BAR (una sola, coerente) -->
   <div class="ft-topbar">
     <div class="ft-brand">
       <h1>FTI-HUB</h1>
       <p class="subtitle">DMS - Gestione Dealers e Utenze</p>
     </div>
     <div class="ft-actions">
-      <a href="FTHUBAS.html" class="ft-home-btn">🏠 Home</a>
+      <!-- qui NON uso ft-home-btn: uso i btn standard così resta a destra -->
+      <a href="FTHUBAS.html" class="btn btn-outline btn-small">🏠 Home</a>
     </div>
   </div>
 
