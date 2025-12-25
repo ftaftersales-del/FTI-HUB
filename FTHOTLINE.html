@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="ftstyle.css" />
   <link rel="stylesheet" href="fthotline.css" />
 
-  <!-- Firebase -->
+  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
@@ -20,26 +20,31 @@
   <!-- TOPBAR (v6) -->
   <div class="ft-topbar">
     <div class="ft-topbar__inner">
-<div class="ft-topbar__left">
-  <div>
-    <div class="ft-topbar__brand">FTHOTLINE</div>
-    <div class="ft-topbar__subtitle">Gestione Ticket</div>
+      <!-- LEFT: brand + subtitle -->
+      <div class="ft-topbar__left">
+        <div>
+          <div class="ft-topbar__brand">FTHOTLINE</div>
+          <div class="ft-topbar__subtitle">Gestione Ticket</div>
+        </div>
+      </div>
+
+      <!-- CENTER: userinfo -->
+      <div class="ft-topbar__center">
+        <div class="ft-topbar__userinfo">
+          Utente: <span id="currentUserInfo">Caricamento utente...</span>
+        </div>
+      </div>
+
+      <!-- RIGHT: actions -->
+      <div class="ft-topbar__right">
+        <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
+      </div>
+    </div>
   </div>
-</div>
 
-<div class="ft-topbar__center">
-  <div class="ft-topbar__userinfo">
-    Utente: <span id="currentUserInfo">Caricamento utente...</span>
-  </div>
-</div>
-
-<div class="ft-topbar__right">
-  <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
-</div>
-
-  <!-- LAYOUT -->
+  <!-- PAGE LAYOUT -->
   <div class="ht-layout">
-    <!-- SINISTRA -->
+    <!-- LEFT PANEL -->
     <aside class="ht-left panel">
       <div class="ht-filters section">
         <input
@@ -63,19 +68,21 @@
           <option value="">Tutti gli autori</option>
         </select>
 
-        <button id="btnNewTicket" class="btn btn-primary btn-wide">
+        <button id="btnNewTicket" class="btn btn-primary">
           Nuovo ticket
         </button>
       </div>
 
-      <div id="ticketsList" class="ht-tickets section"></div>
+      <div class="section ht-tickets">
+        <div id="ticketsList"></div>
+      </div>
 
-      <button id="btnLoadMoreTickets" class="btn btn-wide">
+      <button id="btnLoadMoreTickets" class="btn">
         Carica altri
       </button>
     </aside>
 
-    <!-- DESTRA -->
+    <!-- RIGHT PANEL -->
     <main class="ht-right panel">
       <div id="noTicketSelectedMessage" class="muted ht-empty">
         Nessun ticket selezionato. Seleziona un ticket dalla lista o creane uno nuovo.
@@ -243,6 +250,7 @@
     </div>
   </div>
 
+  <!-- JS -->
   <script src="FTHOTLINE.js"></script>
 </body>
 </html>
