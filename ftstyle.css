@@ -1,12 +1,13 @@
 /* ===============================
-   FTSTYLE - CSS globale HUB (v5)
+   FTSTYLE - CSS globale HUB (v6)
    Obiettivi:
    - sfondo originale: assets/Sfondo_FT.png
    - NESSUN overlay globale che sbiadisce i contenuti
    - pad principale più contrastato
    - pad interni ben separati
-   - topbar coerente e compatibile
+   - topbar coerente e compatibile (anche con pagine "vecchie")
    - utility "section" per separare blocchi funzionali
+   - dashboard cards + popup circolari + utility usate in FTHUBAS/FTCIRCAS
    =============================== */
 
 :root{
@@ -59,13 +60,11 @@ body{
   background-position: center;
   background-size: cover;
   background-attachment: fixed;
-
-  /* nessuna opacity/overlay sul body */
 }
 
 /* se c'è topbar */
 body.has-topbar{
-  padding-top: 58px; /* altezza topbar */
+  padding-top: 58px;
 }
 
 /* layout base pagine */
@@ -78,14 +77,13 @@ body.has-topbar{
 }
 
 /* ===============================
-   TOPBAR
+   TOPBAR (nuova struttura)
    =============================== */
 .ft-topbar{
   position: fixed;
   top: 0; left: 0; right: 0;
   height: 58px;
 
-  /* solida ma elegante: niente overlay che “muore” */
   background: rgba(255,255,255,.96);
   backdrop-filter: blur(10px);
 
@@ -150,6 +148,7 @@ body.has-topbar{
   justify-content:flex-end;
 }
 
+/* Home button (compat) */
 .ft-home-btn{
   display:inline-flex;
   align-items:center;
@@ -176,7 +175,30 @@ body.has-topbar{
 }
 
 /* ===============================
-   CARD / PAD
+   TOPBAR (compat vecchie pagine)
+   Se una pagina usa .ft-topbar con .ft-brand/.ft-actions
+   la rendiamo decente senza riscrivere tutto.
+   =============================== */
+.ft-topbar .ft-brand h1{
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+}
+.ft-topbar .ft-brand .subtitle{
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.ft-topbar .ft-actions{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding-right: 18px;
+}
+
+/* ===============================
+   CARD / PAD / PANEL
    =============================== */
 .card{
   border-radius: var(--radius);
@@ -184,7 +206,7 @@ body.has-topbar{
   box-shadow: var(--shadow2);
 }
 
-/* ✅ pad principale: contrasto + bordo più leggibile */
+/* pad principale */
 .card.pad{
   background: var(--surface-2);
   border-color: rgba(205,210,225,.95);
@@ -200,11 +222,16 @@ body.has-topbar{
   padding: 16px;
 }
 
-/* separatore standard */
+/* separatori */
 .sep{
   border: none;
   border-top: 1px solid var(--border);
   margin: 12px 0;
+}
+.hr{
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 14px 0;
 }
 
 /* testo secondario */
@@ -214,8 +241,7 @@ body.has-topbar{
 }
 
 /* ===============================
-   SECTIONS (blocchi funzionali dentro un panel)
-   USO: <div class="section"> ... </div>
+   SECTIONS
    =============================== */
 .section{
   background: var(--surface-3);
@@ -331,6 +357,137 @@ input[type="file"]{
   background: #ef4444;
   border-color: #ef4444;
   color: #fff;
+}
+
+/* size utilities */
+.btn-small{ padding: 8px 11px; border-radius: 11px; font-size: 13px; }
+.btn-wide{ min-width: 220px; justify-content: center; }
+
+/* ===============================
+   HUB DASHBOARD (FTHUBAS / Home)
+   =============================== */
+.dashboard{
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+@media (max-width: 900px){
+  .dashboard{ grid-template-columns: 1fr; }
+}
+
+.dashCard{
+  background: var(--surface-3);
+  border: 1px solid rgba(230,232,240,.95);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: 0 1px 0 rgba(15,23,42,.02);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 92px;
+}
+
+.dashDesc{
+  margin: 0 0 10px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.dashFooter{
+  display:flex;
+  justify-content:flex-start;
+}
+
+/* ===============================
+   USERBOX + BADGE
+   =============================== */
+.userbox{
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow-soft);
+  font-size: 13px;
+}
+.userbox > div{ margin: 4px 0; }
+
+.badge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  color: #fff;
+  background: linear-gradient(180deg, var(--primary2), var(--primary));
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+}
+
+/* ===============================
+   POPUP CIRCOLARI
+   =============================== */
+#circular-overlay{
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(3px);
+}
+
+#circular-modal{
+  width: min(760px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow2);
+  overflow: hidden;
+}
+
+#circular-modal header{
+  padding: 16px 18px;
+  font-weight: 900;
+  background: var(--surface-3);
+  border-bottom: 1px solid var(--border);
+}
+
+#circular-modal .body{
+  padding: 16px 18px;
+  max-height: 55vh;
+  overflow: auto;
+}
+
+#circular-meta{
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+#circular-text{
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+#circular-modal .footer{
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--surface-3);
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+#circular-status{
+  color: var(--muted);
+  font-size: 13px;
 }
 
 /* ===============================
