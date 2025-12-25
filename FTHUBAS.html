@@ -14,18 +14,19 @@
 
   <!-- LEFT SEASON BAND (solo per FTHUBAS) -->
   <style>
+    /* l'immagine deve iniziare sotto la topbar (58px) */
     .ft-left-season-band{
       position: fixed;
-      top: 0;
+      top: 58px;                     /* ✅ sotto la topbar */
       left: 0;
-      height: 100vh;
+      height: calc(100vh - 58px);    /* ✅ non coperta */
       width: auto;
-      z-index: 1; /* sotto al contenuto */
+      z-index: 1;
       box-shadow: 2px 0 10px rgba(0,0,0,0.18);
       overflow: hidden;
     }
     .ft-left-season-band img{
-      height: 100vh;
+      height: calc(100vh - 58px);    /* ✅ non coperta */
       width: auto;
       display: block;
     }
@@ -36,7 +37,7 @@
       bottom: 14px;
       text-align: center;
       font-size: 14px;
-      font-weight: 700;
+      font-weight: 800;
       color: #fff;
       padding: 8px 10px;
       background: rgba(0,0,0,0.35);
@@ -44,15 +45,18 @@
       backdrop-filter: blur(3px);
       border: 1px solid rgba(255,255,255,0.18);
     }
+
     .ft-page{
       padding-left: var(--ft-band-w, 0px);
       box-sizing: border-box;
     }
-    /* contenuto sempre sopra la band */
+
+    /* contenuto sopra la band */
     .ft-container{
       position: relative;
       z-index: 2;
     }
+
     @media (max-width: 900px){
       .ft-left-season-band{ display:none; }
       .ft-page{ padding-left: 0; }
@@ -70,108 +74,169 @@
 
   <div class="ft-container">
 
-    <!-- TOPBAR (struttura compatibile ftstyle v5/v6) -->
+    <!-- TOPBAR (compatibile ftstyle) -->
     <div class="ft-topbar">
       <div class="ft-topbar__inner">
-
         <div class="ft-topbar__left">
           <div class="ft-topbar__brand">FTI-HUB</div>
           <div class="ft-topbar__subtitle">Portale After Sales • strumenti e servizi</div>
         </div>
 
         <div class="ft-topbar__center">
-          <div class="ft-topbar__userinfo">
-            <span id="role-badge" class="badge" style="display:none;">ADMIN</span>
-          </div>
+          <div class="ft-topbar__userinfo" id="topbar-userline">Accesso in corso…</div>
         </div>
 
         <div class="ft-topbar__right">
+          <span id="role-badge" class="badge" style="display:none;">ADMIN</span>
           <button class="btn btn-primary btn-small" onclick="logout()">Logout</button>
         </div>
-
       </div>
     </div>
 
-    <!-- MAIN SURFACE -->
+    <!-- MAIN -->
     <div class="card pad">
 
-      <!-- user info -->
-      <div id="user-info" class="userbox">Caricamento dati utente...</div>
+      <!-- USER BOX (gerarchia + info chiare) -->
+      <div class="hub-head">
+        <div id="user-info" class="userbox">Caricamento dati utente...</div>
+
+        <!-- stato pagina (circolari / messaggi) -->
+        <div class="hub-status" id="hub-status">
+          <span class="dot"></span>
+          <span class="txt">Verifica circolari obbligatorie…</span>
+        </div>
+      </div>
 
       <div class="hr"></div>
 
-      <div class="dashboard">
+      <!-- GROUP 1: INFORMAZIONI -->
+      <div class="hub-group">
+        <div class="hub-group__head">
+          <div>
+            <div class="hub-group__title">Informazioni</div>
+            <div class="hub-group__sub">Consultazione rapida e verifiche (circolari, VIN, campagne, storico).</div>
+          </div>
+        </div>
 
-        <!-- FTDMS (solo Admin) -->
-        <div id="admin-section" style="display:none;">
+        <div class="dashboard">
+
+          <!-- FTCIRCAS -->
           <div class="dashCard">
-            <p class="dashDesc">Gestione Dealer e Utenze.</p>
+            <div class="dashTop">
+              <div class="dashTitle"><span class="ico">📄</span> Circolari ufficiali</div>
+              <p class="dashDesc">Consulta e scarica le circolari tecniche e operative pubblicate.</p>
+            </div>
+            <div class="dashFooter">
+              <button class="btn btn-primary btn-wide" onclick="goToFTCIRCAS()">FTCIRCAS</button>
+            </div>
+          </div>
+
+          <!-- FTVIN -->
+          <div class="dashCard">
+            <div class="dashTop">
+              <div class="dashTitle"><span class="ico">🔍</span> Verifica copertura VIN</div>
+              <p class="dashDesc">Verifica coperture e dati associati al telaio (VIN).</p>
+            </div>
+            <div class="dashFooter">
+              <button class="btn btn-primary btn-wide" onclick="goToFTVIN()">FTVIN</button>
+            </div>
+          </div>
+
+          <!-- FTFSA -->
+          <div class="dashCard">
+            <div class="dashTop">
+              <div class="dashTitle"><span class="ico">🧾</span> Campagne FSA</div>
+              <p class="dashDesc">Consulta campagne di richiamo/azioni di servizio (FSA).</p>
+            </div>
+            <div class="dashFooter">
+              <button class="btn btn-primary btn-wide" onclick="goToFTFSA()">FTFSA</button>
+            </div>
+          </div>
+
+          <!-- FTCLAIMS HISTORY VIN -->
+          <div class="dashCard">
+            <div class="dashTop">
+              <div class="dashTitle"><span class="ico">🧰</span> Storico manutenzioni per telaio</div>
+              <p class="dashDesc">Ricerca interventi registrati collegati al VIN.</p>
+            </div>
+            <div class="dashFooter">
+              <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS_HISTORY_VIN()">FTCLAIMS HISTORY VIN</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- GROUP 2: OPERATIVITÀ -->
+      <div class="hub-group">
+        <div class="hub-group__head">
+          <div>
+            <div class="hub-group__title">Operatività</div>
+            <div class="hub-group__sub">Apertura pratiche, gestione pratiche esistenti e supporto tecnico.</div>
+          </div>
+        </div>
+
+        <div class="dashboard">
+
+          <!-- FTCLAIMS -->
+          <div class="dashCard dashCard--primary">
+            <div class="dashTop">
+              <div class="dashTitle"><span class="ico">🛠️</span> Nuove pratiche di garanzia</div>
+              <p class="dashDesc">Avvia una nuova pratica e carica i documenti richiesti.</p>
+            </div>
+            <div class="dashFooter">
+              <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS()">FTCLAIMS</button>
+            </div>
+          </div>
+
+          <!-- FTMANAG -->
+          <div class="dashCard">
+            <div class="dashTop">
+              <div class="dashTitle"><span class="ico">🗂️</span> Gestione pratiche esistenti</div>
+              <p class="dashDesc">Ricerca, aggiorna e monitora lo stato delle pratiche aperte.</p>
+            </div>
+            <div class="dashFooter">
+              <button class="btn btn-primary btn-wide" onclick="goToFTMANAG()">FTMANAG</button>
+            </div>
+          </div>
+
+          <!-- FTHOTLINE -->
+          <div class="dashCard">
+            <div class="dashTop">
+              <div class="dashTitle"><span class="ico">📞</span> Hotline tecnica</div>
+              <p class="dashDesc">Apri richieste tecniche e consulta informazioni di supporto.</p>
+            </div>
+            <div class="dashFooter">
+              <button class="btn btn-primary btn-wide" onclick="goToFTHOTLINE()">FTHOTLINE</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- GROUP 3: AMMINISTRAZIONE (solo Admin) -->
+      <div id="admin-section" class="hub-group" style="display:none;">
+        <div class="hub-group__head">
+          <div>
+            <div class="hub-group__title">Amministrazione</div>
+            <div class="hub-group__sub">Gestione dealer, utenti e permessi (solo Admin).</div>
+          </div>
+        </div>
+
+        <div class="dashboard">
+          <div class="dashCard">
+            <div class="dashTop">
+              <div class="dashTitle"><span class="ico">⚙️</span> Gestione Dealer e Utenze</div>
+              <p class="dashDesc">Crea/aggiorna utenti, ruoli e associazioni dealer.</p>
+            </div>
             <div class="dashFooter">
               <button class="btn btn-primary btn-wide" onclick="goToDMS()">FTDMS</button>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- FTCIRCAS -->
-        <div class="dashCard">
-          <p class="dashDesc">Circolari ufficiali.</p>
-          <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTCIRCAS()">FTCIRCAS</button>
-          </div>
-        </div>
-
-        <!-- FTVIN -->
-        <div class="dashCard">
-          <p class="dashDesc">Verifica copertura VIN.</p>
-          <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTVIN()">FTVIN</button>
-          </div>
-        </div>
-
-        <!-- FTFSA -->
-        <div class="dashCard">
-          <p class="dashDesc">Campagne FSA.</p>
-          <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTFSA()">FTFSA</button>
-          </div>
-        </div>
-
-        <!-- FTCLAIMS HISTORY -->
-        <div class="dashCard">
-          <p class="dashDesc">Storico manutenzioni per telaio.</p>
-          <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS_HISTORY_VIN()">FTCLAIMS HISTORY VIN</button>
-          </div>
-        </div>
-
-        <!-- FTCLAIMS -->
-        <div class="dashCard">
-          <p class="dashDesc">Nuove pratiche di garanzia.</p>
-          <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTCLAIMS()">FTCLAIMS</button>
-          </div>
-        </div>
-
-        <!-- FTMANAG -->
-        <div class="dashCard">
-          <p class="dashDesc">Gestione pratiche esistenti.</p>
-          <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTMANAG()">FTMANAG</button>
-          </div>
-        </div>
-
-        <!-- FTHOTLINE -->
-        <div class="dashCard">
-          <p class="dashDesc">Hotline tecnica.</p>
-          <div class="dashFooter">
-            <button class="btn btn-primary btn-wide" onclick="goToFTHOTLINE()">FTHOTLINE</button>
-          </div>
-        </div>
-
-      </div><!-- /dashboard -->
-
-    </div><!-- /card -->
-
+    </div><!-- /card pad -->
   </div><!-- /ft-container -->
 
   <!-- POPUP CIRCOLARI -->
@@ -201,38 +266,70 @@
     return currentAccount;
   }
 
+  function setHubStatus(kind, text){
+    const el = document.getElementById("hub-status");
+    if (!el) return;
+    el.classList.remove("is-ok","is-warn","is-err");
+    if (kind) el.classList.add(kind);
+    el.querySelector(".txt").textContent = text || "";
+  }
+
   function renderUserInfo() {
     const { user, userData } = currentAccount;
 
+    const dealer = userData.dealerId || "-";
+    const role = userData.role || "User";
+
     document.getElementById("user-info").innerHTML = `
-      <div><strong>Email:</strong> ${user.email}</div>
-      <div><strong>Dealer ID:</strong> ${userData.dealerId || "-"}</div>
-      <div><strong>Ruolo:</strong> ${userData.role || "User"}</div>
+      <div class="userbox-title">Utente connesso</div>
+      <div class="userbox-grid">
+        <div class="kv"><span class="k">Email</span><span class="v">${user.email}</span></div>
+        <div class="kv"><span class="k">Dealer ID</span><span class="v">${dealer}</span></div>
+        <div class="kv"><span class="k">Ruolo</span><span class="v">${role}</span></div>
+      </div>
     `;
 
     const isAdmin = (userData.role === "Admin");
-
     document.getElementById("admin-section").style.display = isAdmin ? "block" : "none";
     document.getElementById("role-badge").style.display = isAdmin ? "inline-flex" : "none";
+
+    const topLine = document.getElementById("topbar-userline");
+    if (topLine){
+      topLine.textContent = `${dealer} • ${role} • ${user.email}`;
+    }
   }
 
   async function enforceCirculars() {
     const dealerId = currentAccount.userData.dealerId;
+
+    setHubStatus("is-warn", "Verifica circolari obbligatorie…");
+
     const snap = await db.collection("Circulars").orderBy("publishDate","asc").get();
 
     for (const d of snap.docs) {
       const ack = await d.ref.collection("ack").doc(dealerId).get();
       if (!ack.exists) {
         pendingCircular = d;
+        setHubStatus("is-warn", "È presente una circolare obbligatoria da leggere.");
         showCircular(d);
         return;
       }
     }
+
+    // nessuna circolare pendente
+    pendingCircular = null;
+    setHubStatus("is-ok", "Nessuna circolare obbligatoria in sospeso.");
   }
 
   function showCircular(doc) {
     const data = doc.data();
     document.getElementById("circular-title").textContent = doc.id;
+
+    // meta (se hai campi extra in futuro, qui li visualizziamo senza rompere nulla)
+    const meta = [];
+    if (data.publishDate) meta.push("Pubblicazione: " + (data.publishDate.toDate ? data.publishDate.toDate().toLocaleDateString("it-IT") : ""));
+    document.getElementById("circular-meta").textContent = meta.join(" • ");
+
     document.getElementById("circular-text").textContent = data.text || "";
     document.getElementById("circular-overlay").style.display = "flex";
     document.getElementById("circular-overlay").setAttribute("aria-hidden", "false");
@@ -246,7 +343,7 @@
     });
     document.getElementById("circular-overlay").style.display = "none";
     document.getElementById("circular-overlay").setAttribute("aria-hidden", "true");
-    enforceCirculars();
+    await enforceCirculars();
   }
 
   auth.onAuthStateChanged(async user => {
