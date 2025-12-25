@@ -568,3 +568,53 @@ body{
   overflow: hidden;
 }
 
+/* ===============================
+   FT TOPBAR + HOME (GLOBAL)
+   =============================== */
+
+.has-topbar{ padding-top: 72px; } /* spazio per non coprire contenuti */
+
+.ft-topbar{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+
+  background: rgba(255,255,255,0.92);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}
+
+.ft-home-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 10px 14px;
+  border-radius: 999px;
+
+  background: var(--surface);
+  color: var(--primary);
+  border: 1px solid var(--border);
+
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+
+  box-shadow: var(--shadow);
+  transition: all .18s ease;
+}
+
+.ft-home-btn:hover{
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow2);
+}
