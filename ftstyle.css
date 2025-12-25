@@ -2,12 +2,12 @@
    FTSTYLE - CSS globale HUB (v6)
    Obiettivi:
    - sfondo originale: assets/Sfondo_FT.png
-   - NESSUN overlay globale che sbiadisce i contenuti
-   - pad principale più contrastato
-   - pad interni ben separati
-   - topbar coerente e compatibile (anche con pagine "vecchie")
-   - utility "section" per separare blocchi funzionali
-   - dashboard cards + popup circolari + utility usate in FTHUBAS/FTCIRCAS
+   - NO overlay globale che sbiadisce i contenuti
+   - pad principale contrastato
+   - sezioni interne separate
+   - topbar compatibile (nuova + vecchia struttura)
+   - dashboard premium (hover, gerarchie, gruppi)
+   - popup circolari coerente
    =============================== */
 
 :root{
@@ -40,13 +40,16 @@
   --ok-bd: #bfeccc;
   --ok-tx: #0f6a2a;
 
+  --warn-bg: #fff7ed;
+  --warn-bd: #fed7aa;
+  --warn-tx: #9a3412;
+
   --err-bg: #fff1f2;
   --err-bd: #fecdd3;
   --err-tx: #b42318;
 }
 
 *{ box-sizing: border-box; }
-
 html, body{ height: 100%; }
 
 body{
@@ -54,7 +57,6 @@ body{
   font-family: Arial, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   color: var(--text);
 
-  /* ✅ sfondo originale */
   background-image: url("assets/Sfondo_FT.png");
   background-repeat: no-repeat;
   background-position: center;
@@ -63,9 +65,7 @@ body{
 }
 
 /* se c'è topbar */
-body.has-topbar{
-  padding-top: 58px;
-}
+body.has-topbar{ padding-top: 58px; }
 
 /* layout base pagine */
 .ft-page{ min-height: 100vh; }
@@ -97,7 +97,6 @@ body.has-topbar{
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 18px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -110,20 +109,18 @@ body.has-topbar{
   gap: 10px;
   min-width: 220px;
 }
-
 .ft-topbar__brand{
   font-weight: 900;
   color: var(--text);
   letter-spacing: -0.2px;
 }
-
 .ft-topbar__subtitle{
   color: var(--muted);
   font-size: 12.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 340px;
+  max-width: 360px;
 }
 
 .ft-topbar__center{
@@ -132,7 +129,6 @@ body.has-topbar{
   justify-content:center;
   min-width: 200px;
 }
-
 .ft-topbar__userinfo{
   color: var(--muted);
   font-size: 12px;
@@ -145,27 +141,9 @@ body.has-topbar{
 .ft-topbar__right{
   min-width: 140px;
   display:flex;
-  justify-content:flex-end;
-}
-
-/* Home button (compat) */
-.ft-home-btn{
-  display:inline-flex;
   align-items:center;
-  gap:8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,.96);
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 800;
-  font-size: 13px;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-}
-.ft-home-btn:hover{
-  border-color: rgba(0, 52, 120, .25);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.10);
+  justify-content:flex-end;
+  gap: 10px;
 }
 
 /* responsive topbar */
@@ -176,8 +154,6 @@ body.has-topbar{
 
 /* ===============================
    TOPBAR (compat vecchie pagine)
-   Se una pagina usa .ft-topbar con .ft-brand/.ft-actions
-   la rendiamo decente senza riscrivere tutto.
    =============================== */
 .ft-topbar .ft-brand h1{
   margin: 0;
@@ -197,6 +173,26 @@ body.has-topbar{
   padding-right: 18px;
 }
 
+/* Home button (se usato altrove) */
+.ft-home-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.96);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 13px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+.ft-home-btn:hover{
+  border-color: rgba(0, 52, 120, .25);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.10);
+}
+
 /* ===============================
    CARD / PAD / PANEL
    =============================== */
@@ -206,14 +202,12 @@ body.has-topbar{
   box-shadow: var(--shadow2);
 }
 
-/* pad principale */
 .card.pad{
   background: var(--surface-2);
   border-color: rgba(205,210,225,.95);
-  padding: 16px;
+  padding: 18px;
 }
 
-/* pannelli/pad interni */
 .panel{
   background: var(--surface);
   border: 1px solid var(--border-strong);
@@ -222,26 +216,19 @@ body.has-topbar{
   padding: 16px;
 }
 
-/* separatori */
-.sep{
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 12px 0;
-}
-.hr{
+.hr, .sep{
   border: none;
   border-top: 1px solid var(--border);
   margin: 14px 0;
 }
 
-/* testo secondario */
 .muted{
   color: var(--muted);
   font-size: 13px;
 }
 
 /* ===============================
-   SECTIONS
+   SECTIONS (utility)
    =============================== */
 .section{
   background: var(--surface-3);
@@ -259,14 +246,12 @@ body.has-topbar{
   gap:10px;
   margin-bottom: 10px;
 }
-
 .section-title{
   margin:0;
   font-size: 14px;
   font-weight: 900;
   letter-spacing: -0.1px;
 }
-
 .section-sub{
   margin-top: 4px;
   font-size: 12px;
@@ -301,10 +286,7 @@ textarea{
   box-shadow: 0 1px 0 rgba(15,23,42,.02);
 }
 
-textarea{
-  min-height: 110px;
-  resize: vertical;
-}
+textarea{ min-height: 110px; resize: vertical; }
 
 input:focus, select:focus, textarea:focus{
   border-color: rgba(0,94,220,.35);
@@ -332,19 +314,24 @@ input[type="file"]{
   cursor: pointer;
   display:inline-flex;
   align-items:center;
+  justify-content:center;
   gap:8px;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+  transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
 }
 
 .btn:hover{
   border-color: rgba(0, 52, 120, .25);
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
+  transform: translateY(-1px);
 }
+.btn:active{ transform: translateY(0px); box-shadow: 0 6px 16px rgba(15, 23, 42, 0.10); }
 
 .btn:disabled{
   opacity: .55;
   cursor: not-allowed;
   box-shadow: none;
+  transform: none;
 }
 
 .btn-primary{
@@ -359,18 +346,172 @@ input[type="file"]{
   color: #fff;
 }
 
-/* size utilities */
 .btn-small{ padding: 8px 11px; border-radius: 11px; font-size: 13px; }
-.btn-wide{ min-width: 220px; justify-content: center; }
+.btn-wide{ min-width: 220px; }
 
 /* ===============================
-   HUB DASHBOARD (FTHUBAS / Home)
+   BADGE
+   =============================== */
+.badge{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .3px;
+  color: #fff;
+  background: linear-gradient(180deg, var(--primary2), var(--primary));
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+}
+
+/* ===============================
+   HUB HEADER (userbox + status)
+   =============================== */
+.hub-head{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+}
+@media (max-width: 920px){
+  .hub-head{ grid-template-columns: 1fr; }
+}
+
+.userbox{
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: var(--shadow-soft);
+  font-size: 13px;
+}
+
+.userbox-title{
+  font-weight: 900;
+  margin-bottom: 10px;
+  letter-spacing: -0.1px;
+}
+
+.userbox-grid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (max-width: 920px){
+  .userbox-grid{ grid-template-columns: 1fr; }
+}
+
+.kv{
+  background: var(--surface-3);
+  border: 1px solid rgba(230,232,240,.95);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.kv .k{
+  display:block;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.kv .v{
+  display:block;
+  font-weight: 900;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hub-status{
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-soft);
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  min-height: 56px;
+}
+.hub-status .dot{
+  width: 10px; height: 10px; border-radius: 999px;
+  background: rgba(102,112,133,.55);
+  box-shadow: 0 0 0 4px rgba(102,112,133,.10);
+  flex: 0 0 auto;
+}
+.hub-status .txt{
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+/* stati */
+.hub-status.is-ok{
+  border-color: var(--ok-bd);
+  background: rgba(233,255,240,.55);
+}
+.hub-status.is-ok .dot{
+  background: var(--ok-tx);
+  box-shadow: 0 0 0 4px rgba(15,106,42,.12);
+}
+.hub-status.is-warn{
+  border-color: var(--warn-bd);
+  background: rgba(255,247,237,.60);
+}
+.hub-status.is-warn .dot{
+  background: var(--warn-tx);
+  box-shadow: 0 0 0 4px rgba(154,52,18,.12);
+}
+.hub-status.is-err{
+  border-color: var(--err-bd);
+  background: rgba(255,241,242,.60);
+}
+.hub-status.is-err .dot{
+  background: var(--err-tx);
+  box-shadow: 0 0 0 4px rgba(180,35,24,.12);
+}
+
+/* ===============================
+   HUB GROUPS
+   =============================== */
+.hub-group{
+  margin-top: 14px;
+}
+.hub-group__head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.hub-group__title{
+  font-weight: 900;
+  letter-spacing: -0.2px;
+}
+.hub-group__sub{
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 3px;
+}
+
+/* ===============================
+   DASHBOARD (premium)
    =============================== */
 .dashboard{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
+
+/* 3 colonne su schermi grandi */
+@media (min-width: 1200px){
+  .dashboard{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 @media (max-width: 900px){
   .dashboard{ grid-template-columns: 1fr; }
 }
@@ -384,46 +525,53 @@ input[type="file"]{
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 92px;
+  min-height: 132px;
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+
+.dashCard:hover{
+  border-color: rgba(0, 94, 220, .25);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.10);
+  transform: translateY(-2px);
+}
+
+.dashCard--primary{
+  border-color: rgba(0, 94, 220, .22);
+  background: rgba(255,255,255,.92);
+}
+
+.dashTop{ margin-bottom: 10px; }
+
+.dashTitle{
+  font-weight: 900;
+  letter-spacing: -0.1px;
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.ico{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: rgba(0,94,220,.10);
+  border: 1px solid rgba(0,94,220,.12);
 }
 
 .dashDesc{
-  margin: 0 0 10px;
-  color: var(--text);
-  font-size: 13px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12.8px;
   line-height: 1.35;
 }
 
 .dashFooter{
   display:flex;
   justify-content:flex-start;
-}
-
-/* ===============================
-   USERBOX + BADGE
-   =============================== */
-.userbox{
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 14px;
-  box-shadow: var(--shadow-soft);
-  font-size: 13px;
-}
-.userbox > div{ margin: 4px 0; }
-
-.badge{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: .3px;
-  color: #fff;
-  background: linear-gradient(180deg, var(--primary2), var(--primary));
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10);
+  margin-top: 6px;
 }
 
 /* ===============================
