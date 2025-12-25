@@ -1,9 +1,10 @@
 // ===============================
-// FT TOPBAR (GLOBAL INJECTION)
-// + Slot user info aggiornabile
-//   - window.__ftUserInfo (pending)
-//   - window.FTSetUserInfo(text)
-//   - event: "ft:userinfo"
+// FT TOPBAR (GLOBAL INJECTION) v2
+// - Brand + titolo pagina
+// - Slot user info centrale
+// - API: window.FTTopbar.setMeta(text)
+// - Compat: window.FTSetUserInfo(text)
+// - Event: "ft:setMeta" {detail:{text}}
 // ===============================
 (function () {
   const body = document.body;
@@ -12,16 +13,13 @@
   // evita doppioni
   if (document.querySelector(".ft-topbar")) return;
 
-  // classi globali
   body.classList.add("has-topbar");
 
-  // titolo pagina
   const pageTitle =
     (document.documentElement.getAttribute("data-ft-title") || "").trim() ||
     (document.title || "").trim() ||
     "Pagina";
 
-  // costruisci topbar
   const bar = document.createElement("div");
   bar.className = "ft-topbar";
   bar.innerHTML = `
@@ -41,45 +39,36 @@
     </div>
   `;
 
-  // inserisci in cima al body
   body.insertBefore(bar, body.firstChild);
 
-  // nascondi home se sei già su FTHUBAS
+  // nascondi Home se già su FTHUBAS
   const path = (location.pathname || "").toLowerCase();
   if (path.endsWith("/fthubas.html")) {
     const homeBtn = bar.querySelector(".ft-home-btn");
     if (homeBtn) homeBtn.style.display = "none";
   }
 
-  // setter interno (DOM)
-  function applyUserInfo(text) {
+  function setMeta(text) {
     const el = document.getElementById("ftUserInfo");
     if (!el) return;
     el.textContent = (text || "").toString();
   }
 
-  // API globale robusta:
-  // - salva sempre pending su window.__ftUserInfo
-  // - se la barra è pronta, scrive anche nel DOM
-  window.FTSetUserInfo = function (text) {
-    window.__ftUserInfo = (text || "").toString();
-    applyUserInfo(window.__ftUserInfo);
-  };
+  // API preferita
+  window.FTTopbar = window.FTTopbar || {};
+  window.FTTopbar.setMeta = setMeta;
 
-  // 1) se la pagina ha già impostato pending prima del load della topbar
-  if (typeof window.__ftUserInfo === "string" && window.__ftUserInfo.trim()) {
-    applyUserInfo(window.__ftUserInfo);
-  }
+  // Compat con la tua API precedente
+  window.FTSetUserInfo = setMeta;
 
-  // 2) ascolta eventi (fallback utile se vuoi usarli)
-  window.addEventListener("ft:userinfo", function (ev) {
+  // Event bridge (per chi dispatcha prima che la topbar sia pronta)
+  window.addEventListener("ft:setMeta", (ev) => {
     try {
-      const txt = ev && ev.detail && typeof ev.detail.text === "string" ? ev.detail.text : "";
-      if (txt) window.FTSetUserInfo(txt);
-    } catch (_) {}
+      const txt = ev && ev.detail ? ev.detail.text : "";
+      setMeta(txt);
+    } catch (e) {}
   });
 
-  // util
   function escapeHtml(str) {
     return String(str)
       .replaceAll("&", "&amp;")
