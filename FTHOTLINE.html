@@ -5,9 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>FTHOTLINE - Gestione Ticket</title>
 
-  <!-- Stile globale HUB -->
   <link rel="stylesheet" href="ftstyle.css" />
-  <!-- Stile pagina (temporaneo, poi lo unifichiamo in ftstyle) -->
   <link rel="stylesheet" href="fthotline.css" />
 
   <!-- Firebase -->
@@ -19,24 +17,34 @@
 </head>
 
 <body class="ft-page has-topbar">
-  <!-- TOPBAR HUB -->
-  <div class="ft-topbar ft-topbar--with-title">
-    <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
+  <!-- TOPBAR (v6) -->
+  <div class="ft-topbar">
+    <div class="ft-topbar__inner">
+      <div class="ft-topbar__left">
+        <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
+        <div>
+          <div class="ft-topbar__brand">FTHOTLINE</div>
+          <div class="ft-topbar__subtitle">Gestione Ticket</div>
+        </div>
+      </div>
 
-    <div class="ft-topbar-title">
-      FTHOTLINE - Gestione Ticket
-    </div>
+      <div class="ft-topbar__center">
+        <div class="ft-topbar__userinfo">
+          Utente: <span id="currentUserInfo">Caricamento utente...</span>
+        </div>
+      </div>
 
-    <div class="ft-topbar-user">
-      Utente: <span id="currentUserInfo">Caricamento utente...</span>
+      <div class="ft-topbar__right">
+        <!-- spazio libero (azioni future se vuoi) -->
+      </div>
     </div>
   </div>
 
   <!-- LAYOUT -->
   <div class="ht-layout">
-    <!-- Pannello sinistro -->
-    <aside class="ht-left">
-      <div class="ht-filters">
+    <!-- SINISTRA -->
+    <aside class="ht-left panel">
+      <div class="ht-filters section">
         <input
           id="searchInput"
           type="text"
@@ -58,26 +66,26 @@
           <option value="">Tutti gli autori</option>
         </select>
 
-        <button id="btnNewTicket" class="ht-btn ht-btn-primary">
+        <button id="btnNewTicket" class="btn btn-primary btn-wide">
           Nuovo ticket
         </button>
       </div>
 
-      <div id="ticketsList" class="ht-tickets"></div>
+      <div id="ticketsList" class="ht-tickets section"></div>
 
-      <button id="btnLoadMoreTickets" class="ht-btn ht-btn-secondary">
+      <button id="btnLoadMoreTickets" class="btn btn-wide">
         Carica altri
       </button>
     </aside>
 
-    <!-- Pannello destro -->
-    <main class="ht-right">
-      <div id="noTicketSelectedMessage" class="ht-empty">
+    <!-- DESTRA -->
+    <main class="ht-right panel">
+      <div id="noTicketSelectedMessage" class="muted ht-empty">
         Nessun ticket selezionato. Seleziona un ticket dalla lista o creane uno nuovo.
       </div>
 
-      <!-- Header ticket -->
-      <section id="ticketHeaderContent" class="ht-ticket-header" style="display:none;">
+      <!-- HEADER -->
+      <section id="ticketHeaderContent" class="section ht-ticket-header" style="display:none;">
         <div class="ht-grid ht-grid-6">
           <div class="ht-field">
             <label>Codice ticket</label>
@@ -107,7 +115,7 @@
           <div class="ht-field">
             <label>Stato</label>
             <div>
-              <span id="ticketStatusBadge" class="ht-badge ht-badge-open">-</span>
+              <span id="ticketStatusBadge" class="badge ht-status-badge ht-status-open">-</span>
             </div>
           </div>
         </div>
@@ -139,103 +147,105 @@
           </div>
 
           <div class="ht-field ht-field-actions">
-            <button id="btnCloseTicket" class="ht-btn ht-btn-danger">
+            <button id="btnCloseTicket" class="btn btn-danger btn-wide">
               Chiudi ticket
             </button>
           </div>
         </div>
       </section>
 
-      <!-- Body + chat -->
+      <!-- BODY + CHAT -->
       <section id="ticketBodyContainer" class="ht-ticket-body" style="display:none;">
-        <div class="ht-block">
-          <div class="ht-block-title">Richiesta</div>
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Richiesta</h3>
+          </div>
           <div id="ticketBodyText" class="ht-box"></div>
         </div>
 
-        <div class="ht-block">
-          <div class="ht-block-title">Richiesta di garanzia</div>
+        <div class="section">
+          <div class="section-head">
+            <h3 class="section-title">Richiesta di garanzia</h3>
+          </div>
           <div id="ticketWarrantyRequestText" class="ht-box"></div>
         </div>
 
-        <!-- Chat -->
-        <div class="ht-chat">
+        <div class="section ht-chat">
+          <div class="section-head">
+            <h3 class="section-title">Chat</h3>
+            <div class="section-sub">Risposte e allegati</div>
+          </div>
+
           <div id="chatMessages" class="ht-chat-messages"></div>
 
           <div class="ht-chat-input">
-            <textarea
-              id="chatMessageInput"
-              placeholder="Scrivi una risposta..."
-            ></textarea>
-
+            <textarea id="chatMessageInput" placeholder="Scrivi una risposta..."></textarea>
             <input id="chatFileInput" type="file" multiple />
-
-            <button id="btnSendMessage" class="ht-btn ht-btn-primary">
-              Invia
-            </button>
+            <button id="btnSendMessage" class="btn btn-primary">Invia</button>
           </div>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- Modal nuovo ticket -->
+  <!-- MODAL NUOVO TICKET -->
   <div id="newTicketModal" class="ht-modal-backdrop">
-    <div class="ht-modal">
+    <div class="ht-modal panel">
       <div class="ht-modal-header">Nuovo ticket Hotline</div>
 
-      <div class="ht-modal-row">
-        <label for="newTicketSubject">Oggetto *</label>
-        <input id="newTicketSubject" type="text" />
-      </div>
+      <div class="ht-modal-body">
+        <div class="ht-modal-row">
+          <label for="newTicketSubject">Oggetto *</label>
+          <input id="newTicketSubject" type="text" />
+        </div>
 
-      <div class="ht-modal-row">
-        <label for="newTicketDepartment">Reparto *</label>
-        <select id="newTicketDepartment">
-          <option value="">Seleziona reparto</option>
-        </select>
-      </div>
+        <div class="ht-modal-row">
+          <label for="newTicketDepartment">Reparto *</label>
+          <select id="newTicketDepartment">
+            <option value="">Seleziona reparto</option>
+          </select>
+        </div>
 
-      <div class="ht-modal-row">
-        <label for="newTicketVin">VIN</label>
-        <input id="newTicketVin" type="text" />
-      </div>
+        <div class="ht-modal-row">
+          <label for="newTicketVin">VIN</label>
+          <input id="newTicketVin" type="text" />
+        </div>
 
-      <div class="ht-modal-row">
-        <label for="newTicketPlate">Targa</label>
-        <input id="newTicketPlate" type="text" />
-      </div>
+        <div class="ht-modal-row">
+          <label for="newTicketPlate">Targa</label>
+          <input id="newTicketPlate" type="text" />
+        </div>
 
-      <div class="ht-modal-row">
-        <label for="newTicketKm">Km</label>
-        <input id="newTicketKm" type="number" min="0" />
-      </div>
+        <div class="ht-modal-row">
+          <label for="newTicketKm">Km</label>
+          <input id="newTicketKm" type="number" min="0" />
+        </div>
 
-      <div class="ht-modal-row">
-        <label for="newTicketEngineHours">Ore motore</label>
-        <input id="newTicketEngineHours" type="number" min="0" />
-      </div>
+        <div class="ht-modal-row">
+          <label for="newTicketEngineHours">Ore motore</label>
+          <input id="newTicketEngineHours" type="number" min="0" />
+        </div>
 
-      <div class="ht-modal-row">
-        <label for="newTicketWarranty">Richiesta di garanzia</label>
-        <textarea id="newTicketWarranty"></textarea>
-      </div>
+        <div class="ht-modal-row">
+          <label for="newTicketWarranty">Richiesta di garanzia</label>
+          <textarea id="newTicketWarranty"></textarea>
+        </div>
 
-      <div class="ht-modal-row">
-        <label for="newTicketBody">Descrizione richiesta *</label>
-        <textarea id="newTicketBody"></textarea>
-      </div>
+        <div class="ht-modal-row">
+          <label for="newTicketBody">Descrizione richiesta *</label>
+          <textarea id="newTicketBody"></textarea>
+        </div>
 
-      <div id="newTicketError" class="ht-error"></div>
+        <div id="newTicketError" class="ht-error"></div>
 
-      <div class="ht-modal-footer">
-        <button id="newTicketCancel" class="ht-btn ht-btn-secondary">Annulla</button>
-        <button id="newTicketSubmit" class="ht-btn ht-btn-primary">Invia</button>
+        <div class="ht-modal-footer">
+          <button id="newTicketCancel" class="btn">Annulla</button>
+          <button id="newTicketSubmit" class="btn btn-primary">Invia</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- JS -->
   <script src="FTHOTLINE.js"></script>
 </body>
 </html>
