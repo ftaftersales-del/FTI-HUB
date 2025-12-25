@@ -569,26 +569,57 @@ body{
 }
 
 /* ===============================
-   FT TOPBAR + HOME (GLOBAL)
+   FT TOPBAR (GLOBAL)
    =============================== */
+
+.ft-page{ /* non tocco nulla, solo base se serve */ }
 
 .has-topbar{ padding-top: 72px; } /* spazio per non coprire contenuti */
 
 .ft-topbar{
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: 56px;
   z-index: 9999;
-
-  display: flex;
-  align-items: center;
-  padding: 0 18px;
 
   background: rgba(255,255,255,0.92);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(8px);
+}
+
+.ft-topbar__inner{
+  max-width: 1200px;
+  margin: 0 auto;
+  height: 100%;
+  padding: 0 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.ft-topbar__left{
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ft-topbar__brand{
+  font-weight: 800;
+  color: var(--text);
+  font-size: 14px;
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+
+.ft-topbar__subtitle{
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .ft-home-btn{
@@ -596,15 +627,15 @@ body{
   align-items: center;
   gap: 8px;
 
-  padding: 10px 14px;
+  padding: 9px 12px;
   border-radius: 999px;
 
   background: var(--surface);
   color: var(--primary);
   border: 1px solid var(--border);
 
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 800;
   text-decoration: none;
 
   box-shadow: var(--shadow);
@@ -618,3 +649,4 @@ body{
   transform: translateY(-1px);
   box-shadow: var(--shadow2);
 }
+
