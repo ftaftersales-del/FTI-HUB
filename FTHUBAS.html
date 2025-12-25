@@ -12,18 +12,15 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-storage-compat.js"></script>
   <script src="firebase-config.js"></script>
 
-  <!-- LEFT SEASON BAND (solo per FTHUBAS) + POPUP STYLE -->
+  <!-- LEFT SEASON BAND (solo per FTHUBAS) -->
   <style>
-    /* =========================
-       LEFT SEASON BAND
-       ========================= */
     .ft-left-season-band{
       position: fixed;
       top: 0;
       left: 0;
       height: 100vh;
       width: auto;
-      z-index: 1; /* CHANGED: sotto al contenuto */
+      z-index: 1; /* sotto al contenuto */
       box-shadow: 2px 0 10px rgba(0,0,0,0.18);
       overflow: hidden;
     }
@@ -47,93 +44,23 @@
       backdrop-filter: blur(3px);
       border: 1px solid rgba(255,255,255,0.18);
     }
-
-    /* il contenuto deve stare sopra la band */
-    .ft-container{
-      position: relative;
-      z-index: 2;
-    }
-
-    /* sposta la pagina a destra della band */
     .ft-page{
       padding-left: var(--ft-band-w, 0px);
       box-sizing: border-box;
+    }
+    /* contenuto sempre sopra la band */
+    .ft-container{
+      position: relative;
+      z-index: 2;
     }
     @media (max-width: 900px){
       .ft-left-season-band{ display:none; }
       .ft-page{ padding-left: 0; }
     }
-
-    /* =========================
-       POPUP CIRCOLARI (coerente con ftstyle)
-       ========================= */
-    #circular-overlay{
-      position: fixed;
-      inset: 0;
-      display: none;            /* verrà messo a flex via JS */
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      z-index: 50;
-
-      background: rgba(15, 23, 42, 0.35);
-      backdrop-filter: blur(3px);
-    }
-
-    #circular-modal{
-      width: min(760px, 100%);
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow2);
-      overflow: hidden;
-    }
-
-    #circular-modal header{
-      padding: 16px 18px;
-      font-weight: 800;
-      color: var(--text);
-      background: var(--surface-3);
-      border-bottom: 1px solid var(--border);
-    }
-
-    #circular-modal .body{
-      padding: 16px 18px;
-      max-height: 55vh;
-      overflow: auto;
-    }
-
-    #circular-meta{
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 10px;
-    }
-
-    #circular-text{
-      white-space: pre-wrap;
-      line-height: 1.45;
-      color: var(--text);
-    }
-
-    #circular-modal .footer{
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 18px;
-      background: var(--surface-3);
-      border-top: 1px solid var(--border);
-      flex-wrap: wrap;
-    }
-
-    #circular-status{
-      color: var(--muted);
-      font-size: 13px;
-    }
   </style>
 </head>
 
-<body class="ft-page ft-hubas" id="page-fthubas">
+<body class="ft-page ft-hubas has-topbar" id="page-fthubas">
 
   <!-- LEFT SEASON BAND -->
   <div id="ftLeftSeasonBand" class="ft-left-season-band" aria-label="Season band">
@@ -143,16 +70,25 @@
 
   <div class="ft-container">
 
-    <!-- TOPBAR -->
+    <!-- TOPBAR (struttura compatibile ftstyle v5/v6) -->
     <div class="ft-topbar">
-      <div class="ft-brand">
-        <h1>FTI-HUB</h1>
-        <p class="subtitle">Portale After Sales • strumenti e servizi</p>
-      </div>
+      <div class="ft-topbar__inner">
 
-      <div class="ft-actions">
-        <span id="role-badge" class="badge" style="display:none;">ADMIN</span>
-        <button class="btn btn-primary btn-small" onclick="logout()">Logout</button>
+        <div class="ft-topbar__left">
+          <div class="ft-topbar__brand">FTI-HUB</div>
+          <div class="ft-topbar__subtitle">Portale After Sales • strumenti e servizi</div>
+        </div>
+
+        <div class="ft-topbar__center">
+          <div class="ft-topbar__userinfo">
+            <span id="role-badge" class="badge" style="display:none;">ADMIN</span>
+          </div>
+        </div>
+
+        <div class="ft-topbar__right">
+          <button class="btn btn-primary btn-small" onclick="logout()">Logout</button>
+        </div>
+
       </div>
     </div>
 
