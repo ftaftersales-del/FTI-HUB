@@ -1,208 +1,113 @@
 /* ===============================
    FTSTYLE - CSS globale HUB (v4)
-   Light SaaS "eye-friendly"
-   + background image Sfondo_FT.png
-   + stronger hierarchy (pads/panels)
-   + topbar + buttons + forms
+   Obiettivi:
+   - sfondo originale: assets/Sfondo_FT.png
+   - niente overlay che "sbiadisce" i contenuti
+   - pad principale leggermente contrastato
+   - pad interni ben separati
+   - topbar coerente e compatibile
    =============================== */
 
 :root{
   /* base */
-  --bg: #f3f6fb;                 /* pagina (overlay sopra Sfondo_FT.png) */
-  --surface: #ffffff;            /* card/panel surface */
-  --surface-2: #f7f9fd;          /* pad principale (contrasto) */
+  --bg: transparent;
+  --surface: #ffffff;
+  --surface-2: rgba(255,255,255,.78);   /* pad principale (tinted) */
+  --surface-3: rgba(255,255,255,.92);   /* pannelli/zone */
   --text: #0f172a;
   --muted: #667085;
-  --border: #e3e8f2;
-  --border-2: #d7deea;
+  --border: #e6e8f0;
 
-  /* brand (Ford-ish) */
+  /* brand */
   --primary: #003478;
   --primary2: #005edc;
 
-  /* states */
-  --danger: #e11d48;
-  --danger-bg: #fff1f2;
-
-  --ok-bg: #e9fff0;
-  --ok-bd: #bfeccc;
-  --ok-tx: #0f6a2a;
-
-  /* shadows / radius */
+  /* radius / shadow */
   --radius: 16px;
   --radius-sm: 12px;
   --shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
   --shadow2: 0 14px 34px rgba(15, 23, 42, 0.12);
-  --shadow-in: 0 1px 0 rgba(15,23,42,.03);
 
-  /* focus ring */
-  --ring: 0 0 0 4px rgba(0, 94, 220, 0.18);
+  /* states */
+  --ok-bg: #e9fff0;
+  --ok-bd: #bfeccc;
+  --ok-tx: #0f6a2a;
 
-  /* topbar */
-  --topbar-h: 56px;
+  --err-bg: #fff1f2;
+  --err-bd: #fecdd3;
+  --err-tx: #b42318;
 }
 
-/* reset-ish */
 *{ box-sizing: border-box; }
-html, body{ height: 100%; }
+
+html, body{
+  height: 100%;
+}
+
 body{
   margin: 0;
+  font-family: Arial, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   color: var(--text);
-  font-family: Arial, sans-serif;
-  background-color: var(--bg);
 
-  /* sfondo originale */
+  /* ✅ sfondo originale */
   background-image: url("assets/Sfondo_FT.png");
   background-repeat: no-repeat;
-  background-position: center 120px;
+  background-position: center;
   background-size: cover;
   background-attachment: fixed;
+
+  /* IMPORTANTISSIMO:
+     niente opacity su body o wrapper (causa effetto "disabled") */
 }
 
-/* overlay per rendere lo sfondo meno "sparato" e più leggibile */
+/* leggero velo dietro (ma NON sopra i contenuti) per non affaticare */
 body::before{
   content:"";
   position: fixed;
   inset: 0;
-  background: rgba(243, 246, 251, 0.86);
+  background: rgba(248, 250, 252, .55);
   pointer-events: none;
-  z-index: 0;
+  z-index: -1; /* dietro tutto */
 }
 
-.ft-page{ position: relative; z-index: 1; }
+/* se c'è topbar */
+body.has-topbar{
+  padding-top: 58px; /* altezza topbar */
+}
 
-/* layout container */
+/* layout base pagine */
+.ft-page{
+  min-height: 100vh;
+}
+
 .ft-container{
-  width: min(1280px, calc(100% - 36px));
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 18px 0 36px 0;
+  padding: 22px 18px 28px;
 }
 
-/* Topbar spacer */
-body.has-topbar .ft-container{ padding-top: 18px; }
-body.has-topbar{ padding-top: var(--topbar-h); }
-
-/* card base */
-.card{
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-
-/* pad principale (contenitore pagina) */
-.card.pad{
-  padding: 16px;
-  background: var(--surface-2);             /* CONTRASTO vs pannelli bianchi */
-  border-color: var(--border-2);
-  box-shadow: var(--shadow2);
-}
-
-/* tipografia */
-h1,h2,h3{ margin: 0; }
-label{
-  display:block;
-  font-size: 12px;
-  font-weight: 800;
-  color: #1f2a44;
-  margin: 8px 0 6px 0;
-}
-
-/* form controls */
-input[type="text"],
-input[type="date"],
-input[type="number"],
-select,
-textarea{
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: #fff;
-  color: var(--text);
-  outline: none;
-  box-shadow: var(--shadow-in);
-}
-
-textarea{ min-height: 110px; resize: vertical; }
-
-input:focus, select:focus, textarea:focus{
-  border-color: rgba(0,94,220,.55);
-  box-shadow: var(--ring);
-}
-
-::placeholder{ color: #98a2b3; }
-
-/* buttons */
-.btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
-  cursor: pointer;
-  font-weight: 800;
-  font-size: 13px;
-  transition: transform .05s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
-  user-select: none;
-}
-
-.btn:hover{
-  box-shadow: var(--shadow);
-  border-color: rgba(0,94,220,.25);
-}
-
-.btn:active{ transform: translateY(1px); }
-
-.btn-primary{
-  background: linear-gradient(180deg, var(--primary2), var(--primary));
-  color: #fff;
-  border-color: rgba(0,0,0,.06);
-}
-
-.btn-primary:hover{
-  box-shadow: 0 12px 26px rgba(0, 52, 120, 0.22);
-}
-
-.btn.danger, .btn-danger{
-  background: var(--danger-bg);
-  color: var(--danger);
-  border-color: rgba(225,29,72,.25);
-}
-
-.btn[disabled]{
-  opacity: .55;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-/* links */
-a{ color: var(--primary2); text-decoration: none; }
-a:hover{ text-decoration: underline; }
-
-/* topbar */
+/* ===============================
+   TOPBAR
+   =============================== */
 .ft-topbar{
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: var(--topbar-h);
-  z-index: 9990;
-  background: rgba(255,255,255,0.85);
+  height: 58px;
+  background: rgba(255,255,255,.92);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
+  z-index: 9990;
 }
 
 .ft-topbar__inner{
-  height: 100%;
-  width: min(1280px, calc(100% - 36px));
+  height: 58px;
+  max-width: 1280px;
   margin: 0 auto;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 12px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
 }
 
 .ft-topbar__left{
@@ -214,34 +119,37 @@ a:hover{ text-decoration: underline; }
 
 .ft-topbar__brand{
   font-weight: 900;
-  letter-spacing: -0.4px;
+  color: var(--text);
+  letter-spacing: -0.2px;
 }
 
 .ft-topbar__subtitle{
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
 }
 
 .ft-topbar__center{
   flex: 1;
   display:flex;
   justify-content:center;
-  min-width: 240px;
+  min-width: 200px;
 }
 
 .ft-topbar__userinfo{
-  font-size: 12px;
   color: var(--muted);
-  font-weight: 700;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: min(860px, 60vw);
+  max-width: min(820px, 100%);
 }
 
 .ft-topbar__right{
-  min-width: 120px;
+  min-width: 140px;
   display:flex;
   justify-content:flex-end;
 }
@@ -250,20 +158,153 @@ a:hover{ text-decoration: underline; }
   display:inline-flex;
   align-items:center;
   gap:8px;
-  padding: 9px 12px;
+  padding: 8px 12px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: #fff;
-  font-weight: 900;
+  background: rgba(255,255,255,.9);
   color: var(--text);
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 13px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
-.ft-home-btn:hover{ box-shadow: var(--shadow); text-decoration:none; }
+.ft-home-btn:hover{
+  border-color: rgba(0, 52, 120, .25);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.10);
+}
 
-/* utility */
-.muted{ color: var(--muted); }
-.hidden{ display:none !important; }
+/* ===============================
+   CARD / PAD
+   =============================== */
+.card{
+  border-radius: var(--radius);
+  border: 1px solid rgba(230,232,240,.9);
+  box-shadow: var(--shadow2);
+}
+
+/* ✅ pad principale: più contrasto, ma non "grigio morto" */
+.card.pad{
+  background: var(--surface-2);
+  padding: 14px;
+}
+
+/* pannelli/pad interni */
+.panel{
+  background: var(--surface);
+  border: 1px solid rgba(230,232,240,.95);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.06);
+}
+
+/* separatore standard */
 .sep{
   border: none;
   border-top: 1px solid var(--border);
   margin: 12px 0;
+}
+
+/* testo secondario */
+.muted{
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ===============================
+   FORMS
+   =============================== */
+label{
+  display:block;
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="email"],
+input[type="number"],
+select,
+textarea{
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  color: var(--text);
+  outline: none;
+  box-shadow: 0 1px 0 rgba(15,23,42,.02);
+}
+
+textarea{
+  min-height: 110px;
+  resize: vertical;
+}
+
+input:focus, select:focus, textarea:focus{
+  border-color: rgba(0,94,220,.35);
+  box-shadow: 0 0 0 4px rgba(0,94,220,.10);
+}
+
+input[type="file"]{
+  width: 100%;
+  border: 1px dashed rgba(230,232,240,.95);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,.85);
+}
+
+/* ===============================
+   BUTTONS
+   =============================== */
+.btn{
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+}
+
+.btn:hover{
+  border-color: rgba(0, 52, 120, .25);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
+}
+
+.btn:disabled{
+  opacity: .55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-primary{
+  background: linear-gradient(180deg, var(--primary2), var(--primary));
+  color: #fff;
+  border-color: rgba(0,0,0,0);
+}
+
+.btn.danger, .btn-danger{
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+/* ===============================
+   UTILITY
+   =============================== */
+.hidden{ display:none !important; }
+
+/* piccoli miglioramenti visivi (senza stravolgere) */
+a{ color: var(--primary2); }
+a:hover{ color: var(--primary); }
+
+/* responsive topbar */
+@media (max-width: 920px){
+  .ft-topbar__center{ display:none; }
+  .ft-topbar__subtitle{ max-width: 220px; }
 }
