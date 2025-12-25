@@ -324,3 +324,43 @@
   font-size: 12.5px;
   min-height: 16px;
 }
+/* ===============================
+   BUTTON FIX (overflow + coerenza)
+   =============================== */
+
+/* 1) Evita che btn-wide (min-width:220px) rompa le griglie */
+.ht-field-actions .btn-wide,
+#btnCloseTicket{
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+/* 2) Bottoni sidebar sempre “pieni” ma senza min-width rigido */
+.ht-left .btn,
+.ht-left .btn-wide{
+  width: 100%;
+  min-width: 0 !important;
+}
+
+/* 3) Altezza/feel coerente tra Nuovo ticket / Carica altri */
+.ht-left .btn{
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+/* 4) Chiudi ticket: meno “pallone”, più integrato */
+#btnCloseTicket{
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+/* 5) Invia: stessa altezza percepita */
+#btnSendMessage{
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+/* 6) (Optional) più aria tra input e bottoni chat su desktop */
+.ht-chat-input{
+  align-items: end;
+}
