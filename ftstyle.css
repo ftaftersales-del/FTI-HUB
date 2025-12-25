@@ -1,122 +1,131 @@
 /* ===============================
-   FTSTYLE - CSS globale HUB (v3+)
-   Clean light SaaS (no dark mode)
-   + Soft background globale (Option A)
-   + Topbar globale con area user info
+   FTSTYLE - CSS globale HUB (v4)
+   Light SaaS + background image
+   Focus: leggibilità + non acceca
    =============================== */
 
 :root{
-  /* base */
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --text: #0f172a;
-  --muted: #667085;
-  --border: #e6e8f0;
-
-  /* brand (Ford-ish) */
+  /* brand */
   --primary: #003478;
-  --primary2: #005edc;
+  --primary2:#005edc;
 
-  /* shadows / radius */
+  /* base colors (soft) */
+  --text:  #0f172a;
+  --muted: #667085;
+
+  /* surfaces */
+  --surface: rgba(255,255,255,0.92);     /* card/panel */
+  --surface2: rgba(255,255,255,0.78);    /* secondary */
+  --border: rgba(15,23,42,0.10);
+
+  /* background image */
+  --bg-color: #eef2f7;                   /* fallback */
+  --bg-image: url("assets/Sfondo_FT.png");
+
+  /* radius / shadows */
   --radius: 16px;
   --radius-sm: 12px;
+
   --shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
   --shadow2: 0 14px 34px rgba(15, 23, 42, 0.10);
 
-  /* states */
-  --ok-bg: #e9fff0;
-  --ok-bd: #bfeccc;
-  --ok-tx: #0f6a2a;
+  /* controls */
+  --input-bg: rgba(255,255,255,0.95);
+  --input-bd: rgba(15,23,42,0.14);
+  --ring: rgba(0,94,220,0.25);
 
-  --warn-bg: #fff7ed;
-  --warn-bd: #fed7aa;
-  --warn-tx: #9a3412;
-
-  --err-bg: #fff1f2;
-  --err-bd: #fecdd3;
-  --err-tx: #9f1239;
-
-  /* ===============================
-     Soft theme (anti-bianco abbagliante) - OPTION A
-     =============================== */
-  --page-bg: #f7f9fc;     /* sfondo pagina */
-  --card-bg: #f7f9fc;     /* pad principale */
-  --panel-bg: #ffffff;    /* pannelli interni */
+  /* topbar */
+  --topbar-h: 58px;
 }
 
 /* ===============================
-   Reset / Base
+   Base
    =============================== */
+
 *{ box-sizing: border-box; }
 
 html, body{
-  margin:0;
-  padding:0;
+  height:100%;
 }
 
 body{
-  font-family: Arial, sans-serif;
+  margin:0;
   color: var(--text);
-  background: var(--bg);
+  font-family: Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* ✅ SFONDO COME PRIMA: immagine */
+  background-color: var(--bg-color);
+  background-image: var(--bg-image);
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: cover;
+  background-attachment: fixed;
 }
 
-/* Pagine del portale */
-body.ft-page{
-  background: var(--page-bg);
+/* padding top quando la topbar è presente */
+body.has-topbar{
+  padding-top: var(--topbar-h);
+}
+
+/* wrapper pagina */
+.ft-page{
+  min-height: 100%;
+}
+
+/* container */
+.ft-container{
+  width: 100%;
+  padding: 22px 16px 30px;
 }
 
 /* ===============================
-   Layout helpers
+   Card / Panel
    =============================== */
-.ft-container{
-  width: 100%;
-  margin: 0 auto;
-  padding: 18px;
-}
 
 .card{
   background: var(--surface);
-  border-radius: var(--radius);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow2);
+  backdrop-filter: blur(6px);
 }
 
-.card.pad{
-  background: var(--card-bg);
-  border-color: rgba(230,232,240,.85);
-  padding: 16px;
-}
+.pad{ padding: 16px; }
 
-/* pannelli interni */
 .panel{
-  background: var(--panel-bg);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 12px;
   box-shadow: 0 1px 0 rgba(15,23,42,.02);
+  backdrop-filter: blur(6px);
 }
 
-/* tipografia */
-h1,h2,h3,h4{ margin:0; }
-.muted{ color: var(--muted); font-size: 13px; }
-.smallnote{ color: var(--muted); font-size: 12px; }
-
-/* separatori */
-hr.sep{
+/* separatore */
+.sep{
   border: none;
   border-top: 1px solid var(--border);
   margin: 12px 0;
 }
 
+/* testo muted */
+.muted{
+  color: var(--muted);
+  font-size: 13px;
+}
+
 /* ===============================
    Form controls
    =============================== */
+
 label{
-  font-size: 12px;
-  color: var(--muted);
   display:block;
-  margin-bottom: 4px;
+  font-size: 12px;
   font-weight: 700;
+  color: var(--text);
+  margin: 8px 0 6px;
 }
 
 input[type="text"],
@@ -124,123 +133,125 @@ input[type="date"],
 input[type="number"],
 select,
 textarea{
-  width:100%;
-  padding: 10px 10px;
-  border: 1px solid var(--border);
+  width: 100%;
+  padding: 10px 12px;
   border-radius: 12px;
-  font-family: inherit;
-  font-size: 14px;
-  background: #fff;
+  border: 1px solid var(--input-bd);
+  background: var(--input-bg);
   color: var(--text);
   outline: none;
-  transition: border-color .15s ease, box-shadow .15s ease;
+  box-shadow: 0 1px 0 rgba(15,23,42,.02);
 }
 
 textarea{
-  min-height: 130px;
+  min-height: 120px;
   resize: vertical;
 }
 
-input:focus, select:focus, textarea:focus{
-  border-color: rgba(0,52,120,.45);
-  box-shadow: 0 0 0 4px rgba(0,94,220,.10);
+input:focus,
+select:focus,
+textarea:focus{
+  border-color: rgba(0,94,220,.35);
+  box-shadow: 0 0 0 4px var(--ring);
 }
 
 /* ===============================
    Buttons
    =============================== */
+
 .btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.9);
+  color: var(--text);
   padding: 9px 12px;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: #fff;
   cursor: pointer;
   font-weight: 800;
-  color: var(--text);
-  transition: transform .05s ease, box-shadow .15s ease, border-color .15s ease, filter .15s ease;
-  box-shadow: 0 1px 0 rgba(15,23,42,.02);
-  user-select: none;
+  font-size: 13px;
+  transition: transform .05s ease, box-shadow .15s ease, background .15s ease;
 }
 
 .btn:hover{
-  border-color: rgba(0,0,0,.10);
   box-shadow: var(--shadow);
 }
 
-.btn:active{ transform: translateY(1px); }
+.btn:active{
+  transform: translateY(1px);
+}
 
-.btn:disabled{
+.btn[disabled]{
   opacity: .6;
   cursor: not-allowed;
-  transform: none;
   box-shadow: none;
 }
 
-.btn.btn-primary{
-  background: var(--primary);
-  border-color: var(--primary);
-  color: #fff;
-  box-shadow: 0 10px 26px rgba(15,23,42,.10);
-}
-.btn.btn-primary:hover{
-  background: var(--primary2);
-  border-color: var(--primary2);
+.btn-primary{
+  background: linear-gradient(180deg, var(--primary2), var(--primary));
+  border-color: rgba(0,52,120,.25);
+  color:#fff;
 }
 
-.btn.danger{
+.btn-primary:hover{
+  box-shadow: 0 12px 28px rgba(0,52,120,.18);
+}
+
+.btn.danger,
+.btn-danger{
   background: #ef4444;
-  border-color: #ef4444;
+  border-color: rgba(239,68,68,.35);
   color: #fff;
 }
-.btn.danger:hover{ filter: brightness(0.95); }
 
 /* ===============================
-   Badges
+   Links
    =============================== */
-.badge-soft{
-  background: #f1f5f9;
-  color: var(--text);
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 900;
-  border: 1px solid var(--border);
-  white-space: nowrap;
+
+a{
+  color: var(--primary2);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+a:hover{
+  text-decoration: underline;
 }
 
 /* ===============================
-   TOPBAR (global injection)
+   Topbar
    =============================== */
-body.has-topbar{
-  /* spazio sopra per la barra sticky */
-  padding-top: 56px;
-}
 
 .ft-topbar{
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 9990;
-  background: rgba(255,255,255,.88);
+  top:0; left:0; right:0;
+  height: var(--topbar-h);
+  z-index: 9999;
+
+  /* semi-trasparente: lascia intravedere lo sfondo */
+  background: rgba(255,255,255,0.80);
+  border-bottom: 1px solid var(--border);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(230,232,240,.9);
 }
 
 .ft-topbar__inner{
-  max-width: 1280px;
+  height: 100%;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 10px 16px;
+  padding: 0 16px;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
+  gap: 12px;
 }
 
 .ft-topbar__left{
   display:flex;
   align-items:baseline;
-  gap:10px;
+  gap: 10px;
   min-width: 240px;
 }
 
@@ -248,62 +259,64 @@ body.has-topbar{
   font-weight: 900;
   letter-spacing: -0.2px;
   color: var(--text);
-  white-space: nowrap;
 }
 
 .ft-topbar__subtitle{
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ft-topbar__center{
+  flex:1;
+  display:flex;
+  justify-content:center;
+  min-width: 240px;
+}
+
+.ft-topbar__userinfo{
+  color: var(--muted);
+  font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 420px;
-}
-
-.ft-topbar__center{
-  flex: 1;
-  display:flex;
-  justify-content:center;
-}
-
-.ft-topbar__userinfo{
-  font-size: 12px;
-  color: var(--muted);
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 720px;
+  max-width: 680px;
+  text-align:center;
 }
 
 .ft-topbar__right{
   display:flex;
   align-items:center;
-  gap:10px;
+  gap: 10px;
+  min-width: 140px;
+  justify-content:flex-end;
 }
 
 .ft-home-btn{
   display:inline-flex;
   align-items:center;
   gap:8px;
-  text-decoration:none;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: #fff;
+  background: rgba(255,255,255,0.90);
   color: var(--text);
   font-weight: 900;
-  box-shadow: 0 1px 0 rgba(15,23,42,.02);
+  text-decoration:none;
 }
+
 .ft-home-btn:hover{
   box-shadow: var(--shadow);
+  text-decoration:none;
 }
 
 /* ===============================
-   Utility: nascondi userLine nel pad (ma NON eliminarlo)
-   Basta aggiungere class al body: ft-hide-userline
+   Responsive tweaks
    =============================== */
-body.ft-hide-userline #userLine{
-  display:none !important;
+
+@media (max-width: 860px){
+  .ft-topbar__center{ display:none; }
+  .ft-topbar__left{ min-width: unset; }
+  .ft-topbar__right{ min-width: unset; }
 }
