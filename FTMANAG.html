@@ -15,9 +15,10 @@
 
   <style>
     /* ===============================
-       FTMANAG - Page glue (ftstyle v6)
-       - nessun reset globale
-       - solo dettagli specifici tabella + status pill
+       FTMANAG - Glue (v6)
+       - Topbar nuova struttura
+       - Tabella moderna (sticky head, separatori soft)
+       - FUNZIONALITÀ INVARIATE
        =============================== */
 
     .ftmanag-wrap{
@@ -27,26 +28,26 @@
       min-height: calc(100vh - 58px);
     }
 
+    /* Card principale */
+    .ftmanag-card{
+      overflow: hidden; /* per arrotondare anche la tabella */
+    }
+
     .ftmanag-head{
       display:flex;
       align-items:flex-start;
       justify-content:space-between;
       gap:12px;
       flex-wrap:wrap;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .ftmanag-title{
-      margin: 0 0 6px;
+      margin: 0;
       font-size: 18px;
       font-weight: 900;
       letter-spacing: -0.2px;
       color: var(--text);
-    }
-
-    .ftmanag-sub{
-      font-size: 13px;
-      color: var(--muted);
     }
 
     .ftmanag-loading{
@@ -61,51 +62,87 @@
       color: #b00020;
     }
 
-    /* tabella */
-    .ftmanag-table{
-      width: 100%;
-      border-collapse: collapse;
+    /* ====== TABLE (modern) ====== */
+    .ftmanag-tablewrap{
       margin-top: 10px;
+      border: 1px solid rgba(230,232,240,.95);
+      border-radius: 16px;
+      background: rgba(255,255,255,.85);
+      overflow: auto;
+      box-shadow: 0 1px 0 rgba(15,23,42,.02);
+    }
+
+    table.ftmanag-table{
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
       font-size: 13px;
-      overflow: hidden;
-      border-radius: 14px;
+      min-width: 980px; /* evita impasto su schermi stretti */
     }
 
-    .ftmanag-table thead{
-      background: rgba(15,23,42,.04);
-    }
-
-    .ftmanag-table th,
-    .ftmanag-table td{
-      border: 1px solid var(--border);
-      padding: 7px 8px;
+    .ftmanag-table thead th{
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 10px;
       text-align: left;
+      font-weight: 900;
+      font-size: 12px;
+      color: #334155;
       white-space: nowrap;
-      vertical-align: middle;
+    }
+
+    /* seconda riga filtri sticky sotto header */
+    .ftmanag-table thead tr.ftmanag-filters th{
+      top: 38px; /* altezza header approx */
+      z-index: 2;
+      padding: 8px 10px 10px;
+      border-bottom: 1px solid var(--border);
       background: rgba(255,255,255,.92);
     }
 
-    .ftmanag-table tbody tr:nth-child(even) td{
-      background: rgba(255,255,255,.78);
+    .ftmanag-table tbody td{
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(230,232,240,.75);
+      white-space: nowrap;
+      color: #0f172a;
+      background: transparent;
     }
 
-    .ftmanag-table tbody tr:hover td{
-      background: rgba(0,94,220,.08);
+    .ftmanag-table tbody tr:last-child td{
+      border-bottom: none;
+    }
+
+    .ftmanag-table tbody tr{
+      transition: background .12s ease;
+    }
+
+    .ftmanag-table tbody tr:hover{
+      background: rgba(0,94,220,.06);
       cursor: pointer;
     }
 
+    .ftmanag-table tbody tr:hover td{
+      background: transparent;
+    }
+
+    /* filtri input/select già “premium” da ftstyle, qui li rendiamo più compatti */
     .ftmanag-filters input,
     .ftmanag-filters select{
       width: 100%;
-      box-sizing: border-box;
-      padding: 6px 7px;
+      padding: 8px 10px;
       font-size: 12px;
-      border: 1px solid var(--border);
       border-radius: 12px;
-      background: rgba(255,255,255,.95);
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.98);
       outline: none;
+      box-shadow: 0 1px 0 rgba(15,23,42,.02);
     }
 
+    /* Footer */
     .ftmanag-bottom{
       margin-top: 12px;
       display:flex;
@@ -117,61 +154,78 @@
       color: var(--muted);
     }
 
-    .nowrap{ white-space: nowrap; }
-
-    /* status pill */
+    /* status pill (più “badge-like”) */
     .status-pill{
       display: inline-flex;
       align-items: center;
-      padding: 3px 10px;
+      padding: 4px 10px;
       border-radius: 999px;
       font-size: 11px;
-      border: 1px solid #ccc;
+      font-weight: 900;
+      border: 1px solid rgba(205,210,225,.95);
+      box-shadow: 0 2px 10px rgba(15,23,42,.06);
       background: rgba(255,255,255,.92);
       color: var(--text);
     }
 
-    .status-Aperta{ background-color:#e7f5ff; border-color:#74c0fc; }
-    .status-Inviata{ background-color:#fff3bf; border-color:#fcc419; }
-    .status-Sospesa{ background-color:#ffe3e3; border-color:#fa5252; }
-    .status-In-Valutazione{ background-color:#e6fcf5; border-color:#20c997; }
-    .status-Conclusa{ background-color:#e9ecef; border-color:#868e96; }
-    .status-Cancellata{ background-color:#f8f0fc; border-color:#cc5de8; }
+    .status-Aperta{ background:#e7f5ff; border-color:#74c0fc; }
+    .status-Inviata{ background:#fff3bf; border-color:#fcc419; }
+    .status-Sospesa{ background:#ffe3e3; border-color:#fa5252; }
+    .status-In-Valutazione{ background:#e6fcf5; border-color:#20c997; }
+    .status-Conclusa{ background:#e9ecef; border-color:#868e96; }
+    .status-Cancellata{ background:#f8f0fc; border-color:#cc5de8; }
+
+    .nowrap{ white-space: nowrap; }
+
+    /* responsive: su schermi piccoli riduci padding card */
+    @media (max-width: 920px){
+      .ftmanag-wrap{ padding: 14px; }
+      .card.pad{ padding: 14px; }
+      .ftmanag-tablewrap{ border-radius: 14px; }
+    }
   </style>
 </head>
 
 <body class="ft-page has-topbar">
-  <!-- Topbar (compat) -->
+  <!-- TOPBAR nuova struttura -->
   <div class="ft-topbar">
-    <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
+    <div class="ft-topbar__inner">
+      <div class="ft-topbar__left">
+        <div class="ft-topbar__brand">FTI-HUB</div>
+        <div class="ft-topbar__subtitle">FTMANAG · Gestione reclami</div>
+      </div>
+
+      <div class="ft-topbar__center">
+        <div class="ft-topbar__userinfo" id="userInfo">Caricamento informazioni utente...</div>
+      </div>
+
+      <div class="ft-topbar__right">
+        <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
+        <button class="btn btn-primary btn-small" type="button" onclick="window.location.href='FTHUBAS.html'">
+          Torna a Home
+        </button>
+      </div>
+    </div>
   </div>
 
   <main class="ftmanag-wrap">
-    <!-- PAD principale coerente col portale -->
-    <section class="card pad">
+    <section class="card pad ftmanag-card">
       <div class="ftmanag-head">
-        <div>
-          <h1 class="ftmanag-title">FTMANAG - Gestione reclami</h1>
-          <div class="ftmanag-sub" id="userInfo">Caricamento informazioni utente...</div>
-        </div>
-
-        <div>
-          <button class="btn btn-small" type="button" onclick="window.location.href='FTHUBAS.html'">
-            Torna a Home
-          </button>
-        </div>
+        <h1 class="ftmanag-title">Elenco reclami</h1>
       </div>
 
       <div id="loading" class="ftmanag-loading">Caricamento reclami...</div>
       <div id="error" class="ftmanag-error" style="display:none;"></div>
 
-      <table id="claimsTable" class="ftmanag-table" style="display:none;">
-        <thead>
-          <tr id="header-row"></tr>
-          <tr class="ftmanag-filters" id="filters-row"></tr>
-        </thead>
-        <tbody id="claimsBody"></tbody>
-      </table>
+      <div class="ftmanag-tablewrap">
+        <table id="claimsTable" class="ftmanag-table" style="display:none;">
+          <thead>
+            <tr id="header-row"></tr>
+            <tr class="ftmanag-filters" id="filters-row"></tr>
+          </thead>
+          <tbody id="claimsBody"></tbody>
+        </table>
+      </div>
 
       <div class="ftmanag-bottom">
         <div id="summary">Nessun reclamo caricato.</div>
@@ -229,9 +283,7 @@
       try {
         const userDocRef = db.collection('Users').doc(user.uid);
         const userSnap   = await userDocRef.get();
-        if (!userSnap.exists) {
-          throw new Error('Documento utente non trovato in /Users.');
-        }
+        if (!userSnap.exists) throw new Error('Documento utente non trovato in /Users.');
 
         const userData = userSnap.data() || {};
 
@@ -243,12 +295,9 @@
           '';
 
         currentDealerId = rawDealerId ? String(rawDealerId).trim() : null;
+        if (!currentDealerId) throw new Error('DealerID non presente nel documento utente.');
 
-        if (!currentDealerId) {
-          throw new Error('DealerID non presente nel documento utente.');
-        }
-
-        // cerco il dealer in /dealers per campo, non per docId
+        // lookup dealer per campo (non docId)
         let dealerData = null;
 
         let dealerQuery = await db.collection('dealers')
@@ -264,9 +313,7 @@
             .limit(1)
             .get();
 
-          if (!dealerQuery.empty) {
-            dealerData = dealerQuery.docs[0].data();
-          }
+          if (!dealerQuery.empty) dealerData = dealerQuery.docs[0].data();
         }
 
         if (!dealerData) {
@@ -276,6 +323,7 @@
           isDistributor = !!dealerData.isDistributor;
         }
 
+        // testo userinfo (in topbar center)
         userInfoEl.textContent =
           'Utente: ' + (userData.displayName || user.email || user.uid) +
           ' | Dealer: ' + currentDealerId +
@@ -287,8 +335,7 @@
       } catch (err) {
         console.error(err);
         errorEl.style.display = 'block';
-        errorEl.textContent =
-          'Errore nel caricamento: ' + err.message;
+        errorEl.textContent = 'Errore nel caricamento: ' + err.message;
         loadingEl.style.display = 'none';
       }
     });
@@ -314,7 +361,6 @@
     function buildTableHeaderAndFilters() {
       const headerRow  = document.getElementById('header-row');
       const filtersRow = document.getElementById('filters-row');
-
       headerRow.innerHTML  = '';
       filtersRow.innerHTML = '';
 
@@ -375,9 +421,9 @@
       loadingEl.textContent = 'Caricamento reclami...';
       errorEl.style.display = 'none';
 
-      allClaims   = [];
+      allClaims = [];
       lastVisible = null;
-      reachedEnd  = false;
+      reachedEnd = false;
 
       let query;
       if (isDistributor) {
@@ -466,7 +512,7 @@
     }
 
     function formatClaimDoc(doc) {
-      const data    = doc.data() || {};
+      const data = doc.data() || {};
       const vehicle = data.vehicle || {};
 
       return {
