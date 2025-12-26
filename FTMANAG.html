@@ -15,9 +15,11 @@
 
   <style>
     /* ===============================
-       FTMANAG - Glue (v6)
-       - Topbar nuova struttura
-       - Tabella moderna (sticky head, separatori soft)
+       FTMANAG - Glue (v8)
+       - Topbar coerente (1 solo Home)
+       - Tabella premium (sticky head + sticky first col)
+       - Click singolo: seleziona riga
+       - Doppio click: apre pratica
        - FUNZIONALITÀ INVARIATE
        =============================== */
 
@@ -28,23 +30,11 @@
       min-height: calc(100vh - 58px);
     }
 
-    /* Card principale */
-    .ftmanag-card{
-      overflow: hidden; /* per arrotondare anche la tabella */
-    }
-
-    .ftmanag-head{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:12px;
-      flex-wrap:wrap;
-      margin-bottom: 10px;
-    }
+    .ftmanag-card{ overflow: hidden; }
 
     .ftmanag-title{
-      margin: 0;
-      font-size: 18px;
+      margin: 0 0 8px;
+      font-size: 16px;
       font-weight: 900;
       letter-spacing: -0.2px;
       color: var(--text);
@@ -55,19 +45,18 @@
       font-size: 13px;
       color: var(--muted);
     }
-
     .ftmanag-error{
       margin-top: 10px;
       font-size: 13px;
       color: #b00020;
     }
 
-    /* ====== TABLE (modern) ====== */
+    /* ====== TABLE (premium) ====== */
     .ftmanag-tablewrap{
       margin-top: 10px;
       border: 1px solid rgba(230,232,240,.95);
       border-radius: 16px;
-      background: rgba(255,255,255,.85);
+      background: rgba(255,255,255,.86);
       overflow: auto;
       box-shadow: 0 1px 0 rgba(15,23,42,.02);
     }
@@ -77,15 +66,16 @@
       border-collapse: separate;
       border-spacing: 0;
       font-size: 13px;
-      min-width: 980px; /* evita impasto su schermi stretti */
+      min-width: 980px;
     }
 
+    /* Header sticky */
     .ftmanag-table thead th{
       position: sticky;
       top: 0;
-      z-index: 2;
+      z-index: 3;
       background: rgba(255,255,255,.96);
-      backdrop-filter: blur(6px);
+      backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
       padding: 10px 10px;
       text-align: left;
@@ -95,41 +85,40 @@
       white-space: nowrap;
     }
 
-    /* seconda riga filtri sticky sotto header */
+    /* Filters row sticky sotto header */
     .ftmanag-table thead tr.ftmanag-filters th{
-      top: 38px; /* altezza header approx */
-      z-index: 2;
+      top: 38px;
+      z-index: 3;
       padding: 8px 10px 10px;
       border-bottom: 1px solid var(--border);
       background: rgba(255,255,255,.92);
     }
 
+    /* Corpo: separatori orizzontali */
     .ftmanag-table tbody td{
       padding: 10px 10px;
-      border-bottom: 1px solid rgba(230,232,240,.75);
+      border-bottom: 1px solid rgba(230,232,240,.70);
       white-space: nowrap;
       color: #0f172a;
       background: transparent;
     }
+    .ftmanag-table tbody tr:last-child td{ border-bottom: none; }
 
-    .ftmanag-table tbody tr:last-child td{
-      border-bottom: none;
-    }
-
+    /* Hover soft */
     .ftmanag-table tbody tr{
       transition: background .12s ease;
     }
-
     .ftmanag-table tbody tr:hover{
       background: rgba(0,94,220,.06);
       cursor: pointer;
     }
 
-    .ftmanag-table tbody tr:hover td{
-      background: transparent;
+    /* Riga selezionata (click singolo) */
+    .ftmanag-table tbody tr.is-selected{
+      background: rgba(0,94,220,.10);
     }
 
-    /* filtri input/select già “premium” da ftstyle, qui li rendiamo più compatti */
+    /* Filtri compatti */
     .ftmanag-filters input,
     .ftmanag-filters select{
       width: 100%;
@@ -141,6 +130,17 @@
       outline: none;
       box-shadow: 0 1px 0 rgba(15,23,42,.02);
     }
+
+    /* Sticky first column (stato) */
+    .ftmanag-table th:first-child,
+    .ftmanag-table td:first-child{
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background: rgba(255,255,255,.94);
+    }
+    .ftmanag-table thead th:first-child{ z-index: 4; }
+    .ftmanag-table thead tr.ftmanag-filters th:first-child{ z-index: 4; }
 
     /* Footer */
     .ftmanag-bottom{
@@ -154,7 +154,7 @@
       color: var(--muted);
     }
 
-    /* status pill (più “badge-like”) */
+    /* Status pill */
     .status-pill{
       display: inline-flex;
       align-items: center;
@@ -163,8 +163,8 @@
       font-size: 11px;
       font-weight: 900;
       border: 1px solid rgba(205,210,225,.95);
-      box-shadow: 0 2px 10px rgba(15,23,42,.06);
       background: rgba(255,255,255,.92);
+      box-shadow: 0 2px 10px rgba(15,23,42,.06);
       color: var(--text);
     }
 
@@ -177,17 +177,17 @@
 
     .nowrap{ white-space: nowrap; }
 
-    /* responsive: su schermi piccoli riduci padding card */
     @media (max-width: 920px){
       .ftmanag-wrap{ padding: 14px; }
       .card.pad{ padding: 14px; }
       .ftmanag-tablewrap{ border-radius: 14px; }
+      .ftmanag-table{ min-width: 920px; }
     }
   </style>
 </head>
 
 <body class="ft-page has-topbar">
-  <!-- TOPBAR nuova struttura -->
+  <!-- TOPBAR nuova struttura coerente (1 solo Home) -->
   <div class="ft-topbar">
     <div class="ft-topbar__inner">
       <div class="ft-topbar__left">
@@ -200,19 +200,14 @@
       </div>
 
       <div class="ft-topbar__right">
-        <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
-        <button class="btn btn-primary btn-small" type="button" onclick="window.location.href='FTHUBAS.html'">
-          Torna a Home
-        </button>
+        <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">🏠 Home</a>
       </div>
     </div>
   </div>
 
   <main class="ftmanag-wrap">
     <section class="card pad ftmanag-card">
-      <div class="ftmanag-head">
-        <h1 class="ftmanag-title">Elenco reclami</h1>
-      </div>
+      <h1 class="ftmanag-title">Elenco reclami</h1>
 
       <div id="loading" class="ftmanag-loading">Caricamento reclami...</div>
       <div id="error" class="ftmanag-error" style="display:none;"></div>
@@ -253,6 +248,9 @@
 
     let allClaims = [];
     let columns = [];
+
+    // riga selezionata (per click singolo)
+    let selectedClaimCode = null;
 
     const filters = {
       openDealer: '',
@@ -323,7 +321,6 @@
           isDistributor = !!dealerData.isDistributor;
         }
 
-        // testo userinfo (in topbar center)
         userInfoEl.textContent =
           'Utente: ' + (userData.displayName || user.email || user.uid) +
           ' | Dealer: ' + currentDealerId +
@@ -424,6 +421,7 @@
       allClaims = [];
       lastVisible = null;
       reachedEnd = false;
+      selectedClaimCode = null;
 
       let query;
       if (isDistributor) {
@@ -444,6 +442,7 @@
           'Nessun reclamo trovato per questo account.';
         loadingEl.style.display = 'none';
         document.getElementById('loadMoreBtn').disabled = true;
+        renderTable();
         return;
       }
 
@@ -568,6 +567,11 @@
       return true;
     }
 
+    function clearRowSelection() {
+      document.querySelectorAll('#claimsBody tr.is-selected')
+        .forEach(r => r.classList.remove('is-selected'));
+    }
+
     function renderTable() {
       const tbody = document.getElementById('claimsBody');
       tbody.innerHTML = '';
@@ -576,7 +580,21 @@
 
       filtered.forEach(claim => {
         const tr = document.createElement('tr');
-        tr.addEventListener('click', () => openClaimDetails(claim));
+
+        // CLICK singolo: seleziona riga (NON apre)
+        tr.addEventListener('click', () => {
+          selectedClaimCode = claim.code || null;
+          clearRowSelection();
+          tr.classList.add('is-selected');
+        });
+
+        // DOPPIO CLICK: apre pratica
+        tr.addEventListener('dblclick', () => openClaimDetails(claim));
+
+        // ripristina selezione se già selezionato (utile dopo renderTable)
+        if (selectedClaimCode && claim.code === selectedClaimCode) {
+          tr.classList.add('is-selected');
+        }
 
         columns.forEach(col => {
           const td = document.createElement('td');
