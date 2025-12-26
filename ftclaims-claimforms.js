@@ -1,8 +1,16 @@
 // ===============================
-// ftclaims-claimforms.js
-// Dettagli dei singoli claim (RSA, Garanzia, Garanzia Ricambio, ...)
-// + (opzionale) Dati generali (Ticket / Sinistro)
+// ftclaims-claimforms.js (rev STEP2)
+// Dettagli dei singoli claim (RSA, Garanzia, Garanzia Ricambio, Service Contract Option, ...)
 // + Allegati generici + Note stile chat per ogni claim
+//
+// Modifiche incluse (richieste):
+// 2) Codice esteso + Descrizione componente causa sulla stessa riga (grid 2 colonne)
+// 3) Manodopera "solo distributore" collegata al listino FTLabourCodes come lato dealer
+// 4) "Salva dati Garanzia" come ultimo tasto del pad (in fondo, dopo Allegati/Note)
+// 5) Ticket + Sinistro tra commento tecnico e Ricambi
+// 6) Eliminato "Salva dati generali" per Garanzia: tutto salva con "Salva dati Garanzia"
+// 7) Box lettura note più alto
+// (1 e 8 sono in ftclaims_step2.html, non qui)
 // ===============================
 
 function normalizeClaimType(ct) {
@@ -30,27 +38,42 @@ function renderClaimDetails(claimType, container, claimData, ctx) {
     renderGaranziaRicambioDetails(container, claimData, ctx);
 
   } else if (type === "SERVICE OPTION") {
-    // ✅ NUOVO: opzioni Service Contract
     renderServiceOptionDetails(container, claimData, ctx);
 
   } else if (type) {
     const info = document.createElement("div");
-    info.className = "small-text";
+    info.className = "muted";
     info.textContent =
       'Per la tipologia "' + type + '" non sono ancora previsti campi aggiuntivi.';
     container.appendChild(info);
 
-    // Tipi generici: Dati generali + Allegati + Note
     addAttachmentsAndNotesSection(container, ctx, { showGeneral: true });
 
   } else {
     const info = document.createElement("div");
-    info.className = "small-text";
+    info.className = "muted";
     info.textContent = "Tipologia claim non specificata.";
     container.appendChild(info);
 
     addAttachmentsAndNotesSection(container, ctx, { showGeneral: true });
   }
+}
+
+/* ===============================
+   Helpers UI
+=============================== */
+
+function addHr(container) {
+  const hr = document.createElement("hr");
+  hr.className = "hr";
+  container.appendChild(hr);
+}
+
+function safeBtnClass(primary, danger) {
+  // compat: in step2 usi "btn danger", altrove "btn btn-danger" ecc.
+  if (danger) return "btn danger btn-small";
+  if (primary) return "btn btn-primary btn-small";
+  return "btn btn-secondary btn-small";
 }
 
 /* ===============================
@@ -63,23 +86,23 @@ function renderServiceOptionDetails(container, claimData, ctx) {
 
   const label = so.label || so.key || "Opzione (non definita)";
 
-  const html = `
+  container.innerHTML = `
     <h4 style="margin: 4px 0 6px; font-size: 13px;">Opzione Service Contract</h4>
 
     <div class="form-group">
       <label>Opzione</label>
       <input type="text" id="${prefix}label" readonly>
-      <div class="small-text">
+      <div class="muted" style="margin-top:6px;">
         Questa riparazione è stata creata come opzione del Service Contract.
       </div>
     </div>
 
     <div class="form-group">
-      <label>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:normal;">
         <input type="checkbox" id="${prefix}done">
-        Eseguita
+        <span><strong>Eseguita</strong></span>
       </label>
-      <div class="small-text">
+      <div class="muted" style="margin-top:6px;">
         Spunta se l’opzione è stata effettivamente eseguita (utile anche per report futuri).
       </div>
     </div>
@@ -90,13 +113,11 @@ function renderServiceOptionDetails(container, claimData, ctx) {
     </div>
 
     <div class="form-group">
-      <button type="button" id="${prefix}saveBtn" class="btn btn-primary btn-small">
+      <button type="button" id="${prefix}saveBtn" class="${safeBtnClass(true,false)}">
         Salva opzione
       </button>
     </div>
   `;
-
-  container.innerHTML = html;
 
   const labelInput = container.querySelector("#" + prefix + "label");
   const doneInput  = container.querySelector("#" + prefix + "done");
@@ -175,56 +196,59 @@ function renderRSADetails(container, claimData, ctx) {
   const rsa = claimData.rsa || {};
   const prefix = "rsa_" + ctx.claimCode + "_";
 
-  const html = `
+  container.innerHTML = `
     <h4 style="margin: 4px 0 6px; font-size: 13px;">Dati RSA</h4>
 
     <div class="form-group">
       <label for="${prefix}date">Data RSA (inizio intervento)</label>
       <input type="date" id="${prefix}date">
-      <div class="small-text">
+      <div class="muted" style="margin-top:6px;">
         Se cade di sabato, domenica o festività nazionale, il DAYSHIFT non è compilabile.
       </div>
     </div>
 
     <div class="form-group">
-      <label>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:normal;">
         <input type="checkbox" id="${prefix}onlyTow">
-        Solo Traino
+        <span><strong>Solo Traino</strong></span>
       </label>
-      <div class="small-text">
+      <div class="muted" style="margin-top:6px;">
         Se selezionato, si compilano solo "Caso RSA n." e "Traino, costi correlati".
       </div>
     </div>
 
     <div class="form-group">
-      <div class="shift-box">
-        <span class="shift-label">DAYSHIFT</span>
-        <input type="number" id="${prefix}dayHours" class="time-input" min="0" max="99" step="1">
-        <span class="time-separator">:</span>
-        <input type="number" id="${prefix}dayMinutes" class="time-input" min="0" max="59" step="1">
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        <div class="mutedBox" style="display:flex; align-items:center; gap:6px;">
+          <span style="font-weight:900;">DAYSHIFT</span>
+          <input type="number" id="${prefix}dayHours" class="time-input" min="0" max="99" step="1" style="width:70px;">
+          <span>:</span>
+          <input type="number" id="${prefix}dayMinutes" class="time-input" min="0" max="59" step="1" style="width:70px;">
+        </div>
+
+        <div class="mutedBox" style="display:flex; align-items:center; gap:6px;">
+          <span style="font-weight:900;">NIGHTSHIFT</span>
+          <input type="number" id="${prefix}nightHours" class="time-input" min="0" max="99" step="1" style="width:70px;">
+          <span>:</span>
+          <input type="number" id="${prefix}nightMinutes" class="time-input" min="0" max="59" step="1" style="width:70px;">
+        </div>
       </div>
+    </div>
 
-      <div class="shift-box">
-        <span class="shift-label">NIGHTSHIFT</span>
-        <input type="number" id="${prefix}nightHours" class="time-input" min="0" max="99" step="1">
-        <span class="time-separator">:</span>
-        <input type="number" id="${prefix}nightMinutes" class="time-input" min="0" max="59" step="1">
+    <div class="ftc-grid2">
+      <div>
+        <label for="${prefix}km">PERCORRENZA - Km</label>
+        <input type="number" id="${prefix}km" min="0" step="1">
+      </div>
+      <div>
+        <label for="${prefix}case">Caso RSA n.</label>
+        <input type="text" id="${prefix}case" maxlength="7">
       </div>
     </div>
 
-    <div class="form-group">
-      <label for="${prefix}km">PERCORRENZA - Km</label>
-      <input type="number" id="${prefix}km" min="0" step="1">
-    </div>
-
-    <div class="form-group">
-      <label for="${prefix}case">Caso RSA n.</label>
-      <input type="text" id="${prefix}case" maxlength="7">
-    </div>
-
-    <div class="form-group">
+    <div class="form-group" style="margin-top:10px;">
       <label for="${prefix}towCosts">Traino, costi correlati (€)</label>
-      <input type="number" id="${prefix}towCosts" min="0" step="0.01" class="currency-input">
+      <input type="number" id="${prefix}towCosts" min="0" step="0.01">
     </div>
 
     <div class="form-group">
@@ -238,13 +262,11 @@ function renderRSADetails(container, claimData, ctx) {
     </div>
 
     <div class="form-group">
-      <button type="button" id="${prefix}saveBtn" class="btn btn-primary btn-small">
+      <button type="button" id="${prefix}saveBtn" class="${safeBtnClass(true,false)}">
         Salva dati RSA
       </button>
     </div>
   `;
-
-  container.innerHTML = html;
 
   const dateInput       = container.querySelector("#" + prefix + "date");
   const onlyTowInput    = container.querySelector("#" + prefix + "onlyTow");
@@ -270,7 +292,7 @@ function renderRSADetails(container, claimData, ctx) {
   if (rsa.towCostsAmount != null) towCostsInput.value = rsa.towCostsAmount;
 
   function updateFieldsState() {
-    const onlyTow  = onlyTowInput.checked;
+    const onlyTow  = !!onlyTowInput.checked;
     const dateStr  = dateInput.value || "";
     const isSpecial= isWeekendOrItalianHoliday(dateStr);
 
@@ -310,7 +332,7 @@ function renderRSADetails(container, claimData, ctx) {
 
   function readInt(input) {
     if (!input) return null;
-    const v = input.value.trim();
+    const v = (input.value || "").trim();
     if (v === "") return null;
     const n = Number(v);
     return isNaN(n) ? null : n;
@@ -318,7 +340,7 @@ function renderRSADetails(container, claimData, ctx) {
 
   function readCurrency(input) {
     if (!input) return null;
-    var v = input.value.trim().replace(",", ".");
+    var v = (input.value || "").trim().replace(",", ".");
     if (v === "") return null;
     const n = Number(v);
     return isNaN(n) ? null : n;
@@ -335,7 +357,7 @@ function renderRSADetails(container, claimData, ctx) {
       const db = firebase.firestore();
       const storage = firebase.storage();
 
-      const onlyTow = onlyTowInput.checked;
+      const onlyTow = !!onlyTowInput.checked;
       const rsaDate = dateInput.value || null;
 
       const rsaData = {
@@ -346,7 +368,7 @@ function renderRSADetails(container, claimData, ctx) {
         nightShiftHours:  onlyTow ? null : readInt(nightHoursInput),
         nightShiftMinutes:onlyTow ? null : readInt(nightMinInput),
         km:               onlyTow ? null : readInt(kmInput),
-        caseNumber: (caseInput.value.trim() || null),
+        caseNumber: ((caseInput.value || "").trim() || null),
         towCostsAmount: readCurrency(towCostsInput)
       };
 
@@ -398,7 +420,7 @@ function renderRSADetails(container, claimData, ctx) {
     });
   }
 
-  // RSA: ha anche Dati generali + Allegati + Note
+  // RSA: mantiene Dati generali + Allegati + Note
   addAttachmentsAndNotesSection(container, ctx, { showGeneral: true });
 }
 
@@ -416,7 +438,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
   const titolo = isRicambio ? "Dati Garanzia Ricambio" : "Dati Garanzia";
   const labelSave = isRicambio ? "Salva dati Garanzia Ricambio" : "Salva dati Garanzia";
 
-  const html = `
+  container.innerHTML = `
     <h4 style="margin: 4px 0 6px; font-size: 13px;">${titolo}</h4>
 
     <div class="form-group">
@@ -442,151 +464,155 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
 
     <div class="form-group">
       <label for="${prefix}causaCode">Componente causa (codice ricambio)</label>
-      <div style="display:flex; gap:4px;">
-        <input type="text" id="${prefix}causaCode" style="flex:0 0 150px;">
-        <button type="button" id="${prefix}causaSearch" class="btn btn-small btn-secondary">Cerca</button>
+      <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+        <input type="text" id="${prefix}causaCode" style="flex:0 0 160px;">
+        <button type="button" id="${prefix}causaSearch" class="${safeBtnClass(false,false)}">Cerca</button>
       </div>
-      <div class="small-text">
+      <div class="muted" style="margin-top:6px;">
         La ricerca avviene nel DB FTPartsCodes sul campo "codice".
       </div>
     </div>
 
-    <div class="form-row">
-      <div class="form-group">
+    <!-- ✅ punto 2: stessa riga (2 colonne) -->
+    <div class="ftc-grid2">
+      <div>
         <label for="${prefix}causaExt">Codice esteso componente</label>
         <input type="text" id="${prefix}causaExt" readonly>
       </div>
-      <div class="form-group">
+      <div>
         <label for="${prefix}causaDesc">Descrizione componente</label>
         <input type="text" id="${prefix}causaDesc" readonly>
       </div>
     </div>
 
-    <div class="form-group">
+    <div class="form-group" style="margin-top:10px;">
       <label for="${prefix}commento">Commento tecnico</label>
-      <textarea id="${prefix}commento" rows="3"></textarea>
+      <textarea id="${prefix}commento" rows="3" placeholder="Descrizione difetto, diagnosi, prove, causa, rimedio..."></textarea>
     </div>
 
-    <hr>
+    <!-- ✅ punto 5: Ticket + Sinistro qui -->
+    <div class="ftc-grid2" style="margin-top:10px;">
+      <div>
+        <label for="${prefix}ticket">Ticket</label>
+        <input type="text" id="${prefix}ticket" placeholder="(opzionale)">
+      </div>
+      <div>
+        <label for="${prefix}sinistro">Sinistro</label>
+        <input type="text" id="${prefix}sinistro" placeholder="(solo distributore)">
+        <div class="muted" style="margin-top:6px;">Modificabile solo dal distributore.</div>
+      </div>
+    </div>
+
+    <hr class="hr">
 
     <h4 style="margin: 4px 0 6px; font-size: 13px;">Ricambi</h4>
-    <div class="small-text">Ricambi selezionati dal DB FTPartsCodes.</div>
+    <div class="muted">Ricambi selezionati dal DB FTPartsCodes.</div>
 
-    <div class="form-group">
-      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+    <div class="form-group" style="margin-top:8px;">
+      <table class="ftc-table" style="font-size:12px;">
         <thead>
           <tr>
-            <th style="border-bottom:1px solid #ddd; text-align:left;">Codice</th>
-            <th style="border-bottom:1px solid #ddd; text-align:left;">Codice esteso</th>
-            <th style="border-bottom:1px solid #ddd; text-align:left;">Descrizione</th>
-            <th style="border-bottom:1px solid #ddd; text-align:right;">Rimborso garanzia (€/unità)</th>
-            <th style="border-bottom:1px solid #ddd; text-align:right;">Quantità</th>
-            <th style="border-bottom:1px solid #ddd; text-align:right;">Totale</th>
-            <th style="border-bottom:1px solid #ddd; text-align:center;">Azioni</th>
+            <th style="text-align:left;">Codice</th>
+            <th style="text-align:left;">Codice esteso</th>
+            <th style="text-align:left;">Descrizione</th>
+            <th style="text-align:right;">Rimborso (€/unità)</th>
+            <th style="text-align:right;">Q.tà</th>
+            <th style="text-align:right;">Totale</th>
+            <th style="text-align:center;">Azioni</th>
           </tr>
         </thead>
         <tbody id="${prefix}partsBody"></tbody>
       </table>
     </div>
 
-    <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
-      <button type="button" id="${prefix}addPart" class="btn btn-small btn-secondary">Aggiungi ricambio</button>
-      <div><strong>Totale ricambi: </strong><span id="${prefix}partsTotal">0.00</span> €</div>
+    <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+      <button type="button" id="${prefix}addPart" class="${safeBtnClass(false,false)}">Aggiungi ricambio</button>
+      <div><strong>Totale ricambi:</strong> <span id="${prefix}partsTotal">0.00</span> €</div>
     </div>
 
     <div id="${prefix}distPartsBox" style="display:none;">
-      <hr>
+      <hr class="hr">
       <h4 style="margin: 4px 0 6px; font-size: 13px;">Ricambi (solo distributore - interni)</h4>
-      <div class="small-text">Queste righe NON sono visibili al dealer.</div>
+      <div class="muted">Queste righe NON sono visibili al dealer.</div>
 
-      <div class="form-group">
-        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+      <div class="form-group" style="margin-top:8px;">
+        <table class="ftc-table" style="font-size:12px;">
           <thead>
             <tr>
-              <th style="border-bottom:1px solid #ddd; text-align:left;">Codice</th>
-              <th style="border-bottom:1px solid #ddd; text-align:left;">Codice esteso</th>
-              <th style="border-bottom:1px solid #ddd; text-align:left;">Descrizione</th>
-              <th style="border-bottom:1px solid #ddd; text-align:right;">Rimborso garanzia (€/unità)</th>
-              <th style="border-bottom:1px solid #ddd; text-align:right;">Quantità</th>
-              <th style="border-bottom:1px solid #ddd; text-align:right;">Totale</th>
-              <th style="border-bottom:1px solid #ddd; text-align:center;">Azioni</th>
+              <th style="text-align:left;">Codice</th>
+              <th style="text-align:left;">Codice esteso</th>
+              <th style="text-align:left;">Descrizione</th>
+              <th style="text-align:right;">Rimborso (€/unità)</th>
+              <th style="text-align:right;">Q.tà</th>
+              <th style="text-align:right;">Totale</th>
+              <th style="text-align:center;">Azioni</th>
             </tr>
           </thead>
           <tbody id="${prefix}distPartsBody"></tbody>
         </table>
       </div>
 
-      <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
-        <button type="button" id="${prefix}addDistPart" class="btn btn-small btn-secondary">Aggiungi ricambio (distributore)</button>
-        <div><strong>Totale ricambi interni: </strong><span id="${prefix}distPartsTotal">0.00</span> €</div>
+      <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <button type="button" id="${prefix}addDistPart" class="${safeBtnClass(false,false)}">Aggiungi ricambio (distributore)</button>
+        <div><strong>Totale ricambi interni:</strong> <span id="${prefix}distPartsTotal">0.00</span> €</div>
       </div>
     </div>
 
-    <hr>
+    <hr class="hr">
 
     <h4 style="margin: 4px 0 6px; font-size: 13px;">Manodopera</h4>
-    <div class="small-text" id="${prefix}labourRateLabel">Tariffa oraria dealer: -- €/h</div>
+    <div class="muted" id="${prefix}labourRateLabel">Tariffa oraria dealer: -- €/h</div>
 
-    <div class="form-group">
-      <table style="width:100%; border-collapse:collapse; font-size:12px;">
+    <div class="form-group" style="margin-top:8px;">
+      <table class="ftc-table" style="font-size:12px;">
         <thead>
           <tr>
-            <th style="border-bottom:1px solid #ddd; text-align:left;">Codice labour</th>
-            <th style="border-bottom:1px solid #ddd; text-align:left;">Descrizione</th>
-            <th style="border-bottom:1px solid #ddd; text-align:right;">Quantità</th>
-            <th style="border-bottom:1px solid #ddd; text-align:right;">Totale</th>
-            <th style="border-bottom:1px solid #ddd; text-align:center;">Azioni</th>
+            <th style="text-align:left;">Codice labour</th>
+            <th style="text-align:left;">Descrizione</th>
+            <th style="text-align:right;">Q.tà</th>
+            <th style="text-align:right;">Totale</th>
+            <th style="text-align:center;">Azioni</th>
           </tr>
         </thead>
         <tbody id="${prefix}labourBody"></tbody>
       </table>
     </div>
 
-    <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
-      <button type="button" id="${prefix}addLabour" class="btn btn-small btn-secondary">Aggiungi manodopera</button>
-      <div><strong>Totale manodopera: </strong><span id="${prefix}labourTotal">0.00</span> €</div>
+    <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+      <button type="button" id="${prefix}addLabour" class="${safeBtnClass(false,false)}">Aggiungi manodopera</button>
+      <div><strong>Totale manodopera:</strong> <span id="${prefix}labourTotal">0.00</span> €</div>
     </div>
 
     <div id="${prefix}distLabourBox" style="display:none;">
-      <hr>
+      <hr class="hr">
       <h4 style="margin: 4px 0 6px; font-size: 13px;">Manodopera (solo distributore - interni)</h4>
-      <div class="small-text">Queste righe NON sono visibili al dealer.</div>
+      <div class="muted">Queste righe NON sono visibili al dealer.</div>
 
-      <div class="form-group">
-        <table style="width:100%; border-collapse:collapse; font-size:12px;">
+      <div class="form-group" style="margin-top:8px;">
+        <table class="ftc-table" style="font-size:12px;">
           <thead>
             <tr>
-              <th style="border-bottom:1px solid #ddd; text-align:left;">Codice labour</th>
-              <th style="border-bottom:1px solid #ddd; text-align:left;">Descrizione</th>
-              <th style="border-bottom:1px solid #ddd; text-align:right;">Quantità</th>
-              <th style="border-bottom:1px solid #ddd; text-align:right;">Totale</th>
-              <th style="border-bottom:1px solid #ddd; text-align:center;">Azioni</th>
+              <th style="text-align:left;">Codice labour</th>
+              <th style="text-align:left;">Descrizione</th>
+              <th style="text-align:right;">Q.tà</th>
+              <th style="text-align:right;">Totale</th>
+              <th style="text-align:center;">Azioni</th>
             </tr>
           </thead>
           <tbody id="${prefix}distLabourBody"></tbody>
         </table>
       </div>
 
-      <div class="form-group" style="display:flex; justify-content:space-between; align-items:center;">
-        <button type="button" id="${prefix}addDistLabour" class="btn btn-small btn-secondary">Aggiungi manodopera (distributore)</button>
-        <div><strong>Totale manodopera interna: </strong><span id="${prefix}distLabourTotal">0.00</span> €</div>
+      <div class="form-group" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+        <button type="button" id="${prefix}addDistLabour" class="${safeBtnClass(false,false)}">Aggiungi manodopera (distributore)</button>
+        <div><strong>Totale manodopera interna:</strong> <span id="${prefix}distLabourTotal">0.00</span> €</div>
       </div>
-    </div>
-
-    <hr>
-
-    <div class="form-group">
-      <button type="button" id="${prefix}saveBtn" class="btn btn-primary btn-small">
-        ${labelSave}
-      </button>
     </div>
   `;
 
-  container.innerHTML = html;
-
   if (typeof firebase === "undefined" || !firebase.firestore) {
     const msg = document.createElement("div");
-    msg.className = "small-text";
+    msg.className = "muted";
     msg.textContent = "Firebase non disponibile.";
     container.appendChild(msg);
     return;
@@ -597,11 +623,16 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
   const symptomSelect   = container.querySelector("#" + prefix + "symptom");
   const cccSelect       = container.querySelector("#" + prefix + "ccc");
   const prevInvDateInput= isRicambio ? container.querySelector("#" + prefix + "prevInvDate") : null;
+
   const causaCodeInput  = container.querySelector("#" + prefix + "causaCode");
   const causaSearchBtn  = container.querySelector("#" + prefix + "causaSearch");
   const causaExtInput   = container.querySelector("#" + prefix + "causaExt");
   const causaDescInput  = container.querySelector("#" + prefix + "causaDesc");
   const commentoInput   = container.querySelector("#" + prefix + "commento");
+
+  // ✅ Ticket + Sinistro
+  const ticketInput     = container.querySelector("#" + prefix + "ticket");
+  const sinistroInput   = container.querySelector("#" + prefix + "sinistro");
 
   const partsBody       = container.querySelector("#" + prefix + "partsBody");
   const addPartBtn      = container.querySelector("#" + prefix + "addPart");
@@ -613,17 +644,15 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
   const labourRateLabel = container.querySelector("#" + prefix + "labourRateLabel");
 
   // ✅ Distributore: box interni + tabelle separate
-  const distPartsBox     = container.querySelector("#" + prefix + "distPartsBox");
-  const distPartsBody    = container.querySelector("#" + prefix + "distPartsBody");
-  const addDistPartBtn   = container.querySelector("#" + prefix + "addDistPart");
+  const distPartsBox       = container.querySelector("#" + prefix + "distPartsBox");
+  const distPartsBody      = container.querySelector("#" + prefix + "distPartsBody");
+  const addDistPartBtn     = container.querySelector("#" + prefix + "addDistPart");
   const distPartsTotalSpan = container.querySelector("#" + prefix + "distPartsTotal");
 
-  const distLabourBox     = container.querySelector("#" + prefix + "distLabourBox");
-  const distLabourBody    = container.querySelector("#" + prefix + "distLabourBody");
-  const addDistLabourBtn  = container.querySelector("#" + prefix + "addDistLabour");
+  const distLabourBox       = container.querySelector("#" + prefix + "distLabourBox");
+  const distLabourBody      = container.querySelector("#" + prefix + "distLabourBody");
+  const addDistLabourBtn    = container.querySelector("#" + prefix + "addDistLabour");
   const distLabourTotalSpan = container.querySelector("#" + prefix + "distLabourTotal");
-
-  const saveBtn         = container.querySelector("#" + prefix + "saveBtn");
 
   const claimRef = db
     .collection("ClaimCards")
@@ -654,6 +683,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     return n.toFixed(2);
   }
 
+  // ----------------- Carica Symptom + CCC -----------------
   async function loadSymptoms(selectedId) {
     if (!symptomSelect) return;
     symptomSelect.innerHTML = "";
@@ -741,6 +771,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     if (garSymptomId) loadCCCForSymptom(garSymptomId, garCCCId);
   });
 
+  // ----------------- Prefill campi Garanzia -----------------
   if (gar.causaPart) {
     causaCodeInput.value = gar.causaPart.codice || "";
     causaExtInput.value  = gar.causaPart.codice_esteso || "";
@@ -748,9 +779,26 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     causaPartId          = gar.causaPart.id || null;
   }
 
+  if (gar.commentoTecnico) commentoInput.value = gar.commentoTecnico;
+  if (isRicambio && prevInvDateInput && gar.previousInvoiceDate) prevInvDateInput.value = gar.previousInvoiceDate;
+
+  // ----------------- Ticket/Sinistro (root claim) -----------------
+  (async function prefillTicketSinistro() {
+    try {
+      const snap = await claimRef.get();
+      if (!snap.exists) return;
+      const d = snap.data() || {};
+      if (ticketInput && d.ticket != null) ticketInput.value = d.ticket || "";
+      if (sinistroInput && d.sinistro != null) sinistroInput.value = d.sinistro || "";
+    } catch (e) {
+      // non bloccante
+    }
+  })();
+
   async function findPartByCode(code) {
-    if (!code) return null;
-    const snap = await db.collection("FTPartsCodes").where("codice", "==", code).limit(1).get();
+    const c = (code || "").trim();
+    if (!c) return null;
+    const snap = await db.collection("FTPartsCodes").where("codice", "==", c).limit(1).get();
     if (snap.empty) return null;
     const doc = snap.docs[0];
     return { id: doc.id, data: doc.data() || {} };
@@ -780,9 +828,6 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     });
   }
 
-  if (gar.commentoTecnico) commentoInput.value = gar.commentoTecnico;
-  if (isRicambio && prevInvDateInput && gar.previousInvoiceDate) prevInvDateInput.value = gar.previousInvoiceDate;
-
   // ----------------- PARTS (DEALER) -----------------
   function createPartRow(initialData) {
     const tr = document.createElement("tr");
@@ -791,15 +836,15 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const tdCode = document.createElement("td");
     const codeInput = document.createElement("input");
     codeInput.type = "text";
-    codeInput.style.width = "100px";
+    codeInput.style.width = "110px";
     codeInput.value = initialData && initialData.codice ? initialData.codice : "";
     codeInput.dataset.partId = initialData && initialData.id ? initialData.id : "";
 
     const searchBtn = document.createElement("button");
     searchBtn.type = "button";
     searchBtn.textContent = "Cerca";
-    searchBtn.className = "btn btn-small btn-secondary";
-    searchBtn.style.marginLeft = "4px";
+    searchBtn.className = safeBtnClass(false,false);
+    searchBtn.style.marginLeft = "6px";
 
     tdCode.appendChild(codeInput);
     tdCode.appendChild(searchBtn);
@@ -825,7 +870,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const refundInput = document.createElement("input");
     refundInput.type = "number";
     refundInput.readOnly = true;
-    refundInput.style.width = "90px";
+    refundInput.style.width = "110px";
     refundInput.step = "0.01";
     refundInput.value = initialData && initialData.rimborso_garanzia != null
       ? formatMoney(initialData.rimborso_garanzia)
@@ -838,7 +883,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     qtyInput.type = "number";
     qtyInput.min = "0";
     qtyInput.step = "1";
-    qtyInput.style.width = "60px";
+    qtyInput.style.width = "70px";
     qtyInput.value = initialData && initialData.quantita != null ? String(initialData.quantita) : "1";
     tdQty.appendChild(qtyInput);
 
@@ -847,7 +892,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const totalInput = document.createElement("input");
     totalInput.type = "number";
     totalInput.readOnly = true;
-    totalInput.style.width = "90px";
+    totalInput.style.width = "110px";
     totalInput.step = "0.01";
     totalInput.value = initialData && initialData.totale != null ? formatMoney(initialData.totale) : "0.00";
     tdTotal.appendChild(totalInput);
@@ -857,7 +902,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.textContent = "Elimina";
-    delBtn.className = "btn btn-small btn-danger";
+    delBtn.className = safeBtnClass(false,true);
     tdActions.appendChild(delBtn);
 
     tr.appendChild(tdCode);
@@ -930,15 +975,15 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const tdCode = document.createElement("td");
     const codeInput = document.createElement("input");
     codeInput.type = "text";
-    codeInput.style.width = "100px";
+    codeInput.style.width = "110px";
     codeInput.value = initialData && initialData.codice ? initialData.codice : "";
     codeInput.dataset.partId = initialData && initialData.id ? initialData.id : "";
 
     const searchBtn = document.createElement("button");
     searchBtn.type = "button";
     searchBtn.textContent = "Cerca";
-    searchBtn.className = "btn btn-small btn-secondary";
-    searchBtn.style.marginLeft = "4px";
+    searchBtn.className = safeBtnClass(false,false);
+    searchBtn.style.marginLeft = "6px";
 
     tdCode.appendChild(codeInput);
     tdCode.appendChild(searchBtn);
@@ -964,7 +1009,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const refundInput = document.createElement("input");
     refundInput.type = "number";
     refundInput.readOnly = true;
-    refundInput.style.width = "90px";
+    refundInput.style.width = "110px";
     refundInput.step = "0.01";
     refundInput.value = initialData && initialData.rimborso_garanzia != null
       ? formatMoney(initialData.rimborso_garanzia)
@@ -977,7 +1022,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     qtyInput.type = "number";
     qtyInput.min = "0";
     qtyInput.step = "1";
-    qtyInput.style.width = "60px";
+    qtyInput.style.width = "70px";
     qtyInput.value = initialData && initialData.quantita != null ? String(initialData.quantita) : "1";
     tdQty.appendChild(qtyInput);
 
@@ -986,7 +1031,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const totalInput = document.createElement("input");
     totalInput.type = "number";
     totalInput.readOnly = true;
-    totalInput.style.width = "90px";
+    totalInput.style.width = "110px";
     totalInput.step = "0.01";
     totalInput.value = initialData && initialData.totale != null ? formatMoney(initialData.totale) : "0.00";
     tdTotal.appendChild(totalInput);
@@ -996,7 +1041,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.textContent = "Elimina";
-    delBtn.className = "btn btn-small btn-danger";
+    delBtn.className = safeBtnClass(false,true);
     tdActions.appendChild(delBtn);
 
     tr.appendChild(tdCode);
@@ -1043,9 +1088,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
 
       try {
         const dId = tr.dataset.docId || "";
-        if (dId) {
-          await distPartsRef.doc(dId).delete();
-        }
+        if (dId) await distPartsRef.doc(dId).delete();
         tr.remove();
         recalcDistributorPartsTotals();
       } catch (err) {
@@ -1114,7 +1157,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
         labourRateLabel.textContent = "Tariffa oraria dealer: n/d";
         return labourRateStd;
       }
-      const dealerSnap = await db.collection("dealers").doc(dealerId).get();
+      const dealerSnap = await db.collection("dealers").doc(String(dealerId)).get();
       if (!dealerSnap.exists) {
         labourRateStd = 0;
         labourRateLabel.textContent = "Tariffa oraria dealer: n/d";
@@ -1132,9 +1175,17 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     }
   }
 
+  // ✅ punto 3: normalizzazione codice
   async function findLabourByCode(code) {
-    if (!code) return null;
-    const snap = await db.collection("FTLabourCodes").where("codice_labour", "==", code).limit(1).get();
+    const clean = String(code || "").trim();
+    if (!clean) return null;
+
+    const snap = await db
+      .collection("FTLabourCodes")
+      .where("codice_labour", "==", clean)
+      .limit(1)
+      .get();
+
     if (snap.empty) return null;
     const doc = snap.docs[0];
     return { id: doc.id, data: doc.data() || {} };
@@ -1148,15 +1199,15 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const tdCode = document.createElement("td");
     const codeInput = document.createElement("input");
     codeInput.type = "text";
-    codeInput.style.width = "100px";
+    codeInput.style.width = "110px";
     codeInput.value = initialData && initialData.codice_labour ? initialData.codice_labour : "";
     codeInput.dataset.labourId = initialData && initialData.id ? initialData.id : "";
 
     const searchBtn = document.createElement("button");
     searchBtn.type = "button";
     searchBtn.textContent = "Cerca";
-    searchBtn.className = "btn btn-small btn-secondary";
-    searchBtn.style.marginLeft = "4px";
+    searchBtn.className = safeBtnClass(false,false);
+    searchBtn.style.marginLeft = "6px";
 
     tdCode.appendChild(codeInput);
     tdCode.appendChild(searchBtn);
@@ -1175,7 +1226,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     qtyInput.type = "number";
     qtyInput.min = "0";
     qtyInput.step = "0.1";
-    qtyInput.style.width = "60px";
+    qtyInput.style.width = "70px";
     qtyInput.value = initialData && initialData.quantita != null ? String(initialData.quantita) : "1";
     tdQty.appendChild(qtyInput);
 
@@ -1183,7 +1234,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     tdTotal.style.textAlign = "right";
     const totalInput = document.createElement("input");
     totalInput.type = "number";
-    totalInput.style.width = "90px";
+    totalInput.style.width = "110px";
     totalInput.step = "0.01";
     totalInput.value = initialData && initialData.totale != null ? formatMoney(initialData.totale) : "0.00";
     tdTotal.appendChild(totalInput);
@@ -1193,7 +1244,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.textContent = "Elimina";
-    delBtn.className = "btn btn-small btn-danger";
+    delBtn.className = safeBtnClass(false,true);
     tdActions.appendChild(delBtn);
 
     tr.appendChild(tdCode);
@@ -1244,7 +1295,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
         const d = found.data;
         codeInput.dataset.labourId = found.id;
         descInput.value = d.descrizione_tradotta || d.descrizione || "";
-        if (d.quantita != null && !initialData) qtyInput.value = String(d.quantita);
+        if (d.quantita != null && (!initialData || initialData.quantita == null)) qtyInput.value = String(d.quantita);
         updateFieldModes();
         recalcRow(false);
       } catch (err) {
@@ -1286,15 +1337,15 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const tdCode = document.createElement("td");
     const codeInput = document.createElement("input");
     codeInput.type = "text";
-    codeInput.style.width = "100px";
+    codeInput.style.width = "110px";
     codeInput.value = initialData && initialData.codice_labour ? initialData.codice_labour : "";
     codeInput.dataset.labourId = initialData && initialData.id ? initialData.id : "";
 
     const searchBtn = document.createElement("button");
     searchBtn.type = "button";
     searchBtn.textContent = "Cerca";
-    searchBtn.className = "btn btn-small btn-secondary";
-    searchBtn.style.marginLeft = "4px";
+    searchBtn.className = safeBtnClass(false,false);
+    searchBtn.style.marginLeft = "6px";
 
     tdCode.appendChild(codeInput);
     tdCode.appendChild(searchBtn);
@@ -1313,7 +1364,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     qtyInput.type = "number";
     qtyInput.min = "0";
     qtyInput.step = "0.1";
-    qtyInput.style.width = "60px";
+    qtyInput.style.width = "70px";
     qtyInput.value = initialData && initialData.quantita != null ? String(initialData.quantita) : "1";
     tdQty.appendChild(qtyInput);
 
@@ -1321,7 +1372,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     tdTotal.style.textAlign = "right";
     const totalInput = document.createElement("input");
     totalInput.type = "number";
-    totalInput.style.width = "90px";
+    totalInput.style.width = "110px";
     totalInput.step = "0.01";
     totalInput.value = initialData && initialData.totale != null ? formatMoney(initialData.totale) : "0.00";
     tdTotal.appendChild(totalInput);
@@ -1331,7 +1382,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     const delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.textContent = "Elimina";
-    delBtn.className = "btn btn-small btn-danger";
+    delBtn.className = safeBtnClass(false,true);
     tdActions.appendChild(delBtn);
 
     tr.appendChild(tdCode);
@@ -1373,6 +1424,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     qtyInput.addEventListener("input", function () { recalcRow(false); });
     totalInput.addEventListener("input", function () { if (isCodeOL000()) recalcRow(true); });
 
+    // ✅ punto 3: lookup listino come dealer (findLabourByCode + normalizzazione + update modes)
     searchBtn.addEventListener("click", async function () {
       const code = (codeInput.value || "").trim();
       if (!code) { alert("Inserisci un codice labour."); return; }
@@ -1382,7 +1434,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
         const d = found.data;
         codeInput.dataset.labourId = found.id;
         descInput.value = d.descrizione_tradotta || d.descrizione || "";
-        if (d.quantita != null && !initialData) qtyInput.value = String(d.quantita);
+        if (d.quantita != null && (!initialData || initialData.quantita == null)) qtyInput.value = String(d.quantita);
         updateFieldModes();
         recalcRow(false);
       } catch (err) {
@@ -1403,9 +1455,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
 
       try {
         const dId = tr.dataset.docId || "";
-        if (dId) {
-          await distLabRef.doc(dId).delete();
-        }
+        if (dId) await distLabRef.doc(dId).delete();
         tr.remove();
         recalcDistributorLabourTotals();
       } catch (err) {
@@ -1461,6 +1511,9 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
       const info = await getCurrentUserInfo();
       isDistributor = !!(info && info.isDistributor === true);
 
+      // Ticket/Sinistro: sinistro editabile solo distributore
+      if (sinistroInput && !isDistributor) sinistroInput.disabled = true;
+
       if (isDistributor) {
         if (distPartsBox) distPartsBox.style.display = "block";
         if (distLabourBox) distLabourBox.style.display = "block";
@@ -1482,7 +1535,9 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
       }
     } catch (e) {
       console.warn("Init distributor UI failed:", e);
-      // prosegui comunque con labour rate e righe dealer
+
+      if (sinistroInput) sinistroInput.disabled = true;
+
       loadLabourRateStdIfNeeded().then(function () {
         if (Array.isArray(gar.labour)) {
           gar.labour.forEach(function (l) { createLabourRow(l); });
@@ -1530,6 +1585,26 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     });
   }
 
+  // ===========================
+  // Allegati + Note (NO "Dati generali" per Garanzia)
+  // ===========================
+  // ✅ punto 6: showGeneral:false per Garanzia
+  addAttachmentsAndNotesSection(container, ctx, { showGeneral: false });
+
+  // ✅ punto 4: tasto Salva in fondo, ultimo elemento del pad
+  addHr(container);
+
+  const saveWrap = document.createElement("div");
+  saveWrap.className = "form-group";
+  saveWrap.innerHTML = `
+    <button type="button" id="${prefix}saveBtn" class="${safeBtnClass(true,false)}">
+      ${labelSave}
+    </button>
+  `;
+  container.appendChild(saveWrap);
+
+  const saveBtn = container.querySelector("#" + prefix + "saveBtn");
+
   // ----------------- SAVE GARANZIA (dealer) + SYNC distributor subcollections -----------------
   if (saveBtn) {
     saveBtn.addEventListener("click", async function () {
@@ -1569,7 +1644,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
 
         if (isRicambio && prevInvDateInput) garanziaData.previousInvoiceDate = prevInvDateInput.value || null;
 
-        // -------- dealer parts (come prima) --------
+        // -------- dealer parts --------
         const parts = [];
         let partsTotal = 0;
         const partRows = partsBody.querySelectorAll("tr");
@@ -1597,7 +1672,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
         garanziaData.parts = parts;
         garanziaData.totaleRicambi = partsTotal;
 
-        // -------- dealer labour (come prima) --------
+        // -------- dealer labour --------
         const labour = [];
         let labourTotal = 0;
         const labourRows = labourBody.querySelectorAll("tr");
@@ -1621,6 +1696,15 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
         garanziaData.labour = labour;
         garanziaData.totaleManodopera = labourTotal;
 
+        // ✅ punto 6: salva Ticket + (Sinistro solo dist) sul root claim
+        const rootUpdate = {
+          ticket: ticketInput ? ((ticketInput.value || "").trim() || null) : null
+        };
+        if (isDistributor && sinistroInput) {
+          rootUpdate.sinistro = ((sinistroInput.value || "").trim() || null);
+        }
+        await claimRef.update(rootUpdate);
+
         // -------- salva garanzia principale --------
         const fieldName = isRicambio ? "garanziaRicambio" : "garanzia";
         const updateObj = {};
@@ -1631,7 +1715,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
         if (isDistributor) {
           const userInfo = await getCurrentUserInfo();
 
-          // PARTS dist: upsert + cleanup righe vuote (codice vuoto => delete doc)
+          // PARTS dist: upsert + cleanup righe vuote
           const distPartRows = distPartsBody.querySelectorAll("tr");
           for (let i = 0; i < distPartRows.length; i++) {
             const tr = distPartRows[i];
@@ -1644,7 +1728,6 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
 
             const codice = codeInput ? (codeInput.value || "").trim() : "";
 
-            // ✅ cleanup: niente righe vuote in DB
             if (!codice) {
               if (docId) { try { await distPartsRef.doc(docId).delete(); } catch(e){} }
               continue;
@@ -1712,9 +1795,6 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
       }
     });
   }
-
-  // Garanzia: Dati generali + Allegati + Note
-  addAttachmentsAndNotesSection(container, ctx, { showGeneral: true });
 }
 
 function renderGaranziaDetails(container, claimData, ctx) {
@@ -1726,7 +1806,8 @@ function renderGaranziaRicambioDetails(container, claimData, ctx) {
 }
 
 /* ===============================
-   Dati generali + Allegati + Note per claim
+   Allegati + Note per claim
+   (opzionale Dati generali Ticket/Sinistro)
 =============================== */
 
 /**
@@ -1751,6 +1832,7 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
     .doc(ctx.claimCode);
 
   // ---------- DATI GENERALI CLAIM (TICKET / SINISTRO) ----------
+  // (per RSA / Service Option / altri tipi generici)
   if (showGeneral) {
     const genPrefix = "gen_" + ctx.claimCode + "_";
 
@@ -1759,21 +1841,22 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
     genSection.innerHTML = `
       <h4 style="margin: 12px 0 4px; font-size: 13px;">Dati generali claim</h4>
 
-      <div class="form-group">
-        <label for="${genPrefix}ticket">Ticket</label>
-        <input type="text" id="${genPrefix}ticket">
-      </div>
-
-      <div class="form-group">
-        <label for="${genPrefix}sinistro">Sinistro</label>
-        <input type="text" id="${genPrefix}sinistro">
-        <div class="small-text">
-          Campo modificabile solo dal distributore (FT001 oppure utenti con flag isDistributorUser).
+      <div class="ftc-grid2">
+        <div>
+          <label for="${genPrefix}ticket">Ticket</label>
+          <input type="text" id="${genPrefix}ticket">
+        </div>
+        <div>
+          <label for="${genPrefix}sinistro">Sinistro</label>
+          <input type="text" id="${genPrefix}sinistro">
+          <div class="muted" style="margin-top:6px;">
+            Campo modificabile solo dal distributore (FT001 oppure utenti con flag isDistributorUser).
+          </div>
         </div>
       </div>
 
-      <div class="form-group">
-        <button type="button" id="${genPrefix}save" class="btn btn-small btn-primary">
+      <div class="form-group" style="margin-top:10px;">
+        <button type="button" id="${genPrefix}save" class="${safeBtnClass(true,false)}">
           Salva dati generali
         </button>
       </div>
@@ -1797,16 +1880,16 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
     claimDocRef.get().then(function (snap) {
       if (!snap.exists) return;
       const d = snap.data() || {};
-      if (ticketInput && d.ticket != null) ticketInput.value = d.ticket;
-      if (sinistroInput && d.sinistro != null) sinistroInput.value = d.sinistro;
+      if (ticketInput && d.ticket != null) ticketInput.value = d.ticket || "";
+      if (sinistroInput && d.sinistro != null) sinistroInput.value = d.sinistro || "";
     }).catch(function (err) {
       console.warn("Errore lettura dati generali claim:", err);
     });
 
     if (saveGeneralBtn) {
       saveGeneralBtn.addEventListener("click", async function () {
-        const ticketVal   = ticketInput ? ticketInput.value.trim() : "";
-        const sinistroVal = sinistroInput ? sinistroInput.value.trim() : "";
+        const ticketVal   = ticketInput ? (ticketInput.value || "").trim() : "";
+        const sinistroVal = sinistroInput ? (sinistroInput.value || "").trim() : "";
 
         const updateData = { ticket: ticketVal || null };
         if (isDistributor) updateData.sinistro = sinistroVal || null;
@@ -1829,12 +1912,12 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
   attSection.className = "form-group";
   attSection.innerHTML = `
     <h4 style="margin: 12px 0 4px; font-size: 13px;">Allegati</h4>
-    <div class="small-text">Allegati generici relativi a questo claim.</div>
-    <div style="margin-top:4px; display:flex; gap:4px; align-items:center;">
+    <div class="muted">Allegati generici relativi a questo claim.</div>
+    <div style="margin-top:8px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <input type="file" id="${attPrefix}file" multiple>
-      <button type="button" id="${attPrefix}uploadBtn" class="btn btn-small btn-secondary">Carica</button>
+      <button type="button" id="${attPrefix}uploadBtn" class="${safeBtnClass(false,false)}">Carica</button>
     </div>
-    <div id="${attPrefix}list" class="small-text" style="margin-top:6px;"></div>
+    <div id="${attPrefix}list" class="muted" style="margin-top:8px;"></div>
   `;
   container.appendChild(attSection);
 
@@ -1857,10 +1940,11 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
     const ul = document.createElement("ul");
     ul.style.listStyleType = "none";
     ul.style.paddingLeft = "0";
+    ul.style.margin = "0";
 
     items.forEach(function (item) {
       const li = document.createElement("li");
-      li.style.marginBottom = "4px";
+      li.style.marginBottom = "8px";
 
       const link = document.createElement("a");
       link.href = item.url || "#";
@@ -1871,8 +1955,8 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
       const delBtn = document.createElement("button");
       delBtn.type = "button";
       delBtn.textContent = "Elimina";
-      delBtn.className = "btn btn-small btn-danger";
-      delBtn.style.marginLeft = "6px";
+      delBtn.className = safeBtnClass(false,true);
+      delBtn.style.marginLeft = "10px";
 
       delBtn.addEventListener("click", async function () {
         if (!confirm('Vuoi eliminare l\'allegato "' + (item.name || "") + '"?')) return;
@@ -1961,14 +2045,15 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
   notesSection.className = "form-group";
   notesSection.innerHTML = `
     <h4 style="margin: 12px 0 4px; font-size: 13px;">Note</h4>
+    <!-- ✅ punto 7: box più alto -->
     <div id="${notesPrefix}list"
-         class="small-text"
-         style="max-height:150px; overflow-y:auto; border:1px solid #ddd; background:#ffffff; padding:4px;">
+         class="notesBox"
+         style="height:260px; overflow-y:auto; border:1px solid #ddd; background:#ffffff; padding:8px; border-radius:10px;">
       Nessuna nota.
     </div>
-    <div style="margin-top:4px; display:flex; gap:4px;">
+    <div style="margin-top:8px; display:flex; gap:8px; align-items:flex-start;">
       <textarea id="${notesPrefix}text" rows="2" style="flex:1;" placeholder="Scrivi una nota..."></textarea>
-      <button type="button" id="${notesPrefix}send" class="btn btn-small btn-primary">Invia</button>
+      <button type="button" id="${notesPrefix}send" class="${safeBtnClass(true,false)}">Invia</button>
     </div>
   `;
   container.appendChild(notesSection);
@@ -1993,12 +2078,14 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
     snap.forEach(function (doc) {
       const d = doc.data() || {};
       const line = document.createElement("div");
-      line.style.marginBottom = "6px";
+      line.className = "noteLine";
+      line.style.marginBottom = "10px";
       line.style.borderBottom = "1px solid #eee";
-      line.style.paddingBottom = "4px";
+      line.style.paddingBottom = "8px";
 
       const header = document.createElement("div");
-      header.style.fontWeight = "bold";
+      header.className = "noteHeader";
+      header.style.fontWeight = "900";
 
       let author = d.authorName || "";
       if (!author && d.authorDealerId) author = d.authorDealerId;
@@ -2058,7 +2145,7 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
 }
 
 /**
- * Recupero info utente corrente (usato per allegati, note, sinistro)
+ * Recupero info utente corrente (usato per allegati, note, sinistro, righe distributore)
  */
 let _ftclaimsUserInfoPromise = null;
 
@@ -2082,7 +2169,7 @@ function getCurrentUserInfo() {
         const snap = await db.collection("Users").doc(user.uid).get();
         if (snap.exists) {
           const d = snap.data() || {};
-          dealerId = d.dealerId || d.DealerID || d.dealerID || null;
+          dealerId = d.dealerId || d.DealerID || d.dealerID || d.DealerId || null;
           isDistributorUser = (d.isDistributorUser === true);
           if (!name) name = d.fullName || d.name || d.displayName || null;
         }
@@ -2090,9 +2177,15 @@ function getCurrentUserInfo() {
         console.warn("Errore lettura utente per allegati/note:", err);
       }
 
-      const isDistributor = (dealerId === "FT001") || (isDistributorUser === true);
+      const isDistributor = (String(dealerId || "") === "FT001") || (isDistributorUser === true);
 
-      return { uid: user.uid, name: name, dealerId: dealerId, isDistributorUser: isDistributorUser, isDistributor: isDistributor };
+      return {
+        uid: user.uid,
+        name: name,
+        dealerId: dealerId,
+        isDistributorUser: isDistributorUser,
+        isDistributor: isDistributor
+      };
     })();
   }
 
