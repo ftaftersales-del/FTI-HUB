@@ -15,13 +15,20 @@
 
   <style>
     /* ===============================
-       FTMANAG - Glue (v8)
-       - Topbar coerente (1 solo Home)
-       - Tabella premium (sticky head + sticky first col)
+       FTMANAG - Glue (v9)
+       + (1) numeri a destra (KM / Ore motore)
+       + (3) sticky anche Claim card (2a colonna)
+       + (4) tooltip per testi lunghi (Cliente)
+       + (6) hint UX "click/doppio click"
        - Click singolo: seleziona riga
        - Doppio click: apre pratica
-       - FUNZIONALITÀ INVARIATE
        =============================== */
+
+    /* --- taratura sticky columns --- */
+    :root{
+      --ftmanag-col1: 110px;  /* Stato (approx) */
+      --ftmanag-col2: 120px;  /* Claim card (approx) */
+    }
 
     .ftmanag-wrap{
       max-width: 1400px;
@@ -33,11 +40,17 @@
     .ftmanag-card{ overflow: hidden; }
 
     .ftmanag-title{
-      margin: 0 0 8px;
+      margin: 0 0 6px;
       font-size: 16px;
       font-weight: 900;
       letter-spacing: -0.2px;
       color: var(--text);
+    }
+
+    .ftmanag-hint{
+      margin: 0 0 10px;
+      font-size: 12.5px;
+      color: var(--muted);
     }
 
     .ftmanag-loading{
@@ -131,16 +144,44 @@
       box-shadow: 0 1px 0 rgba(15,23,42,.02);
     }
 
-    /* Sticky first column (stato) */
-    .ftmanag-table th:first-child,
-    .ftmanag-table td:first-child{
+    /* (1) numeri a destra */
+    .td-num{
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Sticky first column (Stato) */
+    .ftmanag-table th:nth-child(1),
+    .ftmanag-table td:nth-child(1){
       position: sticky;
       left: 0;
       z-index: 2;
+      min-width: var(--ftmanag-col1);
       background: rgba(255,255,255,.94);
     }
-    .ftmanag-table thead th:first-child{ z-index: 4; }
-    .ftmanag-table thead tr.ftmanag-filters th:first-child{ z-index: 4; }
+
+    /* (3) Sticky second column (Claim card) */
+    .ftmanag-table th:nth-child(2),
+    .ftmanag-table td:nth-child(2){
+      position: sticky;
+      left: var(--ftmanag-col1);
+      z-index: 2;
+      min-width: var(--ftmanag-col2);
+      background: rgba(255,255,255,.94);
+      box-shadow: 1px 0 0 rgba(230,232,240,.95); /* separatore verticale soft */
+    }
+
+    /* header sopra tutti */
+    .ftmanag-table thead th:nth-child(1),
+    .ftmanag-table thead th:nth-child(2){
+      z-index: 5;
+      background: rgba(255,255,255,.96);
+    }
+    .ftmanag-table thead tr.ftmanag-filters th:nth-child(1),
+    .ftmanag-table thead tr.ftmanag-filters th:nth-child(2){
+      z-index: 5;
+      background: rgba(255,255,255,.92);
+    }
 
     /* Footer */
     .ftmanag-bottom{
@@ -208,6 +249,7 @@
   <main class="ftmanag-wrap">
     <section class="card pad ftmanag-card">
       <h1 class="ftmanag-title">Elenco reclami</h1>
+      <p class="ftmanag-hint">Click: seleziona · Doppio click: apri</p>
 
       <div id="loading" class="ftmanag-loading">Caricamento reclami...</div>
       <div id="error" class="ftmanag-error" style="display:none;"></div>
@@ -612,16 +654,49 @@
               td.appendChild(span);
               break;
             }
-            case 'code': td.textContent = claim.code || ''; break;
-            case 'type': td.textContent = claim.type || ''; break;
-            case 'vin': td.textContent = claim.vin || ''; break;
-            case 'customer': td.textContent = claim.customer || ''; break;
-            case 'plate': td.textContent = claim.plate || ''; break;
-            case 'km': td.textContent = claim.km !== '' ? claim.km : ''; break;
-            case 'engineHours': td.textContent = claim.engineHours !== '' ? claim.engineHours : ''; break;
-            case 'openDate': td.textContent = claim.openDate || ''; break;
-            case 'openDealer': td.textContent = claim.openDealer || ''; break;
-            default: td.textContent = '';
+
+            case 'customer':
+              td.textContent = claim.customer || '';
+              // (4) tooltip per testi lunghi
+              td.title = claim.customer || '';
+              break;
+
+            case 'km':
+              td.textContent = (claim.km !== '' ? claim.km : '');
+              td.classList.add('td-num'); // (1)
+              break;
+
+            case 'engineHours':
+              td.textContent = (claim.engineHours !== '' ? claim.engineHours : '');
+              td.classList.add('td-num'); // (1)
+              break;
+
+            case 'code':
+              td.textContent = claim.code || '';
+              break;
+
+            case 'type':
+              td.textContent = claim.type || '';
+              break;
+
+            case 'vin':
+              td.textContent = claim.vin || '';
+              break;
+
+            case 'plate':
+              td.textContent = claim.plate || '';
+              break;
+
+            case 'openDate':
+              td.textContent = claim.openDate || '';
+              break;
+
+            case 'openDealer':
+              td.textContent = claim.openDealer || '';
+              break;
+
+            default:
+              td.textContent = '';
           }
 
           tr.appendChild(td);
