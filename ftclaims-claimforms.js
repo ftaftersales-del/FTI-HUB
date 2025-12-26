@@ -1,5 +1,5 @@
 // ===============================
-// ftclaims-claimforms.js (rev STEP2)
+// ftclaims-claimforms.js (rev STEP2 - RSA FIX)
 // Dettagli dei singoli claim (RSA, Garanzia, Garanzia Ricambio, Service Contract Option, ...)
 // + Allegati generici + Note stile chat per ogni claim
 //
@@ -10,7 +10,10 @@
 // 5) Ticket + Sinistro tra commento tecnico e Ricambi
 // 6) Eliminato "Salva dati generali" per Garanzia: tutto salva con "Salva dati Garanzia"
 // 7) Box lettura note più alto
-// (1 e 8 sono in ftclaims_step2.html, non qui)
+//
+// ✅ FIX NUOVO (RSA):
+// 9) In RSA NON devono comparire 2 tasti: eliminato "Salva dati generali" in RSA
+//    e "Salva dati RSA" salva anche Ticket/Sinistro (root claim) ed è ultimo (in fondo).
 // ===============================
 
 function normalizeClaimType(ct) {
@@ -196,6 +199,8 @@ function renderRSADetails(container, claimData, ctx) {
   const rsa = claimData.rsa || {};
   const prefix = "rsa_" + ctx.claimCode + "_";
 
+  // ✅ RSA: UI senza bottone di salvataggio qui (lo mettiamo in fondo, ultimo)
+  // ✅ RSA: includiamo Ticket/Sinistro nella sezione "generali" MA SENZA bottone (salva col bottone RSA)
   container.innerHTML = `
     <h4 style="margin: 4px 0 6px; font-size: 13px;">Dati RSA</h4>
 
@@ -261,10 +266,22 @@ function renderRSADetails(container, claimData, ctx) {
       <input type="file" id="${prefix}route" multiple>
     </div>
 
-    <div class="form-group">
-      <button type="button" id="${prefix}saveBtn" class="${safeBtnClass(true,false)}">
-        Salva dati RSA
-      </button>
+    <hr class="hr">
+
+    <h4 style="margin: 4px 0 6px; font-size: 13px;">Dati generali claim</h4>
+
+    <div class="ftc-grid2">
+      <div>
+        <label for="${prefix}ticket">Ticket</label>
+        <input type="text" id="${prefix}ticket">
+      </div>
+      <div>
+        <label for="${prefix}sinistro">Sinistro</label>
+        <input type="text" id="${prefix}sinistro">
+        <div class="muted" style="margin-top:6px;">
+          Campo modificabile solo dal distributore (FT001 oppure utenti con flag isDistributorUser).
+        </div>
+      </div>
     </div>
   `;
 
@@ -279,7 +296,10 @@ function renderRSADetails(container, claimData, ctx) {
   const towCostsInput   = container.querySelector("#" + prefix + "towCosts");
   const invoicesInput   = container.querySelector("#" + prefix + "invoices");
   const routeInput      = container.querySelector("#" + prefix + "route");
-  const saveBtn         = container.querySelector("#" + prefix + "saveBtn");
+
+  // ✅ Ticket/Sinistro (root claim) - NON ha bottone proprio
+  const ticketInput     = container.querySelector("#" + prefix + "ticket");
+  const sinistroInput   = container.querySelector("#" + prefix + "sinistro");
 
   if (rsa.date) dateInput.value = rsa.date;
   if (rsa.onlyTow) onlyTowInput.checked = !!rsa.onlyTow;
@@ -346,82 +366,144 @@ function renderRSADetails(container, claimData, ctx) {
     return isNaN(n) ? null : n;
   }
 
-  if (saveBtn) {
-    saveBtn.addEventListener("click", async function () {
-      if (typeof firebase === "undefined" ||
-          !firebase.firestore || !firebase.storage) {
-        alert("Firebase non disponibile.");
-        return;
-      }
+  // ✅ Prefill Ticket/Sinistro leggendo dal root claim
+  if (typeof firebase !== "undefined" && firebase.firestore) {
+    const db = firebase.firestore();
+    const claimRef = db
+      .collection("ClaimCards")
+      .doc(ctx.claimCardId)
+      .collection("Claims")
+      .doc(ctx.claimCode);
 
-      const db = firebase.firestore();
-      const storage = firebase.storage();
-
-      const onlyTow = !!onlyTowInput.checked;
-      const rsaDate = dateInput.value || null;
-
-      const rsaData = {
-        date: rsaDate,
-        onlyTow: onlyTow,
-        dayShiftHours:    onlyTow ? null : readInt(dayHoursInput),
-        dayShiftMinutes:  onlyTow ? null : readInt(dayMinInput),
-        nightShiftHours:  onlyTow ? null : readInt(nightHoursInput),
-        nightShiftMinutes:onlyTow ? null : readInt(nightMinInput),
-        km:               onlyTow ? null : readInt(kmInput),
-        caseNumber: ((caseInput.value || "").trim() || null),
-        towCostsAmount: readCurrency(towCostsInput)
-      };
-
-      const basePath = "ClaimCards/" + ctx.claimCardId + "/Claims/" + ctx.claimCode + "/";
-
-      let invoiceMeta = Array.isArray(rsa.invoiceFiles) ? rsa.invoiceFiles.slice() : [];
-      let routeMeta   = Array.isArray(rsa.routeFiles)   ? rsa.routeFiles.slice()   : [];
-
-      const invFiles = invoicesInput.files || [];
-      for (let i = 0; i < invFiles.length; i++) {
-        const f = invFiles[i];
-        const path = basePath + "Fatture/" + Date.now() + "_" + f.name;
-        const ref  = storage.ref(path);
-        await ref.put(f);
-        const url = await ref.getDownloadURL();
-        invoiceMeta.push({ name: f.name, path: path, url: url });
-      }
-
-      const routeFiles = routeInput.files || [];
-      for (let i = 0; i < routeFiles.length; i++) {
-        const f = routeFiles[i];
-        const path = basePath + "Tragitto/" + Date.now() + "_" + f.name;
-        const ref  = storage.ref(path);
-        await ref.put(f);
-        const url = await ref.getDownloadURL();
-        routeMeta.push({ name: f.name, path: path, url: url });
-      }
-
-      if (invoiceMeta.length) rsaData.invoiceFiles = invoiceMeta;
-      if (routeMeta.length)   rsaData.routeFiles   = routeMeta;
-
+    (async function prefillTicketSinistroRSA() {
       try {
-        const claimRef = db
-          .collection("ClaimCards")
-          .doc(ctx.claimCardId)
-          .collection("Claims")
-          .doc(ctx.claimCode);
-
-        await claimRef.update({ rsa: rsaData });
-
-        invoicesInput.value = "";
-        routeInput.value = "";
-
-        alert("Dati RSA salvati.");
-      } catch (err) {
-        console.error(err);
-        alert("Errore nel salvataggio dati RSA: " + err.message);
+        const snap = await claimRef.get();
+        if (!snap.exists) return;
+        const d = snap.data() || {};
+        if (ticketInput && d.ticket != null) ticketInput.value = d.ticket || "";
+        if (sinistroInput && d.sinistro != null) sinistroInput.value = d.sinistro || "";
+      } catch (e) {
+        // non bloccante
       }
+    })();
+
+    // Sinistro editabile solo distributore
+    getCurrentUserInfo().then(function(info){
+      const isDistributor = !!(info && info.isDistributor === true);
+      if (sinistroInput && !isDistributor) sinistroInput.disabled = true;
     });
   }
 
-  // RSA: mantiene Dati generali + Allegati + Note
-  addAttachmentsAndNotesSection(container, ctx, { showGeneral: true });
+  // ✅ Allegati + Note: in RSA NON mostrare la sezione "Dati generali" (che causava il 2° tasto)
+  //    e spostiamo il tasto RSA in FONDO come ultimo elemento del pad.
+  addAttachmentsAndNotesSection(container, ctx, {
+    showGeneral: false,
+    // ✅ hook: aggiungo UI extra prima di chiudere (bottone finale)
+    onAfterSections: function(containerAfter) {
+      addHr(containerAfter);
+
+      const saveWrap = document.createElement("div");
+      saveWrap.className = "form-group";
+      saveWrap.innerHTML = `
+        <button type="button" id="${prefix}saveBtn" class="${safeBtnClass(true,false)}">
+          Salva dati RSA
+        </button>
+      `;
+      containerAfter.appendChild(saveWrap);
+
+      const saveBtn = containerAfter.querySelector("#" + prefix + "saveBtn");
+
+      if (!saveBtn) return;
+
+      saveBtn.addEventListener("click", async function () {
+        if (typeof firebase === "undefined" ||
+            !firebase.firestore || !firebase.storage) {
+          alert("Firebase non disponibile.");
+          return;
+        }
+
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        const onlyTow = !!onlyTowInput.checked;
+        const rsaDate = dateInput.value || null;
+
+        const rsaData = {
+          date: rsaDate,
+          onlyTow: onlyTow,
+          dayShiftHours:    onlyTow ? null : readInt(dayHoursInput),
+          dayShiftMinutes:  onlyTow ? null : readInt(dayMinInput),
+          nightShiftHours:  onlyTow ? null : readInt(nightHoursInput),
+          nightShiftMinutes:onlyTow ? null : readInt(nightMinInput),
+          km:               onlyTow ? null : readInt(kmInput),
+          caseNumber: ((caseInput.value || "").trim() || null),
+          towCostsAmount: readCurrency(towCostsInput)
+        };
+
+        const basePath = "ClaimCards/" + ctx.claimCardId + "/Claims/" + ctx.claimCode + "/";
+
+        let invoiceMeta = Array.isArray(rsa.invoiceFiles) ? rsa.invoiceFiles.slice() : [];
+        let routeMeta   = Array.isArray(rsa.routeFiles)   ? rsa.routeFiles.slice()   : [];
+
+        // upload fatture
+        const invFiles = invoicesInput.files || [];
+        for (let i = 0; i < invFiles.length; i++) {
+          const f = invFiles[i];
+          const path = basePath + "Fatture/" + Date.now() + "_" + f.name;
+          const ref  = storage.ref(path);
+          await ref.put(f);
+          const url = await ref.getDownloadURL();
+          invoiceMeta.push({ name: f.name, path: path, url: url });
+        }
+
+        // upload tragitto
+        const routeFiles = routeInput.files || [];
+        for (let i = 0; i < routeFiles.length; i++) {
+          const f = routeFiles[i];
+          const path = basePath + "Tragitto/" + Date.now() + "_" + f.name;
+          const ref  = storage.ref(path);
+          await ref.put(f);
+          const url = await ref.getDownloadURL();
+          routeMeta.push({ name: f.name, path: path, url: url });
+        }
+
+        if (invoiceMeta.length) rsaData.invoiceFiles = invoiceMeta;
+        if (routeMeta.length)   rsaData.routeFiles   = routeMeta;
+
+        // ✅ Ticket/Sinistro root claim salvati qui
+        const ticketVal = ticketInput ? (ticketInput.value || "").trim() : "";
+        const sinistroVal = sinistroInput ? (sinistroInput.value || "").trim() : "";
+
+        // Permessi sinistro
+        const info = await getCurrentUserInfo();
+        const isDistributor = !!(info && info.isDistributor === true);
+
+        try {
+          const claimRef = db
+            .collection("ClaimCards")
+            .doc(ctx.claimCardId)
+            .collection("Claims")
+            .doc(ctx.claimCode);
+
+          const updateObj = {
+            rsa: rsaData,
+            ticket: ticketVal || null
+          };
+          if (isDistributor) updateObj.sinistro = sinistroVal || null;
+
+          await claimRef.update(updateObj);
+
+          invoicesInput.value = "";
+          routeInput.value = "";
+
+          alert("Dati RSA salvati.");
+        } catch (err) {
+          console.error(err);
+          alert("Errore nel salvataggio dati RSA: " + err.message);
+        }
+      });
+    }
+  });
 }
 
 /* ===============================
@@ -1424,7 +1506,7 @@ function renderGaranziaDetailsInternal(container, garData, ctx, options) {
     qtyInput.addEventListener("input", function () { recalcRow(false); });
     totalInput.addEventListener("input", function () { if (isCodeOL000()) recalcRow(true); });
 
-    // ✅ punto 3: lookup listino come dealer (findLabourByCode + normalizzazione + update modes)
+    // ✅ punto 3: lookup listino come dealer
     searchBtn.addEventListener("click", async function () {
       const code = (codeInput.value || "").trim();
       if (!code) { alert("Inserisci un codice labour."); return; }
@@ -1813,10 +1895,12 @@ function renderGaranziaRicambioDetails(container, claimData, ctx) {
 /**
  * options:
  *  - showGeneral: true/false (default true)
+ *  - onAfterSections: function(container) chiamata dopo Allegati+Note (per aggiungere UI in fondo)
  */
 function addAttachmentsAndNotesSection(container, ctx, options) {
   options = options || {};
   const showGeneral = (options.showGeneral !== false);
+  const onAfterSections = (typeof options.onAfterSections === "function") ? options.onAfterSections : null;
 
   if (typeof firebase === "undefined" || !firebase.firestore || !firebase.storage) {
     return;
@@ -1832,7 +1916,7 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
     .doc(ctx.claimCode);
 
   // ---------- DATI GENERALI CLAIM (TICKET / SINISTRO) ----------
-  // (per RSA / Service Option / altri tipi generici)
+  // (per Service Option / altri tipi generici)
   if (showGeneral) {
     const genPrefix = "gen_" + ctx.claimCode + "_";
 
@@ -2141,6 +2225,11 @@ function addAttachmentsAndNotesSection(container, ctx, options) {
         noteSendBtn.disabled = false;
       }
     });
+  }
+
+  // ✅ Hook per aggiunte finali (es: bottone RSA in fondo)
+  if (onAfterSections) {
+    try { onAfterSections(container); } catch(e) { /* no-op */ }
   }
 }
 
