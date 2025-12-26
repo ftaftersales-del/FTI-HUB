@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <title>FTCLAIMS - Dettaglio Claim Card</title>
-  <link rel="stylesheet" href="ftstyle.css">
+
+  <link rel="stylesheet" href="ftstyle.css?v=6">
+  <link rel="stylesheet" href="ftclaims_claimcard.css?v=1">
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -14,231 +16,246 @@
 
   <!-- forms per RSA/Garanzia ecc. -->
   <script src="ftclaims-claimforms.js"></script>
-
-  <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 18px; }
-    h1 { font-size: 18px; margin: 0 0 4px; }
-    .subtitle { font-size: 13px; color: #666; margin-bottom: 10px; }
-
-    .banner { margin: 10px 0 12px; padding: 10px 12px; border-radius: 6px; font-size: 13px; display: none; }
-    .banner.success { background: #e9fff0; border: 1px solid #bfeccc; color: #0f6a2a; display: block; }
-    .banner.error { background: #ffe9ea; border: 1px solid #f1b7bb; color: #8a1f28; display: block; }
-    .banner.warn { background: #fff6e6; border: 1px solid #ffd18a; color: #8a5a00; display: block; }
-
-    .layout { display: grid; grid-template-columns: 360px 1fr; gap: 12px; align-items: start; }
-    .card { background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px 10px 12px; }
-    .card h3 { font-size: 13px; margin: 0 0 8px; color: #111; }
-
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-
-    label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #333; }
-    input, select, textarea { width: 100%; box-sizing: border-box; padding: 7px 8px; border: 1px solid #d6d6d6; border-radius: 4px; font-size: 13px; }
-    textarea { resize: vertical; }
-
-    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .small { font-size: 12px; color: #555; }
-
-    .btn { border: none; border-radius: 4px; padding: 7px 10px; font-size: 12px; cursor: pointer; }
-    .btn.primary { background: #007bff; color: #fff; }
-    .btn.secondary { background: #6c757d; color: #fff; }
-    .btn.danger { background: #dc3545; color: #fff; }
-    .btn.light { background: #e9ecef; color: #111; }
-    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    .mutedBox { background: #f8f8f8; border: 1px dashed #ddd; padding: 8px; border-radius: 6px; font-size: 12px; color: #444; }
-
-    .claimsHeader { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
-
-    .claimItem { border: 1px solid #e6e6e6; border-radius: 8px; margin-top: 10px; background: #fff; overflow: hidden; }
-    .claimItemTop { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; background: #fafafa; border-bottom: 1px solid #ededed; }
-    .claimTitle { font-size: 13px; font-weight: bold; color: #222; }
-    .claimMeta { font-size: 12px; color: #666; }
-    .claimBody { padding: 10px; display: block; }
-    .rightTopBox { padding: 10px; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
-    th, td { border-bottom: 1px solid #eee; padding: 6px 6px; text-align: left; vertical-align: top; }
-    th { background: #fafafa; font-weight: bold; }
-
-    .notesBox { max-height: 160px; overflow-y: auto; border: 1px solid #ddd; background: #fff; padding: 6px; border-radius: 6px; font-size: 12px; }
-    .noteLine { border-bottom: 1px solid #f0f0f0; padding: 6px 0; }
-    .noteHeader { font-weight: bold; margin-bottom: 2px; font-size: 12px; }
-    .hr { height: 1px; background: #eee; margin: 10px 0; }
-  </style>
 </head>
 
-<body class="ft-page has-topbar">
+<body class="has-topbar">
+  <!-- TOPBAR (standard v6) -->
   <div class="ft-topbar">
-    <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
-  </div>
-  <h1>Dettaglio Claim Card</h1>
-  <div class="subtitle">Visualizza e gestisci i dati della pratica.</div>
-
-  <div id="banner" class="banner"></div>
-
-  <div class="layout">
-    <!-- LEFT SIDEBAR -->
-    <div>
-      <div class="card">
-        <h3>Dati pratica</h3>
-        <div class="grid2">
-          <div>
-            <label>Codice pratica</label>
-            <input id="ui_code" type="text" readonly />
-          </div>
-          <div>
-            <label>Tipologia</label>
-            <input id="ui_type" type="text" readonly />
-          </div>
-          <div>
-            <label>Data apertura</label>
-            <input id="ui_openDate" type="text" readonly />
-          </div>
-          <div>
-            <label>Data ordine di lavoro</label>
-            <input id="ui_orderDate" type="text" readonly />
-          </div>
-          <div>
-            <label>Nome operatore apertura</label>
-            <input id="ui_openUser" type="text" readonly />
-          </div>
-          <div>
-            <label>Dealer apertura</label>
-            <input id="ui_openDealer" type="text" readonly />
-          </div>
-        </div>
-
-        <div style="margin-top:8px;">
-          <label>Stato pratica</label>
-          <select id="ui_status">
-            <option value="Aperta">Aperta</option>
-            <option value="Inviata">Inviata</option>
-            <option value="Sospesa">Sospesa</option>
-            <option value="In Valutazione">In Valutazione</option>
-            <option value="Conclusa">Conclusa</option>
-            <option value="Cancellata">Cancellata</option>
-          </select>
-          <div class="small" style="margin-top:4px;">
-            Stati: Aperta, Inviata, Sospesa, In Valutazione, Conclusa, Cancellata.
-          </div>
-        </div>
+    <div class="ft-topbar__inner">
+      <div class="ft-topbar__left">
+        <div class="ft-topbar__brand">FTI-HUB</div>
+        <div class="ft-topbar__subtitle">FTCLAIMS • Dettaglio Claim Card</div>
       </div>
 
-      <div class="card" style="margin-top:10px;">
-        <h3>Dati veicolo</h3>
-        <div class="grid2">
-          <div>
-            <label>VIN</label>
-            <input id="ui_vin" type="text" readonly />
-          </div>
-          <div>
-            <label>Customer</label>
-            <input id="ui_customer" type="text" readonly />
-          </div>
-          <div>
-            <label>Registration Plate</label>
-            <input id="ui_plate" type="text" readonly />
-          </div>
-          <div>
-            <label>Registration Date</label>
-            <input id="ui_regDate" type="text" readonly />
-          </div>
-        </div>
+      <div class="ft-topbar__center">
+        <div class="ft-topbar__userinfo" id="ftUserInfo">—</div>
       </div>
 
-      <div class="card" style="margin-top:10px;">
-        <h3>Copertura garanzia alla data dell'ordine di lavoro</h3>
-        <div class="grid2">
-          <div>
-            <label>Tipo copertura</label>
-            <input id="ui_covType" type="text" readonly />
-          </div>
-          <div>
-            <label>Data inizio</label>
-            <input id="ui_covStart" type="text" readonly />
-          </div>
-          <div>
-            <label>Data fine</label>
-            <input id="ui_covEnd" type="text" readonly />
-          </div>
-          <div></div>
-        </div>
-        <div style="margin-top:8px;">
-          <label>Note copertura</label>
-          <textarea id="ui_covNotes" rows="2" readonly></textarea>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:10px;">
-        <h3>Contratto di manutenzione (se presente)</h3>
-        <div class="grid2">
-          <div>
-            <label>Data inizio</label>
-            <input id="ui_scStart" type="text" readonly />
-          </div>
-          <div>
-            <label>Data fine</label>
-            <input id="ui_scEnd" type="text" readonly />
-          </div>
-        </div>
-        <div style="margin-top:8px;">
-          <label>Opzioni presenti</label>
-          <textarea id="ui_scOptions" rows="2" readonly></textarea>
-        </div>
-      </div>
-
-      <div class="card" style="margin-top:10px;">
-        <h3>Chilometraggio / ore motore</h3>
-        <div class="grid2">
-          <div>
-            <label>KM veicolo</label>
-            <input id="ui_km" type="number" min="0" step="1"/>
-          </div>
-          <div>
-            <label>Ore motore</label>
-            <input id="ui_hours" type="number" min="0" step="1"/>
-          </div>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:10px;">
-        <button id="btnHome" class="btn secondary" type="button">Home Page</button>
-        <button id="btnSaveCard" class="btn primary" type="button">Salva modifiche</button>
-        <button id="btnCancelCard" class="btn danger" type="button">Cancella richiesta</button>
+      <div class="ft-topbar__right">
+        <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
       </div>
     </div>
+  </div>
 
-    <!-- RIGHT CONTENT -->
-    <div>
-      <div class="card">
-        <div class="claimsHeader">
-          <div>
-            <h3 style="margin:0;">Gestione claim collegati alla claim card</h3>
-            <div class="small">Crea e gestisci le riparazioni collegate.</div>
-          </div>
-          <button id="btnCreateClaim" class="btn primary" type="button">Crea claim</button>
-        </div>
+  <main class="ft-page">
+    <div class="ft-container">
 
-        <div class="mutedBox" id="createBox">
-          <div class="grid2">
-            <div>
-              <label>Tipologia claim</label>
-              <select id="newClaimType"></select>
-              <div class="small" style="margin-top:4px;">
-                La lista varia in base alla tipologia della claim card.
+      <div class="cc-head">
+        <h1 class="cc-title">Dettaglio Claim Card</h1>
+        <div class="cc-subtitle">Visualizza e gestisci i dati della pratica.</div>
+      </div>
+
+      <div id="banner" class="cc-banner"></div>
+
+      <div class="cc-layout">
+
+        <!-- LEFT -->
+        <div class="cc-stack">
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-title">Dati pratica</p>
+                <p class="section-sub">Informazioni generali e stato della claim card.</p>
               </div>
             </div>
-            <div>
-              <label>&nbsp;</label>
-              <button id="btnDoCreateClaim" class="btn primary" type="button" style="width:100%;">Crea</button>
+
+            <div class="cc-grid2">
+              <div>
+                <label>Codice pratica</label>
+                <input id="ui_code" type="text" readonly />
+              </div>
+              <div>
+                <label>Tipologia</label>
+                <input id="ui_type" type="text" readonly />
+              </div>
+              <div>
+                <label>Data apertura</label>
+                <input id="ui_openDate" type="text" readonly />
+              </div>
+              <div>
+                <label>Data ordine di lavoro</label>
+                <input id="ui_orderDate" type="text" readonly />
+              </div>
+              <div>
+                <label>Nome operatore apertura</label>
+                <input id="ui_openUser" type="text" readonly />
+              </div>
+              <div>
+                <label>Dealer apertura</label>
+                <input id="ui_openDealer" type="text" readonly />
+              </div>
             </div>
-          </div>
+
+            <div class="sep"></div>
+
+            <div>
+              <label>Stato pratica</label>
+              <select id="ui_status">
+                <option value="Aperta">Aperta</option>
+                <option value="Inviata">Inviata</option>
+                <option value="Sospesa">Sospesa</option>
+                <option value="In Valutazione">In Valutazione</option>
+                <option value="Conclusa">Conclusa</option>
+                <option value="Cancellata">Cancellata</option>
+              </select>
+              <div class="cc-small" style="margin-top:6px;">
+                Stati: Aperta, Inviata, Sospesa, In Valutazione, Conclusa, Cancellata.
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-title">Dati veicolo</p>
+                <p class="section-sub">VIN e dati anagrafici veicolo.</p>
+              </div>
+            </div>
+
+            <div class="cc-grid2">
+              <div>
+                <label>VIN</label>
+                <input id="ui_vin" type="text" readonly />
+              </div>
+              <div>
+                <label>Customer</label>
+                <input id="ui_customer" type="text" readonly />
+              </div>
+              <div>
+                <label>Registration Plate</label>
+                <input id="ui_plate" type="text" readonly />
+              </div>
+              <div>
+                <label>Registration Date</label>
+                <input id="ui_regDate" type="text" readonly />
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-title">Copertura garanzia</p>
+                <p class="section-sub">Alla data dell’ordine di lavoro.</p>
+              </div>
+            </div>
+
+            <div class="cc-grid2">
+              <div>
+                <label>Tipo copertura</label>
+                <input id="ui_covType" type="text" readonly />
+              </div>
+              <div>
+                <label>Data inizio</label>
+                <input id="ui_covStart" type="text" readonly />
+              </div>
+              <div>
+                <label>Data fine</label>
+                <input id="ui_covEnd" type="text" readonly />
+              </div>
+              <div></div>
+            </div>
+
+            <div style="margin-top:10px;">
+              <label>Note copertura</label>
+              <textarea id="ui_covNotes" rows="2" readonly></textarea>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-title">Contratto di manutenzione</p>
+                <p class="section-sub">Se presente.</p>
+              </div>
+            </div>
+
+            <div class="cc-grid2">
+              <div>
+                <label>Data inizio</label>
+                <input id="ui_scStart" type="text" readonly />
+              </div>
+              <div>
+                <label>Data fine</label>
+                <input id="ui_scEnd" type="text" readonly />
+              </div>
+            </div>
+
+            <div style="margin-top:10px;">
+              <label>Opzioni presenti</label>
+              <textarea id="ui_scOptions" rows="2" readonly></textarea>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="section-head">
+              <div>
+                <p class="section-title">Chilometraggio / ore motore</p>
+                <p class="section-sub">Campi modificabili.</p>
+              </div>
+            </div>
+
+            <div class="cc-grid2">
+              <div>
+                <label>KM veicolo</label>
+                <input id="ui_km" type="number" min="0" step="1" />
+              </div>
+              <div>
+                <label>Ore motore</label>
+                <input id="ui_hours" type="number" min="0" step="1" />
+              </div>
+            </div>
+
+            <div class="sep"></div>
+
+            <div class="cc-actions">
+              <button id="btnHome" class="btn" type="button">Home Page</button>
+              <button id="btnSaveCard" class="btn btn-primary" type="button">Salva modifiche</button>
+              <button id="btnCancelCard" class="btn btn-danger" type="button">Cancella richiesta</button>
+            </div>
+          </section>
+
         </div>
 
-        <div id="claimsList"></div>
+        <!-- RIGHT -->
+        <div class="cc-stack">
+
+          <section class="panel">
+            <div class="section-head" style="align-items:center;">
+              <div>
+                <p class="section-title">Gestione claim collegati</p>
+                <p class="section-sub">Crea e gestisci le riparazioni collegate alla claim card.</p>
+              </div>
+              <div class="cc-actions">
+                <button id="btnCreateClaim" class="btn btn-primary" type="button">Crea claim</button>
+              </div>
+            </div>
+
+            <div class="mutedBox" id="createBox">
+              <div class="cc-grid2">
+                <div>
+                  <label>Tipologia claim</label>
+                  <select id="newClaimType"></select>
+                  <div class="cc-small" style="margin-top:6px;">
+                    La lista varia in base alla tipologia della claim card.
+                  </div>
+                </div>
+                <div>
+                  <label>&nbsp;</label>
+                  <button id="btnDoCreateClaim" class="btn btn-primary" type="button" style="width:100%;">Crea</button>
+                </div>
+              </div>
+            </div>
+
+            <div id="claimsList"></div>
+          </section>
+
+        </div>
+
       </div>
     </div>
-  </div>
+  </main>
 
   <script>
     (function () {
@@ -246,7 +263,7 @@
       // ---------- Helpers ----------
       function banner(type, msg) {
         const b = document.getElementById("banner");
-        b.className = "banner " + (type || "");
+        b.className = "cc-banner " + (type || "");
         b.innerHTML = msg || "";
         b.style.display = "block";
       }
@@ -890,113 +907,136 @@
       }
 
       // ===========================================================================================
-      // MODIFICA MINIMA: renderServiceContractDetails include prezzi+totali e default €/h da dealers.LaborRateStd
+      // MODIFICA MINIMA: template coerente (btn + ft-table)
       // ===========================================================================================
       function renderServiceContractDetails(container, claimDoc, ctx, isDistributor) {
         const prefix = "sc_" + ctx.claimCode + "_";
 
         container.innerHTML = `
-          <h4 style="margin: 4px 0 6px; font-size: 13px;">Dati Service Contract</h4>
-          <div class="small" style="margin-bottom:8px;">
-            Seleziona il pacchetto di manutenzione. Le righe (ricambi/manodopera) vengono caricate dal template.
-          </div>
-
-          <div class="grid2">
-            <div>
-              <label>Famiglia</label>
-              <select id="${prefix}family"></select>
+          <div class="section">
+            <div class="section-head">
+              <div>
+                <p class="section-title">Dati Service Contract</p>
+                <p class="section-sub">Seleziona il pacchetto. Le righe (ricambi/manodopera) vengono caricate dal template.</p>
+              </div>
             </div>
-            <div>
-              <label>Tipo manutenzione</label>
-              <select id="${prefix}type"></select>
+
+            <div class="cc-grid2">
+              <div>
+                <label>Famiglia</label>
+                <select id="${prefix}family"></select>
+              </div>
+              <div>
+                <label>Tipo manutenzione</label>
+                <select id="${prefix}type"></select>
+              </div>
             </div>
-          </div>
 
-          <div style="margin-top:8px;">
-            <label style="display:flex; align-items:center; gap:8px; font-weight:normal;">
-              <input type="checkbox" id="${prefix}voith">
-              <span><strong>Veicolo con rallentatore VOITH</strong> (Intarder/Retarder)</span>
-            </label>
-            <div class="small">
-              Se attivo, verranno incluse le righe previste per VOITH (se presenti nel pacchetto).
+            <div style="margin-top:10px;">
+              <label style="display:flex; align-items:center; gap:8px; font-weight:normal;">
+                <input type="checkbox" id="${prefix}voith">
+                <span><strong>Veicolo con rallentatore VOITH</strong> (Intarder/Retarder)</span>
+              </label>
+              <div class="cc-small">Se attivo, verranno incluse le righe previste per VOITH (se presenti nel pacchetto).</div>
             </div>
-          </div>
 
-          <div style="margin-top:10px;">
-            <button class="btn primary" id="${prefix}save" type="button">Salva manutenzione</button>
-          </div>
-
-          <div class="hr"></div>
-
-          <h4 style="margin: 4px 0 6px; font-size: 13px;">Righe precompilate</h4>
-          <div class="small">Ricambi e manodopera provenienti dal template selezionato (con prezzi e totali).</div>
-
-          <div style="margin-top:8px;">
-            <div class="small" style="font-weight:bold;">Manodopera</div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Codice</th>
-                  <th>Descrizione</th>
-                  <th>Ore</th>
-                  <th>€/h</th>
-                  <th>Totale</th>
-                  <th>Note</th>
-                </tr>
-              </thead>
-              <tbody id="${prefix}labourBody">
-                <tr><td colspan="6" class="small">Nessuna riga.</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div style="margin-top:10px;">
-            <div class="small" style="font-weight:bold;">Ricambi</div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Codice</th>
-                  <th>Descrizione</th>
-                  <th>Q.tà</th>
-                  <th>€ unit</th>
-                  <th>Totale</th>
-                  <th>Note</th>
-                </tr>
-              </thead>
-              <tbody id="${prefix}partsBody">
-                <tr><td colspan="6" class="small">Nessuna riga.</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div style="margin-top:10px;" class="mutedBox">
-            <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-              <div><strong>Totale manodopera:</strong> <span id="${prefix}totLab">€ 0,00</span></div>
-              <div><strong>Totale ricambi:</strong> <span id="${prefix}totParts">€ 0,00</span></div>
-              <div><strong>Totale generale:</strong> <span id="${prefix}totAll">€ 0,00</span></div>
-            </div>
-            <div class="small" style="margin-top:6px;">
-              Inserisci prezzi unitari (€/h per manodopera, € unit per ricambi). I totali si aggiornano in automatico.
+            <div style="margin-top:10px;">
+              <button class="btn btn-primary" id="${prefix}save" type="button">Salva manutenzione</button>
             </div>
           </div>
 
-          <div class="hr"></div>
+          <div class="sep"></div>
 
-          <h4 style="margin: 4px 0 6px; font-size: 13px;">Allegati</h4>
-          <div class="small">Allegati generici relativi a questo claim.</div>
-          <div style="margin-top:6px; display:flex; gap:6px; align-items:center;">
-            <input type="file" id="${prefix}file" multiple>
-            <button class="btn secondary" id="${prefix}upload" type="button">Carica</button>
+          <div class="section">
+            <div class="section-head">
+              <div>
+                <p class="section-title">Righe precompilate</p>
+                <p class="section-sub">Ricambi e manodopera provenienti dal template selezionato (con prezzi e totali).</p>
+              </div>
+            </div>
+
+            <div class="cc-small" style="font-weight:900;">Manodopera</div>
+            <div class="ft-table-wrap">
+              <table class="ft-table">
+                <thead>
+                  <tr>
+                    <th>Codice</th>
+                    <th>Descrizione</th>
+                    <th>Ore</th>
+                    <th>€/h</th>
+                    <th>Totale</th>
+                    <th>Note</th>
+                  </tr>
+                </thead>
+                <tbody id="${prefix}labourBody">
+                  <tr><td colspan="6" class="cc-small">Nessuna riga.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="margin-top:10px;" class="cc-small" style="font-weight:900;">Ricambi</div>
+            <div class="ft-table-wrap">
+              <table class="ft-table">
+                <thead>
+                  <tr>
+                    <th>Codice</th>
+                    <th>Descrizione</th>
+                    <th>Q.tà</th>
+                    <th>€ unit</th>
+                    <th>Totale</th>
+                    <th>Note</th>
+                  </tr>
+                </thead>
+                <tbody id="${prefix}partsBody">
+                  <tr><td colspan="6" class="cc-small">Nessuna riga.</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="margin-top:10px;" class="mutedBox">
+              <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div><strong>Totale manodopera:</strong> <span id="${prefix}totLab">€ 0,00</span></div>
+                <div><strong>Totale ricambi:</strong> <span id="${prefix}totParts">€ 0,00</span></div>
+                <div><strong>Totale generale:</strong> <span id="${prefix}totAll">€ 0,00</span></div>
+              </div>
+              <div class="cc-small" style="margin-top:6px;">
+                Inserisci prezzi unitari (€/h per manodopera, € unit per ricambi). I totali si aggiornano in automatico.
+              </div>
+            </div>
           </div>
-          <div id="${prefix}attList" class="small" style="margin-top:8px;">Nessun allegato presente.</div>
 
-          <div class="hr"></div>
+          <div class="sep"></div>
 
-          <h4 style="margin: 4px 0 6px; font-size: 13px;">Note</h4>
-          <div id="${prefix}notesList" class="notesBox">Nessuna nota.</div>
-          <div style="margin-top:6px; display:flex; gap:6px;">
-            <textarea id="${prefix}noteText" rows="2" placeholder="Scrivi una nota..."></textarea>
-            <button class="btn primary" id="${prefix}sendNote" type="button">Invia</button>
+          <div class="section">
+            <div class="section-head">
+              <div>
+                <p class="section-title">Allegati</p>
+                <p class="section-sub">Allegati generici relativi a questo claim.</p>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <input type="file" id="${prefix}file" multiple>
+              <button class="btn" id="${prefix}upload" type="button">Carica</button>
+            </div>
+            <div id="${prefix}attList" class="cc-small" style="margin-top:10px;">Nessun allegato presente.</div>
+          </div>
+
+          <div class="sep"></div>
+
+          <div class="section">
+            <div class="section-head">
+              <div>
+                <p class="section-title">Note</p>
+                <p class="section-sub">Cronologia note sul claim.</p>
+              </div>
+            </div>
+
+            <div id="${prefix}notesList" class="notesBox">Nessuna nota.</div>
+            <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap;">
+              <textarea id="${prefix}noteText" rows="2" placeholder="Scrivi una nota..."></textarea>
+              <button class="btn btn-primary" id="${prefix}sendNote" type="button">Invia</button>
+            </div>
           </div>
         `;
 
@@ -1094,8 +1134,8 @@
         }
 
         function clearBodies() {
-          labourBody.innerHTML = `<tr><td colspan="6" class="small">Nessuna riga.</td></tr>`;
-          partsBody.innerHTML  = `<tr><td colspan="6" class="small">Nessuna riga.</td></tr>`;
+          labourBody.innerHTML = `<tr><td colspan="6" class="cc-small">Nessuna riga.</td></tr>`;
+          partsBody.innerHTML  = `<tr><td colspan="6" class="cc-small">Nessuna riga.</td></tr>`;
 
           const elLab = container.querySelector("#" + prefix + "totLab");
           const elPar = container.querySelector("#" + prefix + "totParts");
@@ -1126,6 +1166,7 @@
             inp.min = "0";
             inp.style.width = "110px";
             inp.value = (value != null && !isNaN(value)) ? String(value) : "";
+            inp.setAttribute("data-field", "unit");
             return inp;
           }
 
@@ -1136,6 +1177,7 @@
             inp.min = "0";
             inp.style.width = "80px";
             inp.value = (value != null && !isNaN(value)) ? String(value) : "";
+            inp.setAttribute("data-field", "qty");
             return inp;
           }
 
@@ -1175,10 +1217,7 @@
               tr.dataset.kind = "LABOUR";
 
               const qtyInp = makeQtyInput(qtyInit);
-              qtyInp.setAttribute("data-field", "qty");
-
               const unitInp = makeMoneyInput(unitInit);
-              unitInp.setAttribute("data-field", "unit");
 
               tr.innerHTML = `
                 <td>${code}</td>
@@ -1209,6 +1248,7 @@
 
               const savedLine = findSavedLine(saved.parts, code, desc);
               const qtyInit = toNum(savedLine?.qty) ?? qty0;
+
               let unitInit = toNum(savedLine?.unitPrice);
               if (unitInit == null) unitInit = pickUnitPrice(it);
 
@@ -1216,10 +1256,7 @@
               tr.dataset.kind = "PART";
 
               const qtyInp = makeQtyInput(qtyInit);
-              qtyInp.setAttribute("data-field", "qty");
-
               const unitInp = makeMoneyInput(unitInit);
-              unitInp.setAttribute("data-field", "unit");
 
               tr.innerHTML = `
                 <td>${code}</td>
@@ -1380,7 +1417,6 @@
             };
 
             saveBtn.disabled = true;
-
             await claimRef.set(payload, { merge: true });
 
             try {
@@ -1420,10 +1456,11 @@
             const ul = document.createElement("ul");
             ul.style.listStyleType = "none";
             ul.style.paddingLeft = "0";
+            ul.style.margin = "0";
 
             items.forEach(it => {
               const li = document.createElement("li");
-              li.style.marginBottom = "6px";
+              li.style.marginBottom = "8px";
 
               const a = document.createElement("a");
               a.href = it.url || "#";
@@ -1432,9 +1469,9 @@
               a.textContent = it.name || it.path || "file";
 
               const del = document.createElement("button");
-              del.className = "btn danger";
+              del.className = "btn btn-danger btn-small";
               del.type = "button";
-              del.style.marginLeft = "8px";
+              del.style.marginLeft = "10px";
               del.textContent = "Elimina";
 
               del.addEventListener("click", async () => {
@@ -1601,15 +1638,15 @@
         `;
 
         const actions = document.createElement("div");
-        actions.className = "row";
+        actions.className = "cc-actions";
 
         const btnToggle = document.createElement("button");
-        btnToggle.className = "btn light";
+        btnToggle.className = "btn btn-small";
         btnToggle.type = "button";
         btnToggle.textContent = "Nascondi dettagli";
 
         const btnDelete = document.createElement("button");
-        btnDelete.className = "btn danger";
+        btnDelete.className = "btn btn-danger btn-small";
         btnDelete.type = "button";
         btnDelete.textContent = "Elimina riparazione";
 
@@ -1652,7 +1689,7 @@
           if (typeof renderClaimDetails === "function") {
             renderClaimDetails(claimData.claimType, inner, claimData, ctx);
           } else {
-            inner.innerHTML = `<div class="small">Renderer non disponibile per questa tipologia.</div>`;
+            inner.innerHTML = `<div class="cc-small">Renderer non disponibile per questa tipologia.</div>`;
           }
         }
 
@@ -1693,6 +1730,14 @@
           }
 
           currentUser = await getUserInfo(db, auth);
+
+          // user info in topbar
+          const uiUser = document.getElementById("ftUserInfo");
+          if (uiUser) {
+            const dn = currentUser?.name || "";
+            const did = currentUser?.dealerId ? ` • ${currentUser.dealerId}` : "";
+            uiUser.textContent = dn ? (dn + did) : "—";
+          }
 
           // ✅ espongo globalmente la tariffa (servirà anche per ftclaims-claimforms.js)
           window.LABOR_RATE_STD = (currentUser && currentUser.laborRateStd != null) ? currentUser.laborRateStd : null;
