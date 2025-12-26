@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DMS - Gestione Dealers e Utenze</title>
-  <link rel="stylesheet" href="ftstyle.css" />
+  <link rel="stylesheet" href="ftstyle.css?v=6" />
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -14,76 +14,8 @@
 
   <style>
     /* =========================
-       FTDMS - page glue (solo stile)
+       FTDMS - page glue (solo stile, nessuna logica)
        ========================= */
-
-    /* TOPBAR coerente col portale:
-       - brand a sinistra
-       - home a destra
-    */
-    .ft-topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 12px;
-    }
-    .ft-brand h1{
-      margin:0;
-      font-size: 14px;
-      font-weight: 900;
-      letter-spacing: .2px;
-    }
-    .ft-brand .subtitle{
-      margin: 2px 0 0;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    /* Titoli contenuto */
-    .dms-title{
-      margin: 0;
-      font-size: 18px;
-      letter-spacing: .2px;
-      font-weight: 900;
-    }
-    .dms-subtitle{
-      margin: 6px 0 0;
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    /* Sezioni */
-    .dms-section{ margin-top: 18px; }
-    .dms-section > .section-head{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-    .section-head strong{
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: .15px;
-      color: var(--text);
-    }
-    .section-actions{
-      display:flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    /* Box selezionato */
-    .selectedBox{
-      background: rgba(247, 248, 254, .85);
-      border: 1px solid #e8ebff;
-      border-radius: var(--radius-sm);
-      padding: 12px 14px;
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .selectedBox strong{ color: var(--text); }
 
     /* =========================
        TABELLE - preset ARIOSO
@@ -166,7 +98,7 @@
 
     /* email ellissi */
     #users-container table td:nth-child(2){
-      max-width: 320px;
+      max-width: 340px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
@@ -192,6 +124,52 @@
       border-radius: 12px;
       margin: 0;
     }
+
+    /* =========================
+       Sezioni / Box selezione
+       ========================= */
+    .dms-title{
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: .2px;
+      font-weight: 900;
+    }
+    .dms-subtitle{
+      margin: 6px 0 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .dms-section{ margin-top: 18px; }
+    .dms-section > .section-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .section-head strong{
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .15px;
+      color: var(--text);
+    }
+    .section-actions{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .selectedBox{
+      background: rgba(247, 248, 254, .85);
+      border: 1px solid #e8ebff;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .selectedBox strong{ color: var(--text); }
 
     /* =========================
        PANNELLI LATERALI
@@ -282,21 +260,33 @@
       #dealer-form-panel, #user-form-panel{ width: 100%; }
       .two-columns{ flex-direction: column; }
       #users-container table td:last-child{ width: 220px; }
+      #users-container table td:nth-child(2){ max-width: 240px; }
     }
   </style>
 </head>
 
-<body class="ft-page has-topbar">
-  <!-- TOPBAR coerente con il portale -->
-  <div class="ft-topbar">
-    <div class="ft-brand">
-      <h1>FTDMS</h1>
-      <p class="subtitle">Gestione Dealers e Utenze</p>
-    </div>
-    <a href="FTHUBAS.html" class="ft-home-btn">← HOME</a>
-  </div>
-
+<body class="ft-page has-topbar" id="page-ftdms">
   <div class="ft-container">
+
+    <!-- TOPBAR (stessa struttura FTHUBAS) -->
+    <div class="ft-topbar">
+      <div class="ft-topbar__inner">
+        <div class="ft-topbar__left">
+          <div class="ft-topbar__brand">FTI-HUB</div>
+          <div class="ft-topbar__subtitle">DMS • Gestione Dealers e Utenze</div>
+        </div>
+
+        <div class="ft-topbar__center">
+          <div class="ft-topbar__userinfo" id="topbar-userline">Accesso in corso…</div>
+        </div>
+
+        <div class="ft-topbar__right">
+          <a href="FTHUBAS.html" class="ft-home-btn">← HOME</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
     <div class="card pad">
       <h2 class="dms-title">DMS - Gestione Dealers e Utenze</h2>
       <p id="welcomeMsg" class="dms-subtitle"></p>
@@ -382,7 +372,6 @@
         </div>
 
         <div class="hr"></div>
-
         <h4 class="dms-h4">Main data</h4>
 
         <div class="field">
@@ -456,7 +445,6 @@
         </div>
 
         <div class="hr"></div>
-
         <h4 class="dms-h4">Sezione Dealer</h4>
 
         <div class="two-columns">
@@ -487,7 +475,6 @@
         </div>
 
         <div class="hr"></div>
-
         <h4 class="dms-h4">Sezione Workshop</h4>
 
         <div class="two-columns">
@@ -518,7 +505,6 @@
         </div>
 
         <div class="hr"></div>
-
         <h4 class="dms-h4">Sezione RSA</h4>
 
         <div class="field">
@@ -628,6 +614,11 @@
     // ======= RUOLI & PERMESSI (FTDMS) =======
     let currentAccount = null; // contiene utente + permessi
 
+    function setTopbarUserLine(text){
+      const el = document.getElementById("topbar-userline");
+      if (el) el.textContent = text || "";
+    }
+
     async function loadCurrentUserPermissions(user) {
       const userRef = db.collection("Users").doc(user.uid);
       const userSnap = await userRef.get();
@@ -687,6 +678,12 @@
       try {
         await loadCurrentUserPermissions(user);
 
+        // Topbar center line (coerente con FTHUBAS)
+        const dealerId = currentAccount.userData?.dealerId || "-";
+        const role = currentAccount.roleId || "User";
+        const email = user.email || "-";
+        setTopbarUserLine(`${dealerId} • ${role} • ${email}`);
+
         if (!canRead("FTDMS")) {
           document.getElementById("welcomeMsg").innerText =
             "Non hai i permessi per accedere al DMS (FTDMS). Verrai reindirizzato alla home.";
@@ -718,6 +715,7 @@
         console.error("Errore controllo permessi:", e);
         document.getElementById("welcomeMsg").innerText =
           "Errore nel controllo permessi: " + e.message;
+        setTopbarUserLine("Errore accesso");
       }
     });
 
