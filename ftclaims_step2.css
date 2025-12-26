@@ -1,45 +1,43 @@
 /* ===============================
-   FTCLAIMS_STEP2 - Page glue (v1)
-   - Usa ftstyle.css
-   - Layout: sinistra 360px, destra molto ampia
+   ftclaims_step2.css - Page glue (v2)
+   Obiettivo:
+   - sinistra come ora (ok)
+   - destra molto più larga e meno “stretta”
+   - nessun cambio funzionale JS
    =============================== */
 
+/* Wrapper pagina: allarga tanto il contenuto globale */
 .ftclaims-wrap{
-  max-width: 1280px;
+  max-width: 1720px;                 /* prima era troppo poco */
+  width: min(1720px, calc(100vw - 36px));
   margin: 0 auto;
   padding: 18px 18px 28px;
   min-height: calc(100vh - 58px);
 }
 
+/* Layout 2 colonne: sinistra fissa, destra prende tutto */
 .ftclaims-layout{
   display: grid;
-  grid-template-columns: 360px minmax(820px, 1fr);
+  grid-template-columns: 360px 1fr;  /* sinistra invariata, destra cresce */
   gap: 14px;
   align-items: start;
 }
 
-/* fallback su schermi medi */
-@media (max-width: 1200px){
-  .ftclaims-layout{
-    grid-template-columns: 360px minmax(0, 1fr);
-  }
-}
-
-/* mobile */
+/* Mobile */
 @media (max-width: 980px){
-  .ftclaims-layout{
-    grid-template-columns: 1fr;
-  }
+  .ftclaims-layout{ grid-template-columns: 1fr; }
 }
 
-.ftclaims-left{ min-width: 0; }
-.ftclaims-right{ min-width: 0; }
-
-/* micro: rendi i blocchi claim più leggibili */
-.ftclaims-right .card.pad{
-  padding: 16px;
+/* Forza la colonna destra a non avere limiti strani */
+.ftclaims-right,
+.ftclaims-right .panel,
+.ftclaims-right .card{
+  max-width: none !important;
+  width: 100% !important;
+  min-width: 0;
 }
 
+/* Claim blocks: più chiari, meno “mille linee” addosso */
 .claimItem{
   border: 1px solid rgba(230,232,240,.95);
   border-radius: var(--radius);
@@ -72,15 +70,10 @@
   margin-top: 2px;
 }
 
-.claimBody{
-  padding: 12px;
-}
+.claimBody{ padding: 12px; }
+.rightTopBox{ padding: 6px 2px; }
 
-.rightTopBox{
-  padding: 6px 2px;
-}
-
-/* tabelle coerenti ftstyle */
+/* Tabelle un po’ più ariose */
 table{
   width: 100%;
   border-collapse: collapse;
@@ -101,6 +94,7 @@ th{
   color: var(--text);
 }
 
+/* box note coerente */
 .notesBox{
   max-height: 160px;
   overflow-y: auto;
@@ -122,6 +116,7 @@ th{
   font-size: 12px;
 }
 
+/* box neutri */
 .mutedBox{
   background: rgba(255,255,255,.70);
   border: 1px dashed rgba(205,210,225,.95);
