@@ -5,7 +5,7 @@
   <title>FTCLAIMS - Dettaglio Claim Card</title>
 
   <link rel="stylesheet" href="ftstyle.css?v=6">
-  <link rel="stylesheet" href="ftclaims_claimcard.css?v=1">
+  <link rel="stylesheet" href="ftclaims_step2.css?v=1">
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -18,49 +18,45 @@
   <script src="ftclaims-claimforms.js"></script>
 </head>
 
-<body class="has-topbar">
-  <!-- TOPBAR (standard v6) -->
-  <div class="ft-topbar">
+<body class="ft-page has-topbar">
+
+  <!-- TOPBAR (coerente ftstyle) -->
+  <header class="ft-topbar">
     <div class="ft-topbar__inner">
       <div class="ft-topbar__left">
         <div class="ft-topbar__brand">FTI-HUB</div>
-        <div class="ft-topbar__subtitle">FTCLAIMS • Dettaglio Claim Card</div>
+        <div class="ft-topbar__subtitle">FTCLAIMS - Dettaglio Claim Card</div>
       </div>
 
       <div class="ft-topbar__center">
-        <div class="ft-topbar__userinfo" id="ftUserInfo">—</div>
+        <div class="ft-topbar__userinfo" id="topbarUser">—</div>
       </div>
 
       <div class="ft-topbar__right">
         <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
       </div>
     </div>
-  </div>
+  </header>
 
-  <main class="ft-page">
-    <div class="ft-container">
+  <main class="ftclaims-wrap">
+    <div class="panel card pad">
+      <h1 style="margin:0 0 4px;">Dettaglio Claim Card</h1>
+      <div class="muted" style="margin-bottom:10px;">Visualizza e gestisci i dati della pratica.</div>
 
-      <div class="cc-head">
-        <h1 class="cc-title">Dettaglio Claim Card</h1>
-        <div class="cc-subtitle">Visualizza e gestisci i dati della pratica.</div>
-      </div>
+      <div id="banner" class="section hidden" style="padding:10px 12px;"></div>
 
-      <div id="banner" class="cc-banner"></div>
-
-      <div class="cc-layout">
-
+      <div class="ftclaims-layout">
         <!-- LEFT -->
-        <div class="cc-stack">
-
-          <section class="panel">
+        <aside class="ftclaims-left">
+          <div class="section">
             <div class="section-head">
               <div>
-                <p class="section-title">Dati pratica</p>
-                <p class="section-sub">Informazioni generali e stato della claim card.</p>
+                <div class="section-title">Dati pratica</div>
+                <div class="section-sub">Informazioni generali e stato della claim card.</div>
               </div>
             </div>
 
-            <div class="cc-grid2">
+            <div class="grid2" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
               <div>
                 <label>Codice pratica</label>
                 <input id="ui_code" type="text" readonly />
@@ -87,9 +83,7 @@
               </div>
             </div>
 
-            <div class="sep"></div>
-
-            <div>
+            <div style="margin-top:10px;">
               <label>Stato pratica</label>
               <select id="ui_status">
                 <option value="Aperta">Aperta</option>
@@ -99,21 +93,21 @@
                 <option value="Conclusa">Conclusa</option>
                 <option value="Cancellata">Cancellata</option>
               </select>
-              <div class="cc-small" style="margin-top:6px;">
+              <div class="muted" style="margin-top:6px;">
                 Stati: Aperta, Inviata, Sospesa, In Valutazione, Conclusa, Cancellata.
               </div>
             </div>
-          </section>
+          </div>
 
-          <section class="panel">
+          <div class="section">
             <div class="section-head">
               <div>
-                <p class="section-title">Dati veicolo</p>
-                <p class="section-sub">VIN e dati anagrafici veicolo.</p>
+                <div class="section-title">Dati veicolo</div>
+                <div class="section-sub">VIN e dati anagrafici veicolo.</div>
               </div>
             </div>
 
-            <div class="cc-grid2">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
               <div>
                 <label>VIN</label>
                 <input id="ui_vin" type="text" readonly />
@@ -131,17 +125,17 @@
                 <input id="ui_regDate" type="text" readonly />
               </div>
             </div>
-          </section>
+          </div>
 
-          <section class="panel">
+          <div class="section">
             <div class="section-head">
               <div>
-                <p class="section-title">Copertura garanzia</p>
-                <p class="section-sub">Alla data dell’ordine di lavoro.</p>
+                <div class="section-title">Copertura garanzia</div>
+                <div class="section-sub">Alla data dell’ordine di lavoro.</div>
               </div>
             </div>
 
-            <div class="cc-grid2">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
               <div>
                 <label>Tipo copertura</label>
                 <input id="ui_covType" type="text" readonly />
@@ -161,17 +155,17 @@
               <label>Note copertura</label>
               <textarea id="ui_covNotes" rows="2" readonly></textarea>
             </div>
-          </section>
+          </div>
 
-          <section class="panel">
+          <div class="section">
             <div class="section-head">
               <div>
-                <p class="section-title">Contratto di manutenzione</p>
-                <p class="section-sub">Se presente.</p>
+                <div class="section-title">Contratto di manutenzione</div>
+                <div class="section-sub">Se presente.</div>
               </div>
             </div>
 
-            <div class="cc-grid2">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
               <div>
                 <label>Data inizio</label>
                 <input id="ui_scStart" type="text" readonly />
@@ -186,73 +180,64 @@
               <label>Opzioni presenti</label>
               <textarea id="ui_scOptions" rows="2" readonly></textarea>
             </div>
-          </section>
+          </div>
 
-          <section class="panel">
+          <div class="section">
             <div class="section-head">
               <div>
-                <p class="section-title">Chilometraggio / ore motore</p>
-                <p class="section-sub">Campi modificabili.</p>
+                <div class="section-title">Chilometraggio / ore motore</div>
+                <div class="section-sub">Campi modificabili.</div>
               </div>
             </div>
 
-            <div class="cc-grid2">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
               <div>
                 <label>KM veicolo</label>
-                <input id="ui_km" type="number" min="0" step="1" />
+                <input id="ui_km" type="number" min="0" step="1"/>
               </div>
               <div>
                 <label>Ore motore</label>
-                <input id="ui_hours" type="number" min="0" step="1" />
+                <input id="ui_hours" type="number" min="0" step="1"/>
               </div>
             </div>
 
-            <div class="sep"></div>
-
-            <div class="cc-actions">
+            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
               <button id="btnHome" class="btn" type="button">Home Page</button>
               <button id="btnSaveCard" class="btn btn-primary" type="button">Salva modifiche</button>
               <button id="btnCancelCard" class="btn btn-danger" type="button">Cancella richiesta</button>
             </div>
-          </section>
-
-        </div>
+          </div>
+        </aside>
 
         <!-- RIGHT -->
-        <div class="cc-stack">
-
-          <section class="panel">
-            <div class="section-head" style="align-items:center;">
+        <section class="ftclaims-right">
+          <div class="panel card pad">
+            <div class="claimsHeader">
               <div>
-                <p class="section-title">Gestione claim collegati</p>
-                <p class="section-sub">Crea e gestisci le riparazioni collegate alla claim card.</p>
+                <div class="section-title" style="font-size:15px;">Gestione claim collegati</div>
+                <div class="muted">Crea e gestisci le riparazioni collegate alla claim card.</div>
               </div>
-              <div class="cc-actions">
-                <button id="btnCreateClaim" class="btn btn-primary" type="button">Crea claim</button>
-              </div>
+              <button id="btnCreateClaim" class="btn btn-primary" type="button">Crea claim</button>
             </div>
 
             <div class="mutedBox" id="createBox">
-              <div class="cc-grid2">
+              <div style="display:grid; grid-template-columns: 1fr 220px; gap:10px; align-items:end;">
                 <div>
                   <label>Tipologia claim</label>
                   <select id="newClaimType"></select>
-                  <div class="cc-small" style="margin-top:6px;">
+                  <div class="muted" style="margin-top:6px;">
                     La lista varia in base alla tipologia della claim card.
                   </div>
                 </div>
                 <div>
-                  <label>&nbsp;</label>
-                  <button id="btnDoCreateClaim" class="btn btn-primary" type="button" style="width:100%;">Crea</button>
+                  <button id="btnDoCreateClaim" class="btn btn-primary btn-wide" type="button" style="width:100%;">Crea</button>
                 </div>
               </div>
             </div>
 
-            <div id="claimsList"></div>
-          </section>
-
-        </div>
-
+            <div id="claimsList" style="margin-top:12px;"></div>
+          </div>
+        </section>
       </div>
     </div>
   </main>
@@ -261,12 +246,29 @@
     (function () {
 
       // ---------- Helpers ----------
-      function banner(type, msg) {
+      function setBanner(type, msg) {
         const b = document.getElementById("banner");
-        b.className = "cc-banner " + (type || "");
+        b.classList.remove("hidden");
+
+        // reset “colori”
+        b.style.borderColor = "rgba(230,232,240,.95)";
+        b.style.background = "rgba(255,255,255,.92)";
+        b.style.color = "var(--text)";
+
+        if (type === "success") {
+          b.style.borderColor = "var(--ok-bd)";
+          b.style.background = "rgba(233,255,240,.55)";
+        } else if (type === "error") {
+          b.style.borderColor = "var(--err-bd)";
+          b.style.background = "rgba(255,241,242,.60)";
+        } else if (type === "warn") {
+          b.style.borderColor = "var(--warn-bd)";
+          b.style.background = "rgba(255,247,237,.60)";
+        }
+
         b.innerHTML = msg || "";
-        b.style.display = "block";
       }
+
       function pad3(n) { return String(n).padStart(3, "0"); }
       function safeStr(v) { return (v == null) ? "" : String(v); }
       function normalizeType(t) { return (t || "").toString().trim().toUpperCase(); }
@@ -362,7 +364,7 @@
         return out;
       }
 
-      // ✅ MODIFICA MINIMA: aggiunto recupero dealers/{dealerId}.LaborRateStd
+      // ✅ recupero dealers/{dealerId}.LaborRateStd
       async function getUserInfo(db, auth) {
         const u = auth.currentUser;
         if (!u) return { uid:null, name:null, dealerId:null, laborRateStd:null };
@@ -400,7 +402,7 @@
 
       // ---------- Firebase ----------
       if (typeof firebase === "undefined") {
-        banner("error", "Errore: Firebase non caricato.");
+        setBanner("error", "Errore: Firebase non caricato.");
         return;
       }
       const auth = window.auth || firebase.auth();
@@ -705,10 +707,10 @@
           };
 
           await db.collection("ClaimCards").doc(claimId).update(updateObj);
-          banner("success", "Modifiche salvate.");
+          setBanner("success", "Modifiche salvate.");
         } catch (e) {
           console.error(e);
-          banner("error", "Errore salvataggio: " + (e.message || e));
+          setBanner("error", "Errore salvataggio: " + (e.message || e));
         } finally {
           btnSaveCard.disabled = false;
         }
@@ -724,11 +726,11 @@
             status: "Cancellata",
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           });
-          banner("success", "Richiesta impostata su Cancellata.");
+          setBanner("success", "Richiesta impostata su Cancellata.");
           ui.status.value = "Cancellata";
         } catch (e) {
           console.error(e);
-          banner("error", "Errore cancellazione: " + (e.message || e));
+          setBanner("error", "Errore cancellazione: " + (e.message || e));
         } finally {
           btnCancelCard.disabled = false;
         }
@@ -816,7 +818,7 @@
         if (serviceOptionPayload) docData.serviceOption = serviceOptionPayload;
 
         await db.collection("ClaimCards").doc(claimId).collection("Claims").doc(repairCode).set(docData);
-        banner("success", `Riparazione ${repairCode} (${docData.claimType}) creata.`);
+        setBanner("success", `Riparazione ${repairCode} (${docData.claimType}) creata.`);
       }
 
       btnCreateClaim.addEventListener("click", () => {
@@ -829,7 +831,7 @@
           await createClaim();
         } catch (e) {
           console.error(e);
-          banner("error", "Errore creazione claim: " + (e.message || e));
+          setBanner("error", "Errore creazione claim: " + (e.message || e));
         } finally {
           btnDoCreateClaim.disabled = false;
         }
@@ -907,21 +909,22 @@
       }
 
       // ===========================================================================================
-      // MODIFICA MINIMA: template coerente (btn + ft-table)
+      // renderServiceContractDetails (include prezzi+totali e default €/h da dealers.LaborRateStd)
       // ===========================================================================================
       function renderServiceContractDetails(container, claimDoc, ctx, isDistributor) {
         const prefix = "sc_" + ctx.claimCode + "_";
 
         container.innerHTML = `
-          <div class="section">
+          <div class="section" style="margin-top:0;">
             <div class="section-head">
               <div>
-                <p class="section-title">Dati Service Contract</p>
-                <p class="section-sub">Seleziona il pacchetto. Le righe (ricambi/manodopera) vengono caricate dal template.</p>
+                <div class="section-title">Dati Service Contract</div>
+                <div class="section-sub">Seleziona il pacchetto di manutenzione. Le righe (ricambi/manodopera) vengono caricate dal template.</div>
               </div>
+              <button class="btn btn-primary" id="${prefix}save" type="button">Salva manutenzione</button>
             </div>
 
-            <div class="cc-grid2">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
               <div>
                 <label>Famiglia</label>
                 <select id="${prefix}family"></select>
@@ -937,103 +940,93 @@
                 <input type="checkbox" id="${prefix}voith">
                 <span><strong>Veicolo con rallentatore VOITH</strong> (Intarder/Retarder)</span>
               </label>
-              <div class="cc-small">Se attivo, verranno incluse le righe previste per VOITH (se presenti nel pacchetto).</div>
-            </div>
-
-            <div style="margin-top:10px;">
-              <button class="btn btn-primary" id="${prefix}save" type="button">Salva manutenzione</button>
+              <div class="muted">Se attivo, verranno incluse le righe previste per VOITH (se presenti nel pacchetto).</div>
             </div>
           </div>
-
-          <div class="sep"></div>
 
           <div class="section">
             <div class="section-head">
               <div>
-                <p class="section-title">Righe precompilate</p>
-                <p class="section-sub">Ricambi e manodopera provenienti dal template selezionato (con prezzi e totali).</p>
+                <div class="section-title">Righe precompilate</div>
+                <div class="section-sub">Ricambi e manodopera provenienti dal template selezionato (con prezzi e totali).</div>
               </div>
             </div>
 
-            <div class="cc-small" style="font-weight:900;">Manodopera</div>
-            <div class="ft-table-wrap">
-              <table class="ft-table">
+            <div style="margin-top:6px;">
+              <div class="muted" style="font-weight:900; color:var(--text);">Manodopera</div>
+              <table>
                 <thead>
                   <tr>
-                    <th>Codice</th>
+                    <th style="width:110px;">Codice</th>
                     <th>Descrizione</th>
-                    <th>Ore</th>
-                    <th>€/h</th>
-                    <th>Totale</th>
+                    <th style="width:110px;">Ore</th>
+                    <th style="width:110px;">€/h</th>
+                    <th style="width:130px;">Totale</th>
                     <th>Note</th>
                   </tr>
                 </thead>
                 <tbody id="${prefix}labourBody">
-                  <tr><td colspan="6" class="cc-small">Nessuna riga.</td></tr>
+                  <tr><td colspan="6" class="muted">Nessuna riga.</td></tr>
                 </tbody>
               </table>
             </div>
 
-            <div style="margin-top:10px;" class="cc-small" style="font-weight:900;">Ricambi</div>
-            <div class="ft-table-wrap">
-              <table class="ft-table">
+            <div style="margin-top:12px;">
+              <div class="muted" style="font-weight:900; color:var(--text);">Ricambi</div>
+              <table>
                 <thead>
                   <tr>
-                    <th>Codice</th>
+                    <th style="width:160px;">Codice</th>
                     <th>Descrizione</th>
-                    <th>Q.tà</th>
-                    <th>€ unit</th>
-                    <th>Totale</th>
+                    <th style="width:110px;">Q.tà</th>
+                    <th style="width:110px;">€ unit</th>
+                    <th style="width:130px;">Totale</th>
                     <th>Note</th>
                   </tr>
                 </thead>
                 <tbody id="${prefix}partsBody">
-                  <tr><td colspan="6" class="cc-small">Nessuna riga.</td></tr>
+                  <tr><td colspan="6" class="muted">Nessuna riga.</td></tr>
                 </tbody>
               </table>
             </div>
 
-            <div style="margin-top:10px;" class="mutedBox">
+            <div class="mutedBox" style="margin-top:12px;">
               <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
                 <div><strong>Totale manodopera:</strong> <span id="${prefix}totLab">€ 0,00</span></div>
                 <div><strong>Totale ricambi:</strong> <span id="${prefix}totParts">€ 0,00</span></div>
                 <div><strong>Totale generale:</strong> <span id="${prefix}totAll">€ 0,00</span></div>
               </div>
-              <div class="cc-small" style="margin-top:6px;">
+              <div class="muted" style="margin-top:6px;">
                 Inserisci prezzi unitari (€/h per manodopera, € unit per ricambi). I totali si aggiornano in automatico.
               </div>
             </div>
           </div>
 
-          <div class="sep"></div>
-
           <div class="section">
             <div class="section-head">
               <div>
-                <p class="section-title">Allegati</p>
-                <p class="section-sub">Allegati generici relativi a questo claim.</p>
+                <div class="section-title">Allegati</div>
+                <div class="section-sub">Allegati generici relativi a questo claim.</div>
               </div>
             </div>
 
-            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <div style="margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
               <input type="file" id="${prefix}file" multiple>
               <button class="btn" id="${prefix}upload" type="button">Carica</button>
             </div>
-            <div id="${prefix}attList" class="cc-small" style="margin-top:10px;">Nessun allegato presente.</div>
+            <div id="${prefix}attList" class="muted" style="margin-top:8px;">Nessun allegato presente.</div>
           </div>
-
-          <div class="sep"></div>
 
           <div class="section">
             <div class="section-head">
               <div>
-                <p class="section-title">Note</p>
-                <p class="section-sub">Cronologia note sul claim.</p>
+                <div class="section-title">Note</div>
+                <div class="section-sub">Cronologia note del claim.</div>
               </div>
             </div>
 
             <div id="${prefix}notesList" class="notesBox">Nessuna nota.</div>
-            <div style="margin-top:8px; display:flex; gap:10px; flex-wrap:wrap;">
+            <div style="margin-top:8px; display:flex; gap:8px; align-items:flex-start;">
               <textarea id="${prefix}noteText" rows="2" placeholder="Scrivi una nota..."></textarea>
               <button class="btn btn-primary" id="${prefix}sendNote" type="button">Invia</button>
             </div>
@@ -1134,8 +1127,8 @@
         }
 
         function clearBodies() {
-          labourBody.innerHTML = `<tr><td colspan="6" class="cc-small">Nessuna riga.</td></tr>`;
-          partsBody.innerHTML  = `<tr><td colspan="6" class="cc-small">Nessuna riga.</td></tr>`;
+          labourBody.innerHTML = `<tr><td colspan="6" class="muted">Nessuna riga.</td></tr>`;
+          partsBody.innerHTML  = `<tr><td colspan="6" class="muted">Nessuna riga.</td></tr>`;
 
           const elLab = container.querySelector("#" + prefix + "totLab");
           const elPar = container.querySelector("#" + prefix + "totParts");
@@ -1166,7 +1159,6 @@
             inp.min = "0";
             inp.style.width = "110px";
             inp.value = (value != null && !isNaN(value)) ? String(value) : "";
-            inp.setAttribute("data-field", "unit");
             return inp;
           }
 
@@ -1175,9 +1167,8 @@
             inp.type = "number";
             inp.step = "0.01";
             inp.min = "0";
-            inp.style.width = "80px";
+            inp.style.width = "90px";
             inp.value = (value != null && !isNaN(value)) ? String(value) : "";
-            inp.setAttribute("data-field", "qty");
             return inp;
           }
 
@@ -1217,7 +1208,10 @@
               tr.dataset.kind = "LABOUR";
 
               const qtyInp = makeQtyInput(qtyInit);
+              qtyInp.setAttribute("data-field", "qty");
+
               const unitInp = makeMoneyInput(unitInit);
+              unitInp.setAttribute("data-field", "unit");
 
               tr.innerHTML = `
                 <td>${code}</td>
@@ -1248,7 +1242,6 @@
 
               const savedLine = findSavedLine(saved.parts, code, desc);
               const qtyInit = toNum(savedLine?.qty) ?? qty0;
-
               let unitInit = toNum(savedLine?.unitPrice);
               if (unitInit == null) unitInit = pickUnitPrice(it);
 
@@ -1256,7 +1249,10 @@
               tr.dataset.kind = "PART";
 
               const qtyInp = makeQtyInput(qtyInit);
+              qtyInp.setAttribute("data-field", "qty");
+
               const unitInp = makeMoneyInput(unitInit);
+              unitInp.setAttribute("data-field", "unit");
 
               tr.innerHTML = `
                 <td>${code}</td>
@@ -1355,7 +1351,7 @@
               dupVin = await existsSameServiceContractOnVinGlobal(db, vin, fam, key, ctx.claimCardId, ctx.claimCode);
             } catch (err) {
               console.warn("Check dup VIN fallito (non bloccante):", err?.code, err?.message || err);
-              banner("warn", "⚠ Impossibile verificare doppioni su VIN (controllo non bloccante).");
+              setBanner("warn", "⚠ Impossibile verificare doppioni su VIN (controllo non bloccante).");
             }
 
             if (dupVin) {
@@ -1417,20 +1413,21 @@
             };
 
             saveBtn.disabled = true;
+
             await claimRef.set(payload, { merge: true });
 
             try {
               await writeMaintenanceHistoryFresh(db, ctx.claimCardId, scObj, ctx.claimCode);
             } catch (eHist) {
               console.warn("MaintenanceHistory non scritto (non bloccante):", eHist?.code, eHist?.message || eHist);
-              banner("warn", "Manutenzione salvata. ⚠ Storico VIN non aggiornato (non bloccante).");
+              setBanner("warn", "Manutenzione salvata. ⚠ Storico VIN non aggiornato (non bloccante).");
               return;
             }
 
-            banner("success", "Manutenzione salvata.");
+            setBanner("success", "Manutenzione salvata.");
           } catch (e2) {
             console.error("[SAVE MAINT] error:", e2);
-            banner("error", "Errore salvataggio manutenzione: " + (e2.message || e2));
+            setBanner("error", "Errore salvataggio manutenzione: " + (e2.message || e2));
           } finally {
             saveBtn.disabled = false;
           }
@@ -1461,6 +1458,10 @@
             items.forEach(it => {
               const li = document.createElement("li");
               li.style.marginBottom = "8px";
+              li.style.display = "flex";
+              li.style.alignItems = "center";
+              li.style.gap = "10px";
+              li.style.flexWrap = "wrap";
 
               const a = document.createElement("a");
               a.href = it.url || "#";
@@ -1471,7 +1472,6 @@
               const del = document.createElement("button");
               del.className = "btn btn-danger btn-small";
               del.type = "button";
-              del.style.marginLeft = "10px";
               del.textContent = "Elimina";
 
               del.addEventListener("click", async () => {
@@ -1638,7 +1638,10 @@
         `;
 
         const actions = document.createElement("div");
-        actions.className = "cc-actions";
+        actions.style.display = "flex";
+        actions.style.gap = "8px";
+        actions.style.flexWrap = "wrap";
+        actions.style.alignItems = "center";
 
         const btnToggle = document.createElement("button");
         btnToggle.className = "btn btn-small";
@@ -1672,10 +1675,10 @@
           if (!confirm(`Vuoi eliminare ${repairCode}?`)) return;
           try {
             await db.collection("ClaimCards").doc(claimId).collection("Claims").doc(repairCode).delete();
-            banner("success", "Riparazione eliminata.");
+            setBanner("success", "Riparazione eliminata.");
           } catch(e) {
             console.error(e);
-            banner("error", "Errore eliminazione: " + (e.message || e));
+            setBanner("error", "Errore eliminazione: " + (e.message || e));
           }
         });
 
@@ -1689,7 +1692,7 @@
           if (typeof renderClaimDetails === "function") {
             renderClaimDetails(claimData.claimType, inner, claimData, ctx);
           } else {
-            inner.innerHTML = `<div class="cc-small">Renderer non disponibile per questa tipologia.</div>`;
+            inner.innerHTML = `<div class="muted">Renderer non disponibile per questa tipologia.</div>`;
           }
         }
 
@@ -1710,14 +1713,14 @@
           });
         }, (e) => {
           console.error(e);
-          banner("error", "Errore caricamento claims: " + (e.message || e));
+          setBanner("error", "Errore caricamento claims: " + (e.message || e));
         });
       }
 
       // ---------- Boot ----------
       auth.onAuthStateChanged(async (user) => {
         if (!user) {
-          banner("error", "Utente non autenticato. Reindirizzamento…");
+          setBanner("error", "Utente non autenticato. Reindirizzamento…");
           setTimeout(() => window.location.href = "index.html", 1200);
           return;
         }
@@ -1725,31 +1728,30 @@
         try {
           claimId = resolveClaimId();
           if (!claimId) {
-            banner("error", "Nessuna claim card in sessione (manca ftclaims_claimCode). Torna allo STEP1.");
+            setBanner("error", "Nessuna claim card in sessione (manca ftclaims_claimCode). Torna allo STEP1.");
             return;
           }
 
           currentUser = await getUserInfo(db, auth);
 
-          // user info in topbar
-          const uiUser = document.getElementById("ftUserInfo");
-          if (uiUser) {
-            const dn = currentUser?.name || "";
-            const did = currentUser?.dealerId ? ` • ${currentUser.dealerId}` : "";
-            uiUser.textContent = dn ? (dn + did) : "—";
+          // topbar user
+          const topbarUser = document.getElementById("topbarUser");
+          if (topbarUser) {
+            const d = currentUser?.dealerId ? (" • " + currentUser.dealerId) : "";
+            topbarUser.textContent = (currentUser?.name || "—") + d;
           }
 
-          // ✅ espongo globalmente la tariffa (servirà anche per ftclaims-claimforms.js)
+          // espongo globalmente la tariffa
           window.LABOR_RATE_STD = (currentUser && currentUser.laborRateStd != null) ? currentUser.laborRateStd : null;
 
           await loadClaimCard();
           renderClaimCard();
 
           listenClaims();
-          banner("success", "Pratica caricata correttamente.");
+          setBanner("success", "Pratica caricata correttamente.");
         } catch (e) {
           console.error(e);
-          banner("error", "Errore caricamento pratica: " + (e.message || e));
+          setBanner("error", "Errore caricamento pratica: " + (e.message || e));
         }
       });
 
