@@ -18,6 +18,9 @@
        FTCLAIMS - page glue (pulito)
        - Funzioni identiche all'originale
        - Layout: FSA -> Coperture -> Tipologia -> Bottoni
+       - Miglioramenti:
+         2) Loading state + blocco UI durante check
+         3) Stato "OK pronto" più evidente
        =============================== */
 
     .page-wrap{
@@ -85,7 +88,6 @@
 
     /* ===============================
        Box premium (FSA / Coperture)
-       - più "quiet" e leggibile
        =============================== */
 
     .sep{
@@ -143,7 +145,6 @@
 
     .info-box__body{ font-size: 13px; color: var(--text); }
 
-    /* chips più discrete */
     .chip{
       display:inline-flex;
       align-items:center;
@@ -231,7 +232,6 @@
       color: rgba(15,23,42,.55);
     }
 
-    /* Collapsible */
     .collapsible{ position: relative; }
     .collapsible.is-collapsed{ max-height: 210px; overflow: hidden; }
     .fade-bottom{
@@ -317,8 +317,33 @@
       display:none;
     }
 
-    #btnOk{ display:none; }
+    /* ===== Miglioramento 3: OK "pronto" ===== */
+    .btn.is-ready{
+      box-shadow: 0 12px 30px rgba(0,0,0,.10);
+      transform: translateY(-1px);
+    }
 
+    /* ===== Miglioramento 2: bottone check in loading ===== */
+    .btn.is-loading{
+      position: relative;
+      pointer-events: none;
+      opacity: .9;
+    }
+    .btn.is-loading::after{
+      content:"";
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,.55);
+      border-top-color: rgba(255,255,255,0);
+      display:inline-block;
+      margin-left: 10px;
+      vertical-align: -2px;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #btnOk{ display:none; }
   </style>
 </head>
 
@@ -477,6 +502,7 @@
       // ================== STATE ==================
       let currentAccount = null;
       let lastCheckData  = null;
+      let isChecking     = false;
 
       // ================== UI ==================
       const topUserLabel       = document.getElementById('topUserLabel');
@@ -504,6 +530,46 @@
       const orderNumberInput   = document.getElementById('orderNumberInput');
       const kmInput            = document.getElementById('kmInput');
       const oreMotoreInput     = document.getElementById('oreMotoreInput');
+
+      // ================== Miglioramento 2: blocco UI durante check ==================
+      const CHECKABLE_FIELDS = [vinInput, dataOrdineInput, orderNumberInput, kmInput, oreMotoreInput, tipoPraticaSelect, btnOk, btnCancel];
+      const DEFAULT_CHECK_TEXT = btnCheckCoverage.textContent;
+
+      function setCheckingUI(on){
+        isChecking = !!on;
+
+        // bottone check
+        btnCheckCoverage.classList.toggle("is-loading", on);
+        btnCheckCoverage.disabled = on;
+        btnCheckCoverage.textContent = on ? "Controllo in corso…" : DEFAULT_CHECK_TEXT;
+
+        // blocco campi e azioni (tranne Home link)
+        CHECKABLE_FIELDS.forEach(el => {
+          if (!el) return;
+          // se ok: disabilita tutto; se off: riabilita ma lasciamo OK gestito dalla tipologia
+          if (on) el.disabled = true;
+        });
+
+        if (!on) {
+          // ripristino: campi input riattivi
+          [vinInput, dataOrdineInput, orderNumberInput, kmInput, oreMotoreInput].forEach(el => el.disabled = false);
+          tipoPraticaSelect.disabled = false;
+          btnCancel.disabled = false;
+
+          // OK si decide in base alla selezione tipologia
+          btnOk.disabled = !tipoPraticaSelect.value;
+          applyOkReadyState();
+        }
+      }
+
+      // ================== Miglioramento 3: OK pronto ==================
+      function applyOkReadyState(){
+        const ready = !!tipoPraticaSelect.value && !!lastCheckData && !isChecking;
+        btnOk.classList.toggle("btn-primary", ready);   // diventa "primary" quando pronto
+        btnOk.classList.toggle("is-ready", ready);      // piccolo boost visivo
+        btnOk.disabled = !ready;
+        btnOk.title = ready ? "Crea claim card" : "Seleziona la tipologia per procedere";
+      }
 
       // ================== AUTH + ROLE ==================
       async function loadCurrentUserInfo(user) {
@@ -587,14 +653,13 @@
         } catch (err) {
           console.error(err);
           alert("Errore durante la creazione della claim card: " + err.message);
-          btnOk.disabled = false;
+          applyOkReadyState();
         }
       });
 
       tipoPraticaSelect.addEventListener('change', () => {
-        btnOk.disabled = !tipoPraticaSelect.value;
-        btnOk.title = tipoPraticaSelect.value ? "Crea claim card" : "Seleziona la tipologia per procedere";
         updateTipoDescrizione(tipoPraticaSelect.value);
+        applyOkReadyState();
       });
 
       // Toggle FSA
@@ -700,6 +765,7 @@
         btnOk.style.display = "none";
         btnOk.disabled = true;
         btnOk.title = "Seleziona la tipologia per procedere";
+        btnOk.classList.remove("btn-primary","is-ready");
         tipoPraticaDesc.style.display = "none";
         tipoPraticaDesc.textContent = "";
       }
@@ -708,9 +774,9 @@
         tipoPraticaGroup.style.display = "block";
         step2Sep.style.display = "block";
         btnOk.style.display = "inline-block";
-        btnOk.disabled = true;
+        // il ready state lo decide applyOkReadyState()
+        applyOkReadyState();
 
-        // porta la vista alla tipologia
         try { tipoPraticaGroup.scrollIntoView({ behavior: "smooth", block: "start" }); } catch(e) {}
       }
 
@@ -804,14 +870,12 @@
         kmInput.value = "";
         oreMotoreInput.value = "";
 
-        btnCheckCoverage.disabled = false;
-        btnOk.disabled = true;
-        btnOk.style.display = "none";
-
         resetTipoPratica();
         clearFsaList();
         hideCoverageBox();
+
         lastCheckData = null;
+        setCheckingUI(false);
       }
 
       // ================== FSA PENDENTI ==================
@@ -1030,9 +1094,11 @@
       }
 
       async function handleCheckCoverage() {
+        // reset "risultati", ma manteniamo i campi
         resetTipoPratica();
         hideCoverageBox();
         lastCheckData = null;
+        applyOkReadyState();
 
         const vin = (vinInput.value || "").trim().toUpperCase();
         const dataOrdineStr = dataOrdineInput.value;
@@ -1040,11 +1106,16 @@
         const kmStr = (kmInput.value || "").trim();
         const oreStr = (oreMotoreInput.value || "").trim();
 
+        // UI loading ON
+        setCheckingUI(true);
+
+        // validazioni base (qui preferiamo non fare query inutili)
         if (!vin || !dataOrdineStr || !orderNumberStr || !kmStr || !oreStr) {
           showCoverageBox("error",
             buildHeader("Coperture VIN", "Dati mancanti") +
             `<div class="info-box__body">Compila tutti i campi (VIN, data ordine, numero ordine, KM e ore motore) prima di procedere.</div>`
           );
+          setCheckingUI(false);
           return;
         }
 
@@ -1054,6 +1125,7 @@
             buildHeader("Coperture VIN", "Data non valida") +
             `<div class="info-box__body">La data inserita non è valida.</div>`
           );
+          setCheckingUI(false);
           return;
         }
 
@@ -1064,6 +1136,7 @@
             buildHeader("Coperture VIN", "KM non validi") +
             `<div class="info-box__body">I KM veicolo devono essere un numero intero >= 0.</div>`
           );
+          setCheckingUI(false);
           return;
         }
         if (isNaN(oreVal) || oreVal < 0) {
@@ -1071,6 +1144,7 @@
             buildHeader("Coperture VIN", "Ore non valide") +
             `<div class="info-box__body">Le ore motore devono essere un numero intero >= 0.</div>`
           );
+          setCheckingUI(false);
           return;
         }
 
@@ -1083,6 +1157,7 @@
             buildHeader("Coperture VIN", "Data futura") +
             `<div class="info-box__body">La data dell'ordine di lavoro non può essere futura.</div>`
           );
+          setCheckingUI(false);
           return;
         }
         if (dataOrdine < minDate) {
@@ -1090,12 +1165,11 @@
             buildHeader("Coperture VIN", "Limite 90 giorni") +
             `<div class="info-box__body">È possibile aprire una claim card solo entro 90 giorni dalla data dell'ordine di lavoro.</div>`
           );
+          setCheckingUI(false);
           return;
         }
 
         try {
-          btnCheckCoverage.disabled = true;
-
           // 1) coerenza claimcards
           const errClaims = await checkClaimCardsCoerenza(vin, dataOrdineStr, kmVal, oreVal, orderNumberStr);
           if (errClaims) {
@@ -1107,7 +1181,7 @@
               ]) +
               `<div class="info-box__body">${errClaims}</div>`
             );
-            btnCheckCoverage.disabled = false;
+            setCheckingUI(false);
             return;
           }
 
@@ -1166,7 +1240,7 @@
               vehicle: { registrationPlate: null, registrationDate: null, customer: null }
             };
 
-            btnCheckCoverage.disabled = false;
+            setCheckingUI(false);
             return;
           }
 
@@ -1311,7 +1385,8 @@
             vehicle: vehicleSnapshot
           };
 
-          btnCheckCoverage.disabled = false;
+          // fine: UI ON e stato OK
+          setCheckingUI(false);
 
         } catch (err) {
           console.error(err);
@@ -1319,9 +1394,10 @@
             buildHeader("Coperture VIN", "Errore") +
             `<div class="info-box__body">Errore durante il controllo: ${escapeHtml(err.message || err)}</div>`
           );
-          btnCheckCoverage.disabled = false;
+          setCheckingUI(false);
           resetTipoPratica();
           lastCheckData = null;
+          applyOkReadyState();
         }
       }
 
@@ -1412,6 +1488,8 @@
       resetTipoPratica();
       clearFsaList();
       hideCoverageBox();
+      setCheckingUI(false);
+      applyOkReadyState();
 
     })();
   </script>
