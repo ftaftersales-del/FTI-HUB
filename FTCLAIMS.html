@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>FTCLAIMS</title>
-  <link rel="stylesheet" href="ftstyle.css">
+
+  <link rel="stylesheet" href="ftstyle.css?v=6">
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
@@ -12,103 +14,200 @@
   <script src="firebase-config.js"></script>
 
   <style>
-    body { font-family: Arial, sans-serif; background:#f5f5f5; margin:20px; }
-    .container { max-width: 900px; margin:auto; background:white; padding:20px 25px 30px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.1); }
-    h2 { margin-top: 0; }
+    /* ===== FTCLAIMS - Page glue minimale (usa ftstyle) ===== */
 
-    #userInfo { font-size: 13px; color:#555; margin-bottom: 15px; }
-    #userInfo p { margin:0; }
-
-    .field-group { margin-bottom: 15px; }
-    .field-row { display:flex; gap:10px; flex-wrap:wrap; }
-    .field-row .field { flex:1; min-width:160px; }
-
-    label { display:block; font-weight:bold; margin-bottom:5px; }
-    input[type="text"], input[type="date"], input[type="number"], select {
-      width:100%; padding:8px; box-sizing:border-box; border-radius:4px; border:1px solid #ccc; font-size:14px;
+    .page-wrap{
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 18px;
+      min-height: calc(100vh - 58px);
+      display: grid;
+      place-items: start center;
     }
 
-    .buttons { margin-top: 20px; display:flex; gap:10px; flex-wrap:wrap; }
-    button { padding:8px 16px; border:none; border-radius:4px; cursor:pointer; font-size:14px; }
-    #btnCheckCoverage { background:#007bff; color:white; }
-    #btnOk { background:#28a745; color:white; }
-    #btnCancel { background:#dc3545; color:white; margin-left:auto; }
-    #btnHome { background:#6c757d; color:white; }
-    button:disabled { opacity:.6; cursor:not-allowed; }
+    .claims-card{ width: min(920px, 100%); }
 
-    #resultArea { margin-top:20px; padding:10px 12px; border-radius:6px; font-size:14px; display:none; }
-    #resultArea.error { background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; }
-    #resultArea.success { background:#d4edda; color:#155724; border:1px solid #c3e6cb; }
-
-    #fsaListContainer {
-      display:none; margin-top:15px; padding:10px 12px; border-radius:6px;
-      background:#e9f7fd; border:1px solid #bde0ff; font-size:13px;
+    .claims-meta{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+      margin-top: 6px;
     }
-    #fsaListContainer strong { display:block; margin-bottom:5px; }
-    #fsaList { margin:0; margin-top:5px; padding-left:18px; }
+    .claims-meta p{ margin: 0; }
+    .claims-meta strong{ color: var(--text); }
 
-    #tipoPraticaDescrizione {
-      margin-top:8px; font-size:13px; color:#333; padding-left:10px; border-left:3px solid #007bff; display:none;
+    .form-grid{
+      display: grid;
+      gap: 12px;
+    }
+
+    .row-3{
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 820px){
+      .row-3{ grid-template-columns: 1fr; }
+    }
+
+    .actions{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+    .actions .left, .actions .right{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+
+    /* Box esiti / FSA (coerenti e leggibili) */
+    #resultArea{
+      display:none;
+      margin-top: 14px;
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      border: 1px solid var(--border);
+      background: var(--surface-3);
+    }
+    #resultArea.error{
+      background: var(--err-bg);
+      border-color: var(--err-bd);
+      color: var(--err-tx);
+    }
+    #resultArea.success{
+      background: var(--ok-bg);
+      border-color: var(--ok-bd);
+      color: var(--ok-tx);
+    }
+    #resultArea ul{ margin: 8px 0 0 18px; }
+
+    #fsaListContainer{
+      display:none;
+      margin-top: 6px;
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      background: rgba(0, 94, 220, .06);
+      border: 1px solid rgba(0, 94, 220, .18);
+      font-size: 13px;
+      color: var(--text);
+    }
+    #fsaListContainer strong{ display:block; margin-bottom: 6px; }
+    #fsaList{ margin: 0; padding-left: 18px; }
+
+    #tipoPraticaDescrizione{
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      padding-left: 10px;
+      border-left: 3px solid var(--primary2);
+      display:none;
+    }
+
+    /* mini badge OK */
+    .mini-ok{
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-weight: 800;
+      border: 1px solid rgba(0,0,0,.06);
+      background: #22c55e;
+      color: #fff;
+      cursor: default;
+      opacity: .85;
     }
   </style>
 </head>
 
 <body class="ft-page has-topbar">
-  <div class="ft-topbar">
-    <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
-  </div>
-  <div class="container">
-    <h2>Nuova Claim Card – Dati iniziali</h2>
-
-    <div id="userInfo">Verifica accesso in corso...</div>
-
-    <div class="field-group">
-      <label for="vinInput">Telaio (VIN)</label>
-      <input type="text" id="vinInput" placeholder="Inserisci il numero di telaio">
-    </div>
-
-    <div class="field-group">
-      <label for="dataOrdineInput">Data apertura ordine di lavoro</label>
-      <input type="date" id="dataOrdineInput">
-    </div>
-
-    <div class="field-group">
-      <div class="field-row">
-        <div class="field">
-          <label for="orderNumberInput">Numero ordine di lavoro</label>
-          <input type="text" id="orderNumberInput" placeholder="Es. 501">
-        </div>
-        <div class="field">
-          <label for="kmInput">KM veicolo</label>
-          <input type="number" id="kmInput" min="0" step="1" placeholder="Es. 100000">
-        </div>
-        <div class="field">
-          <label for="oreMotoreInput">Ore motore</label>
-          <input type="number" id="oreMotoreInput" min="0" step="1" placeholder="Es. 500">
+  <!-- Topbar coerente HUB -->
+  <header class="ft-topbar">
+    <div class="ft-topbar__inner">
+      <div class="ft-topbar__left">
+        <div class="ft-brand">
+          <span class="ft-brand__dot"></span>
+          <span class="ft-brand__name">FTI-HUB</span>
+          <span class="ft-brand__sep">•</span>
+          <span class="ft-brand__page">FTCLAIMS</span>
         </div>
       </div>
+      <div class="ft-topbar__right">
+        <a class="btn btn-ghost btn-sm" href="FTHUBAS.html">Home</a>
+      </div>
     </div>
+  </header>
 
-    <div id="fsaListContainer">
-      <strong>FSA da applicare su questo veicolo:</strong>
-      <ul id="fsaList"></ul>
-    </div>
+  <main class="page-wrap">
+    <section class="panel claims-card">
+      <div class="panel-hd">
+        <h2 class="h1" style="margin:0;">Nuova Claim Card – Dati iniziali</h2>
+        <div id="userInfo" class="claims-meta">Verifica accesso in corso...</div>
+      </div>
 
-    <div class="field-group" id="tipoPraticaGroup" style="display:none;">
-      <label for="tipoPratica">Tipologia claim card</label>
-      <select id="tipoPratica"></select>
-      <div id="tipoPraticaDescrizione"></div>
-    </div>
+      <div class="panel-bd">
+        <div class="form-grid">
 
-    <div class="buttons">
-      <button id="btnCheckCoverage">Controlla copertura / dati veicolo</button>
-      <button id="btnOk" style="display:none;" disabled>OK</button>
-      <button id="btnCancel">Annulla</button>
-      <button id="btnHome">Home</button>
-    </div>
+          <div class="field">
+            <label class="label" for="vinInput">Telaio (VIN)</label>
+            <input class="input" type="text" id="vinInput" placeholder="Inserisci il numero di telaio" autocomplete="off">
+          </div>
 
-    <div id="resultArea"></div>
-  </div>
+          <div class="field">
+            <label class="label" for="dataOrdineInput">Data apertura ordine di lavoro</label>
+            <input class="input" type="date" id="dataOrdineInput">
+          </div>
+
+          <div class="row-3">
+            <div class="field">
+              <label class="label" for="orderNumberInput">Numero ordine di lavoro</label>
+              <input class="input" type="text" id="orderNumberInput" placeholder="Es. 501" autocomplete="off">
+            </div>
+            <div class="field">
+              <label class="label" for="kmInput">KM veicolo</label>
+              <input class="input" type="number" id="kmInput" min="0" step="1" placeholder="Es. 100000">
+            </div>
+            <div class="field">
+              <label class="label" for="oreMotoreInput">Ore motore</label>
+              <input class="input" type="number" id="oreMotoreInput" min="0" step="1" placeholder="Es. 500">
+            </div>
+          </div>
+
+          <div id="fsaListContainer">
+            <strong>FSA da applicare su questo veicolo:</strong>
+            <ul id="fsaList"></ul>
+          </div>
+
+          <div class="field" id="tipoPraticaGroup" style="display:none;">
+            <label class="label" for="tipoPratica">Tipologia claim card</label>
+            <select class="input" id="tipoPratica"></select>
+            <div id="tipoPraticaDescrizione"></div>
+          </div>
+
+          <div class="actions">
+            <div class="left">
+              <button class="btn btn-primary" id="btnCheckCoverage" type="button">Controlla copertura / dati veicolo</button>
+              <span class="mini-ok" id="btnOk">OK</span>
+            </div>
+            <div class="right">
+              <button class="btn btn-danger" id="btnCancel" type="button">Annulla</button>
+              <a class="btn btn-ghost" id="btnHome" href="FTHUBAS.html">Home</a>
+            </div>
+          </div>
+
+          <div id="resultArea"></div>
+
+        </div>
+      </div>
+    </section>
+  </main>
 
   <script>
     (function () {
@@ -119,12 +218,17 @@
         return;
       }
 
+      // Firebase init (manteniamo compatibilità con eventuale init altrove)
+      try {
+        if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(firebaseConfig);
+      } catch (e) {}
+
       const auth = window.auth || firebase.auth();
       const db   = window.db   || firebase.firestore();
       window.auth = auth;
       window.db = db;
 
-      // ================== CONFIG ==================
+      // ================== CONFIG (immutata) ==================
       const VIN_COLLECTION    = "DBVIN";
       const FSA_COLLECTION    = "FTFSA";
       const CLAIMS_COLLECTION = "ClaimCards";
@@ -143,9 +247,8 @@
 
       // ================== UI ==================
       const btnCheckCoverage  = document.getElementById('btnCheckCoverage');
-      const btnOk             = document.getElementById('btnOk');
+      const btnOkBadge        = document.getElementById('btnOk');
       const btnCancel         = document.getElementById('btnCancel');
-      const btnHome           = document.getElementById('btnHome');
 
       const tipoPraticaGroup  = document.getElementById('tipoPraticaGroup');
       const tipoPraticaSelect = document.getElementById('tipoPratica');
@@ -160,7 +263,7 @@
       const kmInput           = document.getElementById('kmInput');
       const oreMotoreInput    = document.getElementById('oreMotoreInput');
 
-      // ================== AUTH + ROLE ==================
+      // ================== AUTH + ROLE (immutata) ==================
       async function loadCurrentUserInfo(user) {
         const userSnap = await db.collection('Users').doc(user.uid).get();
         if (!userSnap.exists) {
@@ -174,10 +277,13 @@
 
       function renderUserInfo() {
         const { firebaseUser, userData, roleId } = currentAccount;
+        const dealerId = userData.dealerId || userData.DealerID || '-';
+        const name = userData.displayName || firebaseUser.email;
+
         userInfoDiv.innerHTML = `
-          <p><strong>Utente:</strong> ${userData.displayName || firebaseUser.email}</p>
-          <p><strong>Dealer ID:</strong> ${userData.dealerId || userData.DealerID || '-'}</p>
-          <p><strong>Ruolo:</strong> ${roleId}</p>
+          <p><strong>Utente:</strong> ${escapeHtml(name)}</p>
+          <p><strong>Dealer ID:</strong> ${escapeHtml(dealerId)}</p>
+          <p><strong>Ruolo:</strong> ${escapeHtml(roleId)}</p>
         `;
       }
 
@@ -206,17 +312,19 @@
       });
 
       // ================== BUTTONS ==================
-      btnHome.addEventListener('click', () => window.location.href = "FTHUBAS.html");
       btnCancel.addEventListener('click', () => resetAll());
       btnCheckCoverage.addEventListener('click', async () => handleCheckCoverage());
 
-      btnOk.addEventListener('click', async () => {
+      // OK badge: click per procedere (stessa logica del vecchio btnOk)
+      btnOkBadge.addEventListener('click', async () => {
         const tipoPratica = tipoPraticaSelect.value;
         if (!tipoPratica) { alert("Seleziona una tipologia di claim card."); return; }
         if (!lastCheckData) { alert("Prima devi eseguire il controllo copertura."); return; }
 
         try {
-          btnOk.disabled = true;
+          btnOkBadge.style.opacity = ".65";
+          btnOkBadge.style.pointerEvents = "none";
+
           const claimId = await createClaimCard(tipoPratica);
 
           const header = {
@@ -232,23 +340,31 @@
         } catch (err) {
           console.error(err);
           alert("Errore durante la creazione della claim card: " + err.message);
-          btnOk.disabled = false;
+          btnOkBadge.style.opacity = ".85";
+          btnOkBadge.style.pointerEvents = "auto";
         }
       });
 
       tipoPraticaSelect.addEventListener('change', () => {
-        btnOk.disabled = !tipoPraticaSelect.value;
+        const enabled = !!tipoPraticaSelect.value;
+        setOkEnabled(enabled);
         updateTipoDescrizione(tipoPraticaSelect.value);
       });
 
       // ================== HELPERS ==================
-      function showMessage(type, text) {
+      function escapeHtml(str){
+        return String(str ?? "").replace(/[&<>"']/g, (m) => ({
+          "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+        }[m]));
+      }
+
+      function showMessage(type, html) {
         const area = document.getElementById('resultArea');
         area.style.display = 'block';
         area.className = '';
         if (type === 'error') area.classList.add('error');
         else if (type === 'success') area.classList.add('success');
-        area.innerHTML = text;
+        area.innerHTML = html;
       }
 
       function clearMessage() {
@@ -256,6 +372,19 @@
         area.style.display = 'none';
         area.className = '';
         area.textContent = '';
+      }
+
+      function setOkVisible(visible){
+        btnOkBadge.style.display = visible ? "inline-flex" : "none";
+      }
+      function setOkEnabled(enabled){
+        if(!enabled){
+          btnOkBadge.style.opacity = ".65";
+          btnOkBadge.style.pointerEvents = "none";
+        }else{
+          btnOkBadge.style.opacity = ".85";
+          btnOkBadge.style.pointerEvents = "auto";
+        }
       }
 
       function startOfDay(date) {
@@ -299,20 +428,20 @@
         return startOfDay(d);
       }
 
-      // ================== TIPO PRATICA UI ==================
+      // ================== TIPO PRATICA UI (immutata) ==================
       function resetTipoPratica() {
         tipoPraticaSelect.innerHTML = "";
         tipoPraticaGroup.style.display = "none";
-        btnOk.style.display = "none";
-        btnOk.disabled = true;
+        setOkVisible(false);
+        setOkEnabled(false);
         tipoPraticaDesc.style.display = "none";
         tipoPraticaDesc.textContent = "";
       }
 
       function showTipoPraticaUI() {
         tipoPraticaGroup.style.display = "block";
-        btnOk.style.display = "inline-block";
-        btnOk.disabled = true;
+        setOkVisible(true);
+        setOkEnabled(false);
       }
 
       function addPlaceholder() {
@@ -347,7 +476,7 @@
         showTipoPraticaUI();
       }
 
-      // ✅ QUI: include SERVICE CONTRACT solo se attivo
+      // include SERVICE CONTRACT solo se attivo
       function populateForActiveCoverageOrContract(hasMaintActive) {
         tipoPraticaSelect.innerHTML = "";
         addPlaceholder();
@@ -403,16 +532,18 @@
         oreMotoreInput.value = "";
 
         btnCheckCoverage.disabled = false;
-        btnOk.disabled = true;
-        btnOk.style.display = "none";
 
         clearMessage();
         resetTipoPratica();
         clearFsaList();
         lastCheckData = null;
+
+        // ripristino OK badge
+        btnOkBadge.style.opacity = ".85";
+        btnOkBadge.style.pointerEvents = "auto";
       }
 
-      // ================== FSA PENDENTI ==================
+      // ================== FSA PENDENTI (immutata) ==================
       async function loadPendingFsaForVin(vin) {
         clearFsaList();
         if (!vin) return;
@@ -422,8 +553,9 @@
             .where(FSA_VIN_FIELD, "==", vin)
             .get();
 
+          fsaListContainer.style.display = "block";
+
           if (snapshot.empty) {
-            fsaListContainer.style.display = "block";
             const li = document.createElement("li");
             li.textContent = "Nessuna FSA da applicare per questo veicolo.";
             fsaList.appendChild(li);
@@ -486,8 +618,6 @@
             fsaList.appendChild(li);
           });
 
-          fsaListContainer.style.display = "block";
-
           if (countPendenti === 0) {
             fsaList.innerHTML = "";
             const li = document.createElement("li");
@@ -504,7 +634,7 @@
         }
       }
 
-      // ================== CLAIMCARDS COERENZA ==================
+      // ================== CLAIMCARDS COERENZA (immutata) ==================
       async function checkClaimCardsCoerenza(vin, dataOrdineStr, km, oreMotore, orderNumberStr) {
         const dataOrdine = parseDateYMD(dataOrdineStr);
         if (!dataOrdine) return "Data ordine non valida.";
@@ -570,7 +700,7 @@
         return errorMessages.length ? errorMessages.join("<br>") : null;
       }
 
-      // ================== CHECK COVERAGE ==================
+      // ================== CHECK COVERAGE (immutata nella logica) ==================
       async function handleCheckCoverage() {
         clearMessage();
         resetTipoPratica();
@@ -622,11 +752,11 @@
             .get();
 
           if (snap.empty) {
-            let html = `<strong>Telaio:</strong> ${vin}<br>`;
-            html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br>`;
-            html += `<strong>Numero ordine di lavoro:</strong> ${orderNumberStr}<br>`;
+            let html = `<strong>Telaio:</strong> ${escapeHtml(vin)}<br>`;
+            html += `<strong>Data ordine di lavoro:</strong> ${escapeHtml(dataOrdineStr)}<br>`;
+            html += `<strong>Numero ordine di lavoro:</strong> ${escapeHtml(orderNumberStr)}<br>`;
             html += `<strong>KM veicolo:</strong> ${kmVal} – <strong>Ore motore:</strong> ${oreVal}<br><br>`;
-            html += `<strong>Attenzione:</strong> il telaio non è presente nella banca dati ('${VIN_COLLECTION}').<br>`;
+            html += `<strong>Attenzione:</strong> il telaio non è presente nella banca dati ('${escapeHtml(VIN_COLLECTION)}').<br>`;
             html += `Puoi comunque creare una claim card selezionando il tipo dal menu.`;
 
             showMessage('error', html);
@@ -704,9 +834,9 @@
           const hasAnyActive = hasFullActive || hasDriveActive || hasMaintActive;
           const hasAnyCoverageData = !!(fullStart || fullEnd || driveStart || driveEnd || maintStart || maintEnd || warrantyStart || warrantyEnd);
 
-          let html = `<strong>Telaio:</strong> ${vin}<br>`;
-          html += `<strong>Data ordine di lavoro:</strong> ${dataOrdineStr}<br>`;
-          html += `<strong>Numero ordine di lavoro:</strong> ${orderNumberStr}<br>`;
+          let html = `<strong>Telaio:</strong> ${escapeHtml(vin)}<br>`;
+          html += `<strong>Data ordine di lavoro:</strong> ${escapeHtml(dataOrdineStr)}<br>`;
+          html += `<strong>Numero ordine di lavoro:</strong> ${escapeHtml(orderNumberStr)}<br>`;
           html += `<strong>KM veicolo:</strong> ${kmVal} – <strong>Ore motore:</strong> ${oreVal}<br><br>`;
 
           if (hasAnyActive) {
@@ -786,7 +916,7 @@
         }
       }
 
-      // ================== SEQUENZA + CREAZIONE CLAIMCARD ==================
+      // ================== SEQUENZA + CREAZIONE CLAIMCARD (immutata) ==================
       async function getNextSequenceForYear(year) {
         const snap = await db.collection(CLAIMS_COLLECTION)
           .where("year", "==", year)
@@ -868,6 +998,12 @@
         await db.collection(CLAIMS_COLLECTION).doc(code).set(docData);
         return code;
       }
+
+      // Stato iniziale
+      resetTipoPratica();
+      clearFsaList();
+      setOkVisible(false);
+      setOkEnabled(false);
 
     })();
   </script>
