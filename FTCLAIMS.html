@@ -116,7 +116,7 @@
       font-size: 13px;
     }
 
-    .info-box__title .dot{
+    .dot{
       width: 10px;
       height: 10px;
       border-radius: 999px;
@@ -129,6 +129,9 @@
       font-size: 12px;
       color: var(--muted);
       white-space: nowrap;
+      display:flex;
+      align-items:center;
+      gap: 10px;
     }
 
     .info-box__body{
@@ -136,84 +139,173 @@
       color: var(--text);
     }
 
-    .info-box ul{
-      margin: 0;
-      padding-left: 18px;
+    /* ============ Chips ============ */
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid rgba(15,23,42,.12);
+      background: rgba(255,255,255,.75);
+      color: var(--muted);
+      white-space: nowrap;
     }
-    .info-box li{
-      margin: 6px 0;
-      line-height: 1.35;
-    }
+    .chip strong{ color: var(--text); font-weight: 800; }
 
-    /* FSA (azzurro premium) */
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 800;
+      border: 1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.70);
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .pill.full{ border-color: rgba(34,197,94,.25); }
+    .pill.drive{ border-color: rgba(0,94,220,.25); }
+    .pill.sc{ border-color: rgba(139,92,246,.25); }
+
+    /* ===== FSA ===== */
     .fsa-box{
       border-color: rgba(0,94,220,.18);
       background: linear-gradient(180deg, rgba(0,94,220,.10), rgba(255,255,255,.86));
     }
-    .fsa-box .info-box__title .dot{
+    .fsa-box .dot{
       background: rgba(0,94,220,.95);
       box-shadow: 0 0 0 4px rgba(0,94,220,.14);
     }
-    .fsa-box li::marker{ color: rgba(0,94,220,.85); }
 
-    /* Result (coperture / messaggi) */
-    #resultArea{
-      display:none;
-      margin-top: 14px;
-      border-radius: 14px;
-      padding: 12px 14px;
-      border: 1px solid rgba(15,23,42,.10);
-      background: rgba(255,255,255,.88);
-      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
-      font-size: 14px;
-      line-height: 1.45;
+    .fsa-list{
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+    }
+    .fsa-item{
+      border: 1px solid rgba(0,94,220,.14);
+      background: rgba(255,255,255,.70);
+      border-radius: 12px;
+      padding: 8px 10px;
+    }
+    .fsa-line{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: baseline;
+      line-height: 1.25;
+    }
+    .fsa-code{
+      font-weight: 900;
       color: var(--text);
+      letter-spacing: .2px;
+    }
+    .fsa-desc{
+      color: var(--text);
+      opacity: .92;
+      font-weight: 600;
+    }
+    .fsa-meta{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
     }
 
-    #resultArea.success{
+    /* Collapsible */
+    .collapsible{
+      position: relative;
+    }
+    .collapsible.is-collapsed{
+      max-height: 210px;
+      overflow: hidden;
+    }
+    .fade-bottom{
+      display:none;
+      position:absolute;
+      left:0; right:0; bottom:0;
+      height: 58px;
+      background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,.92));
+      pointer-events:none;
+    }
+    .collapsible.is-collapsed + .fade-bottom{ display:block; }
+
+    .toggle-row{
+      margin-top: 10px;
+      display:flex;
+      justify-content: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ===== Coperture (result) ===== */
+    #resultArea{
+      display:none;
+    }
+    .coverage-box{
       border-color: rgba(34,197,94,.20);
       background: linear-gradient(180deg, rgba(34,197,94,.12), rgba(255,255,255,.88));
     }
-    #resultArea.error{
+    .coverage-box .dot{
+      background: rgba(34,197,94,.95);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.16);
+    }
+    .coverage-box.is-error{
       border-color: rgba(239,68,68,.22);
       background: linear-gradient(180deg, rgba(239,68,68,.10), rgba(255,255,255,.90));
     }
-
-    /* Sezione "coperture attive" dentro resultArea */
-    .cov-hd{
-      display:flex;
-      align-items:center;
-      justify-content: space-between;
-      gap: 10px;
-      padding-bottom: 8px;
-      margin-bottom: 8px;
-      border-bottom: 1px solid rgba(15,23,42,.08);
-    }
-    .cov-title{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      font-weight: 800;
-      font-size: 13px;
-    }
-    .cov-dot{
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      background: rgba(34,197,94,.95);
-      box-shadow: 0 0 0 4px rgba(34,197,94,.16);
-      flex: 0 0 10px;
-    }
-    #resultArea.error .cov-dot{
+    .coverage-box.is-error .dot{
       background: rgba(239,68,68,.95);
       box-shadow: 0 0 0 4px rgba(239,68,68,.16);
     }
-    .cov-meta{
-      font-size: 12px;
+
+    .summary-row{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 8px 0 2px;
+    }
+
+    .kv{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 2px;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+    .kv strong{ color: var(--text); }
+
+    .cov-list{
+      margin: 8px 0 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 8px;
+    }
+    .cov-item{
+      border: 1px solid rgba(34,197,94,.18);
+      background: rgba(255,255,255,.70);
+      border-radius: 12px;
+      padding: 8px 10px;
+      display:flex;
+      align-items:flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .cov-item.is-drive{ border-color: rgba(0,94,220,.18); }
+    .cov-item.is-sc{ border-color: rgba(139,92,246,.18); }
+
+    .cov-dates{
       color: var(--muted);
+      font-size: 12px;
       white-space: nowrap;
     }
-    .cov-body ul{ margin: 8px 0 0 18px; }
 
     /* Tipologia descrizione */
     #tipoPraticaDescrizione{
@@ -225,10 +317,9 @@
       display:none;
     }
 
-    /* OK button (stile ft) */
-    #btnOk{
-      display:none;
-    }
+    /* OK button */
+    #btnOk{ display:none; }
+
   </style>
 </head>
 
@@ -264,9 +355,12 @@
       <div class="panel-bd">
         <div class="form-grid">
 
+          <!-- Dati -->
           <div class="field">
             <label class="label" for="vinInput">Telaio (VIN)</label>
-            <input class="input" type="text" id="vinInput" placeholder="Inserisci il numero di telaio" autocomplete="off">
+            <input class="input" type="text" id="vinInput" placeholder="Inserisci il numero di telaio"
+                   maxlength="17" autocomplete="off"
+                   style="text-transform:uppercase; letter-spacing:.5px;">
           </div>
 
           <div class="field">
@@ -289,39 +383,51 @@
             </div>
           </div>
 
-          <!-- FSA premium -->
+          <!-- FSA -->
           <div id="fsaListContainer" class="info-box fsa-box" style="display:none;">
             <div class="info-box__hd">
               <div class="info-box__title">
                 <span class="dot"></span>
                 <span>FSA da applicare su questo veicolo</span>
               </div>
-              <div class="info-box__meta" id="fsaMeta" style="display:none;">—</div>
+              <div class="info-box__meta">
+                <span id="fsaMeta" class="chip" style="display:none;"><strong>0</strong> pendenti</span>
+              </div>
             </div>
+
             <div class="info-box__body">
-              <ul id="fsaList"></ul>
+              <div id="fsaCollapsible" class="collapsible">
+                <ul id="fsaList" class="fsa-list"></ul>
+              </div>
+              <div class="fade-bottom"></div>
+
+              <div class="toggle-row" id="fsaToggleRow" style="display:none;">
+                <button type="button" class="btn btn-ghost btn-sm" id="btnFsaToggle">Mostra tutte</button>
+              </div>
             </div>
           </div>
 
-          <!-- Tipologia -->
+          <!-- COPERTURE (tra FSA e combobox) -->
+          <div id="resultArea" class="info-box coverage-box"></div>
+
+          <!-- Tipologia (dopo coperture) -->
           <div class="field" id="tipoPraticaGroup" style="display:none;">
             <label class="label" for="tipoPratica">Tipologia claim card</label>
             <select class="input" id="tipoPratica"></select>
             <div id="tipoPraticaDescrizione"></div>
           </div>
 
+          <!-- Azioni -->
           <div class="actions">
             <div class="left">
               <button class="btn btn-primary" id="btnCheckCoverage" type="button">Controlla copertura / dati veicolo</button>
-              <button class="btn" id="btnOk" type="button" disabled>OK</button>
+              <button class="btn" id="btnOk" type="button" disabled title="Seleziona la tipologia per procedere">OK</button>
             </div>
             <div class="right">
               <button class="btn btn-danger" id="btnCancel" type="button">Annulla</button>
               <a class="btn btn-ghost" id="btnHome" href="FTHUBAS.html">Home</a>
             </div>
           </div>
-
-          <div id="resultArea"></div>
 
         </div>
       </div>
@@ -347,7 +453,7 @@
       window.auth = auth;
       window.db = db;
 
-      // ================== CONFIG (immutata) ==================
+      // ================== CONFIG ==================
       const VIN_COLLECTION    = "DBVIN";
       const FSA_COLLECTION    = "FTFSA";
       const CLAIMS_COLLECTION = "ClaimCards";
@@ -375,9 +481,14 @@
       const tipoPraticaSelect  = document.getElementById('tipoPratica');
       const tipoPraticaDesc    = document.getElementById('tipoPraticaDescrizione');
 
+      const resultArea         = document.getElementById('resultArea');
+
       const fsaListContainer   = document.getElementById('fsaListContainer');
       const fsaList            = document.getElementById('fsaList');
-      const fsaMeta            = document.getElementById('fsaMeta');
+      const fsaMetaChip        = document.getElementById('fsaMeta');
+      const fsaCollapsible     = document.getElementById('fsaCollapsible');
+      const fsaToggleRow       = document.getElementById('fsaToggleRow');
+      const btnFsaToggle       = document.getElementById('btnFsaToggle');
 
       const vinInput           = document.getElementById('vinInput');
       const dataOrdineInput    = document.getElementById('dataOrdineInput');
@@ -385,7 +496,7 @@
       const kmInput            = document.getElementById('kmInput');
       const oreMotoreInput     = document.getElementById('oreMotoreInput');
 
-      // ================== AUTH + ROLE (immutata nella logica) ==================
+      // ================== AUTH + ROLE ==================
       async function loadCurrentUserInfo(user) {
         const userSnap = await db.collection('Users').doc(user.uid).get();
         if (!userSnap.exists) {
@@ -395,6 +506,12 @@
         const roleId = userData.role || "User";
         currentAccount = { firebaseUser: user, userData, roleId };
         return currentAccount;
+      }
+
+      function escapeHtml(str){
+        return String(str ?? "").replace(/[&<>"']/g, (m) => ({
+          "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+        }[m]));
       }
 
       function renderUserInfo() {
@@ -468,32 +585,29 @@
 
       tipoPraticaSelect.addEventListener('change', () => {
         btnOk.disabled = !tipoPraticaSelect.value;
+        btnOk.title = tipoPraticaSelect.value ? "Crea claim card" : "Seleziona la tipologia per procedere";
         updateTipoDescrizione(tipoPraticaSelect.value);
       });
 
-      // ================== HELPERS ==================
-      function escapeHtml(str){
-        return String(str ?? "").replace(/[&<>"']/g, (m) => ({
-          "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-        }[m]));
+      // Toggle FSA
+      let fsaIsCollapsed = true;
+      btnFsaToggle.addEventListener('click', () => {
+        fsaIsCollapsed = !fsaIsCollapsed;
+        applyFsaCollapseState();
+      });
+
+      function applyFsaCollapseState(){
+        if (!fsaCollapsible) return;
+        if (fsaIsCollapsed) {
+          fsaCollapsible.classList.add("is-collapsed");
+          btnFsaToggle.textContent = "Mostra tutte";
+        } else {
+          fsaCollapsible.classList.remove("is-collapsed");
+          btnFsaToggle.textContent = "Riduci";
+        }
       }
 
-      function showMessage(type, html) {
-        const area = document.getElementById('resultArea');
-        area.style.display = 'block';
-        area.className = '';
-        if (type === 'error') area.classList.add('error');
-        else if (type === 'success') area.classList.add('success');
-        area.innerHTML = html;
-      }
-
-      function clearMessage() {
-        const area = document.getElementById('resultArea');
-        area.style.display = 'none';
-        area.className = '';
-        area.textContent = '';
-      }
-
+      // ================== HELPERS DATE ==================
       function startOfDay(date) {
         const d = new Date(date);
         d.setHours(0,0,0,0);
@@ -535,12 +649,48 @@
         return startOfDay(d);
       }
 
-      // ================== TIPO PRATICA UI (immutata) ==================
+      // ================== UI Messaging (coperture box) ==================
+      function hideCoverageBox(){
+        resultArea.style.display = "none";
+        resultArea.classList.remove("is-error");
+        resultArea.innerHTML = "";
+      }
+
+      function showCoverageBox(type, html){
+        resultArea.style.display = "block";
+        resultArea.classList.toggle("is-error", type === "error");
+        resultArea.innerHTML = html;
+      }
+
+      function buildHeader(title, rightText){
+        return `
+          <div class="info-box__hd">
+            <div class="info-box__title">
+              <span class="dot"></span>
+              <span>${escapeHtml(title)}</span>
+            </div>
+            <div class="info-box__meta">
+              ${rightText ? `<span class="chip">${escapeHtml(rightText)}</span>` : ``}
+            </div>
+          </div>
+        `;
+      }
+
+      function buildSummaryRow(items){
+        return `
+          <div class="summary-row">
+            ${items.map(x => `<span class="chip">${x}</span>`).join("")}
+          </div>
+        `;
+      }
+
+      // ================== TIPO PRATICA UI ==================
       function resetTipoPratica() {
         tipoPraticaSelect.innerHTML = "";
         tipoPraticaGroup.style.display = "none";
         btnOk.style.display = "none";
         btnOk.disabled = true;
+        btnOk.title = "Seleziona la tipologia per procedere";
         tipoPraticaDesc.style.display = "none";
         tipoPraticaDesc.textContent = "";
       }
@@ -549,6 +699,9 @@
         tipoPraticaGroup.style.display = "block";
         btnOk.style.display = "inline-block";
         btnOk.disabled = true;
+
+        // porta la vista alla combobox (dopo le coperture)
+        try { tipoPraticaGroup.scrollIntoView({ behavior: "smooth", block: "start" }); } catch(e) {}
       }
 
       function addPlaceholder() {
@@ -628,10 +781,10 @@
       function clearFsaList() {
         fsaListContainer.style.display = "none";
         fsaList.innerHTML = "";
-        if (fsaMeta) {
-          fsaMeta.style.display = "none";
-          fsaMeta.textContent = "";
-        }
+        fsaToggleRow.style.display = "none";
+        fsaMetaChip.style.display = "none";
+        fsaIsCollapsed = true;
+        applyFsaCollapseState();
       }
 
       function resetAll() {
@@ -645,13 +798,53 @@
         btnOk.disabled = true;
         btnOk.style.display = "none";
 
-        clearMessage();
         resetTipoPratica();
         clearFsaList();
+        hideCoverageBox();
         lastCheckData = null;
       }
 
-      // ================== FSA PENDENTI (immutata, + contatore) ==================
+      // ================== FSA PENDENTI ==================
+      function toBoolApplied(val){
+        return val === true ||
+          val === "true" || val === "TRUE" ||
+          val === "SI"   || val === "S"   ||
+          val === "YES"  || val === "Y";
+      }
+
+      function parseFsaDoc(doc){
+        const data = doc.data() || {};
+
+        const appliedValue =
+          (data[FSA_APPLIED_FIELD_HINT] ?? data.campagnaEseguita ?? data.CampagnaEseguita ??
+           data.eseguita ?? data.Eseguita ??
+           data.executed ?? data.Executed ??
+           data.completed ?? data.Completed);
+
+        const isApplied = toBoolApplied(appliedValue);
+
+        const codice =
+          (data[FSA_CODE_FIELD_HINT] ?? data.codiceFSA ?? data.CodiceFSA ??
+           data.code ?? data.Code ?? doc.id);
+
+        const descrizione =
+          (data[FSA_DESC_FIELD_HINT] ?? data.descrizioneCampagna ?? data.DescrizioneCampagna ??
+           data.description ?? data.Description ?? "");
+
+        const dataInizio =
+          (data[FSA_START_FIELD_HINT] ?? data.dataInizio ?? data.DataInizio ??
+           data.startDate ?? data.StartDate ?? null);
+
+        const dataFine =
+          (data[FSA_END_FIELD_HINT] ?? data.dataFine ?? data.DataFine ??
+           data.endDate ?? data.EndDate ?? null);
+
+        const tipologia =
+          (data[FSA_TYPE_FIELD_HINT] ?? data.tipologia ?? data.Tipologia ?? "");
+
+        return { isApplied, codice, descrizione, dataInizio, dataFine, tipologia };
+      }
+
       async function loadPendingFsaForVin(vin) {
         clearFsaList();
         if (!vin) return;
@@ -665,99 +858,89 @@
 
           if (snapshot.empty) {
             const li = document.createElement("li");
-            li.textContent = "Nessuna FSA da applicare per questo veicolo.";
+            li.className = "fsa-item";
+            li.innerHTML = `<div class="fsa-line"><span class="fsa-desc">Nessuna FSA da applicare per questo veicolo.</span></div>`;
             fsaList.appendChild(li);
 
-            if (fsaMeta) {
-              fsaMeta.style.display = "block";
-              fsaMeta.textContent = "0 pendenti";
-            }
-            return;
+            fsaMetaChip.style.display = "inline-flex";
+            fsaMetaChip.innerHTML = `<strong>0</strong> pendenti`;
+            return 0;
           }
 
           let countPendenti = 0;
+          const rows = [];
 
           snapshot.forEach(doc => {
-            const data = doc.data() || {};
-
-            const appliedValue =
-              (data[FSA_APPLIED_FIELD_HINT] ?? data.campagnaEseguita ?? data.CampagnaEseguita ??
-               data.eseguita ?? data.Eseguita ??
-               data.executed ?? data.Executed ??
-               data.completed ?? data.Completed);
-
-            const isApplied =
-              appliedValue === true ||
-              appliedValue === "true" || appliedValue === "TRUE" ||
-              appliedValue === "SI"   || appliedValue === "S"   ||
-              appliedValue === "YES"  || appliedValue === "Y";
-
-            if (isApplied) return;
+            const x = parseFsaDoc(doc);
+            if (x.isApplied) return;
 
             countPendenti++;
+            rows.push(x);
+          });
 
-            const codice =
-              (data[FSA_CODE_FIELD_HINT] ?? data.codiceFSA ?? data.CodiceFSA ??
-               data.code ?? data.Code ?? doc.id);
+          fsaMetaChip.style.display = "inline-flex";
+          fsaMetaChip.innerHTML = `<strong>${countPendenti}</strong> pendenti`;
 
-            const descrizione =
-              (data[FSA_DESC_FIELD_HINT] ?? data.descrizioneCampagna ?? data.DescrizioneCampagna ??
-               data.description ?? data.Description ?? "");
+          if (countPendenti === 0) {
+            const li = document.createElement("li");
+            li.className = "fsa-item";
+            li.innerHTML = `<div class="fsa-line"><span class="fsa-desc">Nessuna FSA da applicare per questo veicolo.</span></div>`;
+            fsaList.appendChild(li);
+            return 0;
+          }
 
-            const dataInizio =
-              (data[FSA_START_FIELD_HINT] ?? data.dataInizio ?? data.DataInizio ??
-               data.startDate ?? data.StartDate ?? null);
+          // render
+          fsaList.innerHTML = "";
+          rows.forEach(x => {
+            const startStr = formatDateDDMMYYYY(x.dataInizio);
+            const endStr   = formatDateDDMMYYYY(x.dataFine);
 
-            const dataFine =
-              (data[FSA_END_FIELD_HINT] ?? data.dataFine ?? data.DataFine ??
-               data.endDate ?? data.EndDate ?? null);
-
-            const tipologia =
-              (data[FSA_TYPE_FIELD_HINT] ?? data.tipologia ?? data.Tipologia ?? "");
-
-            const startStr = formatDateDDMMYYYY(dataInizio);
-            const endStr   = formatDateDDMMYYYY(dataFine);
-
-            let text = codice;
-            if (descrizione) text += " – " + descrizione;
-
-            const extra = [];
-            if (startStr || endStr) extra.push("Periodo: " + (startStr || "?") + " - " + (endStr || "?"));
-            if (tipologia) extra.push("Tipologia: " + tipologia);
-            if (extra.length) text += " (" + extra.join(" | ") + ")";
+            const metaChips = [];
+            if (startStr || endStr) metaChips.push(`<span class="chip">Periodo: <strong>${escapeHtml(startStr || "?")}</strong> - <strong>${escapeHtml(endStr || "?")}</strong></span>`);
+            if (x.tipologia) metaChips.push(`<span class="chip">Tipologia: <strong>${escapeHtml(x.tipologia)}</strong></span>`);
 
             const li = document.createElement("li");
-            li.textContent = text;
+            li.className = "fsa-item";
+            li.innerHTML = `
+              <div class="fsa-line">
+                <span class="fsa-code">${escapeHtml(x.codice)}</span>
+                ${x.descrizione ? `<span class="fsa-desc">— ${escapeHtml(x.descrizione)}</span>` : ``}
+              </div>
+              ${metaChips.length ? `<div class="fsa-meta">${metaChips.join("")}</div>` : ``}
+            `;
             fsaList.appendChild(li);
           });
 
-          if (fsaMeta) {
-            fsaMeta.style.display = "block";
-            fsaMeta.textContent = countPendenti + " pendenti";
+          // collapse logic
+          const shouldCollapse = rows.length > 6;
+          if (shouldCollapse) {
+            fsaToggleRow.style.display = "flex";
+            fsaIsCollapsed = true;
+            applyFsaCollapseState();
+          } else {
+            fsaToggleRow.style.display = "none";
+            fsaCollapsible.classList.remove("is-collapsed");
           }
 
-          if (countPendenti === 0) {
-            fsaList.innerHTML = "";
-            const li = document.createElement("li");
-            li.textContent = "Nessuna FSA da applicare per questo veicolo.";
-            fsaList.appendChild(li);
-          }
+          return countPendenti;
+
         } catch (err) {
           console.error(err);
           fsaListContainer.style.display = "block";
           fsaList.innerHTML = "";
+
           const li = document.createElement("li");
-          li.textContent = "Errore nel caricamento delle FSA: " + (err.message || err);
+          li.className = "fsa-item";
+          li.innerHTML = `<div class="fsa-line"><span class="fsa-desc">Errore nel caricamento FSA: ${escapeHtml(err.message || err)}</span></div>`;
           fsaList.appendChild(li);
 
-          if (fsaMeta) {
-            fsaMeta.style.display = "block";
-            fsaMeta.textContent = "Errore";
-          }
+          fsaMetaChip.style.display = "inline-flex";
+          fsaMetaChip.innerHTML = `<strong>—</strong> errore`;
+          return 0;
         }
       }
 
-      // ================== CLAIMCARDS COERENZA (immutata) ==================
+      // ================== CLAIMCARDS COERENZA ==================
       async function checkClaimCardsCoerenza(vin, dataOrdineStr, km, oreMotore, orderNumberStr) {
         const dataOrdine = parseDateYMD(dataOrdineStr);
         if (!dataOrdine) return "Data ordine non valida.";
@@ -823,23 +1006,25 @@
         return errorMessages.length ? errorMessages.join("<br>") : null;
       }
 
-      // ================== CHECK COVERAGE (stessa logica + header più bello) ==================
-      function buildCoverageHeader(title, meta){
-        return `
-          <div class="cov-hd">
-            <div class="cov-title">
-              <span class="cov-dot"></span>
-              <span>${escapeHtml(title)}</span>
-            </div>
-            <div class="cov-meta">${escapeHtml(meta || "")}</div>
-          </div>
-        `;
+      // ================== CHECK COVERAGE ==================
+      function coveragePill(type){
+        const t = String(type || "").toUpperCase();
+        if (t.includes("FULL")) return `<span class="pill full">FULL LINE</span>`;
+        if (t.includes("DRIVE")) return `<span class="pill drive">DRIVE LINE</span>`;
+        if (t.includes("SERVICE") || t.includes("SC")) return `<span class="pill sc">SERVICE CONTRACT</span>`;
+        return `<span class="pill">${escapeHtml(type || "")}</span>`;
+      }
+
+      function covItemClass(type){
+        const t = String(type || "").toUpperCase();
+        if (t.includes("DRIVE")) return "cov-item is-drive";
+        if (t.includes("SERVICE") || t.includes("SC")) return "cov-item is-sc";
+        return "cov-item";
       }
 
       async function handleCheckCoverage() {
-        clearMessage();
         resetTipoPratica();
-        clearFsaList();
+        hideCoverageBox();
         lastCheckData = null;
 
         const vin = (vinInput.value || "").trim().toUpperCase();
@@ -849,28 +1034,36 @@
         const oreStr = (oreMotoreInput.value || "").trim();
 
         if (!vin || !dataOrdineStr || !orderNumberStr || !kmStr || !oreStr) {
-          showMessage('error', buildCoverageHeader("Dati mancanti", "Compila tutti i campi") +
-            "Compila tutti i campi (VIN, data ordine, numero ordine, KM e ore motore) prima di procedere.");
+          showCoverageBox("error",
+            buildHeader("Coperture VIN", "Dati mancanti") +
+            `<div class="info-box__body">Compila tutti i campi (VIN, data ordine, numero ordine, KM e ore motore) prima di procedere.</div>`
+          );
           return;
         }
 
         const dataOrdine = startOfDay(new Date(dataOrdineStr));
         if (isNaN(dataOrdine.getTime())) {
-          showMessage('error', buildCoverageHeader("Data non valida", "Controlla il formato") +
-            "La data inserita non è valida.");
+          showCoverageBox("error",
+            buildHeader("Coperture VIN", "Data non valida") +
+            `<div class="info-box__body">La data inserita non è valida.</div>`
+          );
           return;
         }
 
         const kmVal = parseInt(kmStr, 10);
         const oreVal = parseInt(oreStr, 10);
         if (isNaN(kmVal) || kmVal < 0) {
-          showMessage('error', buildCoverageHeader("KM non validi", "Inserisci un intero >= 0") +
-            "I KM veicolo devono essere un numero intero >= 0.");
+          showCoverageBox("error",
+            buildHeader("Coperture VIN", "KM non validi") +
+            `<div class="info-box__body">I KM veicolo devono essere un numero intero >= 0.</div>`
+          );
           return;
         }
         if (isNaN(oreVal) || oreVal < 0) {
-          showMessage('error', buildCoverageHeader("Ore motore non valide", "Inserisci un intero >= 0") +
-            "Le ore motore devono essere un numero intero >= 0.");
+          showCoverageBox("error",
+            buildHeader("Coperture VIN", "Ore non valide") +
+            `<div class="info-box__body">Le ore motore devono essere un numero intero >= 0.</div>`
+          );
           return;
         }
 
@@ -879,45 +1072,71 @@
         minDate.setDate(minDate.getDate() - 90);
 
         if (dataOrdine > oggi) {
-          showMessage('error', buildCoverageHeader("Data futura", "Non consentito") +
-            "La data dell'ordine di lavoro non può essere futura.");
+          showCoverageBox("error",
+            buildHeader("Coperture VIN", "Data futura") +
+            `<div class="info-box__body">La data dell'ordine di lavoro non può essere futura.</div>`
+          );
           return;
         }
         if (dataOrdine < minDate) {
-          showMessage('error', buildCoverageHeader("Data troppo vecchia", "Limite 90 giorni") +
-            "È possibile aprire una claim card solo entro 90 giorni dalla data dell'ordine di lavoro.");
+          showCoverageBox("error",
+            buildHeader("Coperture VIN", "Limite 90 giorni") +
+            `<div class="info-box__body">È possibile aprire una claim card solo entro 90 giorni dalla data dell'ordine di lavoro.</div>`
+          );
           return;
         }
 
         try {
-          showMessage('success', buildCoverageHeader("Controlli in corso…", "ClaimCards + coperture") +
-            "Attendere, sto verificando coerenza pratiche e coperture…");
           btnCheckCoverage.disabled = true;
 
+          // 1) coerenza claimcards
           const errClaims = await checkClaimCardsCoerenza(vin, dataOrdineStr, kmVal, oreVal, orderNumberStr);
           if (errClaims) {
-            showMessage('error', buildCoverageHeader("Coerenza pratiche", "Errore") + errClaims);
+            showCoverageBox("error",
+              buildHeader("Coperture VIN", "Coerenza: ERRORE") +
+              buildSummaryRow([
+                `VIN <strong>✔</strong>`,
+                `Coerenza <strong>✖</strong>`
+              ]) +
+              `<div class="info-box__body">${errClaims}</div>`
+            );
             btnCheckCoverage.disabled = false;
             return;
           }
 
-          await loadPendingFsaForVin(vin);
+          // 2) FSA pendenti
+          const fsaCount = await loadPendingFsaForVin(vin);
 
+          // 3) DBVIN
           const snap = await db.collection(VIN_COLLECTION)
             .where("vin", "==", vin)
             .limit(1)
             .get();
 
-          if (snap.empty) {
-            let html = buildCoverageHeader("Coperture VIN", "VIN non presente in DBVIN");
-            html += `<strong>Telaio:</strong> ${escapeHtml(vin)}<br>`;
-            html += `<strong>Data ordine di lavoro:</strong> ${escapeHtml(dataOrdineStr)}<br>`;
-            html += `<strong>Numero ordine di lavoro:</strong> ${escapeHtml(orderNumberStr)}<br>`;
-            html += `<strong>KM veicolo:</strong> ${kmVal} – <strong>Ore motore:</strong> ${oreVal}<br><br>`;
-            html += `<strong>Attenzione:</strong> il telaio non è presente nella banca dati ('${escapeHtml(VIN_COLLECTION)}').<br>`;
-            html += `Puoi comunque creare una claim card selezionando il tipo dal menu.`;
+          // base summary items
+          const baseSummary = [
+            `VIN <strong>✔</strong>`,
+            `Coerenza <strong>✔</strong>`,
+            `FSA: <strong>${fsaCount}</strong> pendenti`
+          ];
 
-            showMessage('error', html);
+          if (snap.empty) {
+            showCoverageBox("error",
+              buildHeader("Coperture VIN", "VIN non presente in DBVIN") +
+              buildSummaryRow([...baseSummary, `Coperture <strong>—</strong>`]) +
+              `<div class="info-box__body">
+                <div class="kv">
+                  <div><strong>Telaio:</strong> ${escapeHtml(vin)}</div>
+                  <div><strong>Data ordine:</strong> ${escapeHtml(dataOrdineStr)}</div>
+                  <div><strong>Ordine:</strong> ${escapeHtml(orderNumberStr)}</div>
+                  <div><strong>KM/Ore:</strong> ${kmVal} / ${oreVal}</div>
+                </div>
+                <br>
+                <strong>Attenzione:</strong> il telaio non è presente nella banca dati ('${escapeHtml(VIN_COLLECTION)}').<br>
+                Puoi comunque creare una claim card selezionando il tipo dal menu.
+              </div>`
+            );
+
             populateForVinNotFound();
 
             lastCheckData = {
@@ -992,33 +1211,39 @@
           const hasAnyActive = hasFullActive || hasDriveActive || hasMaintActive;
           const hasAnyCoverageData = !!(fullStart || fullEnd || driveStart || driveEnd || maintStart || maintEnd || warrantyStart || warrantyEnd);
 
-          let html = buildCoverageHeader("Coperture VIN", hasAnyActive ? "Almeno una attiva" : "Nessuna attiva");
-          html += `<strong>Telaio:</strong> ${escapeHtml(vin)}<br>`;
-          html += `<strong>Data ordine di lavoro:</strong> ${escapeHtml(dataOrdineStr)}<br>`;
-          html += `<strong>Numero ordine di lavoro:</strong> ${escapeHtml(orderNumberStr)}<br>`;
-          html += `<strong>KM veicolo:</strong> ${kmVal} – <strong>Ore motore:</strong> ${oreVal}<br><br>`;
+          // coverage list build
+          const covRows = [];
+          if (hasFullActive)  covRows.push({ type:"FULL LINE", start: fullStart, end: fullEnd });
+          if (hasDriveActive) covRows.push({ type:"DRIVE LINE", start: driveStart, end: driveEnd });
+          if (hasMaintActive) covRows.push({ type:"SERVICE CONTRACT", start: maintStart, end: maintEnd });
 
-          if (hasAnyActive) {
-            html += `<div class="cov-body"><strong>Coperture/contratti attivi alla data selezionata:</strong><ul>`;
-            if (hasFullActive)  html += `<li><strong>FULL LINE</strong>: dal ${formatDateDDMMYYYY(fullStart)} al ${formatDateDDMMYYYY(fullEnd)}</li>`;
-            if (hasDriveActive) html += `<li><strong>DRIVE LINE</strong>: dal ${formatDateDDMMYYYY(driveStart)} al ${formatDateDDMMYYYY(driveEnd)}</li>`;
-            if (hasMaintActive) html += `<li><strong>SERVICE CONTRACT</strong>: dal ${formatDateDDMMYYYY(maintStart)} al ${formatDateDDMMYYYY(maintEnd)}</li>`;
-            html += `</ul></div><br>`;
-          }
+          const covSummaryText = hasAnyActive ? "Almeno una attiva" : "Nessuna attiva";
+
+          const covListHtml = covRows.length ? `
+            <ul class="cov-list">
+              ${covRows.map(r => `
+                <li class="${covItemClass(r.type)}">
+                  <div>${coveragePill(r.type)}</div>
+                  <div class="cov-dates">dal ${escapeHtml(formatDateDDMMYYYY(r.start))} al ${escapeHtml(formatDateDDMMYYYY(r.end))}</div>
+                </li>
+              `).join("")}
+            </ul>
+          ` : "";
 
           let coverageTypeForClaim = null;
           let coverageStartForClaim = null;
           let coverageEndForClaim = null;
 
+          let footerText = "";
+
           if (!hasAnyCoverageData) {
-            html += `<strong>Informazioni:</strong> nessun dato copertura/contratto associato al telaio.<br>Puoi comunque creare una claim card.`;
-            showMessage('success', html);
+            footerText = "Nessun dato copertura/contratto associato al telaio. Puoi comunque creare una claim card.";
             populateForNoDataAtAll();
           } else if (hasAnyActive) {
-            html += `<strong>Informazioni:</strong> è presente almeno una copertura/contratto <strong>attivo</strong> alla data selezionata.<br>Seleziona la tipologia dal menu.`;
-            showMessage('success', html);
+            footerText = "È presente almeno una copertura/contratto attivo alla data selezionata. Seleziona la tipologia dal menu.";
             populateForActiveCoverageOrContract(hasMaintActive);
 
+            // priorità FULL > DRIVE > SERVICE
             if (hasFullActive) {
               coverageTypeForClaim = "FULL LINE";
               coverageStartForClaim = fullStart;
@@ -1033,10 +1258,29 @@
               coverageEndForClaim = maintEnd;
             }
           } else {
-            html += `<strong>Informazioni:</strong> nessuna copertura/contratto <strong>attivo</strong> alla data selezionata.<br>Puoi creare una claim card.`;
-            showMessage('success', html);
+            footerText = "Nessuna copertura/contratto attivo alla data selezionata. Puoi creare una claim card.";
             populateForNoActiveCoverage();
           }
+
+          // render coverage box
+          showCoverageBox("success",
+            buildHeader("Coperture VIN", covSummaryText) +
+            buildSummaryRow([...baseSummary, `Coperture <strong>${hasAnyActive ? "✔" : "✖"}</strong>`]) +
+            `<div class="info-box__body">
+              <div class="kv">
+                <div><strong>Telaio:</strong> ${escapeHtml(vin)}</div>
+                <div><strong>Data ordine:</strong> ${escapeHtml(dataOrdineStr)}</div>
+                <div><strong>Ordine:</strong> ${escapeHtml(orderNumberStr)}</div>
+                <div><strong>KM/Ore:</strong> ${kmVal} / ${oreVal}</div>
+              </div>
+
+              ${covListHtml ? `<div style="margin-top:10px;"><strong>Coperture/contratti attivi alla data selezionata:</strong>${covListHtml}</div>` : ""}
+
+              <div style="margin-top:10px; color: var(--muted); font-size:12px;">
+                ${escapeHtml(footerText)}
+              </div>
+            </div>`
+          );
 
           const coverageSummary = {
             hasAnyCoverageData,
@@ -1067,15 +1311,17 @@
 
         } catch (err) {
           console.error(err);
-          showMessage('error', buildCoverageHeader("Errore durante il controllo", "Riprovare") +
-            ("Errore durante il controllo: " + escapeHtml(err.message)));
+          showCoverageBox("error",
+            buildHeader("Coperture VIN", "Errore") +
+            `<div class="info-box__body">Errore durante il controllo: ${escapeHtml(err.message || err)}</div>`
+          );
           btnCheckCoverage.disabled = false;
           resetTipoPratica();
           lastCheckData = null;
         }
       }
 
-      // ================== SEQUENZA + CREAZIONE CLAIMCARD (immutata) ==================
+      // ================== SEQUENZA + CREAZIONE CLAIMCARD ==================
       async function getNextSequenceForYear(year) {
         const snap = await db.collection(CLAIMS_COLLECTION)
           .where("year", "==", year)
@@ -1158,10 +1404,10 @@
         return code;
       }
 
-      // init stato
+      // init page
       resetTipoPratica();
       clearFsaList();
-      clearMessage();
+      hideCoverageBox();
 
     })();
   </script>
