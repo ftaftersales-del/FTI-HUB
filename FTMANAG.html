@@ -2,7 +2,9 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>FTMANAG - Gestione Reclami</title>
+
   <link rel="stylesheet" href="ftstyle.css">
 
   <!-- Firebase -->
@@ -13,200 +15,177 @@
   <script src="firebase-config.js"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      margin: 0;
-      padding: 20px;
-    }
+    /* ===============================
+       FTMANAG - Page glue su ftstyle
+       - niente reset globali
+       - solo dettagli specifici: tabella + status pill
+       =============================== */
 
-    .container {
+    .ftmanag-wrap{
       max-width: 1400px;
       margin: 0 auto;
-      background: white;
-      padding: 20px 25px 30px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 18px;
+      min-height: calc(100vh - 58px);
     }
 
-    h1 {
-      margin-top: 0;
-      font-size: 22px;
+    .ftmanag-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
     }
 
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-      gap: 10px;
-      flex-wrap: wrap;
+    .ftmanag-title{
+      margin:0 0 6px;
+      font-size:18px;
+      font-weight:700;
+      color: var(--text);
     }
 
-    .top-bar-left {
-      font-size: 14px;
-      color: #555;
+    .ftmanag-sub{
+      font-size:13px;
+      color: var(--muted);
     }
 
-    .top-bar-right button {
-      padding: 6px 12px;
-      border-radius: 5px;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .btn-primary {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .btn-secondary {
-      background-color: #6c757d;
-      color: white;
-    }
-
-    .btn-primary:disabled,
-    .btn-secondary:disabled {
-      opacity: 0.6;
-      cursor: default;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    /* Tabella coerente e pulita */
+    .ftmanag-table{
+      width:100%;
+      border-collapse:collapse;
       margin-top: 10px;
       font-size: 13px;
-    }
-
-    thead {
-      background-color: #f0f0f0;
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 6px 8px;
-      text-align: left;
-      white-space: nowrap;
-    }
-
-    tbody tr:nth-child(even) {
-      background-color: #fafafa;
-    }
-
-    tbody tr:hover {
-      background-color: #e8f0fe;
-      cursor: pointer;
-    }
-
-    .filters-row input,
-    .filters-row select {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 3px 4px;
-      font-size: 12px;
-    }
-
-    .status-pill {
-      padding: 2px 6px;
+      overflow: hidden;
       border-radius: 12px;
-      font-size: 11px;
-      border: 1px solid #ccc;
-      display: inline-block;
+    }
+    .ftmanag-table thead{
+      background: rgba(15,23,42,.04);
+    }
+    .ftmanag-table th,
+    .ftmanag-table td{
+      border: 1px solid var(--border);
+      padding: 7px 8px;
+      text-align:left;
+      white-space:nowrap;
+      vertical-align: middle;
+      background: rgba(255,255,255,.9);
+    }
+    .ftmanag-table tbody tr:nth-child(even) td{
+      background: rgba(255,255,255,.75);
+    }
+    .ftmanag-table tbody tr:hover td{
+      background: rgba(0,94,220,.08);
+      cursor:pointer;
     }
 
-    .status-Aperta {
-      background-color: #e7f5ff;
-      border-color: #74c0fc;
+    .ftmanag-filters input,
+    .ftmanag-filters select{
+      width:100%;
+      box-sizing:border-box;
+      padding: 6px 7px;
+      font-size: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,.95);
+      outline: none;
     }
-    .status-Inviata {
-      background-color: #fff3bf;
-      border-color: #fcc419;
-    }
-    .status-Sospesa {
-      background-color: #ffe3e3;
-      border-color: #fa5252;
-    }
-    .status-In-Valutazione {
-      background-color: #e6fcf5;
-      border-color: #20c997;
-    }
-    .status-Conclusa {
-      background-color: #e9ecef;
-      border-color: #868e96;
-    }
-    .status-Cancellata {
-      background-color: #f8f0fc;
-      border-color: #cc5de8;
+    .ftmanag-filters input:focus,
+    .ftmanag-filters select:focus{
+      border-color: rgba(0,94,220,.45);
+      box-shadow: 0 0 0 3px rgba(0,94,220,.12);
     }
 
-    .bottom-bar {
-      margin-top: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .ftmanag-bottom{
+      margin-top: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
       font-size: 13px;
-      gap: 10px;
-      flex-wrap: wrap;
+      color: var(--muted);
     }
 
-    .error-message {
+    .ftmanag-loading{
+      margin-top: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .ftmanag-error{
+      margin-top: 10px;
+      font-size: 13px;
       color: #b00020;
-      margin-top: 10px;
-      font-size: 13px;
     }
 
-    .loading {
-      font-size: 13px;
-      color: #555;
-      margin-top: 5px;
+    /* Status pill */
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.9);
+      color: var(--text);
     }
+    .status-Aperta{ background:#e7f5ff; border-color:#74c0fc; }
+    .status-Inviata{ background:#fff3bf; border-color:#fcc419; }
+    .status-Sospesa{ background:#ffe3e3; border-color:#fa5252; }
+    .status-In-Valutazione{ background:#e6fcf5; border-color:#20c997; }
+    .status-Conclusa{ background:#e9ecef; border-color:#868e96; }
+    .status-Cancellata{ background:#f8f0fc; border-color:#cc5de8; }
 
-    .nowrap {
-      white-space: nowrap;
-    }
+    /* Utility */
+    .nowrap{ white-space: nowrap; }
   </style>
 </head>
-  
+
 <body class="ft-page has-topbar">
+  <!-- Topbar coerente col portale -->
   <div class="ft-topbar">
     <a href="/FTI-HUB/FTHUBAS.html" class="ft-home-btn">← HOME</a>
   </div>
-  <div class="container">
-    <div class="top-bar">
-      <div>
-        <h1>FTMANAG - Gestione reclami</h1>
-        <div class="top-bar-left" id="userInfo">
-          Caricamento informazioni utente...
+
+  <main class="ftmanag-wrap">
+    <!-- Card principale (usa estetica ftstyle) -->
+    <section class="ft-card">
+      <div class="ftmanag-head">
+        <div>
+          <h1 class="ftmanag-title">FTMANAG - Gestione reclami</h1>
+          <div class="ftmanag-sub" id="userInfo">Caricamento informazioni utente...</div>
+        </div>
+
+        <div>
+          <button class="ft-btn" type="button" onclick="window.location.href='FTHUBAS.html'">
+            Torna a Home
+          </button>
         </div>
       </div>
-      <div class="top-bar-right">
-        <button class="btn-secondary" onclick="window.location.href='FTHUBAS.html'">
-          Torna a Home
-        </button>
+
+      <div id="loading" class="ftmanag-loading">Caricamento reclami...</div>
+      <div id="error" class="ftmanag-error" style="display:none;"></div>
+
+      <div class="ft-tablewrap">
+        <table id="claimsTable" class="ftmanag-table" style="display:none;">
+          <thead>
+            <tr id="header-row"></tr>
+            <tr class="ftmanag-filters" id="filters-row"></tr>
+          </thead>
+          <tbody id="claimsBody"></tbody>
+        </table>
       </div>
-    </div>
 
-    <div id="loading" class="loading">Caricamento reclami...</div>
-    <div id="error" class="error-message" style="display:none;"></div>
-
-    <table id="claimsTable" style="display:none;">
-      <thead>
-        <tr id="header-row"></tr>
-        <tr class="filters-row" id="filters-row"></tr>
-      </thead>
-      <tbody id="claimsBody"></tbody>
-    </table>
-
-    <div class="bottom-bar">
-      <div id="summary">Nessun reclamo caricato.</div>
-      <div>
-        <button class="btn-primary" id="loadMoreBtn" onclick="loadMoreClaims()" disabled>
-          Carica altri
-        </button>
+      <div class="ftmanag-bottom">
+        <div id="summary">Nessun reclamo caricato.</div>
+        <div>
+          <button class="ft-btn primary" id="loadMoreBtn" type="button" onclick="loadMoreClaims()" disabled>
+            Carica altri
+          </button>
+        </div>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <script>
     // auth e db arrivano già da firebase-config.js
@@ -238,11 +217,13 @@
     };
 
     auth.onAuthStateChanged(async (user) => {
+      const userInfoEl = document.getElementById('userInfo');
+      const loadingEl  = document.getElementById('loading');
+      const errorEl    = document.getElementById('error');
+
       if (!user) {
-        document.getElementById('userInfo').textContent =
-          'Utente non autenticato. Effettua il login.';
-        document.getElementById('loading').textContent =
-          'Effettua il login per vedere i reclami.';
+        userInfoEl.textContent = 'Utente non autenticato. Effettua il login.';
+        loadingEl.textContent  = 'Effettua il login per vedere i reclami.';
         return;
       }
 
@@ -250,7 +231,7 @@
 
       try {
         const userDocRef = db.collection('Users').doc(user.uid);
-        const userSnap   = await userDocRef.get();
+        const userSnap = await userDocRef.get();
         if (!userSnap.exists) {
           throw new Error('Documento utente non trovato in /Users.');
         }
@@ -263,6 +244,7 @@
           userData.DealerID ||
           userData.DealerId ||
           '';
+
         currentDealerId = rawDealerId ? String(rawDealerId).trim() : null;
 
         if (!currentDealerId) {
@@ -284,6 +266,7 @@
             .where('dealerId', '==', currentDealerId)
             .limit(1)
             .get();
+
           if (!dealerQuery.empty) {
             dealerData = dealerQuery.docs[0].data();
           }
@@ -296,7 +279,7 @@
           isDistributor = !!dealerData.isDistributor;
         }
 
-        document.getElementById('userInfo').textContent =
+        userInfoEl.textContent =
           'Utente: ' + (userData.displayName || user.email || user.uid) +
           ' | Dealer: ' + currentDealerId +
           (isDistributor ? ' (Distributore)' : ' (Dealer)');
@@ -306,40 +289,35 @@
         await loadInitialClaims();
       } catch (err) {
         console.error(err);
-        document.getElementById('error').style.display = 'block';
-        document.getElementById('error').textContent =
-          'Errore nel caricamento: ' + err.message;
-        document.getElementById('loading').style.display = 'none';
+        errorEl.style.display = 'block';
+        errorEl.textContent = 'Errore nel caricamento: ' + err.message;
+        loadingEl.style.display = 'none';
       }
     });
 
     function setupColumns() {
       const baseColumns = [
-        { key: 'status',  label: 'Stato' },
-        { key: 'code',    label: 'Claim card' },
-        { key: 'type',    label: 'Tipologia pratica' },
-        { key: 'vin',     label: 'Telaio (VIN)' },
-        { key: 'customer',label: 'Cliente' },
-        { key: 'plate',   label: 'Targa' },
-        { key: 'km',      label: 'KM' },
+        { key: 'status', label: 'Stato' },
+        { key: 'code', label: 'Claim card' },
+        { key: 'type', label: 'Tipologia pratica' },
+        { key: 'vin', label: 'Telaio (VIN)' },
+        { key: 'customer', label: 'Cliente' },
+        { key: 'plate', label: 'Targa' },
+        { key: 'km', label: 'KM' },
         { key: 'engineHours', label: 'Ore motore' },
-        { key: 'openDate',label: 'Data apertura' }
+        { key: 'openDate', label: 'Data apertura' }
       ];
 
-      if (isDistributor) {
-        columns = [
-          { key: 'openDealer', label: 'Dealer apertura' },
-          ...baseColumns
-        ];
-      } else {
-        columns = baseColumns;
-      }
+      columns = isDistributor
+        ? [{ key: 'openDealer', label: 'Dealer apertura' }, ...baseColumns]
+        : baseColumns;
     }
 
     function buildTableHeaderAndFilters() {
-      const headerRow  = document.getElementById('header-row');
+      const headerRow = document.getElementById('header-row');
       const filtersRow = document.getElementById('filters-row');
-      headerRow.innerHTML  = '';
+
+      headerRow.innerHTML = '';
       filtersRow.innerHTML = '';
 
       columns.forEach(col => {
@@ -351,6 +329,7 @@
 
         if (col.key === 'status') {
           const select = document.createElement('select');
+
           const optEmpty = document.createElement('option');
           optEmpty.value = '';
           optEmpty.textContent = '';
@@ -374,11 +353,13 @@
           const input = document.createElement('input');
           input.type = 'text';
           input.dataset.key = col.key;
+
           input.addEventListener('input', () => {
             const key = input.dataset.key;
             filters[key] = input.value.trim().toLowerCase();
             renderTable();
           });
+
           filterCell.appendChild(input);
         }
 
@@ -389,13 +370,16 @@
     }
 
     async function loadInitialClaims() {
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('loading').textContent = 'Caricamento reclami...';
-      document.getElementById('error').style.display = 'none';
+      const loadingEl = document.getElementById('loading');
+      const errorEl   = document.getElementById('error');
 
-      allClaims   = [];
+      loadingEl.style.display = 'block';
+      loadingEl.textContent = 'Caricamento reclami...';
+      errorEl.style.display = 'none';
+
+      allClaims = [];
       lastVisible = null;
-      reachedEnd  = false;
+      reachedEnd = false;
 
       let query;
       if (isDistributor) {
@@ -410,34 +394,35 @@
       }
 
       const snap = await query.get();
+
       if (snap.empty) {
         document.getElementById('summary').textContent =
           'Nessun reclamo trovato per questo account.';
-        document.getElementById('loading').style.display = 'none';
+        loadingEl.style.display = 'none';
         document.getElementById('loadMoreBtn').disabled = true;
         return;
       }
 
-      snap.forEach(doc => {
-        allClaims.push(formatClaimDoc(doc));
-      });
+      snap.forEach(doc => allClaims.push(formatClaimDoc(doc)));
 
       lastVisible = snap.docs[snap.docs.length - 1];
-      if (snap.docs.length < pageSize) {
-        reachedEnd = true;
-      }
+      reachedEnd = snap.docs.length < pageSize;
 
-      document.getElementById('loading').style.display = 'none';
+      loadingEl.style.display = 'none';
       document.getElementById('loadMoreBtn').disabled = reachedEnd;
+
       renderTable();
     }
 
     async function loadMoreClaims() {
       if (reachedEnd || !lastVisible) return;
 
-      document.getElementById('loading').style.display = 'block';
-      document.getElementById('loading').textContent = 'Carico altri reclami...';
-      document.getElementById('error').style.display = 'none';
+      const loadingEl = document.getElementById('loading');
+      const errorEl   = document.getElementById('error');
+
+      loadingEl.style.display = 'block';
+      loadingEl.textContent = 'Carico altri reclami...';
+      errorEl.style.display = 'none';
 
       try {
         let query;
@@ -455,36 +440,34 @@
         }
 
         const snap = await query.get();
+
         if (snap.empty) {
           reachedEnd = true;
-          document.getElementById('loading').style.display = 'none';
+          loadingEl.style.display = 'none';
           document.getElementById('loadMoreBtn').disabled = true;
+          renderTable();
           return;
         }
 
-        snap.forEach(doc => {
-          allClaims.push(formatClaimDoc(doc));
-        });
+        snap.forEach(doc => allClaims.push(formatClaimDoc(doc)));
 
         lastVisible = snap.docs[snap.docs.length - 1];
-        if (snap.docs.length < pageSize) {
-          reachedEnd = true;
-        }
+        reachedEnd = snap.docs.length < pageSize;
 
-        document.getElementById('loading').style.display = 'none';
+        loadingEl.style.display = 'none';
         document.getElementById('loadMoreBtn').disabled = reachedEnd;
+
         renderTable();
       } catch (err) {
         console.error(err);
-        document.getElementById('error').style.display = 'block';
-        document.getElementById('error').textContent =
-          'Errore nel caricamento di altri reclami: ' + err.message;
-        document.getElementById('loading').style.display = 'none';
+        errorEl.style.display = 'block';
+        errorEl.textContent = 'Errore nel caricamento di altri reclami: ' + err.message;
+        loadingEl.style.display = 'none';
       }
     }
 
     function formatClaimDoc(doc) {
-      const data    = doc.data() || {};
+      const data = doc.data() || {};
       const vehicle = data.vehicle || {};
 
       return {
@@ -505,59 +488,37 @@
 
     function claimMatchesFilters(claim) {
       if (!isDistributor) {
-        if (claim.openDealer && claim.openDealer !== currentDealerId) {
-          return false;
-        }
+        if (claim.openDealer && claim.openDealer !== currentDealerId) return false;
       }
 
       if (filters.openDealer &&
-          (!claim.openDealer || !String(claim.openDealer).toLowerCase().includes(filters.openDealer))) {
-        return false;
-      }
+          (!claim.openDealer || !String(claim.openDealer).toLowerCase().includes(filters.openDealer))) return false;
 
-      if (filters.status && claim.status !== filters.status) {
-        return false;
-      }
+      if (filters.status && claim.status !== filters.status) return false;
 
       if (filters.code &&
-          (!claim.code || !String(claim.code).toLowerCase().includes(filters.code))) {
-        return false;
-      }
+          (!claim.code || !String(claim.code).toLowerCase().includes(filters.code))) return false;
 
       if (filters.type &&
-          (!claim.type || !String(claim.type).toLowerCase().includes(filters.type))) {
-        return false;
-      }
+          (!claim.type || !String(claim.type).toLowerCase().includes(filters.type))) return false;
 
       if (filters.vin &&
-          (!claim.vin || !String(claim.vin).toLowerCase().includes(filters.vin))) {
-        return false;
-      }
+          (!claim.vin || !String(claim.vin).toLowerCase().includes(filters.vin))) return false;
 
       if (filters.customer &&
-          (!claim.customer || !String(claim.customer).toLowerCase().includes(filters.customer))) {
-        return false;
-      }
+          (!claim.customer || !String(claim.customer).toLowerCase().includes(filters.customer))) return false;
 
       if (filters.plate &&
-          (!claim.plate || !String(claim.plate).toLowerCase().includes(filters.plate))) {
-        return false;
-      }
+          (!claim.plate || !String(claim.plate).toLowerCase().includes(filters.plate))) return false;
 
       if (filters.km &&
-          (claim.km === '' || !String(claim.km).toLowerCase().includes(filters.km))) {
-        return false;
-      }
+          (claim.km === '' || !String(claim.km).toLowerCase().includes(filters.km))) return false;
 
       if (filters.engineHours &&
-          (claim.engineHours === '' || !String(claim.engineHours).toLowerCase().includes(filters.engineHours))) {
-        return false;
-      }
+          (claim.engineHours === '' || !String(claim.engineHours).toLowerCase().includes(filters.engineHours))) return false;
 
       if (filters.openDate &&
-          (!claim.openDate || !String(claim.openDate).toLowerCase().includes(filters.openDate))) {
-        return false;
-      }
+          (!claim.openDate || !String(claim.openDate).toLowerCase().includes(filters.openDate))) return false;
 
       return true;
     }
@@ -588,35 +549,16 @@
               td.appendChild(span);
               break;
             }
-            case 'code':
-              td.textContent = claim.code || '';
-              break;
-            case 'type':
-              td.textContent = claim.type || '';
-              break;
-            case 'vin':
-              td.textContent = claim.vin || '';
-              break;
-            case 'customer':
-              td.textContent = claim.customer || '';
-              break;
-            case 'plate':
-              td.textContent = claim.plate || '';
-              break;
-            case 'km':
-              td.textContent = claim.km !== '' ? claim.km : '';
-              break;
-            case 'engineHours':
-              td.textContent = claim.engineHours !== '' ? claim.engineHours : '';
-              break;
-            case 'openDate':
-              td.textContent = claim.openDate || '';
-              break;
-            case 'openDealer':
-              td.textContent = claim.openDealer || '';
-              break;
-            default:
-              td.textContent = '';
+            case 'code': td.textContent = claim.code || ''; break;
+            case 'type': td.textContent = claim.type || ''; break;
+            case 'vin': td.textContent = claim.vin || ''; break;
+            case 'customer': td.textContent = claim.customer || ''; break;
+            case 'plate': td.textContent = claim.plate || ''; break;
+            case 'km': td.textContent = claim.km !== '' ? claim.km : ''; break;
+            case 'engineHours': td.textContent = claim.engineHours !== '' ? claim.engineHours : ''; break;
+            case 'openDate': td.textContent = claim.openDate || ''; break;
+            case 'openDealer': td.textContent = claim.openDealer || ''; break;
+            default: td.textContent = '';
           }
 
           tr.appendChild(td);
