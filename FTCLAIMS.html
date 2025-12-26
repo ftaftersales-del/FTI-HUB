@@ -15,7 +15,9 @@
 
   <style>
     /* ===============================
-       FTCLAIMS - page glue (minimo)
+       FTCLAIMS - page glue (pulito)
+       - Funzioni identiche all'originale
+       - Layout: FSA -> Coperture -> Tipologia -> Bottoni
        =============================== */
 
     .page-wrap{
@@ -38,10 +40,7 @@
     .claims-meta p{ margin: 0; }
     .claims-meta strong{ color: var(--text); }
 
-    .form-grid{
-      display: grid;
-      gap: 12px;
-    }
+    .form-grid{ display: grid; gap: 12px; }
 
     .row-3{
       display: grid;
@@ -67,7 +66,7 @@
       flex-wrap: wrap;
     }
 
-    /* ===== Topbar center user label (come FTVIN) ===== */
+    /* ===== Topbar center user label ===== */
     .ft-topbar__center{
       flex: 1;
       display: flex;
@@ -86,7 +85,15 @@
 
     /* ===============================
        Box premium (FSA / Coperture)
+       - più "quiet" e leggibile
        =============================== */
+
+    .sep{
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .sep strong{ color: var(--text); }
 
     .info-box{
       border-radius: 14px;
@@ -134,25 +141,22 @@
       gap: 10px;
     }
 
-    .info-box__body{
-      font-size: 13px;
-      color: var(--text);
-    }
+    .info-box__body{ font-size: 13px; color: var(--text); }
 
-    /* ============ Chips ============ */
+    /* chips più discrete */
     .chip{
       display:inline-flex;
       align-items:center;
       gap: 6px;
-      padding: 3px 8px;
+      padding: 2px 8px;
       border-radius: 999px;
-      font-size: 11px;
-      border: 1px solid rgba(15,23,42,.12);
-      background: rgba(255,255,255,.75);
-      color: var(--muted);
+      font-size: 10.5px;
+      border: 1px solid rgba(15,23,42,.10);
+      background: rgba(255,255,255,.55);
+      color: rgba(15,23,42,.60);
       white-space: nowrap;
     }
-    .chip strong{ color: var(--text); font-weight: 800; }
+    .chip strong{ color: rgba(15,23,42,.82); font-weight: 800; }
 
     .pill{
       display:inline-flex;
@@ -162,22 +166,29 @@
       font-size: 11px;
       font-weight: 800;
       border: 1px solid rgba(15,23,42,.10);
-      background: rgba(255,255,255,.70);
+      background: rgba(255,255,255,.62);
       color: var(--text);
       white-space: nowrap;
     }
-    .pill.full{ border-color: rgba(34,197,94,.25); }
-    .pill.drive{ border-color: rgba(0,94,220,.25); }
-    .pill.sc{ border-color: rgba(139,92,246,.25); }
+    .pill.full{ border-color: rgba(34,197,94,.22); }
+    .pill.drive{ border-color: rgba(0,94,220,.22); }
+    .pill.sc{ border-color: rgba(139,92,246,.22); }
+
+    .summary-row{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 6px 0 2px;
+    }
 
     /* ===== FSA ===== */
     .fsa-box{
-      border-color: rgba(0,94,220,.18);
-      background: linear-gradient(180deg, rgba(0,94,220,.10), rgba(255,255,255,.86));
+      border-color: rgba(0,94,220,.16);
+      background: linear-gradient(180deg, rgba(0,94,220,.08), rgba(255,255,255,.86));
     }
     .fsa-box .dot{
       background: rgba(0,94,220,.95);
-      box-shadow: 0 0 0 4px rgba(0,94,220,.14);
+      box-shadow: 0 0 0 4px rgba(0,94,220,.12);
     }
 
     .fsa-list{
@@ -188,8 +199,8 @@
       gap: 8px;
     }
     .fsa-item{
-      border: 1px solid rgba(0,94,220,.14);
-      background: rgba(255,255,255,.70);
+      border: 1px solid rgba(0,94,220,.10);
+      background: rgba(255,255,255,.55);
       border-radius: 12px;
       padding: 8px 10px;
     }
@@ -198,33 +209,31 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: baseline;
-      line-height: 1.25;
+      line-height: 1.2;
     }
     .fsa-code{
       font-weight: 900;
       color: var(--text);
       letter-spacing: .2px;
+      font-size: 12.5px;
     }
     .fsa-desc{
-      color: var(--text);
-      opacity: .92;
+      color: rgba(15,23,42,.80);
       font-weight: 600;
+      font-size: 12.5px;
     }
     .fsa-meta{
       display:flex;
       gap: 8px;
       flex-wrap: wrap;
-      margin-top: 6px;
+      margin-top: 4px;
+      font-size: 11px;
+      color: rgba(15,23,42,.55);
     }
 
     /* Collapsible */
-    .collapsible{
-      position: relative;
-    }
-    .collapsible.is-collapsed{
-      max-height: 210px;
-      overflow: hidden;
-    }
+    .collapsible{ position: relative; }
+    .collapsible.is-collapsed{ max-height: 210px; overflow: hidden; }
     .fade-bottom{
       display:none;
       position:absolute;
@@ -243,32 +252,24 @@
       flex-wrap: wrap;
     }
 
-    /* ===== Coperture (result) ===== */
-    #resultArea{
-      display:none;
-    }
+    /* ===== Coperture ===== */
+    #resultArea{ display:none; }
+
     .coverage-box{
-      border-color: rgba(34,197,94,.20);
-      background: linear-gradient(180deg, rgba(34,197,94,.12), rgba(255,255,255,.88));
+      border-color: rgba(34,197,94,.18);
+      background: linear-gradient(180deg, rgba(34,197,94,.10), rgba(255,255,255,.88));
     }
     .coverage-box .dot{
       background: rgba(34,197,94,.95);
-      box-shadow: 0 0 0 4px rgba(34,197,94,.16);
+      box-shadow: 0 0 0 4px rgba(34,197,94,.14);
     }
     .coverage-box.is-error{
-      border-color: rgba(239,68,68,.22);
-      background: linear-gradient(180deg, rgba(239,68,68,.10), rgba(255,255,255,.90));
+      border-color: rgba(239,68,68,.20);
+      background: linear-gradient(180deg, rgba(239,68,68,.08), rgba(255,255,255,.90));
     }
     .coverage-box.is-error .dot{
       background: rgba(239,68,68,.95);
-      box-shadow: 0 0 0 4px rgba(239,68,68,.16);
-    }
-
-    .summary-row{
-      display:flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 8px 0 2px;
+      box-shadow: 0 0 0 4px rgba(239,68,68,.14);
     }
 
     .kv{
@@ -288,22 +289,21 @@
       gap: 8px;
     }
     .cov-item{
-      border: 1px solid rgba(34,197,94,.18);
-      background: rgba(255,255,255,.70);
+      border: 1px solid rgba(34,197,94,.14);
+      background: rgba(255,255,255,.55);
       border-radius: 12px;
       padding: 8px 10px;
       display:flex;
-      align-items:flex-start;
+      align-items:center;
       justify-content: space-between;
       gap: 10px;
-      flex-wrap: wrap;
     }
-    .cov-item.is-drive{ border-color: rgba(0,94,220,.18); }
-    .cov-item.is-sc{ border-color: rgba(139,92,246,.18); }
+    .cov-item.is-drive{ border-color: rgba(0,94,220,.14); }
+    .cov-item.is-sc{ border-color: rgba(139,92,246,.14); }
 
     .cov-dates{
-      color: var(--muted);
-      font-size: 12px;
+      color: rgba(15,23,42,.55);
+      font-size: 11.5px;
       white-space: nowrap;
     }
 
@@ -317,7 +317,6 @@
       display:none;
     }
 
-    /* OK button */
     #btnOk{ display:none; }
 
   </style>
@@ -358,7 +357,8 @@
           <!-- Dati -->
           <div class="field">
             <label class="label" for="vinInput">Telaio (VIN)</label>
-            <input class="input" type="text" id="vinInput" placeholder="Inserisci il numero di telaio"
+            <input class="input" type="text" id="vinInput"
+                   placeholder="Inserisci il numero di telaio"
                    maxlength="17" autocomplete="off"
                    style="text-transform:uppercase; letter-spacing:.5px;">
           </div>
@@ -381,6 +381,10 @@
               <label class="label" for="oreMotoreInput">Ore motore</label>
               <input class="input" type="number" id="oreMotoreInput" min="0" step="1" placeholder="Es. 500">
             </div>
+          </div>
+
+          <div class="sep">
+            <strong>Step 1:</strong> Controllo FSA e coperture (risultati)
           </div>
 
           <!-- FSA -->
@@ -407,10 +411,14 @@
             </div>
           </div>
 
-          <!-- COPERTURE (tra FSA e combobox) -->
+          <!-- COPERTURE (tra FSA e tipologia) -->
           <div id="resultArea" class="info-box coverage-box"></div>
 
-          <!-- Tipologia (dopo coperture) -->
+          <div class="sep" id="step2Sep" style="display:none;">
+            <strong>Step 2:</strong> Seleziona tipologia claim card
+          </div>
+
+          <!-- Tipologia -->
           <div class="field" id="tipoPraticaGroup" style="display:none;">
             <label class="label" for="tipoPratica">Tipologia claim card</label>
             <select class="input" id="tipoPratica"></select>
@@ -443,7 +451,7 @@
         return;
       }
 
-      // init sicuro
+      // init sicuro (se firebase-config.js non inizializza già)
       try {
         if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(firebaseConfig);
       } catch (e) {}
@@ -472,6 +480,7 @@
 
       // ================== UI ==================
       const topUserLabel       = document.getElementById('topUserLabel');
+      const step2Sep           = document.getElementById('step2Sep');
 
       const btnCheckCoverage   = document.getElementById('btnCheckCoverage');
       const btnOk              = document.getElementById('btnOk');
@@ -563,7 +572,6 @@
 
         try {
           btnOk.disabled = true;
-
           const claimId = await createClaimCard(tipoPratica);
 
           const header = {
@@ -688,6 +696,7 @@
       function resetTipoPratica() {
         tipoPraticaSelect.innerHTML = "";
         tipoPraticaGroup.style.display = "none";
+        step2Sep.style.display = "none";
         btnOk.style.display = "none";
         btnOk.disabled = true;
         btnOk.title = "Seleziona la tipologia per procedere";
@@ -697,10 +706,11 @@
 
       function showTipoPraticaUI() {
         tipoPraticaGroup.style.display = "block";
+        step2Sep.style.display = "block";
         btnOk.style.display = "inline-block";
         btnOk.disabled = true;
 
-        // porta la vista alla combobox (dopo le coperture)
+        // porta la vista alla tipologia
         try { tipoPraticaGroup.scrollIntoView({ behavior: "smooth", block: "start" }); } catch(e) {}
       }
 
@@ -847,7 +857,7 @@
 
       async function loadPendingFsaForVin(vin) {
         clearFsaList();
-        if (!vin) return;
+        if (!vin) return 0;
 
         try {
           const snapshot = await db.collection(FSA_COLLECTION)
@@ -873,7 +883,6 @@
           snapshot.forEach(doc => {
             const x = parseFsaDoc(doc);
             if (x.isApplied) return;
-
             countPendenti++;
             rows.push(x);
           });
@@ -889,15 +898,14 @@
             return 0;
           }
 
-          // render
           fsaList.innerHTML = "";
           rows.forEach(x => {
             const startStr = formatDateDDMMYYYY(x.dataInizio);
             const endStr   = formatDateDDMMYYYY(x.dataFine);
 
-            const metaChips = [];
-            if (startStr || endStr) metaChips.push(`<span class="chip">Periodo: <strong>${escapeHtml(startStr || "?")}</strong> - <strong>${escapeHtml(endStr || "?")}</strong></span>`);
-            if (x.tipologia) metaChips.push(`<span class="chip">Tipologia: <strong>${escapeHtml(x.tipologia)}</strong></span>`);
+            const meta = [];
+            if (startStr || endStr) meta.push(`Periodo: ${escapeHtml(startStr || "?")} - ${escapeHtml(endStr || "?")}`);
+            if (x.tipologia) meta.push(`Tipologia: ${escapeHtml(x.tipologia)}`);
 
             const li = document.createElement("li");
             li.className = "fsa-item";
@@ -906,12 +914,11 @@
                 <span class="fsa-code">${escapeHtml(x.codice)}</span>
                 ${x.descrizione ? `<span class="fsa-desc">— ${escapeHtml(x.descrizione)}</span>` : ``}
               </div>
-              ${metaChips.length ? `<div class="fsa-meta">${metaChips.join("")}</div>` : ``}
+              ${meta.length ? `<div class="fsa-meta">${meta.join(" | ")}</div>` : ``}
             `;
             fsaList.appendChild(li);
           });
 
-          // collapse logic
           const shouldCollapse = rows.length > 6;
           if (shouldCollapse) {
             fsaToggleRow.style.display = "flex";
@@ -1113,17 +1120,16 @@
             .limit(1)
             .get();
 
-          // base summary items
-          const baseSummary = [
+          const summary = [
             `VIN <strong>✔</strong>`,
             `Coerenza <strong>✔</strong>`,
-            `FSA: <strong>${fsaCount}</strong> pendenti`
+            `FSA: <strong>${fsaCount}</strong>`
           ];
 
           if (snap.empty) {
             showCoverageBox("error",
               buildHeader("Coperture VIN", "VIN non presente in DBVIN") +
-              buildSummaryRow([...baseSummary, `Coperture <strong>—</strong>`]) +
+              buildSummaryRow(summary) +
               `<div class="info-box__body">
                 <div class="kv">
                   <div><strong>Telaio:</strong> ${escapeHtml(vin)}</div>
@@ -1211,7 +1217,6 @@
           const hasAnyActive = hasFullActive || hasDriveActive || hasMaintActive;
           const hasAnyCoverageData = !!(fullStart || fullEnd || driveStart || driveEnd || maintStart || maintEnd || warrantyStart || warrantyEnd);
 
-          // coverage list build
           const covRows = [];
           if (hasFullActive)  covRows.push({ type:"FULL LINE", start: fullStart, end: fullEnd });
           if (hasDriveActive) covRows.push({ type:"DRIVE LINE", start: driveStart, end: driveEnd });
@@ -1262,10 +1267,9 @@
             populateForNoActiveCoverage();
           }
 
-          // render coverage box
           showCoverageBox("success",
             buildHeader("Coperture VIN", covSummaryText) +
-            buildSummaryRow([...baseSummary, `Coperture <strong>${hasAnyActive ? "✔" : "✖"}</strong>`]) +
+            buildSummaryRow(summary) +
             `<div class="info-box__body">
               <div class="kv">
                 <div><strong>Telaio:</strong> ${escapeHtml(vin)}</div>
