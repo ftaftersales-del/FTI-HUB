@@ -1689,4 +1689,46 @@
         });
       }, (e) => {
         console.error(e);
-        banner("
+        banner("error", "Errore caricamento claims: " + (e.message || e));
+      });
+    }
+
+    // ---------- Boot ----------
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        banner("error", "Utente non autenticato. Reindirizzamento…");
+        setTimeout(() => window.location.href = "index.html", 1200);
+        return;
+      }
+
+      try {
+        claimId = resolveClaimId();
+        if (!claimId) {
+          banner("error", "Nessuna claim card in sessione (manca ftclaims_claimCode / ?id=). Torna allo STEP1.");
+          return;
+        }
+
+        currentUser = await getUserInfo(db, auth);
+
+        // espongo globalmente la tariffa
+        window.LABOR_RATE_STD = (currentUser && currentUser.laborRateStd != null) ? currentUser.laborRateStd : null;
+
+        // user bar in topbar
+        const ubar = document.getElementById("ui_userbar");
+        if (ubar) ubar.textContent = `${currentUser?.name || "Utente"} · ${currentUser?.dealerId || ""}`;
+
+        await loadClaimCard();
+        renderClaimCard();
+
+        listenClaims();
+        banner("success", "Pratica caricata correttamente.");
+      } catch (e) {
+        console.error(e);
+        banner("error", "Errore caricamento pratica: " + (e.message || e));
+      }
+    });
+
+  })();
+  </script>
+</body>
+</html>
