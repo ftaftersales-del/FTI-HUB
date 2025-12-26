@@ -1,11 +1,9 @@
 // ===============================
 // FT TOPBAR (GLOBAL INJECTION) v3
-// - Ford Blue topbar (inline injected CSS)
-// - Brand + titolo pagina
-// - Slot user info centrale
-// - API: window.FTTopbar.setMeta(text)
-// - Compat: window.FTSetUserInfo(text)
-// - Event: "ft:setMeta" {detail:{text}}
+// Fix:
+// - Ford Blue su tutte le pagine
+// - Testi/btn sempre leggibili (override anti-ftstyle) con !important
+// - Cache bust consigliato: <script src="ft-topbar.js?v=3"></script>
 // ===============================
 (function () {
   const body = document.body;
@@ -16,9 +14,6 @@
 
   body.classList.add("has-topbar");
 
-  // -------------------------------
-  // Config / helpers
-  // -------------------------------
   const pageTitle =
     (document.documentElement.getAttribute("data-ft-title") || "").trim() ||
     (document.title || "").trim() ||
@@ -33,12 +28,11 @@
       .replaceAll("'", "&#039;");
   }
 
-  // Calcola un base path robusto:
-  // - se stai su /FTI-HUB/qualcosa -> usa /FTI-HUB
-  // - altrimenti usa root
+  // Base path robusto per GitHub Pages /FTI-HUB/
   function getHubBasePath() {
     const p = (location.pathname || "").replace(/\\/g, "/");
-    const idx = p.toLowerCase().indexOf("/fti-hub/");
+    const low = p.toLowerCase();
+    const idx = low.indexOf("/fti-hub/");
     if (idx >= 0) return p.slice(0, idx + "/fti-hub".length);
     return "";
   }
@@ -47,7 +41,7 @@
   const HOME_HREF = (HUB_BASE || "") + "/FTHUBAS.html";
 
   // -------------------------------
-  // Inject CSS (Ford Blue)
+  // Inject CSS (Ford Blue + override anti-ftstyle)
   // -------------------------------
   const style = document.createElement("style");
   style.setAttribute("data-ft-topbar-style", "1");
@@ -55,27 +49,30 @@
     :root{
       --ft-ford-blue:#003478;
       --ft-ford-blue2:#002f6c;
-      --ft-ford-blue-dark:#002a5c;
       --ft-topbar-h:58px;
     }
 
     body.has-topbar{
-      padding-top: var(--ft-topbar-h);
+      padding-top: var(--ft-topbar-h) !important;
     }
 
     .ft-topbar{
       position: fixed;
-      left: 0;
-      right: 0;
-      top: 0;
-      z-index: 1000;
+      left: 0; right: 0; top: 0;
+      z-index: 9999;
       height: var(--ft-topbar-h);
       display: flex;
       align-items: center;
-      background: linear-gradient(180deg, var(--ft-ford-blue) 0%, var(--ft-ford-blue2) 100%);
-      color: #fff;
+      background: linear-gradient(180deg, var(--ft-ford-blue) 0%, var(--ft-ford-blue2) 100%) !important;
       border-bottom: 1px solid rgba(255,255,255,.14);
       box-shadow: 0 6px 18px rgba(0,0,0,.18);
+      color: #fff !important;
+    }
+
+    /* BLINDA i colori: ftstyle non deve poterli sovrascrivere */
+    .ft-topbar,
+    .ft-topbar *{
+      color: #fff !important;
     }
 
     .ft-topbar__inner{
@@ -101,18 +98,18 @@
       letter-spacing: .6px;
       font-size: 14px;
       text-transform: uppercase;
-      opacity: .98;
       white-space: nowrap;
+      opacity: .98;
     }
 
     .ft-topbar__subtitle{
       font-weight: 600;
       font-size: 13px;
-      opacity: .92;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       max-width: 520px;
+      opacity: .88;
     }
 
     .ft-topbar__center{
@@ -123,7 +120,6 @@
 
     .ft-topbar__userinfo{
       font-size: 12.5px;
-      opacity: .92;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -132,13 +128,13 @@
       border: 1px solid rgba(255,255,255,.18);
       background: rgba(255,255,255,.10);
       border-radius: 999px;
+      opacity: .92;
     }
 
     .ft-topbar__right{
       display: flex;
       justify-content: flex-end;
       align-items: center;
-      gap: 10px;
     }
 
     .ft-home-btn{
@@ -147,11 +143,10 @@
       gap: 8px;
       padding: 8px 12px;
       border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.24);
-      background: rgba(255,255,255,.12);
-      color: #fff;
+      border: 1px solid rgba(255,255,255,.24) !important;
+      background: rgba(255,255,255,.12) !important;
       text-decoration: none;
-      font-weight: 700;
+      font-weight: 800;
       font-size: 13px;
       line-height: 1;
       user-select: none;
@@ -159,37 +154,26 @@
     }
 
     .ft-home-btn:hover{
-      background: rgba(255,255,255,.20);
-      border-color: rgba(255,255,255,.34);
+      background: rgba(255,255,255,.20) !important;
+      border-color: rgba(255,255,255,.34) !important;
       transform: translateY(-1px);
     }
 
-    .ft-home-btn:active{
-      transform: translateY(0px);
-    }
+    .ft-home-btn:active{ transform: translateY(0px); }
 
     .ft-home-btn:focus-visible{
-      outline: 2px solid rgba(255,255,255,.85);
+      outline: 2px solid rgba(255,255,255,.9);
       outline-offset: 2px;
     }
 
-    /* responsive */
     @media (max-width: 920px){
-      .ft-topbar__inner{
-        grid-template-columns: 1fr auto;
-      }
-      .ft-topbar__center{
-        display: none;
-      }
-      .ft-topbar__subtitle{
-        max-width: 360px;
-      }
+      .ft-topbar__inner{ grid-template-columns: 1fr auto; }
+      .ft-topbar__center{ display:none; }
+      .ft-topbar__subtitle{ max-width: 360px; }
     }
 
     @media (max-width: 520px){
-      .ft-topbar__subtitle{
-        display: none;
-      }
+      .ft-topbar__subtitle{ display:none; }
     }
   `;
   document.head.appendChild(style);
@@ -218,7 +202,6 @@
       </div>
     </div>
   `;
-
   body.insertBefore(bar, body.firstChild);
 
   // nascondi Home se già su FTHUBAS
@@ -235,18 +218,13 @@
     const el = document.getElementById("ftUserInfo");
     if (!el) return;
     el.textContent = (text || "").toString();
-    // se è vuoto, rendilo meno "presente"
     el.style.visibility = el.textContent.trim() ? "visible" : "hidden";
   }
 
-  // API preferita
   window.FTTopbar = window.FTTopbar || {};
   window.FTTopbar.setMeta = setMeta;
-
-  // Compat con API precedente
   window.FTSetUserInfo = setMeta;
 
-  // Event bridge
   window.addEventListener("ft:setMeta", (ev) => {
     try {
       const txt = ev && ev.detail ? ev.detail.text : "";
@@ -254,6 +232,5 @@
     } catch (_) {}
   });
 
-  // default: nascondi se non impostato
   setMeta("");
 })();
