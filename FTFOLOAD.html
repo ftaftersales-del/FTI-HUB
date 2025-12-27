@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>FTI-HUB – FTFOLOAD</title>
+
+  <link rel="stylesheet" href="ftstyle.css?v=6">
+
+  <!-- Firebase compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+
+  <!-- SheetJS (Excel) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    .wrap{
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 18px;
+      min-height: calc(100vh - 58px);
+    }
+    .head{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+      margin-bottom: 12px;
+    }
+    .head h1{ margin:0; font-size: 18px; }
+    .muted{ color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .actions{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:flex-end; }
+    .toolbar{
+      display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;
+      margin: 10px 0 12px;
+    }
+    .left-tools{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
+    .search{ min-width: 320px; }
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      padding: 4px 10px; border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.7);
+      font-size: 12px; color: var(--text);
+    }
+    .pill-bad{
+      border-color: rgba(200,0,0,.18);
+      background: rgba(255,0,0,.05);
+      color: #8a1f1f;
+    }
+    .small{ font-size: 12px; color: var(--muted); }
+    .denied{
+      padding: 18px;
+      border: 1px solid rgba(220,0,0,.18);
+      background: rgba(255,0,0,.06);
+      border-radius: 14px;
+      display:none;
+    }
+    .denied h2{ margin:0 0 6px; font-size: 16px; }
+    .tableWrap{
+      max-height: 68vh; overflow:auto;
+      border: 1px solid var(--border); border-radius: 14px;
+    }
+    table{
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+    }
+    th, td{
+      border-bottom: 1px solid var(--border);
+      padding: 10px 10px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    th{
+      font-size: 12px;
+      color: var(--muted);
+      background: rgba(255,255,255,.65);
+      position: sticky;
+      top: 0; z-index: 1;
+      backdrop-filter: blur(6px);
+    }
+    tr:hover td{ background: rgba(0, 94, 220, 0.04); }
+    .chk{
+      width: 18px; height: 18px;
+      accent-color: var(--primary2);
+    }
+    .col-check{ width: 44px; }
+    .col-code{ width: 150px; }
+    .col-rep{ width: 80px; }
+    .col-vin{ width: 200px; }
+    .col-status{ width: 160px; }
+    .col-created{ width: 160px; }
+    .col-dealer{ width: 100px; }
+    .empty{
+      padding: 14px 6px;
+      color: var(--muted);
+      font-size: 13px;
+      display:none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Topbar (coerente ftstyle) -->
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <img class="brand-logo" src="assets/logo_ft.png" alt="Ford Trucks" />
+        <div class="brand-title">FTI-HUB</div>
+        <div class="brand-subtitle">FTFOLOAD</div>
+      </div>
+      <div class="topbar-actions">
+        <a class="btn btn-ghost" href="index.html">Home</a>
+        <button class="btn" id="btnReload">Ricarica</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="panel">
+      <div class="head">
+        <div>
+          <h1>Queue FO – In valutazione FO senza sinistro</h1>
+          <div class="muted">Seleziona le pratiche (Rxxx) e genera l’Excel batch per Selenium. Visibile solo al distributore.</div>
+        </div>
+
+        <div class="actions">
+          <span class="pill" id="badgeCount">0 pratiche</span>
+          <span class="pill pill-bad" id="badgeSelected">0 selezionate</span>
+          <button class="btn btn-ghost" id="btnSelectAll">Seleziona tutte (filtrate)</button>
+          <button class="btn btn-ghost" id="btnDeselectAll">Deseleziona</button>
+          <button class="btn" id="btnExportSelected">Export Excel (selezionate)</button>
+          <button class="btn btn-ghost" id="btnExportFiltered">Export Excel (tutte filtrate)</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="left-tools">
+          <input class="input search" id="qSearch" placeholder="Cerca (W-code / VIN / dealer / Rxxx)..." />
+          <span class="small" id="lblInfo"></span>
+        </div>
+        <div class="left-tools">
+          <span class="small" id="lblUser"></span>
+        </div>
+      </div>
+
+      <div id="deniedBox" class="denied">
+        <h2>Accesso negato</h2>
+        <p>Questa pagina è riservata al distributore. Se sei un dealer, non deve essere visibile.</p>
+      </div>
+
+      <div id="tableBox" style="display:none;">
+        <div class="tableWrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="col-check"></th>
+                <th class="col-code">ClaimCard</th>
+                <th class="col-rep">Repair</th>
+                <th class="col-vin">VIN</th>
+                <th class="col-status">Status ClaimCard</th>
+                <th class="col-created">Creato</th>
+                <th class="col-dealer">Dealer</th>
+                <th>Info</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="emptyBox">Nessuna pratica trovata con i criteri richiesti.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const auth = firebase.auth();
+  const db   = firebase.firestore();
+
+  // =========================
+  // CONFIG
+  // =========================
+  const TARGET_STATUS = "In valutazione FO"; // status sul documento ClaimCards/{code}
+  const MAX_CLAIMCARDS = 250;
+  const MAX_CLAIMS_PER_CARD = 60;
+
+  // Mappa WarrantyType (porta questo al portale FO)
+  function mapWarrantyType(claimDoc, claimCardDoc){
+    // Esempio: claimType GARANZIA -> TR Base Warranty
+    const ct = (claimDoc?.claimType || "").toString().trim().toUpperCase();
+    if(ct === "GARANZIA") return "TR Base Warranty";
+    // fallback ragionevole
+    return "TR Base Warranty";
+  }
+
+  // =========================
+  // UI STATE
+  // =========================
+  let rowsAll = [];     // row = { claimCardId, claimCardCode, repairId, vin, createdAt, openDealer, ccStatus }
+  let rowsView = [];
+  const selected = new Set(); // key = `${claimCardId}__${repairId}`
+
+  // =========================
+  // HELPERS
+  // =========================
+  function normStr(v){ return (v ?? "").toString().trim(); }
+
+  function isEmptySinistro(v){
+    const s = normStr(v);
+    if (!s) return true;
+    const low = s.toLowerCase();
+    return low === "-" || low === "n/a" || low === "na" || low === "null";
+  }
+
+  function fmtDate(ts){
+    try{
+      if(!ts) return "";
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      return d.toLocaleString("it-IT");
+    }catch(e){ return ""; }
+  }
+
+  function keyOf(r){ return `${r.claimCardId}__${r.repairId}`; }
+
+  function setBadge(){
+    document.getElementById("badgeCount").textContent = `${rowsView.length} pratiche`;
+    document.getElementById("badgeSelected").textContent = `${selected.size} selezionate`;
+  }
+
+  function applySearch(){
+    const q = normStr(document.getElementById("qSearch").value).toLowerCase();
+    if(!q){
+      rowsView = [...rowsAll];
+    }else{
+      rowsView = rowsAll.filter(r => (
+        (r.claimCardCode||"").toLowerCase().includes(q) ||
+        (r.repairId||"").toLowerCase().includes(q) ||
+        (r.vin||"").toLowerCase().includes(q) ||
+        (r.openDealer||"").toLowerCase().includes(q)
+      ));
+    }
+    renderTable();
+  }
+
+  function renderTable(){
+    const tbody = document.getElementById("tbody");
+    tbody.innerHTML = "";
+
+    document.getElementById("emptyBox").style.display = rowsView.length ? "none" : "block";
+
+    for(const r of rowsView){
+      const k = keyOf(r);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="col-check">
+          <input type="checkbox" class="chk" data-k="${k}" ${selected.has(k) ? "checked" : ""}>
+        </td>
+        <td class="col-code"><b>${r.claimCardCode}</b></td>
+        <td class="col-rep">${r.repairId}</td>
+        <td class="col-vin">${r.vin || ""}</td>
+        <td class="col-status">${r.ccStatus || ""}</td>
+        <td class="col-created">${fmtDate(r.createdAt)}</td>
+        <td class="col-dealer">${r.openDealer || ""}</td>
+        <td>
+          <div class="small">sinistro: <b>(vuoto)</b></div>
+          <div class="small">claimType: ${r.claimType || ""}</div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    }
+
+    tbody.querySelectorAll("input[type=checkbox]").forEach(cb => {
+      cb.addEventListener("change", () => {
+        const k = cb.getAttribute("data-k");
+        if(cb.checked) selected.add(k);
+        else selected.delete(k);
+        setBadge();
+      });
+    });
+
+    setBadge();
+  }
+
+  // =========================
+  // ACCESS CONTROL (solo distributore)
+  // =========================
+  function isDistributorUser(userDocData){
+    const role = normStr(userDocData?.role).toLowerCase();
+    const profile = normStr(userDocData?.profile).toLowerCase();
+    const isDist =
+      userDocData?.isDistributor === true ||
+      userDocData?.IsDistributor === true ||
+      userDocData?.distributor === true ||
+      userDocData?.Distributor === true;
+
+    if(isDist) return true;
+    if(role === "distributor" || role === "distributore") return true;
+    if(profile === "distributor" || profile === "distributore") return true;
+
+    const type = normStr(userDocData?.type).toLowerCase();
+    if(type === "distributor" || type === "distributore") return true;
+
+    return false;
+  }
+
+  async function requireDistributor(){
+    return new Promise((resolve) => {
+      auth.onAuthStateChanged(async (user) => {
+        if(!user){
+          document.getElementById("deniedBox").style.display = "block";
+          document.getElementById("tableBox").style.display = "none";
+          document.getElementById("lblUser").textContent = "Non autenticato";
+          return resolve(false);
+        }
+        try{
+          const snap = await db.collection("Users").doc(user.uid).get();
+          const data = snap.exists ? snap.data() : {};
+          const ok = isDistributorUser(data);
+
+          document.getElementById("lblUser").textContent =
+            `Utente: ${user.email || user.uid} — ${ok ? "Distributore" : "Non autorizzato"}`;
+
+          document.getElementById("deniedBox").style.display = ok ? "none" : "block";
+          document.getElementById("tableBox").style.display = ok ? "block" : "none";
+          resolve(ok);
+        }catch(e){
+          console.error(e);
+          document.getElementById("deniedBox").style.display = "block";
+          document.getElementById("tableBox").style.display = "none";
+          document.getElementById("lblUser").textContent = "Errore lettura profilo utente";
+          resolve(false);
+        }
+      });
+    });
+  }
+
+  // =========================
+  // LOAD QUEUE
+  // =========================
+  async function loadQueue(){
+    document.getElementById("lblInfo").textContent = "Caricamento...";
+    rowsAll = [];
+    rowsView = [];
+    selected.clear();
+    setBadge();
+    renderTable();
+
+    try{
+      const q = db.collection("ClaimCards")
+        .where("status", "==", TARGET_STATUS)
+        .orderBy("createdAt", "desc")
+        .limit(MAX_CLAIMCARDS);
+
+      const snap = await q.get();
+
+      for(const doc of snap.docs){
+        const cc = doc.data() || {};
+        const claimCardId = doc.id;
+        const claimCardCode = cc.code || doc.id;
+        const createdAt = cc.createdAt || null;
+        const openDealer = cc.openDealer || cc.dealerId || cc.dealer || "";
+        const vinCard = cc?.vehicle?.vin || cc.vin || "";
+
+        const claimsSnap = await db.collection("ClaimCards").doc(claimCardId)
+          .collection("Claims")
+          .limit(MAX_CLAIMS_PER_CARD)
+          .get();
+
+        for(const cdoc of claimsSnap.docs){
+          const c = cdoc.data() || {};
+          if(isEmptySinistro(c.sinistro)){
+            rowsAll.push({
+              claimCardId,
+              claimCardCode,
+              repairId: cdoc.id,
+              vin: c.vin || vinCard,
+              createdAt,
+              openDealer,
+              ccStatus: cc.status || "",
+              claimType: c.claimType || ""
+            });
+          }
+        }
+      }
+
+      rowsView = [...rowsAll];
+      applySearch();
+      document.getElementById("lblInfo").textContent =
+        `Trovate ${rowsAll.length} pratiche (status="${TARGET_STATUS}" + sinistro vuoto).`;
+
+    }catch(err){
+      console.error(err);
+      document.getElementById("lblInfo").textContent = "Errore caricamento queue.";
+    }
+  }
+
+  // =========================
+  // EXPORT EXCEL REALE
+  // =========================
+  function isoStamp(){
+    const d = new Date();
+    const pad = (n)=> String(n).padStart(2,"0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  }
+
+  function safeNum(v){
+    const n = Number(v);
+    return Number.isFinite(n) ? n : "";
+  }
+
+  async function buildExportData(useSelectedOnly){
+    // lavoriamo sulle righe VISIBILI (filtrate) e opzionalmente selezionate
+    const base = useSelectedOnly
+      ? rowsView.filter(r => selected.has(keyOf(r)))
+      : rowsView;
+
+    const sheetClaims = [];
+    const sheetLines = [];
+
+    // Per performance: fetch sequenziale (batch tipico 30-50 -> ok)
+    for(const r of base){
+      // ref docs
+      const ccRef = db.collection("ClaimCards").doc(r.claimCardId);
+      const clRef = ccRef.collection("Claims").doc(r.repairId);
+
+      const [ccSnap, clSnap] = await Promise.all([ccRef.get(), clRef.get()]);
+      if(!ccSnap.exists || !clSnap.exists) continue;
+
+      const cc = ccSnap.data() || {};
+      const cl = clSnap.data() || {};
+
+      // Build CLAIMS row (portale-ready)
+      const claimCardCode = cc.code || r.claimCardCode || r.claimCardId;
+      const repairId = r.repairId;
+
+      const vin = cl.vin || cc?.vehicle?.vin || cc.vin || "";
+      const customer = cc?.vehicle?.customer || "";
+      const workOrderNo = cc.orderNumber || "";
+      const workOrderDate = cc.orderDate || "";
+      const openDate = cc.openDate || "";
+      const km = safeNum(cc.km);
+      const engineHours = safeNum(cc.engineHours);
+
+      const warrantyType = mapWarrantyType(cl, cc);
+
+      const symptomCode1 = cl?.symptom?.id || "";
+      const cccText = cl?.ccc?.text || "";
+      const techComment = cl.commentoTecnico || "";
+      const wccNote = techComment;
+
+      // WCC_CODE: se hai un campo dedicato in futuro, sostituiscilo qui.
+      // Per ora lasciamo vuoto (o puoi inserire un default).
+      const wccCode = ""; // TODO: definire standard FO (se fisso)
+
+      // Parts / Labour totals se ti servono nel file (comodi per debug)
+      const totRic = safeNum(cl.totaleRicambi);
+      const totLab = safeNum(cl.totaleManodopera);
+
+      sheetClaims.push({
+        RUN: 1,
+        CLAIMCARD_CODE: claimCardCode,
+        REPAIR_ID: repairId,
+        VIN: vin,
+        CUSTOMER_NAME: customer,
+        WORK_ORDER_NO: workOrderNo,
+        WORK_ORDER_DATE: workOrderDate,
+        OPEN_DATE: openDate,
+        KM: km,
+        ENGINE_HOURS: engineHours,
+        WARRANTY_TYPE: warrantyType,
+        SYMPTOM_CODE_1: symptomCode1,
+        CCC_TEXT: cccText,
+        TECH_COMMENT: techComment,
+        WCC_CODE: wccCode,
+        WCC_NOTE: wccNote,
+        TOTAL_PARTS: totRic,
+        TOTAL_LABOUR: totLab,
+        // Output Selenium:
+        SINISTRO: "",
+        STATUS: "READY",
+        MESSAGE: "",
+        TRIES: 0,
+        LAST_TRY: ""
+      });
+
+      // Build LINES - PART
+      const parts = Array.isArray(cl.parts) ? cl.parts : [];
+      parts.forEach((p, idx) => {
+        sheetLines.push({
+          CLAIMCARD_CODE: claimCardCode,
+          REPAIR_ID: repairId,
+          LINE_TYPE: "PART",
+          LINE_NO: idx + 1,
+          CODE: p.codice || "",
+          CODE_EXT: p.codice_esteso || "",
+          DESCRIPTION: p.descrizione || "",
+          QTY: safeNum(p.quantita),
+          AMOUNT: safeNum(p.totale),
+          RATE_STD: "",
+          STORAGE_PATH: "",
+          DOWNLOAD_URL: "",
+          LOCAL_PATH: ""
+        });
+      });
+
+      // Build LINES - LABOUR
+      const labour = Array.isArray(cl.labour) ? cl.labour : [];
+      const rateStd = safeNum(cl.labourRateStd);
+      labour.forEach((l, idx) => {
+        sheetLines.push({
+          CLAIMCARD_CODE: claimCardCode,
+          REPAIR_ID: repairId,
+          LINE_TYPE: "LABOUR",
+          LINE_NO: idx + 1,
+          CODE: l.codice_labour || "",
+          CODE_EXT: "",
+          DESCRIPTION: l.descrizione_tradotta || l.descrizione || "",
+          QTY: safeNum(l.quantita),
+          AMOUNT: safeNum(l.totale),
+          RATE_STD: rateStd,
+          STORAGE_PATH: "",
+          DOWNLOAD_URL: "",
+          LOCAL_PATH: ""
+        });
+      });
+
+      // Build LINES - ATTACH (subcollection)
+      const attSnap = await clRef.collection("Attachments").get();
+      let attNo = 0;
+      attSnap.forEach(adoc => {
+        const a = adoc.data() || {};
+        attNo += 1;
+        sheetLines.push({
+          CLAIMCARD_CODE: claimCardCode,
+          REPAIR_ID: repairId,
+          LINE_TYPE: "ATTACH",
+          LINE_NO: attNo,
+          CODE: "",         // non usato
+          CODE_EXT: "",
+          DESCRIPTION: "",
+          QTY: "",
+          AMOUNT: "",
+          RATE_STD: "",
+          STORAGE_PATH: a.path || "",
+          DOWNLOAD_URL: a.url || "",
+          LOCAL_PATH: "",   // verrà riempito dal downloader/Selenium
+          FILE_NAME: a.name || ""
+        });
+      });
+    }
+
+    return { sheetClaims, sheetLines, count: base.length };
+  }
+
+  async function exportExcel(useSelectedOnly){
+    const { sheetClaims, sheetLines, count } = await buildExportData(useSelectedOnly);
+
+    if(!sheetClaims.length){
+      alert("Nessuna pratica da esportare.");
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.json_to_sheet(sheetClaims);
+    XLSX.utils.book_append_sheet(wb, ws1, "CLAIMS");
+
+    const ws2 = XLSX.utils.json_to_sheet(sheetLines);
+    XLSX.utils.book_append_sheet(wb, ws2, "LINES");
+
+    const fname = `FTFOLOAD_${isoStamp()}_${useSelectedOnly ? "SELEZIONATI" : "FILTRATI"}_${sheetClaims.length}.xlsx`;
+    XLSX.writeFile(wb, fname);
+  }
+
+  // =========================
+  // UI EVENTS
+  // =========================
+  document.getElementById("qSearch").addEventListener("input", applySearch);
+
+  document.getElementById("btnSelectAll").addEventListener("click", () => {
+    rowsView.forEach(r => selected.add(keyOf(r)));
+    renderTable();
+  });
+
+  document.getElementById("btnDeselectAll").addEventListener("click", () => {
+    selected.clear();
+    renderTable();
+  });
+
+  document.getElementById("btnExportSelected").addEventListener("click", async () => {
+    document.getElementById("lblInfo").textContent = "Export Excel (selezionate) in corso...";
+    try{ await exportExcel(true); }
+    finally{ document.getElementById("lblInfo").textContent = "Export completato."; }
+  });
+
+  document.getElementById("btnExportFiltered").addEventListener("click", async () => {
+    document.getElementById("lblInfo").textContent = "Export Excel (tutte filtrate) in corso...";
+    try{ await exportExcel(false); }
+    finally{ document.getElementById("lblInfo").textContent = "Export completato."; }
+  });
+
+  document.getElementById("btnReload").addEventListener("click", async () => {
+    const ok = await requireDistributor();
+    if(ok) loadQueue();
+  });
+
+  // =========================
+  // BOOT
+  // =========================
+  (async function init(){
+    const ok = await requireDistributor();
+    if(ok) await loadQueue();
+  })();
+</script>
+</body>
+</html>
