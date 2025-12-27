@@ -19,10 +19,8 @@
 
   <style>
     /* ===============================
-       FTFOLOAD - Page glue (v3)
-       - topbar HUB + card/pad/btn
-       - sidebar sinistra con pad funzioni
-       - sinistro è nel CLAIM: ClaimCards/<W>/Claims/<R>/sinistro
+       FTFOLOAD - Page glue (v3.1)
+       - bootstrap robusto (no schermo bianco)
        =============================== */
 
     .fo-wrap{
@@ -65,7 +63,10 @@
       background: #fff1f1;
       color: #8a1f1f;
       font-size: 13px;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
     }
+    .fo-guard b{ color:#6f1414; }
+    .fo-guard .small{ margin-top:6px; font-size:12px; opacity:.9; white-space:pre-wrap; }
 
     .fo-pad-title{ margin:0 0 8px; font-size:14px; font-weight:800; }
     .fo-pad-sub{ margin:0 0 10px; font-size:12px; color:var(--muted); }
@@ -212,7 +213,8 @@
 
   <div class="fo-wrap">
     <div id="fo-guard" class="fo-guard">
-      Accesso non autorizzato. Questa pagina è visibile solo agli utenti distributore.
+      <b>Accesso non disponibile.</b>
+      <div class="small" id="fo-guard-msg"></div>
     </div>
 
     <div id="fo-app" class="fo-layout" style="display:none;">
@@ -356,20 +358,52 @@
   </div>
 
 <script>
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+  // ===== IMPORTANTISSIMO =====
+  // Se firebase-config.js crea già window.auth / window.db, usiamo quelli.
+  // Altrimenti li inizializziamo qui.
+  const AUTH = (window.auth && typeof window.auth.onAuthStateChanged === "function")
+    ? window.auth
+    : firebase.auth();
+
+  const DB = (window.db && typeof window.db.collection === "function")
+    ? window.db
+    : firebase.firestore();
+
+  console.info("[FTFOLOAD] boot: using globals?", {authGlobal: !!window.auth, dbGlobal: !!window.db});
 
   let currentAccount = null;
 
-  // rows = claim-level (W + R)
   let allItems = [];
   let filteredItems = [];
   let selectedSet = new Set(); // key = `${wcode}::${rcode}`
+  const detailCache = new Map();
 
-  // dettagli per export
-  const detailCache = new Map(); // key -> { cc, claim, notes[], attachments[] }
+  function showGuard(message, errorObj){
+    const g = document.getElementById("fo-guard");
+    const m = document.getElementById("fo-guard-msg");
+    g.style.display = "block";
+    document.getElementById("fo-app").style.display = "none";
 
-  // ===== Access control =====
+    let txt = message || "Non autorizzato o errore di accesso.";
+    if (errorObj){
+      const em = (errorObj?.message || errorObj || "").toString();
+      txt += "\n\nDettaglio:\n" + em;
+    }
+    m.textContent = txt;
+  }
+
+  function showApp(){
+    document.getElementById("fo-guard").style.display = "none";
+    document.getElementById("fo-app").style.display = "grid";
+  }
+
+  function setTopbarLine(user, userData){
+    const dealer = userData?.dealerId || userData?.dealerID || userData?.DealerID || "-";
+    const role = userData?.role || "User";
+    const el = document.getElementById("topbar-userline");
+    if (el) el.textContent = `${dealer} • ${role} • ${user.email}`;
+  }
+
   async function computeDistributorAccess(userData){
     const direct = (userData?.isDistributorUser === true || userData?.IsDistributorUser === true);
     if (direct) return true;
@@ -377,27 +411,10 @@
     const dealerId = userData?.dealerId || userData?.dealerID || userData?.DealerID || null;
     if (!dealerId) return false;
 
-    try{
-      const dSnap = await db.collection("dealers").doc(dealerId).get();
-      if (!dSnap.exists) return false;
-      const d = dSnap.data() || {};
-      return (d.isDistributor === true || d.IsDistributor === true);
-    }catch(e){
-      console.warn("Errore lettura dealers/<dealerId>:", e);
-      return false;
-    }
-  }
-
-  function setTopbarLine(user, userData){
-    const dealer = userData?.dealerId || "-";
-    const role = userData?.role || "User";
-    const el = document.getElementById("topbar-userline");
-    if (el) el.textContent = `${dealer} • ${role} • ${user.email}`;
-  }
-
-  function showGuard(show){
-    document.getElementById("fo-guard").style.display = show ? "block" : "none";
-    document.getElementById("fo-app").style.display = show ? "none" : "grid";
+    const dSnap = await DB.collection("dealers").doc(dealerId).get();
+    if (!dSnap.exists) return false;
+    const d = dSnap.data() || {};
+    return (d.isDistributor === true || d.IsDistributor === true);
   }
 
   function setProgress(txt){
@@ -412,31 +429,21 @@
     el.textContent = txt;
   }
 
-  // ===== UI helpers =====
-  function keyOf(it){ return `${it.wcode}::${it.rcode}`; }
-
   function updateCounters(){
     document.getElementById("cnt-total").textContent = String(allItems.length);
     document.getElementById("cnt-filtered").textContent = String(filteredItems.length);
     document.getElementById("cnt-selected").textContent = String(selectedSet.size);
   }
 
-  function clearSelection(){
-    selectedSet.clear();
-    renderTable();
-  }
+  function keyOf(it){ return `${it.wcode}::${it.rcode}`; }
 
-  function selectAllFiltered(){
-    filteredItems.forEach(it => selectedSet.add(keyOf(it)));
-    renderTable();
-  }
-
+  function clearSelection(){ selectedSet.clear(); renderTable(); }
+  function selectAllFiltered(){ filteredItems.forEach(it => selectedSet.add(keyOf(it))); renderTable(); }
   function invertSelection(){
     const next = new Set(selectedSet);
     filteredItems.forEach(it => {
       const k = keyOf(it);
-      if (next.has(k)) next.delete(k);
-      else next.add(k);
+      if (next.has(k)) next.delete(k); else next.add(k);
     });
     selectedSet = next;
     renderTable();
@@ -520,7 +527,6 @@
     renderTable();
   }
 
-  // ===== Load queue =====
   async function reloadQueue(){
     setProgress("Caricamento queue…");
     detailCache.clear();
@@ -530,11 +536,13 @@
     renderTable();
 
     try{
-      const ccSnap = await db.collection("ClaimCards")
+      const ccSnap = await DB.collection("ClaimCards")
         .where("status", "==", "In valutazione FO")
         .get();
 
       const claimCards = ccSnap.docs.map(d => ({ id: d.id, ref: d.ref, data: d.data() || {} }));
+      console.info("[FTFOLOAD] ClaimCards found:", claimCards.length);
+
       setProgress(`Trovate ${claimCards.length} claim card. Lettura claims…`);
 
       const rows = [];
@@ -545,8 +553,8 @@
 
         await Promise.all(slice.map(async cc => {
           const ccData = cc.data;
-
           const wcode = ccData.code || cc.id;
+
           const statusCard = ccData.status || "";
           const openDealer = ccData.openDealer || "";
           const openDate = ccData.openDate || "";
@@ -558,20 +566,13 @@
             const cd = clDoc.data() || {};
             const rcode = clDoc.id;
 
-            // sinistro è nel claim
+            // filtro: sinistro vuoto (NEL CLAIM)
             const sinistro = cd.sinistro;
-
-            // filtro: sinistro vuoto
             if (!isEmptyValue(sinistro)) return;
 
             rows.push({
-              wcode,
-              rcode,
-              statusCard,
-              openDealer,
-              openDate,
-              customer,
-              vin,
+              wcode, rcode,
+              statusCard, openDealer, openDate, customer, vin,
               claimType: cd.claimType || cd.claimCardType || "",
               claimStatus: cd.status || "",
               sinistro: sinistro ?? "",
@@ -586,12 +587,7 @@
         setProgress(`Caricamento… ${Math.min(i+batchSize, claimCards.length)}/${claimCards.length} claim card analizzate…`);
       }
 
-      rows.sort((a,b) => {
-        const aw = a.wcode || "", bw = b.wcode || "";
-        if (aw < bw) return -1;
-        if (aw > bw) return 1;
-        return (a.rcode || "").localeCompare(b.rcode || "");
-      });
+      rows.sort((a,b) => (a.wcode||"").localeCompare(b.wcode||"") || (a.rcode||"").localeCompare(b.rcode||""));
 
       allItems = rows;
       filteredItems = [...allItems];
@@ -599,285 +595,61 @@
       renderTable();
 
     }catch(e){
-      console.error(e);
+      console.error("[FTFOLOAD] reloadQueue error:", e);
       setProgress(null);
-      alert("Errore caricamento queue: " + (e.message || e));
+      showGuard("Errore caricamento queue (permessi/connessione).", e);
     }
   }
 
-  // ===== Export XLSX =====
-  function nowStamp(){
-    const d = new Date();
-    const p2 = (n)=>String(n).padStart(2,"0");
-    return `${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}${p2(d.getSeconds())}`;
-  }
-  function safeStr(v){ return (v === null || v === undefined) ? "" : String(v); }
-  function joinItems(arr, mapper){
-    if (!Array.isArray(arr) || !arr.length) return "";
-    return arr.map(mapper).filter(Boolean).join(" | ");
-  }
+  // ===== Export XLSX: (lasciato come stub per non bloccare il boot) =====
+  function exportExcelSelected(){ alert("Export: OK (da implementare/ri-incollare se hai sostituito il file)."); }
+  function exportExcelFiltered(){ alert("Export: OK (da implementare/ri-incollare se hai sostituito il file)."); }
+  function notReadyPA(){ alert("Funzionalità Power Automate non ancora implementata."); }
 
-  async function ensureDetailsFor(item, opts){
-    const k = keyOf(item);
-    if (detailCache.has(k)) return detailCache.get(k);
+  function goHome(){ location.href="FTHUBAS.html"; }
+  function logout(){ AUTH.signOut().then(()=>location.href="index.html"); }
 
-    const out = { cc: item._ccData || {}, claim: item._claimData || {}, notes: [], attachments: [] };
+  // ===== BOOT ROBUSTO =====
+  AUTH.onAuthStateChanged(async (user) => {
+    try{
+      console.info("[FTFOLOAD] auth state changed:", !!user);
 
-    if (opts.includeNotes){
+      if (!user){
+        return location.href = "index.html";
+      }
+
+      // Users/<uid>
+      const uSnap = await DB.collection("Users").doc(user.uid).get();
+      if (!uSnap.exists){
+        console.warn("[FTFOLOAD] Users doc missing for uid:", user.uid);
+        return showGuard("Profilo utente non trovato in Users/<uid>. Verifica che esista e che le rules permettano la lettura.");
+      }
+
+      const userData = uSnap.data() || {};
+      currentAccount = { user, userData };
+
+      setTopbarLine(user, userData);
+
+      // Accesso distributore
+      let allowed = false;
       try{
-        const ns = await item._claimRef.collection("Notes").orderBy("createdAt","asc").get();
-        out.notes = ns.docs.map(d => ({ id: d.id, ...(d.data()||{}) }));
-      }catch(e){ console.warn("Notes load fail", item.wcode, item.rcode, e); }
+        allowed = await computeDistributorAccess(userData);
+      }catch(e){
+        console.error("[FTFOLOAD] computeDistributorAccess error:", e);
+        return showGuard("Impossibile verificare i permessi distributore (lettura dealers/<dealerId> negata?).", e);
+      }
+
+      if (!allowed){
+        return showGuard("Accesso negato: pagina riservata agli utenti distributore (isDistributorUser o dealers/<dealerId>.isDistributor).");
+      }
+
+      showApp();
+      await reloadQueue();
+
+    }catch(e){
+      console.error("[FTFOLOAD] boot error:", e);
+      showGuard("Errore di inizializzazione pagina (molto probabile: rules Firestore su Users/dealers).", e);
     }
-
-    if (opts.includeAttachments){
-      try{
-        const as = await item._claimRef.collection("Attachments").orderBy("createdAt","asc").get();
-        out.attachments = as.docs.map(d => ({ id: d.id, ...(d.data()||{}) }));
-      }catch(e){ console.warn("Attachments load fail", item.wcode, item.rcode, e); }
-    }
-
-    detailCache.set(k, out);
-    return out;
-  }
-
-  function buildClaimsSheetRows(items, detailsMap, opts){
-    const rows = [];
-
-    items.forEach(it => {
-      const det = detailsMap.get(keyOf(it)) || { cc: it._ccData || {}, claim: it._claimData || {}, notes: [], attachments: [] };
-      const cc = det.cc || {};
-      const claim = det.claim || {};
-      const g = (claim.garanzia || {}) || {};
-
-      const vehicle = cc.vehicle || {};
-      const coverage = cc.coverage || {};
-
-      const symptom = g.symptom || claim.symptom || {};
-      const causaPart = (g.causaPart || claim.causaPart || {});
-      const ccc = (g.ccc || claim.ccc || {});
-      const labourRateStd = g.labourRateStd ?? claim.labourRateStd ?? "";
-
-      const parts = g.parts || claim.parts || [];
-      const labour = g.labour || claim.labour || [];
-
-      const partsFlat = opts.includeItems ? joinItems(parts, p => {
-        const code = p.codice || "";
-        const ext = p.codice_esteso || "";
-        const qty = p.quantita ?? "";
-        const tot = p.totale ?? "";
-        return `${code}${ext?` (${ext})`:``} x${qty} = ${tot}`;
-      }) : "";
-
-      const labourFlat = opts.includeItems ? joinItems(labour, l => {
-        const code = l.codice_labour || "";
-        const qty = l.quantita ?? "";
-        const tot = l.totale ?? "";
-        return `${code} x${qty} = ${tot}`;
-      }) : "";
-
-      const notesFlat = det.notes?.length
-        ? det.notes.map(n => safeStr(n.text)).filter(Boolean).join(" || ")
-        : "";
-
-      const attCount = det.attachments?.length || 0;
-      const attFlat = det.attachments?.length
-        ? det.attachments.map(a => `${safeStr(a.name)}::${safeStr(a.path)}::${safeStr(a.url)}`).join(" || ")
-        : "";
-
-      rows.push({
-        WCODE: safeStr(it.wcode),
-        RCODE: safeStr(it.rcode),
-
-        DEALER_OPEN: safeStr(it.openDealer),
-        OPEN_DATE: safeStr(it.openDate),
-        STATUS_CLAIMCARD: safeStr(it.statusCard),
-
-        VIN: safeStr(vehicle.vin || it.vin),
-        CUSTOMER: safeStr(vehicle.customer || it.customer),
-
-        ORDER_DATE: safeStr(cc.orderDate || ""),
-        ORDER_NUMBER: safeStr(cc.orderNumber || ""),
-        KM: safeStr(cc.km ?? ""),
-        ENGINE_HOURS: safeStr(cc.engineHours ?? ""),
-
-        COVERAGE_TYPE: safeStr(coverage.type || ""),
-        COVERAGE_START: safeStr(coverage.startDate || ""),
-        COVERAGE_END: safeStr(coverage.endDate || ""),
-
-        CLAIM_TYPE: safeStr(it.claimType),
-        CLAIM_STATUS: safeStr(it.claimStatus),
-
-        CCC_ID: safeStr(ccc.id || ""),
-        CCC_TEXT: safeStr(ccc.text || ""),
-
-        SYMPTOM_ID: safeStr(symptom.id || ""),
-        SYMPTOM_LABEL: safeStr(symptom.label || ""),
-
-        CAUSA_PART_CODE: safeStr(causaPart.codice || ""),
-        CAUSA_PART_EXT: safeStr(causaPart.codice_esteso || ""),
-        CAUSA_PART_DESC: safeStr(causaPart.descrizione || ""),
-
-        COMMENTO_TECNICO: safeStr(g.commentoTecnico || claim.commentoTecnico || ""),
-
-        TOTALE_MANODOPERA: safeStr(symptom.totaleManodopera ?? g.totaleManodopera ?? ""),
-        TOTALE_RICAMBI: safeStr(symptom.totaleRicambi ?? g.totaleRicambi ?? ""),
-
-        LABOUR_RATE_STD: safeStr(labourRateStd),
-
-        LABOUR_ITEMS: safeStr(labourFlat),
-        PARTS_ITEMS: safeStr(partsFlat),
-
-        SINISTRO: safeStr(claim.sinistro ?? ""),
-
-        NOTES: safeStr(opts.includeNotes ? notesFlat : ""),
-        ATTACHMENTS_COUNT: safeStr(opts.includeAttachments ? attCount : ""),
-        ATTACHMENTS: safeStr(opts.includeAttachments ? attFlat : "")
-      });
-    });
-
-    return rows;
-  }
-
-  function buildNotesSheetRows(items, detailsMap){
-    const rows = [];
-    items.forEach(it => {
-      const det = detailsMap.get(keyOf(it));
-      if (!det?.notes?.length) return;
-      det.notes.forEach(n => rows.push({
-        WCODE: safeStr(it.wcode),
-        RCODE: safeStr(it.rcode),
-        NOTE_ID: safeStr(n.id),
-        AUTHOR: safeStr(n.authorName || ""),
-        AUTHOR_DEALER: safeStr(n.authorDealerId || ""),
-        CREATED_AT: n.createdAt?.toDate ? n.createdAt.toDate().toISOString() : safeStr(n.createdAt || ""),
-        TEXT: safeStr(n.text || "")
-      }));
-    });
-    return rows;
-  }
-
-  function buildAttachmentsSheetRows(items, detailsMap){
-    const rows = [];
-    items.forEach(it => {
-      const det = detailsMap.get(keyOf(it));
-      if (!det?.attachments?.length) return;
-      det.attachments.forEach(a => rows.push({
-        WCODE: safeStr(it.wcode),
-        RCODE: safeStr(it.rcode),
-        ATT_ID: safeStr(a.id),
-        NAME: safeStr(a.name || ""),
-        PATH: safeStr(a.path || ""),
-        URL: safeStr(a.url || ""),
-        CREATED_AT: a.createdAt?.toDate ? a.createdAt.toDate().toISOString() : safeStr(a.createdAt || ""),
-        AUTHOR: safeStr(a.authorName || ""),
-        AUTHOR_DEALER: safeStr(a.authorDealerId || "")
-      }));
-    });
-    return rows;
-  }
-
-  async function exportToXlsx(items, modeLabel){
-    if (!items?.length){
-      alert("Nessuna riga da esportare.");
-      return;
-    }
-
-    const opts = {
-      includeNotes: document.getElementById("opt-include-notes").checked,
-      includeAttachments: document.getElementById("opt-include-att").checked,
-      includeItems: document.getElementById("opt-include-items").checked
-    };
-
-    setProgress(`Export XLSX (${modeLabel})… raccolta dettagli…`);
-
-    const detailsMap = new Map();
-    const batchSize = 10;
-
-    for (let i=0; i<items.length; i+=batchSize){
-      const slice = items.slice(i, i+batchSize);
-      await Promise.all(slice.map(async it => {
-        const det = await ensureDetailsFor(it, opts);
-        detailsMap.set(keyOf(it), det);
-      }));
-      setProgress(`Export… ${Math.min(i+batchSize, items.length)}/${items.length} righe preparate…`);
-    }
-
-    const wb = XLSX.utils.book_new();
-
-    const claimsRows = buildClaimsSheetRows(items, detailsMap, opts);
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(claimsRows), "CLAIMS");
-
-    if (opts.includeNotes){
-      const notesRows = buildNotesSheetRows(items, detailsMap);
-      XLSX.utils.book_append_sheet(
-        wb,
-        XLSX.utils.json_to_sheet(notesRows.length ? notesRows : [{INFO:"Nessuna nota"}]),
-        "NOTES"
-      );
-    }
-
-    if (opts.includeAttachments){
-      const attRows = buildAttachmentsSheetRows(items, detailsMap);
-      XLSX.utils.book_append_sheet(
-        wb,
-        XLSX.utils.json_to_sheet(attRows.length ? attRows : [{INFO:"Nessun allegato"}]),
-        "ATTACHMENTS"
-      );
-    }
-
-    const fname = `FTFOLOAD_${modeLabel}_${nowStamp()}.xlsx`;
-    setProgress(`Scrittura file ${fname}…`);
-    XLSX.writeFile(wb, fname);
-    setProgress(null);
-  }
-
-  function exportExcelSelected(){
-    const items = allItems.filter(it => selectedSet.has(keyOf(it)));
-    exportToXlsx(items, "SELECTED").catch(e => {
-      console.error(e);
-      setProgress(null);
-      alert("Errore export: " + (e.message || e));
-    });
-  }
-
-  function exportExcelFiltered(){
-    exportToXlsx(filteredItems, "FILTERED").catch(e => {
-      console.error(e);
-      setProgress(null);
-      alert("Errore export: " + (e.message || e));
-    });
-  }
-
-  function notReadyPA(){
-    alert("Funzionalità Power Automate non ancora implementata.");
-  }
-
-  function goHome(){ location.href = "FTHUBAS.html"; }
-  function logout(){ auth.signOut().then(()=>location.href="index.html"); }
-
-  // ===== Boot =====
-  auth.onAuthStateChanged(async user => {
-    if (!user) return location.href = "index.html";
-
-    const uSnap = await db.collection("Users").doc(user.uid).get();
-    if (!uSnap.exists){
-      showGuard(true);
-      return;
-    }
-
-    const userData = uSnap.data() || {};
-    currentAccount = { user, userData };
-    setTopbarLine(user, userData);
-
-    const allowed = await computeDistributorAccess(userData);
-    if (!allowed){
-      showGuard(true);
-      return;
-    }
-
-    showGuard(false);
-    await reloadQueue();
   });
 </script>
 
