@@ -19,8 +19,10 @@
 
   <style>
     /* ===============================
-       FTFOLOAD - Page glue (v3.1)
-       - bootstrap robusto (no schermo bianco)
+       FTFOLOAD - Page glue (v3.2)
+       - filtro: ClaimCard.status == "In Valutazione FO"
+       - filtro: Claim.sinistro === null
+       - export XLSX reale
        =============================== */
 
     .fo-wrap{
@@ -225,7 +227,7 @@
         <div class="card pad">
           <h1 class="fo-h1">Queue FO</h1>
           <p class="fo-sub">
-            ClaimCards con <b>status = "In valutazione FO"</b> e Claims con <b>sinistro vuoto</b>.
+            ClaimCards con <b>status = "In Valutazione FO"</b> e Claims con <b>sinistro = NULL</b>.
           </p>
 
           <div class="fo-chiprow">
@@ -235,7 +237,7 @@
           </div>
 
           <div class="fo-kv">
-            <div>Stato</div><div><b>In valutazione FO</b></div>
+            <div>Stato</div><div><b>In Valutazione FO</b></div>
             <div>Campo</div><div><b>Claims/Rxxx.sinistro</b></div>
           </div>
 
@@ -348,7 +350,7 @@
           </div>
 
           <div class="fo-note">
-            “Sinistro vuoto” = pronto per inserimento FO. Il numero FO va scritto in <b>Claims/Rxxx.sinistro</b>.
+            “Sinistro = <b>NULL</b>” = pronto per inserimento FO. Il numero FO va scritto in <b>Claims/Rxxx.sinistro</b>.
           </div>
 
         </div>
@@ -358,9 +360,9 @@
   </div>
 
 <script>
-  // ===== IMPORTANTISSIMO =====
-  // Se firebase-config.js crea già window.auth / window.db, usiamo quelli.
-  // Altrimenti li inizializziamo qui.
+  // ===============================
+  // BOOT / GLOBALS
+  // ===============================
   const AUTH = (window.auth && typeof window.auth.onAuthStateChanged === "function")
     ? window.auth
     : firebase.auth();
@@ -376,7 +378,10 @@
   let allItems = [];
   let filteredItems = [];
   let selectedSet = new Set(); // key = `${wcode}::${rcode}`
-  const detailCache = new Map();
+  const detailCache = new Map(); // key => {notes[], atts[], builtAt}
+
+  const MAX_PARTS = 10;
+  const MAX_LABOUR = 10;
 
   function showGuard(message, errorObj){
     const g = document.getElementById("fo-guard");
@@ -464,17 +469,19 @@
     updateCounters();
   }
 
-  function isEmptyValue(v){
-    if (v === null || v === undefined) return true;
-    if (typeof v === "string" && v.trim() === "") return true;
-    return false;
+  // === CORREZIONE RICHIESTA: sinistro deve essere SOLO null ===
+  function isSinistroNull(v){
+    return v === null; // SOLO null (undefined o "" NON passano)
   }
 
   function rowHTML(item){
     const k = keyOf(item);
     const checked = selectedSet.has(k) ? "checked" : "";
-    const sin = (item.sinistro ?? "").toString().trim();
-    const sinBadge = sin ? `<span class="pill">${escapeHtml(sin)}</span>` : `<span class="pill pill-ok">vuoto</span>`;
+
+    const sinistroIsNull = isSinistroNull(item.sinistro);
+    const sinBadge = sinistroIsNull
+      ? `<span class="pill pill-ok">NULL</span>`
+      : `<span class="pill">${escapeHtml(String(item.sinistro ?? ""))}</span>`;
 
     return `
       <tr>
@@ -520,13 +527,17 @@
     filteredItems = allItems.filter(it => {
       const hay = [
         it.wcode, it.rcode, it.vin, it.openDealer, it.customer,
-        it.statusCard, it.claimType, it.claimStatus, it.sinistro
-      ].filter(Boolean).join(" ").toLowerCase();
+        it.statusCard, it.claimType, it.claimStatus,
+        (it.sinistro === null ? "null" : it.sinistro)
+      ].filter(v => v !== undefined && v !== null && String(v).length).join(" ").toLowerCase();
       return hay.includes(q);
     });
     renderTable();
   }
 
+  // ===============================
+  // LOAD QUEUE
+  // ===============================
   async function reloadQueue(){
     setProgress("Caricamento queue…");
     detailCache.clear();
@@ -536,8 +547,9 @@
     renderTable();
 
     try{
+      // CORREZIONE: stringa esatta
       const ccSnap = await DB.collection("ClaimCards")
-        .where("status", "==", "In valutazione FO")
+        .where("status", "==", "In Valutazione FO")
         .get();
 
       const claimCards = ccSnap.docs.map(d => ({ id: d.id, ref: d.ref, data: d.data() || {} }));
@@ -566,16 +578,16 @@
             const cd = clDoc.data() || {};
             const rcode = clDoc.id;
 
-            // filtro: sinistro vuoto (NEL CLAIM)
+            // CORREZIONE: sinistro deve essere SOLO null
             const sinistro = cd.sinistro;
-            if (!isEmptyValue(sinistro)) return;
+            if (!isSinistroNull(sinistro)) return;
 
             rows.push({
               wcode, rcode,
               statusCard, openDealer, openDate, customer, vin,
               claimType: cd.claimType || cd.claimCardType || "",
               claimStatus: cd.status || "",
-              sinistro: sinistro ?? "",
+              sinistro: sinistro, // qui è null
               _ccRef: cc.ref,
               _claimRef: clDoc.ref,
               _ccData: ccData,
@@ -601,15 +613,239 @@
     }
   }
 
-  // ===== Export XLSX: (lasciato come stub per non bloccare il boot) =====
-  function exportExcelSelected(){ alert("Export: OK (da implementare/ri-incollare se hai sostituito il file)."); }
-  function exportExcelFiltered(){ alert("Export: OK (da implementare/ri-incollare se hai sostituito il file)."); }
+  // ===============================
+  // EXPORT XLSX (REALE)
+  // ===============================
+  function safeStr(v){ return (v === null || v === undefined) ? "" : String(v); }
+  function safeNum(v){ return (typeof v === "number" && isFinite(v)) ? v : (v === null || v === undefined || v === "" ? "" : Number(v)); }
+
+  function fmtDateAny(v){
+    // support stringhe come "2025-12-26" oppure timestamp Firestore
+    try{
+      if (!v) return "";
+      if (typeof v === "string") return v;
+      if (v.toDate && typeof v.toDate === "function") return v.toDate().toISOString();
+      return safeStr(v);
+    }catch(e){
+      return safeStr(v);
+    }
+  }
+
+  function getGaranziaBlock(claimData){
+    // Nel tuo esempio i campi principali stanno dentro claimData.garanzia (map)
+    if (claimData && claimData.garanzia && typeof claimData.garanzia === "object") return claimData.garanzia;
+    return claimData || {};
+  }
+
+  function buildClaimRow(it, includeItems){
+    const cc = it._ccData || {};
+    const cl = it._claimData || {};
+    const g = getGaranziaBlock(cl);
+
+    const base = {
+      WCODE: safeStr(it.wcode),
+      RCODE: safeStr(it.rcode),
+
+      CLAIMCARD_STATUS: safeStr(it.statusCard),
+      CLAIM_STATUS: safeStr(it.claimStatus),
+      CLAIM_TYPE: safeStr(it.claimType),
+
+      DEALER_OPEN: safeStr(it.openDealer),
+      OPEN_DATE: safeStr(it.openDate),
+      ORDER_DATE: safeStr(cc.orderDate),
+      ORDER_NUMBER: safeStr(cc.orderNumber),
+
+      CUSTOMER: safeStr(it.customer),
+      VIN: safeStr(it.vin),
+      KM: safeNum(cc.km),
+      ENGINE_HOURS: safeNum(cc.engineHours),
+
+      CCC_ID: safeStr(g?.ccc?.id),
+      CCC_TEXT: safeStr(g?.ccc?.text),
+      COMMENTO_TECNICO: safeStr(g?.commentoTecnico),
+      SYMPTOM_ID: safeStr(g?.symptom?.id),
+      SYMPTOM_LABEL: safeStr(g?.symptom?.label),
+
+      TOTALE_RICAMBI: safeNum(g?.totaleRicambi),
+      TOTALE_MANODOPERA: safeNum(g?.totaleManodopera),
+      LABOUR_RATE_STD: safeNum(g?.labourRateStd),
+
+      SINISTRO_DB: "", // deve essere null in DB, ma Excel vuole cella vuota
+      FO_SINISTRO_RESULT: "", // compilato da Selenium
+      WRITEBACK_OK: "",       // compilato da Selenium
+      WRITEBACK_AT: "",       // compilato da Selenium
+
+      CC_REF_PATH: safeStr(it._ccRef?.path),
+      CLAIM_REF_PATH: safeStr(it._claimRef?.path)
+    };
+
+    if (!includeItems) return base;
+
+    // Flatten parts/labour
+    const parts = Array.isArray(g?.parts) ? g.parts : [];
+    const labour = Array.isArray(g?.labour) ? g.labour : [];
+
+    for (let i=0; i<MAX_PARTS; i++){
+      const p = parts[i] || {};
+      const n = i+1;
+      base[`PART_${n}_CODICE`] = safeStr(p.codice);
+      base[`PART_${n}_CODICE_ESTESO`] = safeStr(p.codice_esteso);
+      base[`PART_${n}_DESCRIZIONE`] = safeStr(p.descrizione);
+      base[`PART_${n}_QTY`] = safeNum(p.quantita);
+      base[`PART_${n}_TOTALE`] = safeNum(p.totale);
+      base[`PART_${n}_RIMBORSO`] = safeNum(p.rimborso_garanzia);
+    }
+
+    for (let i=0; i<MAX_LABOUR; i++){
+      const l = labour[i] || {};
+      const n = i+1;
+      base[`LAB_${n}_CODICE`] = safeStr(l.codice_labour);
+      base[`LAB_${n}_DESCRIZIONE`] = safeStr(l.descrizione_tradotta);
+      base[`LAB_${n}_QTY`] = safeNum(l.quantita);
+      base[`LAB_${n}_TOTALE`] = safeNum(l.totale);
+    }
+
+    return base;
+  }
+
+  async function fetchNotesAndAttachments(it, includeNotes, includeAtt){
+    const k = keyOf(it);
+    const cached = detailCache.get(k);
+    if (cached) return cached;
+
+    const res = { notes: [], atts: [] };
+
+    const tasks = [];
+
+    if (includeNotes){
+      tasks.push(
+        it._claimRef.collection("Notes").get().then(snap => {
+          snap.forEach(d => {
+            const nd = d.data() || {};
+            res.notes.push({
+              WCODE: it.wcode,
+              RCODE: it.rcode,
+              NOTE_ID: d.id,
+              CREATED_AT: fmtDateAny(nd.createdAt),
+              AUTHOR_DEALER: safeStr(nd.authorDealerId),
+              AUTHOR_NAME: safeStr(nd.authorName),
+              TEXT: safeStr(nd.text)
+            });
+          });
+        })
+      );
+    }
+
+    if (includeAtt){
+      tasks.push(
+        it._claimRef.collection("Attachments").get().then(snap => {
+          snap.forEach(d => {
+            const ad = d.data() || {};
+            res.atts.push({
+              WCODE: it.wcode,
+              RCODE: it.rcode,
+              ATT_ID: d.id,
+              CREATED_AT: fmtDateAny(ad.createdAt),
+              AUTHOR_DEALER: safeStr(ad.authorDealerId),
+              AUTHOR_NAME: safeStr(ad.authorName),
+              NAME: safeStr(ad.name),
+              PATH: safeStr(ad.path),
+              URL: safeStr(ad.url)
+            });
+          });
+        })
+      );
+    }
+
+    await Promise.all(tasks);
+    detailCache.set(k, res);
+    return res;
+  }
+
+  async function exportExcelFor(items, modeLabel){
+    if (!items || !items.length){
+      alert("Nessuna riga da esportare.");
+      return;
+    }
+
+    const includeNotes = document.getElementById("opt-include-notes").checked;
+    const includeAtt = document.getElementById("opt-include-att").checked;
+    const includeItems = document.getElementById("opt-include-items").checked;
+
+    setProgress(`Export XLSX… preparazione (${items.length} righe)`);
+    try{
+      // 1) CLAIMS rows (flat)
+      const claimsRows = items.map(it => buildClaimRow(it, includeItems));
+
+      // 2) optional sheets
+      const notesRows = [];
+      const attRows = [];
+
+      if (includeNotes || includeAtt){
+        // throttling leggero (batch 10)
+        const batchSize = 10;
+        for (let i=0; i<items.length; i+=batchSize){
+          const slice = items.slice(i, i+batchSize);
+          setProgress(`Export XLSX… lettura Notes/Attachments ${Math.min(i+batchSize, items.length)}/${items.length}`);
+
+          const details = await Promise.all(slice.map(it => fetchNotesAndAttachments(it, includeNotes, includeAtt)));
+          details.forEach(d => {
+            if (includeNotes) notesRows.push(...(d.notes || []));
+            if (includeAtt) attRows.push(...(d.atts || []));
+          });
+        }
+      }
+
+      // 3) create workbook
+      const wb = XLSX.utils.book_new();
+
+      const wsClaims = XLSX.utils.json_to_sheet(claimsRows, { skipHeader: false });
+      XLSX.utils.book_append_sheet(wb, wsClaims, "CLAIMS");
+
+      if (includeNotes){
+        const wsNotes = XLSX.utils.json_to_sheet(notesRows, { skipHeader: false });
+        XLSX.utils.book_append_sheet(wb, wsNotes, "NOTES");
+      }
+      if (includeAtt){
+        const wsAtt = XLSX.utils.json_to_sheet(attRows, { skipHeader: false });
+        XLSX.utils.book_append_sheet(wb, wsAtt, "ATTACHMENTS");
+      }
+
+      // 4) filename
+      const now = new Date();
+      const pad2 = (n)=>String(n).padStart(2,"0");
+      const stamp = `${now.getFullYear()}${pad2(now.getMonth()+1)}${pad2(now.getDate())}_${pad2(now.getHours())}${pad2(now.getMinutes())}`;
+      const fname = `FO_BATCH_${modeLabel}_${stamp}_${items.length}.xlsx`;
+
+      setProgress("Export XLSX… download file");
+      XLSX.writeFile(wb, fname);
+
+      setProgress(null);
+
+    }catch(e){
+      console.error("[FTFOLOAD] export error:", e);
+      setProgress(null);
+      alert("Errore export XLSX: " + (e?.message || e));
+    }
+  }
+
+  function exportExcelSelected(){
+    const list = allItems.filter(it => selectedSet.has(keyOf(it)));
+    exportExcelFor(list, "SELECTED");
+  }
+
+  function exportExcelFiltered(){
+    exportExcelFor([...filteredItems], "FILTERED");
+  }
+
   function notReadyPA(){ alert("Funzionalità Power Automate non ancora implementata."); }
 
   function goHome(){ location.href="FTHUBAS.html"; }
   function logout(){ AUTH.signOut().then(()=>location.href="index.html"); }
 
-  // ===== BOOT ROBUSTO =====
+  // ===============================
+  // AUTH BOOT
+  // ===============================
   AUTH.onAuthStateChanged(async (user) => {
     try{
       console.info("[FTFOLOAD] auth state changed:", !!user);
