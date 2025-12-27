@@ -217,7 +217,7 @@
             </div>
           </div>
 
-          <!-- ✅ FTFOLOAD (SOLO DISTRIBUTORE) - aggiunta minima -->
+          <!-- ✅ FTFOLOAD (SOLO DISTRIBUTORE) -->
           <div class="dashCard" id="ftfoload-card" style="display:none;">
             <div class="dashTop">
               <div class="dashTitle"><span class="ico">📤</span> Caricamento pratiche FO</div>
@@ -232,12 +232,12 @@
         </div>
       </div>
 
-      <!-- Amministrazione (solo Admin) -->
+      <!-- Amministrazione (solo UTENTI di un distributore) -->
       <div id="admin-section" class="hub-group" style="display:none;">
         <div class="hub-group__head">
           <div>
             <div class="hub-group__title">Amministrazione</div>
-            <div class="hub-group__sub">Gestione dealer, utenti e permessi (solo Admin).</div>
+            <div class="hub-group__sub">Gestione dealer, utenti e permessi (solo utenti distributore).</div>
           </div>
         </div>
 
@@ -251,6 +251,18 @@
               <button class="btn btn-primary btn-wide" onclick="goToDMS()">FTDMS</button>
             </div>
           </div>
+
+          <!-- ✅ FTFOLOAD anche sotto Amministrazione (solo utenti distributore) -->
+          <div class="dashCard">
+            <div class="dashTop">
+              <div class="dashTitle"><span class="ico">📤</span> Caricamento pratiche FO</div>
+              <p class="dashDesc">Accesso alla coda FO e generazione Excel batch per caricamento su portale Ford Otosan.</p>
+            </div>
+            <div class="dashFooter">
+              <button class="btn btn-primary btn-wide" onclick="goToFTFOLOAD()">FTFOLOAD</button>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -295,7 +307,30 @@
     el.querySelector(".txt").textContent = text || "";
   }
 
-  function renderUserInfo() {
+  async function computeDistributorAccess(userData){
+    // 1) flag user (fast)
+    const direct =
+      userData.isDistributorUser === true ||
+      userData.IsDistributorUser === true;
+
+    if (direct) return true;
+
+    // 2) fallback su dealers/<dealerId>.isDistributor
+    const dealerId = userData.dealerId || userData.dealerID || userData.DealerID || null;
+    if (!dealerId) return false;
+
+    try{
+      const dSnap = await db.collection("dealers").doc(dealerId).get();
+      if (!dSnap.exists) return false;
+      const d = dSnap.data() || {};
+      return (d.isDistributor === true || d.IsDistributor === true);
+    }catch(e){
+      console.warn("Errore lettura dealers/<dealerId>:", e);
+      return false;
+    }
+  }
+
+  async function renderUserInfo() {
     const { user, userData } = currentAccount;
 
     const dealer = userData.dealerId || "-";
@@ -310,19 +345,18 @@
       </div>
     `;
 
-    const isAdmin = (userData.role === "Admin");
-    document.getElementById("admin-section").style.display = isAdmin ? "block" : "none";
-    document.getElementById("role-badge").style.display = isAdmin ? "inline-flex" : "none";
+    // badge ADMIN (solo estetica etichetta)
+    const isAdminRole = (userData.role === "Admin");
+    document.getElementById("role-badge").style.display = isAdminRole ? "inline-flex" : "none";
 
-    // ✅ aggiunta minima: mostra FTFOLOAD solo se distributore
-    const isDistributor =
-      userData.isDistributor === true ||
-      userData.IsDistributor === true ||
-      userData.role === "Distributor" ||
-      userData.role === "Distributore";
+    // ✅ distributore: abilita sia FTFOLOAD in Operatività che sezione Amministrazione
+    const isDistributorUser = await computeDistributorAccess(userData);
+
+    const adminSection = document.getElementById("admin-section");
+    if (adminSection) adminSection.style.display = isDistributorUser ? "block" : "none";
 
     const foCard = document.getElementById("ftfoload-card");
-    if (foCard) foCard.style.display = isDistributor ? "block" : "none";
+    if (foCard) foCard.style.display = isDistributorUser ? "block" : "none";
 
     const topLine = document.getElementById("topbar-userline");
     if (topLine){
@@ -403,7 +437,7 @@
   auth.onAuthStateChanged(async user => {
     if (!user) return location.href = "index.html";
     await loadCurrentUserInfo(user);
-    renderUserInfo();
+    await renderUserInfo();
     await enforceCirculars();
   });
 
@@ -416,8 +450,6 @@
   function goToFTCLAIMS(){ location.href="FTCLAIMS.html"; }
   function goToFTMANAG(){ location.href="FTMANAG.html"; }
   function goToFTHOTLINE(){ location.href="FTHOTLINE.html"; }
-
-  // ✅ aggiunta minima: navigazione FTFOLOAD
   function goToFTFOLOAD(){ location.href="FTFOLOAD.html"; }
 
   /* ===== LEFT SEASON BAND LOGIC (solo per FTHUBAS) ===== */
@@ -485,7 +517,7 @@
     });
   })();
 </script>
-<script src="ft-topbar.js?v=4"></script>
 
+<script src="ft-topbar.js?v=4"></script>
 </body>
 </html>
