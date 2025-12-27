@@ -216,20 +216,9 @@
               <button class="btn btn-primary btn-wide" onclick="goToFTHOTLINE()">FTHOTLINE</button>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Distributore (solo Distributore) -->
-      <div id="distributor-section" class="hub-group" style="display:none;">
-        <div class="hub-group__head">
-          <div>
-            <div class="hub-group__title">Distributore</div>
-            <div class="hub-group__sub">Operazioni riservate: export batch e caricamento pratiche su portale Ford Otosan.</div>
-          </div>
-        </div>
-
-        <div class="dashboard">
-          <div class="dashCard">
+          <!-- ✅ FTFOLOAD (SOLO DISTRIBUTORE) - aggiunta minima -->
+          <div class="dashCard" id="ftfoload-card" style="display:none;">
             <div class="dashTop">
               <div class="dashTitle"><span class="ico">📤</span> Caricamento pratiche FO</div>
               <p class="dashDesc">Seleziona pratiche “In valutazione FO” senza sinistro ed esporta l’Excel batch per Selenium.</p>
@@ -238,6 +227,8 @@
               <button class="btn btn-primary btn-wide" onclick="goToFTFOLOAD()">FTFOLOAD</button>
             </div>
           </div>
+          <!-- /FTFOLOAD -->
+
         </div>
       </div>
 
@@ -285,9 +276,6 @@
   let currentAccount = null;
   let pendingCircular = null;
 
-  const auth = firebase.auth();
-  const db = firebase.firestore();
-
   // accessibilità modal: ripristino focus
   let lastFocusEl = null;
 
@@ -305,25 +293,6 @@
     el.classList.remove("is-ok","is-warn","is-err");
     if (kind) el.classList.add(kind);
     el.querySelector(".txt").textContent = text || "";
-  }
-
-  function isDistributor(userData){
-    const role = (userData?.role || "").toString().trim().toLowerCase();
-    const profile = (userData?.profile || "").toString().trim().toLowerCase();
-    const type = (userData?.type || "").toString().trim().toLowerCase();
-
-    const flag =
-      userData?.isDistributor === true ||
-      userData?.IsDistributor === true ||
-      userData?.distributor === true ||
-      userData?.Distributor === true;
-
-    if (flag) return true;
-    if (role === "distributor" || role === "distributore") return true;
-    if (profile === "distributor" || profile === "distributore") return true;
-    if (type === "distributor" || type === "distributore") return true;
-
-    return false;
   }
 
   function renderUserInfo() {
@@ -345,8 +314,15 @@
     document.getElementById("admin-section").style.display = isAdmin ? "block" : "none";
     document.getElementById("role-badge").style.display = isAdmin ? "inline-flex" : "none";
 
-    const dist = isDistributor(userData);
-    document.getElementById("distributor-section").style.display = dist ? "block" : "none";
+    // ✅ aggiunta minima: mostra FTFOLOAD solo se distributore
+    const isDistributor =
+      userData.isDistributor === true ||
+      userData.IsDistributor === true ||
+      userData.role === "Distributor" ||
+      userData.role === "Distributore";
+
+    const foCard = document.getElementById("ftfoload-card");
+    if (foCard) foCard.style.display = isDistributor ? "block" : "none";
 
     const topLine = document.getElementById("topbar-userline");
     if (topLine){
@@ -440,6 +416,8 @@
   function goToFTCLAIMS(){ location.href="FTCLAIMS.html"; }
   function goToFTMANAG(){ location.href="FTMANAG.html"; }
   function goToFTHOTLINE(){ location.href="FTHOTLINE.html"; }
+
+  // ✅ aggiunta minima: navigazione FTFOLOAD
   function goToFTFOLOAD(){ location.href="FTFOLOAD.html"; }
 
   /* ===== LEFT SEASON BAND LOGIC (solo per FTHUBAS) ===== */
@@ -508,5 +486,6 @@
   })();
 </script>
 <script src="ft-topbar.js?v=4"></script>
+
 </body>
 </html>
