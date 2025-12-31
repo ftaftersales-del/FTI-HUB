@@ -217,17 +217,7 @@
             </div>
           </div>
 
-          <!-- ✅ FTFOLOAD (SOLO DISTRIBUTORE) -->
-          <div class="dashCard" id="ftfoload-card" style="display:none;">
-            <div class="dashTop">
-              <div class="dashTitle"><span class="ico">📤</span> Caricamento pratiche FO</div>
-              <p class="dashDesc">Seleziona pratiche “In valutazione FO” senza sinistro ed esporta l’Excel batch per Selenium.</p>
-            </div>
-            <div class="dashFooter">
-              <button class="btn btn-primary btn-wide" onclick="goToFTFOLOAD()">FTFOLOAD</button>
-            </div>
-          </div>
-          <!-- /FTFOLOAD -->
+          <!-- ✅ FTFOLOAD rimosso da Operatività: resta solo in Amministrazione -->
 
         </div>
       </div>
@@ -252,7 +242,7 @@
             </div>
           </div>
 
-          <!-- ✅ FTFOLOAD anche sotto Amministrazione (solo utenti distributore) -->
+          <!-- ✅ FTFOLOAD (solo qui) -->
           <div class="dashCard">
             <div class="dashTop">
               <div class="dashTitle"><span class="ico">📤</span> Caricamento pratiche FO</div>
@@ -349,15 +339,13 @@
     const isAdminRole = (userData.role === "Admin");
     document.getElementById("role-badge").style.display = isAdminRole ? "inline-flex" : "none";
 
-    // ✅ distributore: abilita sia FTFOLOAD in Operatività che sezione Amministrazione
+    // ✅ distributore: abilita sezione Amministrazione
     const isDistributorUser = await computeDistributorAccess(userData);
 
     const adminSection = document.getElementById("admin-section");
     if (adminSection) adminSection.style.display = isDistributorUser ? "block" : "none";
 
-    const foCard = document.getElementById("ftfoload-card");
-    if (foCard) foCard.style.display = isDistributorUser ? "block" : "none";
-
+    // NOTA: ftfoload-card rimosso, quindi nessun toggle qui (funzionalità invariata)
     const topLine = document.getElementById("topbar-userline");
     if (topLine){
       topLine.textContent = `${dealer} • ${role} • ${user.email}`;
