@@ -186,11 +186,16 @@
       z-index: 900;
       padding: 12px;
       width: 460px;
-      background: transparent;
+
+      /* ✅ FIX: sfondo pannello non trasparente (risolve “tendina select” trasparente) */
+      background: rgba(242, 243, 246, .92);
+      backdrop-filter: blur(4px);
+      box-shadow: -10px 0 26px rgba(15, 23, 42, 0.10);
     }
     #user-form-panel{
       width: 420px;
       z-index: 950;
+      box-shadow: -10px 0 26px rgba(15, 23, 42, 0.12);
     }
 
     .panel-card{
@@ -261,26 +266,6 @@
       .two-columns{ flex-direction: column; }
       #users-container table td:last-child{ width: 220px; }
       #users-container table td:nth-child(2){ max-width: 240px; }
-    }
-
-    /* =========================
-       FIX: tendine select (menu a scomparsa) con sfondo non trasparente
-       Solo per i pannelli di FTDMS (dealer/user)
-       ========================= */
-    #dealer-form-panel select,
-    #user-form-panel select{
-      background: #f2f3f6;        /* grigio tenue */
-    }
-
-    #dealer-form-panel select option,
-    #user-form-panel select option{
-      background: #f2f3f6;        /* sfondo menu */
-      color: #111827;             /* testo leggibile */
-    }
-
-    #dealer-form-panel select:focus,
-    #user-form-panel select:focus{
-      outline: none;
     }
   </style>
 </head>
@@ -1337,7 +1322,7 @@
       }
     }
   </script>
-  <script src="ft-topbar.js?v=4"></script>
 
+  <script src="ft-topbar.js?v=4"></script>
 </body>
 </html>
